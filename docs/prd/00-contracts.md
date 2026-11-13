@@ -4,6 +4,8 @@
 
 Status: **draft for Dev's approval.** Items marked ⚠ are proposals awaiting a decision.
 
+**Project name: Sol-48.**
+
 ## 1. Product in one paragraph
 
 A static web app. An astronaut stacks data layers over a 4 × 4 km area, drops science stops, and gets a safe walking route with budgets and a turn-back limit (Plan). The same plan is then walked in a tablet view and a helmet-visor view with real rover photos at stops (Walk, Visor). Mount Sharp in Gale crater is the full site; Jezero crater runs through the identical pipeline as the second site.
@@ -14,10 +16,10 @@ A static web app. An astronaut stacks data layers over a 4 × 4 km area, drops s
 |---|---|
 | Sites | Gale / Mount Sharp (full), Jezero (second site, same pipeline, no site-specific code) |
 | Travel mode | On foot. The walk starts and ends at a movable "rover / habitat" marker, so a rover drop-off is represented without building a vehicle model |
-| Default walk | Two astronauts, 8-hour limit, all parameters editable ⚠ |
+| Default walk | Two astronauts, 8-hour limit, all parameters editable |
 | Route cost | A cost grid (section 6). What produces it is swappable: the slope-and-roughness rule is the default; the learned walkability model replaces it only if it passes its gate (phase 2) |
-| App hosting | Vercel, personal account |
-| Tile hosting | Cloudflare R2 public bucket, personal account |
+| App hosting | Vercel, Dev's personal account |
+| Tile hosting | Cloudflare R2 public bucket, Dev's personal account |
 | Small data (weather, chemistry, radiation, photo index) | Bundled in the app as JSON. No live dependency during judging |
 | Regional basemap | Mars Trek tiles, live, with a baked fallback image |
 | Partner data | ESA (Mars Express elevation), Spain (rover weather stations), Canada (Curiosity chemistry). UAE Hope orbiter is a stretch item: phase 5, only if time remains |
@@ -222,9 +224,28 @@ These are planning-grade estimates and the app says so. They are not validated a
 - Anything taken from outside goes in `docs/references.md` in the same pull request.
 - Public repository: no secrets, no employer names, no NASA logos or mission insignia.
 
-## 12. Open decisions
+## 12. Schedule (India Standard Time)
 
-1. Default walk limits (section 2 and 10).
-2. Whether the learned model replaces the rule (decided at the phase 2 gate).
-3. Project name.
-4. Clock times for the schedule, against the Sunday 23:59 deadline.
+The team works straight through; agents run on all three machines throughout. Deadline: **Sunday 15 Nov, 23:59 IST.**
+
+| When | What | Who |
+|---|---|---|
+| Sat 02:00 | PRD approved and merged; machines paired; collaborators added | Dev |
+| Sat 03:00 | Sample bundle and sample plan on `main`; phases 3 and 4 unblocked | Dev, Samruddhi |
+| Sat 06:00 | Model gate: rule or model for the route cost, recorded in the model card | Dev |
+| Sat 09:00 | Gale bundle published to R2 (tiles, grids, conditions, chemistry) | Dev |
+| Sat 16:00 | **First public deploy** on Vercel: Plan view working on real Gale data | Samruddhi |
+| Sat 20:00 | Walk and Visor working with rover photos | Archisha |
+| Sun 02:00 | Jezero live in the site switcher | Dev |
+| Sun 10:00 | Feature freeze. Only fixes after this | all |
+| Sun 14:00 | Deck and project-page text complete; video recorded | Archisha |
+| Sun 18:00 | **First real submission** with whatever exists | Dev |
+| Sun 22:00 | Code freeze. Links, text and final submit only | all |
+| Sun 23:00 | Final submission; confirmation banner seen | Dev |
+
+Check-ins: every four hours each owner posts what merged, what is blocked, and whether their next row is at risk. A row at risk is cut down, not pushed back.
+
+## 13. Open decisions
+
+1. Whether the learned model replaces the rule (decided at the Sat 06:00 gate).
+2. The walking-energy model's published source (section 10), confirmed by the phase 3 owner.
