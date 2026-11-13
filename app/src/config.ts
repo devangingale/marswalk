@@ -22,11 +22,18 @@ export const DEFAULT_SITE: string = 'gale';
 export const MARS_RADIUS_METERS = 3396190;
 
 /**
+ * Resolves the base URL of a site's published bundle (contracts section 4).
+ */
+export function getSiteBaseUrl(siteId: string): string {
+  const base = TILES_BASE.replace(/\/+$/, '');
+  return `${base}/${siteId}`;
+}
+
+/**
  * Resolves the site.json URL for a given site ID.
  */
 export function getSiteJsonUrl(siteId: string): string {
-  const base = TILES_BASE.replace(/\/+$/, '');
-  return `${base}/${siteId}/site.json`;
+  return `${getSiteBaseUrl(siteId)}/site.json`;
 }
 
 /**
@@ -39,6 +46,5 @@ export function resolveSiteAssetUrl(siteId: string, relativeOrAbsoluteUrl: strin
   if (relativeOrAbsoluteUrl.startsWith('/')) {
     return relativeOrAbsoluteUrl;
   }
-  const base = TILES_BASE.replace(/\/+$/, '');
-  return `${base}/${siteId}/${relativeOrAbsoluteUrl}`;
+  return `${getSiteBaseUrl(siteId)}/${relativeOrAbsoluteUrl}`;
 }

@@ -79,3 +79,43 @@ export interface LayerState {
 }
 
 export type AppMode = 'plan' | 'walk' | 'visor';
+
+export interface RoverPhoto {
+  id: string;
+  lon: number;
+  lat: number;
+  heading_deg: number | null;
+  sol: number;
+  camera: string;
+  url: string;
+  thumb: string;
+  credit: string;
+}
+
+export interface LatestWeather {
+  sol: number;
+  terrestrial_date: string;
+  air_temp_min_c: number;
+  air_temp_max_c: number;
+  pressure_pa: number;
+}
+
+export interface SiteConditions {
+  weather: {
+    source: string;
+    latest: LatestWeather;
+  };
+  radiation: {
+    source: string;
+    surface_dose_mgy_per_day: number;
+    solar_event_mgy_per_day: number;
+    note: string;
+  };
+}
+
+export interface ChemistryProperties {
+  target: string;
+  sol: number;
+  source: string;
+  [field: string]: string | number;
+}

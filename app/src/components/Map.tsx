@@ -7,27 +7,16 @@ import {
   Popup,
   NavigationControl,
   AttributionControl,
-  addProtocol,
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { Protocol } from 'pmtiles';
 import { SiteData, LayerState } from '../types';
 import { resolveSiteAssetUrl } from '../config';
 import { ScaleBar } from './ScaleBar';
+import { marsBaseStyle, setupPMTilesProtocol } from './mapSetup';
 
 interface MapProps {
   siteData: SiteData;
   layerStates: Record<string, LayerState>;
-}
-
-let pmtilesProtocolInitialized = false;
-
-function setupPMTilesProtocol() {
-  if (!pmtilesProtocolInitialized) {
-    const protocol = new Protocol();
-    addProtocol('pmtiles', protocol.tile);
-    pmtilesProtocolInitialized = true;
-  }
 }
 
 export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
@@ -48,40 +37,7 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
 
     const map = new MapLibreMap({
       container: mapContainerRef.current,
-      style: {
-        version: 8,
-        name: 'Sol-48 Mars Basemap',
-        sources: {
-          mars_mola_trek: {
-            type: 'raster',
-            tiles: [
-              'https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0//default/default028mm/{z}/{y}/{x}.jpg',
-            ],
-            tileSize: 256,
-            maxzoom: 8,
-            attribution: 'NASA/JPL/GSFC Mars Trek',
-          },
-        },
-        layers: [
-          {
-            id: 'mars-background',
-            type: 'background',
-            paint: {
-              'background-color': '#111726',
-            },
-          },
-          {
-            id: 'mars-trek-layer',
-            type: 'raster',
-            source: 'mars_mola_trek',
-            minzoom: 0,
-            maxzoom: 9,
-            paint: {
-              'raster-opacity': 0.7,
-            },
-          },
-        ],
-      },
+      style: marsBaseStyle(),
       center: [centerLon, centerLat],
       zoom: 13,
       maxPitch: 75,
