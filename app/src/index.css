@@ -1,7 +1,15 @@
 /* Written with AI assistance, directed and reviewed by the team. */
 
-/* Structural layout hooks for Phase 3 shell */
-html,
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  width: 100%;
+  height: 100%;
+}
+
 body,
 #root {
   width: 100%;
@@ -9,67 +17,50 @@ body,
   margin: 0;
   padding: 0;
   overflow: hidden;
-  font-family: sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
 }
 
-.s48-app {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
+h1, h2, h3, h4 {
+  font-weight: var(--weight-semibold);
+  margin: 0;
 }
 
-.s48-header {
-  display: flex;
-  align-items: center;
-  justifyContent: space-between;
-  padding: 8px 12px;
-  border-bottom: 1px solid #ccc;
-  gap: 12px;
-  flex-wrap: wrap;
+p {
+  margin: 0;
 }
 
-.s48-main {
-  flex: 1;
-  position: relative;
-  display: flex;
-  overflow: hidden;
+button, input, select {
+  font: inherit;
+  color: inherit;
 }
 
-.s48-map-container {
-  flex: 1;
-  position: relative;
-  width: 100%;
-  height: 100%;
+.num {
+  font-family: var(--font-data);
+  font-variant-numeric: var(--numeric);
 }
 
-.s48-map-viewport {
-  width: 100%;
-  height: 100%;
+.muted {
+  color: var(--color-text-muted);
 }
 
-.s48-layer-panel {
-  width: 320px;
-  max-width: 85vw;
-  border-right: 1px solid #ccc;
-  overflow-y: auto;
-  padding: 12px;
-  box-sizing: border-box;
-  background-color: #ffffff;
-}
-
-.s48-scale-bar {
+.sr-only {
   position: absolute;
-  bottom: 16px;
-  left: 16px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border: 1px solid #333;
-  padding: 4px 8px;
-  font-family: monospace;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
-.s48-scale-line {
-  height: 4px;
-  background-color: #000;
-  margin-top: 2px;
+:focus-visible, .is-focus {
+  outline: var(--focus-width) solid var(--color-focus-inner);
+  outline-offset: var(--focus-offset);
+  box-shadow: 0 0 0 var(--focus-offset) var(--color-focus-outer);
+}
+:focus:not(:focus-visible) {
+  outline: none;
 }
