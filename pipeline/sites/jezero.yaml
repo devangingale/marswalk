@@ -1,0 +1,15 @@
+# Jezero crater delta. Second site: never used for training.
+name: jezero
+title: Jezero crater delta
+rover: Perseverance
+
+dem: data/raw/jezero_hirise_dtm/JEZ_hirise_soc_006_DTM_MOLAtopography_DeltaGeoid_1m_Eqc_latTs0_lon0_blend40.tif
+image: data/raw/jezero_hirise_ortho/ESP_045994_1985_Edited_affine_25cm_Eqc_latTs0_lon0.tif
+poses: data/raw/pds_places/best_interp.csv
+
+# Walk area: [left, bottom, right, top] in source metres. Set in phase 5
+# after checking where the path, DEM and image all overlap.
+area: null
+train_area: null
+
+out: data/sites/jezero
