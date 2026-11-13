@@ -11,7 +11,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3541 site 96 drive 876",
+        "target": "APXS apb_711865082rwp35410960876_______p1",
         "sol": 3541,
         "Na2O": 2.57,
         "MgO": 8.7,
@@ -42,7 +42,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3541 site 96 drive 876",
+        "target": "APXS apb_711871667rwp35410960876_______p1",
         "sol": 3541,
         "Na2O": 2.16,
         "MgO": 8.07,
@@ -73,7 +73,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3555 site 96 drive 2376",
+        "target": "APXS apb_713107775rwp35550962376_______p1",
         "sol": 3555,
         "Na2O": 2.04,
         "MgO": 8.08,
@@ -104,7 +104,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3555 site 96 drive 2376",
+        "target": "APXS apb_713114397rwp35550962376_______p1",
         "sol": 3555,
         "Na2O": 3.67,
         "MgO": 8.92,
@@ -135,7 +135,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3562 site 96 drive 2724",
+        "target": "APXS apb_713733758rwp35620962724_______p1",
         "sol": 3562,
         "Na2O": 3.29,
         "MgO": 9.02,
@@ -166,7 +166,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3566 site 96 drive 3150",
+        "target": "APXS apb_714087761rwp35660963150_______p1",
         "sol": 3566,
         "Na2O": 2.83,
         "MgO": 9.1,
@@ -197,7 +197,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3568 site 97 drive 0",
+        "target": "APXS apb_714261964rwp35680970000_______p1",
         "sol": 3568,
         "Na2O": 2.55,
         "MgO": 9.96,
@@ -228,7 +228,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3568 site 97 drive 0",
+        "target": "APXS apb_714268527rwp35680970000_______p1",
         "sol": 3568,
         "Na2O": 2.27,
         "MgO": 7.92,
@@ -259,7 +259,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3573 site 97 drive 546",
+        "target": "APXS apb_714705730rwp35730970546_______p1",
         "sol": 3573,
         "Na2O": 2.38,
         "MgO": 9.1,
@@ -290,7 +290,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3573 site 97 drive 546",
+        "target": "APXS apb_714712248rwp35730970546_______p1",
         "sol": 3573,
         "Na2O": 8.34,
         "MgO": 8.3,
@@ -321,7 +321,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3575 site 97 drive 864",
+        "target": "APXS apb_714883549rwp35750970864_______p1",
         "sol": 3575,
         "Na2O": 2.64,
         "MgO": 8.62,
@@ -352,7 +352,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3575 site 97 drive 864",
+        "target": "APXS apb_714890081rwp35750970864_______p1",
         "sol": 3575,
         "Na2O": 2.43,
         "MgO": 8.35,
@@ -383,7 +383,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3578 site 97 drive 966",
+        "target": "APXS apb_715150229rwp35780970966_______p1",
         "sol": 3578,
         "Na2O": 2.22,
         "MgO": 7.9,
@@ -414,7 +414,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3578 site 97 drive 966",
+        "target": "APXS apb_715156761rwp35780970966_______p1",
         "sol": 3578,
         "Na2O": 2.08,
         "MgO": 7.82,
@@ -445,7 +445,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3583 site 97 drive 1170",
+        "target": "APXS apb_715593521rwp35830971170_______p1",
         "sol": 3583,
         "Na2O": 9.35,
         "MgO": 7.21,
@@ -476,7 +476,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3596 site 97 drive 1284",
+        "target": "APXS apb_716747696rwp35960971284_______p1",
         "sol": 3596,
         "Na2O": 7.93,
         "MgO": 7.12,
@@ -507,7 +507,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3596 site 97 drive 1284",
+        "target": "APXS apb_716754228rwp35960971284_______p1",
         "sol": 3596,
         "Na2O": 2.03,
         "MgO": 8.59,
@@ -538,7 +538,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3599 site 97 drive 1434",
+        "target": "APXS apb_717014052rwp35990971434_______p1",
         "sol": 3599,
         "Na2O": 5.54,
         "MgO": 9.53,
@@ -569,7 +569,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3599 site 97 drive 1434",
+        "target": "APXS apb_717020507rwp35990971434_______p1",
         "sol": 3599,
         "Na2O": 5.33,
         "MgO": 9.4,
@@ -600,7 +600,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3609 site 97 drive 1734",
+        "target": "APXS apb_717903617rwp36090971734_______p1",
         "sol": 3609,
         "Na2O": 2.49,
         "MgO": 10.29,
@@ -631,7 +631,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3609 site 97 drive 1734",
+        "target": "APXS apb_717910238rwp36090971734_______p1",
         "sol": 3609,
         "Na2O": 2.32,
         "MgO": 10.4,
@@ -662,7 +662,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3624 site 97 drive 1734",
+        "target": "APXS apb_719240191rwp36240971734_______p1",
         "sol": 3624,
         "Na2O": 2.19,
         "MgO": 10.68,
@@ -693,7 +693,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3626 site 97 drive 1734",
+        "target": "APXS apb_719384616rwp36260971734_______p1",
         "sol": 3626,
         "Na2O": 2.36,
         "MgO": 9.37,
@@ -724,7 +724,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3628 site 97 drive 1918",
+        "target": "APXS apb_719562676rwp36280971918_______p1",
         "sol": 3628,
         "Na2O": 2.72,
         "MgO": 10.41,
@@ -755,7 +755,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3630 site 97 drive 2140",
+        "target": "APXS apb_719766693rwp36300972140_______p1",
         "sol": 3630,
         "Na2O": 2.65,
         "MgO": 9.4,
@@ -786,7 +786,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3630 site 97 drive 2140",
+        "target": "APXS apb_719775715rwp36300972140_______p1",
         "sol": 3630,
         "Na2O": 2.89,
         "MgO": 9.62,
@@ -817,7 +817,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3633 site 97 drive 2590",
+        "target": "APXS apb_720006149rwp36330972590_______p1",
         "sol": 3633,
         "Na2O": 2.81,
         "MgO": 9.72,
@@ -848,7 +848,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3635 site 97 drive 2762",
+        "target": "APXS apb_720183295rwp36350972762_______p1",
         "sol": 3635,
         "Na2O": 3.99,
         "MgO": 9.7,
@@ -879,7 +879,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3637 site 97 drive 3110",
+        "target": "APXS apb_720389789rwp36370973110_______p1",
         "sol": 3637,
         "Na2O": 2.25,
         "MgO": 7.95,
@@ -910,7 +910,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3637 site 97 drive 3110",
+        "target": "APXS apb_720397311rwp36370973110_______p1",
         "sol": 3637,
         "Na2O": 2.56,
         "MgO": 4.51,
@@ -941,7 +941,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3639 site 98 drive 0",
+        "target": "APXS apb_720538687rwp36390980000_______p1",
         "sol": 3639,
         "Na2O": 0.33,
         "MgO": 7.38,
@@ -972,7 +972,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3641 site 98 drive 144",
+        "target": "APXS apb_720742350rwp36410980144_______p1",
         "sol": 3641,
         "Na2O": 2.02,
         "MgO": 6.36,
@@ -1003,7 +1003,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3641 site 98 drive 144",
+        "target": "APXS apb_720748371rwp36410980144_______p1",
         "sol": 3641,
         "Na2O": 1.96,
         "MgO": 6.13,
@@ -1034,7 +1034,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3641 site 98 drive 144",
+        "target": "APXS apb_720754093rwp36410980144_______p1",
         "sol": 3641,
         "Na2O": 2.69,
         "MgO": 4.18,
@@ -1065,7 +1065,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3644 site 98 drive 270",
+        "target": "APXS apb_721010434rwp36440980270_______p1",
         "sol": 3644,
         "Na2O": 2.47,
         "MgO": 7.47,
@@ -1096,7 +1096,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3644 site 98 drive 270",
+        "target": "APXS apb_721018856rwp36440980270_______p1",
         "sol": 3644,
         "Na2O": 2.44,
         "MgO": 7.22,
@@ -1127,7 +1127,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3648 site 98 drive 800",
+        "target": "APXS apb_721336877rwp36480980800_______p1",
         "sol": 3648,
         "Na2O": 2.22,
         "MgO": 4.58,
@@ -1158,7 +1158,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3650 site 98 drive 908",
+        "target": "APXS apb_721540093rwp36500980908_______p1",
         "sol": 3650,
         "Na2O": 2.32,
         "MgO": 5.98,
@@ -1189,7 +1189,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3650 site 98 drive 908",
+        "target": "APXS apb_721546017rwp36500980908_______p1",
         "sol": 3650,
         "Na2O": 2.62,
         "MgO": 7.48,
@@ -1220,7 +1220,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3650 site 98 drive 908",
+        "target": "APXS apb_721551589rwp36500980908_______p1",
         "sol": 3650,
         "Na2O": 2.57,
         "MgO": 8.11,
@@ -1251,7 +1251,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3657 site 98 drive 1520",
+        "target": "APXS apb_722164430rwp36570981520_______p1",
         "sol": 3657,
         "Na2O": 2.07,
         "MgO": 6.62,
@@ -1282,7 +1282,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3657 site 98 drive 1520",
+        "target": "APXS apb_722172842rwp36570981520_______p1",
         "sol": 3657,
         "Na2O": 2.82,
         "MgO": 7.06,
@@ -1313,7 +1313,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3664 site 98 drive 1938",
+        "target": "APXS apb_722783223rwp36640981938_______p1",
         "sol": 3664,
         "Na2O": 1.84,
         "MgO": 4.49,
@@ -1344,7 +1344,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3664 site 98 drive 1938",
+        "target": "APXS apb_722787971rwp36640981938_______p1",
         "sol": 3664,
         "Na2O": 2.21,
         "MgO": 7.43,
@@ -1375,7 +1375,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3664 site 98 drive 1938",
+        "target": "APXS apb_722794649rwp36640981938_______p1",
         "sol": 3664,
         "Na2O": 2.43,
         "MgO": 7.7,
@@ -1406,7 +1406,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3665 site 98 drive 1938",
+        "target": "APXS apb_722844383rwp36650981938_______p1",
         "sol": 3665,
         "Na2O": 2.06,
         "MgO": 6.83,
@@ -1437,7 +1437,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3667 site 98 drive 2350",
+        "target": "APXS apb_723025529rwp36670982350_______p1",
         "sol": 3667,
         "Na2O": 2.08,
         "MgO": 6.71,
@@ -1468,7 +1468,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3669 site 98 drive 2578",
+        "target": "APXS apb_723200788rwp36690982578_______p1",
         "sol": 3669,
         "Na2O": 2.32,
         "MgO": 7.55,
@@ -1499,7 +1499,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3671 site 98 drive 2578",
+        "target": "APXS apb_723405684rwp36710982578_______p1",
         "sol": 3671,
         "Na2O": 2.31,
         "MgO": 7.86,
@@ -1530,7 +1530,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3671 site 98 drive 2578",
+        "target": "APXS apb_723414083rwp36710982578_______p1",
         "sol": 3671,
         "Na2O": 2.28,
         "MgO": 7.75,
@@ -1561,7 +1561,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3674 site 98 drive 2704",
+        "target": "APXS apb_723644405rwp36740982704_______p1",
         "sol": 3674,
         "Na2O": 1.37,
         "MgO": 6.57,
@@ -1592,7 +1592,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3674 site 98 drive 2704",
+        "target": "APXS apb_723674000rwp36740982704_______p1",
         "sol": 3674,
         "Na2O": 1.71,
         "MgO": 7.06,
@@ -1623,7 +1623,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3674 site 98 drive 2704",
+        "target": "APXS apb_723682363rwp36740982704_______p1",
         "sol": 3674,
         "Na2O": 1.56,
         "MgO": 6.57,
@@ -1654,7 +1654,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3677 site 98 drive 2704",
+        "target": "APXS apb_723940334rwp36770982704_______p1",
         "sol": 3677,
         "Na2O": 1.68,
         "MgO": 7.76,
@@ -1685,7 +1685,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3677 site 98 drive 2704",
+        "target": "APXS apb_723946777rwp36770982704_______p1",
         "sol": 3677,
         "Na2O": 1.69,
         "MgO": 7.57,
@@ -1716,7 +1716,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3682 site 98 drive 2704",
+        "target": "APXS apb_724382986rwp36820982704_______p1",
         "sol": 3682,
         "Na2O": 2.6,
         "MgO": 4.98,
@@ -1747,7 +1747,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3682 site 98 drive 2704",
+        "target": "APXS apb_724390584rwp36820982704_______p1",
         "sol": 3682,
         "Na2O": 3.32,
         "MgO": 5.15,
@@ -1778,7 +1778,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3684 site 98 drive 2704",
+        "target": "APXS apb_724559842rwp36840982704_______p1",
         "sol": 3684,
         "Na2O": 0.72,
         "MgO": 7.93,
@@ -1809,7 +1809,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3684 site 98 drive 2704",
+        "target": "APXS apb_724569241rwp36840982704_______p1",
         "sol": 3684,
         "Na2O": 2.81,
         "MgO": 4.64,
@@ -1840,7 +1840,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3688 site 99 drive 0",
+        "target": "APXS apb_724921249rwp36880990000_______p1",
         "sol": 3688,
         "Na2O": 2.44,
         "MgO": 7.26,
@@ -1871,7 +1871,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3689 site 99 drive 0",
+        "target": "APXS apb_725003680rwp36890990000_______p1",
         "sol": 3689,
         "Na2O": 2.46,
         "MgO": 6.79,
@@ -1902,7 +1902,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3699 site 99 drive 188",
+        "target": "APXS apb_725892375rwp36990990188_______p1",
         "sol": 3699,
         "Na2O": 2.31,
         "MgO": 10.76,
@@ -1933,7 +1933,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3699 site 99 drive 188",
+        "target": "APXS apb_725901773rwp36990990188_______p1",
         "sol": 3699,
         "Na2O": 2.19,
         "MgO": 10.81,
@@ -1964,7 +1964,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3700 site 99 drive 188",
+        "target": "APXS apb_725952009rwp37000990188_______p1",
         "sol": 3700,
         "Na2O": 2.57,
         "MgO": 8.85,
@@ -1995,7 +1995,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3702 site 99 drive 398",
+        "target": "APXS apb_726159245rwp37020990398_______p1",
         "sol": 3702,
         "Na2O": 2.55,
         "MgO": 6.07,
@@ -2026,7 +2026,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3702 site 99 drive 398",
+        "target": "APXS apb_726167802rwp37020990398_______p1",
         "sol": 3702,
         "Na2O": 1.2,
         "MgO": 7.0,
@@ -2057,7 +2057,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3705 site 99 drive 740",
+        "target": "APXS apb_726425612rwp37050990740_______p1",
         "sol": 3705,
         "Na2O": 3.21,
         "MgO": 9.05,
@@ -2088,7 +2088,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3705 site 99 drive 740",
+        "target": "APXS apb_726434034rwp37050990740_______p1",
         "sol": 3705,
         "Na2O": 2.68,
         "MgO": 7.36,
@@ -2119,7 +2119,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3708 site 99 drive 1256",
+        "target": "APXS apb_726662671rwp37080991256_______p1",
         "sol": 3708,
         "Na2O": 2.17,
         "MgO": 10.25,
@@ -2150,7 +2150,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3712 site 99 drive 1450",
+        "target": "APXS apb_727046822rwp37120991450_______p1",
         "sol": 3712,
         "Na2O": 2.96,
         "MgO": 5.57,
@@ -2181,7 +2181,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3712 site 99 drive 1450",
+        "target": "APXS apb_727055245rwp37120991450_______p1",
         "sol": 3712,
         "Na2O": 2.83,
         "MgO": 5.24,
@@ -2212,7 +2212,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3715 site 99 drive 1594",
+        "target": "APXS apb_727284266rwp37150991594_______p1",
         "sol": 3715,
         "Na2O": 1.77,
         "MgO": 6.83,
@@ -2243,7 +2243,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3716 site 99 drive 1676",
+        "target": "APXS apb_727404725rwp37160991676_______p1",
         "sol": 3716,
         "Na2O": 1.93,
         "MgO": 5.93,
@@ -2274,7 +2274,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3716 site 99 drive 1676",
+        "target": "APXS apb_727411547rwp37160991676_______p1",
         "sol": 3716,
         "Na2O": 1.83,
         "MgO": 6.14,
@@ -2305,7 +2305,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3721 site 99 drive 1676",
+        "target": "APXS apb_727817067rwp37210991676_______p1",
         "sol": 3721,
         "Na2O": 1.02,
         "MgO": 3.44,
@@ -2336,7 +2336,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3723 site 99 drive 1850",
+        "target": "APXS apb_728020962rwp37230991850_______p1",
         "sol": 3723,
         "Na2O": 1.53,
         "MgO": 7.51,
@@ -2367,7 +2367,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3723 site 99 drive 1850",
+        "target": "APXS apb_728031079rwp37230991850_______p1",
         "sol": 3723,
         "Na2O": 1.97,
         "MgO": 7.34,
@@ -2398,7 +2398,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3725 site 99 drive 2030",
+        "target": "APXS apb_728200123rwp37250992030_______p1",
         "sol": 3725,
         "Na2O": 1.25,
         "MgO": 4.34,
@@ -2429,7 +2429,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3725 site 99 drive 2030",
+        "target": "APXS apb_728208599rwp37250992030_______p1",
         "sol": 3725,
         "Na2O": 1.17,
         "MgO": 3.98,
@@ -2460,7 +2460,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3728 site 99 drive 2090",
+        "target": "APXS apb_728437524rwp37280992090_______p1",
         "sol": 3728,
         "Na2O": 2.14,
         "MgO": 7.59,
@@ -2491,7 +2491,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3730 site 99 drive 2276",
+        "target": "APXS apb_728615299rwp37300992276_______p1",
         "sol": 3730,
         "Na2O": 1.8,
         "MgO": 8.61,
@@ -2522,7 +2522,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3732 site 99 drive 2414",
+        "target": "APXS apb_728821016rwp37320992414_______p1",
         "sol": 3732,
         "Na2O": 2.32,
         "MgO": 8.98,
@@ -2553,7 +2553,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3732 site 99 drive 2414",
+        "target": "APXS apb_728829948rwp37320992414_______p1",
         "sol": 3732,
         "Na2O": 2.91,
         "MgO": 8.3,
@@ -2584,7 +2584,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3735 site 100 drive 0",
+        "target": "APXS apb_729058778rwp37351000000_______p1",
         "sol": 3735,
         "Na2O": 1.66,
         "MgO": 7.74,
@@ -2615,7 +2615,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3737 site 100 drive 84",
+        "target": "APXS apb_729268162rwp37371000084_______p1",
         "sol": 3737,
         "Na2O": 1.65,
         "MgO": 6.27,
@@ -2646,7 +2646,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3737 site 100 drive 84",
+        "target": "APXS apb_729274837rwp37371000084_______p1",
         "sol": 3737,
         "Na2O": 1.87,
         "MgO": 6.29,
@@ -2677,7 +2677,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3739 site 100 drive 84",
+        "target": "APXS apb_729443449rwp37391000084_______p1",
         "sol": 3739,
         "Na2O": 0.6,
         "MgO": 7.62,
@@ -2708,7 +2708,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3739 site 100 drive 84",
+        "target": "APXS apb_729451781rwp37391000084_______p1",
         "sol": 3739,
         "Na2O": 1.8,
         "MgO": 5.99,
@@ -2739,7 +2739,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3744 site 100 drive 84",
+        "target": "APXS apb_729858402rwp37441000084_______p1",
         "sol": 3744,
         "Na2O": 1.19,
         "MgO": 5.64,
@@ -2770,7 +2770,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3746 site 100 drive 696",
+        "target": "APXS apb_730064073rwp37461000696_______p1",
         "sol": 3746,
         "Na2O": 2.08,
         "MgO": 8.4,
@@ -2801,7 +2801,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3746 site 100 drive 696",
+        "target": "APXS apb_730072565rwp37461000696_______p1",
         "sol": 3746,
         "Na2O": 1.83,
         "MgO": 8.22,
@@ -2832,7 +2832,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3747 site 100 drive 696",
+        "target": "APXS apb_730152892rwp37471000696_______p1",
         "sol": 3747,
         "Na2O": 2.16,
         "MgO": 8.65,
@@ -2863,7 +2863,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3747 site 100 drive 696",
+        "target": "APXS apb_730161384rwp37471000696_______p1",
         "sol": 3747,
         "Na2O": 2.13,
         "MgO": 8.53,
@@ -2894,7 +2894,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3749 site 100 drive 922",
+        "target": "APXS apb_730302928rwp37491000922_______p1",
         "sol": 3749,
         "Na2O": 2.99,
         "MgO": 8.42,
@@ -2925,7 +2925,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3750 site 100 drive 1084",
+        "target": "APXS apb_730422114rwp37501001084_______p1",
         "sol": 3750,
         "Na2O": 1.96,
         "MgO": 7.21,
@@ -2956,7 +2956,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3750 site 100 drive 1084",
+        "target": "APXS apb_730429034rwp37501001084_______p1",
         "sol": 3750,
         "Na2O": 1.85,
         "MgO": 6.84,
@@ -2987,7 +2987,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3767 site 100 drive 1084",
+        "target": "APXS apb_731932109rwp37671001084_______p1",
         "sol": 3767,
         "Na2O": 1.86,
         "MgO": 7.38,
@@ -3018,7 +3018,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3769 site 100 drive 1084",
+        "target": "APXS apb_732103367rwp37691001084_______p1",
         "sol": 3769,
         "Na2O": 1.84,
         "MgO": 7.42,
@@ -3049,7 +3049,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3769 site 100 drive 1084",
+        "target": "APXS apb_732112378rwp37691001084_______p1",
         "sol": 3769,
         "Na2O": 1.67,
         "MgO": 7.13,
@@ -3080,7 +3080,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3771 site 100 drive 1084",
+        "target": "APXS apb_732254633rwp37711001084_______p1",
         "sol": 3771,
         "Na2O": 2.17,
         "MgO": 8.55,
@@ -3111,7 +3111,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3773 site 100 drive 1168",
+        "target": "APXS apb_732461408rwp37731001168_______p1",
         "sol": 3773,
         "Na2O": 2.07,
         "MgO": 9.04,
@@ -3142,7 +3142,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3773 site 100 drive 1168",
+        "target": "APXS apb_732469741rwp37731001168_______p1",
         "sol": 3773,
         "Na2O": 2.1,
         "MgO": 9.71,
@@ -3173,7 +3173,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3776 site 100 drive 1376",
+        "target": "APXS apb_732698877rwp37761001376_______p1",
         "sol": 3776,
         "Na2O": 3.32,
         "MgO": 7.7,
@@ -3204,7 +3204,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3778 site 100 drive 1586",
+        "target": "APXS apb_732876774rwp37781001586_______p1",
         "sol": 3778,
         "Na2O": 2.02,
         "MgO": 10.13,
@@ -3235,7 +3235,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3780 site 100 drive 1754",
+        "target": "APXS apb_733081993rwp37801001754_______p1",
         "sol": 3780,
         "Na2O": 2.14,
         "MgO": 8.42,
@@ -3266,7 +3266,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3780 site 100 drive 1754",
+        "target": "APXS apb_733090771rwp37801001754_______p1",
         "sol": 3780,
         "Na2O": 2.59,
         "MgO": 8.96,
@@ -3297,7 +3297,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3796 site 100 drive 2208",
+        "target": "APXS apb_734475604rwp37961002208_______p1",
         "sol": 3796,
         "Na2O": 2.38,
         "MgO": 8.82,
@@ -3328,7 +3328,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3798 site 100 drive 2574",
+        "target": "APXS apb_734685616rwp37981002574_______p1",
         "sol": 3798,
         "Na2O": 2.38,
         "MgO": 7.49,
@@ -3359,7 +3359,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3800 site 100 drive 2712",
+        "target": "APXS apb_734856593rwp38001002712_______p1",
         "sol": 3800,
         "Na2O": 2.27,
         "MgO": 9.02,
@@ -3390,7 +3390,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3800 site 100 drive 2712",
+        "target": "APXS apb_734864988rwp38001002712_______p1",
         "sol": 3800,
         "Na2O": 2.23,
         "MgO": 9.02,
@@ -3421,7 +3421,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3807 site 101 drive 198",
+        "target": "APXS apb_735480093rwp38071010198_______p1",
         "sol": 3807,
         "Na2O": 2.32,
         "MgO": 6.52,
@@ -3452,7 +3452,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3807 site 101 drive 198",
+        "target": "APXS apb_735488186rwp38071010198_______p1",
         "sol": 3807,
         "Na2O": 2.45,
         "MgO": 9.07,
@@ -3483,7 +3483,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3810 site 101 drive 324",
+        "target": "APXS apb_735717889rwp38101010324_______p1",
         "sol": 3810,
         "Na2O": 2.18,
         "MgO": 9.89,
@@ -3514,7 +3514,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3812 site 101 drive 522",
+        "target": "APXS apb_735895433rwp38121010522_______p1",
         "sol": 3812,
         "Na2O": 2.36,
         "MgO": 9.77,
@@ -3545,7 +3545,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3817 site 101 drive 774",
+        "target": "APXS apb_736366099rwp38171010774_______p1",
         "sol": 3817,
         "Na2O": 2.49,
         "MgO": 8.71,
@@ -3576,7 +3576,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3817 site 101 drive 774",
+        "target": "APXS apb_736372622rwp38171010774_______p1",
         "sol": 3817,
         "Na2O": 2.58,
         "MgO": 8.57,
@@ -3607,7 +3607,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3819 site 101 drive 774",
+        "target": "APXS apb_736543712rwp38191010774_______p1",
         "sol": 3819,
         "Na2O": 2.19,
         "MgO": 9.14,
@@ -3638,7 +3638,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3819 site 101 drive 774",
+        "target": "APXS apb_736552107rwp38191010774_______p1",
         "sol": 3819,
         "Na2O": 2.3,
         "MgO": 9.14,
@@ -3669,7 +3669,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3821 site 101 drive 774",
+        "target": "APXS apb_736722067rwp38211010774_______p1",
         "sol": 3821,
         "Na2O": 2.57,
         "MgO": 8.87,
@@ -3700,7 +3700,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3821 site 101 drive 774",
+        "target": "APXS apb_736728592rwp38211010774_______p1",
         "sol": 3821,
         "Na2O": 3.77,
         "MgO": 8.48,
@@ -3731,7 +3731,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3834 site 101 drive 774",
+        "target": "APXS apb_737880019rwp38341010774_______p1",
         "sol": 3834,
         "Na2O": 2.18,
         "MgO": 9.5,
@@ -3762,7 +3762,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3837 site 101 drive 774",
+        "target": "APXS apb_738145837rwp38371010774_______p1",
         "sol": 3837,
         "Na2O": 2.1,
         "MgO": 9.45,
@@ -3793,7 +3793,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3839 site 101 drive 774",
+        "target": "APXS apb_738292300rwp38391010774_______p1",
         "sol": 3839,
         "Na2O": 2.3,
         "MgO": 8.75,
@@ -3824,7 +3824,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3845 site 101 drive 1246",
+        "target": "APXS apb_738849433rwp38451011246_______p1",
         "sol": 3845,
         "Na2O": 2.13,
         "MgO": 9.17,
@@ -3855,7 +3855,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3845 site 101 drive 1246",
+        "target": "APXS apb_738855908rwp38451011246_______p1",
         "sol": 3845,
         "Na2O": 2.13,
         "MgO": 9.22,
@@ -3886,7 +3886,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3845 site 101 drive 1246",
+        "target": "APXS apb_738862383rwp38451011246_______p1",
         "sol": 3845,
         "Na2O": 2.2,
         "MgO": 9.04,
@@ -3917,7 +3917,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3851 site 101 drive 1396",
+        "target": "APXS apb_739357509rwp38511011396_______p1",
         "sol": 3851,
         "Na2O": 2.11,
         "MgO": 9.71,
@@ -3948,7 +3948,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3853 site 101 drive 1402",
+        "target": "APXS apb_739535432rwp38531011402_______p1",
         "sol": 3853,
         "Na2O": 2.62,
         "MgO": 8.84,
@@ -3979,7 +3979,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3858 site 101 drive 1606",
+        "target": "APXS apb_739978994rwp38581011606_______p1",
         "sol": 3858,
         "Na2O": 2.22,
         "MgO": 9.47,
@@ -4010,7 +4010,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3859 site 101 drive 1768",
+        "target": "APXS apb_740095880rwp38591011768_______p1",
         "sol": 3859,
         "Na2O": 2.7,
         "MgO": 8.42,
@@ -4041,7 +4041,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3859 site 101 drive 1768",
+        "target": "APXS apb_740104454rwp38591011768_______p1",
         "sol": 3859,
         "Na2O": 2.11,
         "MgO": 9.18,
@@ -4072,7 +4072,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3862 site 101 drive 2008",
+        "target": "APXS apb_740335322rwp38621012008_______p1",
         "sol": 3862,
         "Na2O": 2.77,
         "MgO": 8.54,
@@ -4103,7 +4103,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3862 site 101 drive 2008",
+        "target": "APXS apb_740362083rwp38621012008_______p1",
         "sol": 3862,
         "Na2O": 2.34,
         "MgO": 8.47,
@@ -4134,7 +4134,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3862 site 101 drive 2008",
+        "target": "APXS apb_740370778rwp38621012008_______p1",
         "sol": 3862,
         "Na2O": 2.3,
         "MgO": 8.22,
@@ -4165,7 +4165,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3866 site 101 drive 2474",
+        "target": "APXS apb_740717480rwp38661012474_______p1",
         "sol": 3866,
         "Na2O": 2.24,
         "MgO": 9.08,
@@ -4196,7 +4196,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3866 site 101 drive 2474",
+        "target": "APXS apb_740725875rwp38661012474_______p1",
         "sol": 3866,
         "Na2O": 2.15,
         "MgO": 8.7,
@@ -4227,7 +4227,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3871 site 102 drive 0",
+        "target": "APXS apb_741132686rwp38711020000_______p1",
         "sol": 3871,
         "Na2O": 2.74,
         "MgO": 9.09,
@@ -4258,7 +4258,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3873 site 102 drive 390",
+        "target": "APXS apb_741310518rwp38731020390_______p1",
         "sol": 3873,
         "Na2O": 1.85,
         "MgO": 9.44,
@@ -4289,7 +4289,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3877 site 102 drive 492",
+        "target": "APXS apb_741670126rwp38771020492_______p1",
         "sol": 3877,
         "Na2O": 2.7,
         "MgO": 8.4,
@@ -4320,7 +4320,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3877 site 102 drive 492",
+        "target": "APXS apb_741691984rwp38771020492_______p1",
         "sol": 3877,
         "Na2O": 5.53,
         "MgO": 8.7,
@@ -4351,7 +4351,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3877 site 102 drive 492",
+        "target": "APXS apb_741701879rwp38771020492_______p1",
         "sol": 3877,
         "Na2O": 2.24,
         "MgO": 9.22,
@@ -4382,7 +4382,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3880 site 102 drive 630",
+        "target": "APXS apb_741931754rwp38801020630_______p1",
         "sol": 3880,
         "Na2O": 2.05,
         "MgO": 9.02,
@@ -4413,7 +4413,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3885 site 102 drive 1002",
+        "target": "APXS apb_742375634rwp38851021002_______p1",
         "sol": 3885,
         "Na2O": 3.0,
         "MgO": 9.42,
@@ -4444,7 +4444,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3887 site 102 drive 1054",
+        "target": "APXS apb_742553416rwp38871021054_______p1",
         "sol": 3887,
         "Na2O": 2.03,
         "MgO": 8.19,
@@ -4475,7 +4475,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3889 site 102 drive 1192",
+        "target": "APXS apb_742758170rwp38891021192_______p1",
         "sol": 3889,
         "Na2O": 2.54,
         "MgO": 8.21,
@@ -4506,7 +4506,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3889 site 102 drive 1192",
+        "target": "APXS apb_742766505rwp38891021192_______p1",
         "sol": 3889,
         "Na2O": 2.34,
         "MgO": 9.85,
@@ -4537,7 +4537,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3892 site 102 drive 1402",
+        "target": "APXS apb_742997009rwp38921021402_______p1",
         "sol": 3892,
         "Na2O": 2.65,
         "MgO": 8.27,
@@ -4568,7 +4568,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3895 site 102 drive 1864",
+        "target": "APXS apb_743289882rwp38951021864_______p1",
         "sol": 3895,
         "Na2O": 2.38,
         "MgO": 8.4,
@@ -4599,7 +4599,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3895 site 102 drive 1864",
+        "target": "APXS apb_743299117rwp38951021864_______p1",
         "sol": 3895,
         "Na2O": 2.64,
         "MgO": 8.62,
@@ -4630,7 +4630,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3898 site 102 drive 2032",
+        "target": "APXS apb_743529778rwp38981022032_______p1",
         "sol": 3898,
         "Na2O": 2.53,
         "MgO": 7.05,
@@ -4661,7 +4661,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3899 site 102 drive 2164",
+        "target": "APXS apb_743618346rwp38991022164_______p1",
         "sol": 3899,
         "Na2O": 2.92,
         "MgO": 7.68,
@@ -4692,7 +4692,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3900 site 102 drive 2428",
+        "target": "APXS apb_743735451rwp39001022428_______p1",
         "sol": 3900,
         "Na2O": 2.61,
         "MgO": 8.39,
@@ -4723,7 +4723,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3900 site 102 drive 2428",
+        "target": "APXS apb_743744115rwp39001022428_______p1",
         "sol": 3900,
         "Na2O": 2.26,
         "MgO": 9.56,
@@ -4754,7 +4754,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3902 site 102 drive 2686",
+        "target": "APXS apb_743919954rwp39021022686_______p1",
         "sol": 3902,
         "Na2O": 2.6,
         "MgO": 9.41,
@@ -4785,7 +4785,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3905 site 102 drive 2866",
+        "target": "APXS apb_744151494rwp39051022866_______p1",
         "sol": 3905,
         "Na2O": 2.55,
         "MgO": 8.77,
@@ -4816,7 +4816,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3906 site 103 drive 0",
+        "target": "APXS apb_744240121rwp39061030000_______p1",
         "sol": 3906,
         "Na2O": 2.29,
         "MgO": 10.03,
@@ -4847,7 +4847,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3907 site 103 drive 112",
+        "target": "APXS apb_744356331rwp39071030112_______p1",
         "sol": 3907,
         "Na2O": 13.17,
         "MgO": 6.43,
@@ -4878,7 +4878,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3907 site 103 drive 112",
+        "target": "APXS apb_744365566rwp39071030112_______p1",
         "sol": 3907,
         "Na2O": 3.36,
         "MgO": 8.3,
@@ -4909,7 +4909,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3909 site 103 drive 286",
+        "target": "APXS apb_744537097rwp39091030286_______p1",
         "sol": 3909,
         "Na2O": 2.77,
         "MgO": 9.48,
@@ -4940,7 +4940,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3912 site 103 drive 400",
+        "target": "APXS apb_744773404rwp39121030400_______p1",
         "sol": 3912,
         "Na2O": 4.72,
         "MgO": 8.48,
@@ -4971,7 +4971,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3914 site 103 drive 694",
+        "target": "APXS apb_744950853rwp39141030694_______p1",
         "sol": 3914,
         "Na2O": 2.42,
         "MgO": 8.92,
@@ -5002,7 +5002,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3916 site 103 drive 994",
+        "target": "APXS apb_745156260rwp39161030994_______p1",
         "sol": 3916,
         "Na2O": 2.93,
         "MgO": 8.2,
@@ -5033,7 +5033,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3916 site 103 drive 994",
+        "target": "APXS apb_745164595rwp39161030994_______p1",
         "sol": 3916,
         "Na2O": 2.58,
         "MgO": 8.39,
@@ -5064,7 +5064,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3921 site 103 drive 1468",
+        "target": "APXS apb_745571938rwp39211031468_______p1",
         "sol": 3921,
         "Na2O": 3.18,
         "MgO": 8.18,
@@ -5095,7 +5095,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3921 site 103 drive 1468",
+        "target": "APXS apb_745573248rwp39211031468_______p1",
         "sol": 3921,
         "Na2O": 2.56,
         "MgO": 8.56,
@@ -5126,7 +5126,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3926 site 103 drive 1598",
+        "target": "APXS apb_746043779rwp39261031598_______p1",
         "sol": 3926,
         "Na2O": 2.74,
         "MgO": 9.37,
@@ -5157,7 +5157,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3926 site 103 drive 1598",
+        "target": "APXS apb_746052067rwp39261031598_______p1",
         "sol": 3926,
         "Na2O": 2.63,
         "MgO": 11.2,
@@ -5188,7 +5188,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3928 site 103 drive 1598",
+        "target": "APXS apb_746192961rwp39281031598_______p1",
         "sol": 3928,
         "Na2O": 3.8,
         "MgO": 7.56,
@@ -5219,7 +5219,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3930 site 103 drive 1742",
+        "target": "APXS apb_746397724rwp39301031742_______p1",
         "sol": 3930,
         "Na2O": 2.19,
         "MgO": 11.16,
@@ -5250,7 +5250,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3930 site 103 drive 1742",
+        "target": "APXS apb_746404920rwp39301031742_______p1",
         "sol": 3930,
         "Na2O": 3.25,
         "MgO": 9.17,
@@ -5281,7 +5281,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3934 site 103 drive 2216",
+        "target": "APXS apb_746725658rwp39341032216_______p1",
         "sol": 3934,
         "Na2O": 2.37,
         "MgO": 8.82,
@@ -5312,7 +5312,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3937 site 103 drive 2442",
+        "target": "APXS apb_747019076rwp39371032442_______p1",
         "sol": 3937,
         "Na2O": 4.53,
         "MgO": 8.54,
@@ -5343,7 +5343,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3937 site 103 drive 2442",
+        "target": "APXS apb_747027396rwp39371032442_______p1",
         "sol": 3937,
         "Na2O": 2.46,
         "MgO": 9.67,
@@ -5374,7 +5374,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3943 site 104 drive 0",
+        "target": "APXS apb_747550947rwp39431040000_______p1",
         "sol": 3943,
         "Na2O": 2.73,
         "MgO": 9.17,
@@ -5405,7 +5405,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3943 site 104 drive 0",
+        "target": "APXS apb_747559341rwp39431040000_______p1",
         "sol": 3943,
         "Na2O": 2.63,
         "MgO": 8.42,
@@ -5436,7 +5436,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3946 site 104 drive 174",
+        "target": "APXS apb_747791606rwp39461040174_______p1",
         "sol": 3946,
         "Na2O": 2.45,
         "MgO": 9.45,
@@ -5467,7 +5467,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3948 site 104 drive 378",
+        "target": "APXS apb_747969056rwp39481040378_______p1",
         "sol": 3948,
         "Na2O": 2.82,
         "MgO": 9.19,
@@ -5498,7 +5498,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3953 site 104 drive 856",
+        "target": "APXS apb_748413081rwp39531040856_______p1",
         "sol": 3953,
         "Na2O": 2.4,
         "MgO": 8.52,
@@ -5529,7 +5529,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3960 site 105 drive 0",
+        "target": "APXS apb_749033921rwp39601050000_______p1",
         "sol": 3960,
         "Na2O": 2.68,
         "MgO": 8.88,
@@ -5560,7 +5560,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3962 site 105 drive 106",
+        "target": "APXS apb_749236360rwp39621050106_______p1",
         "sol": 3962,
         "Na2O": 7.12,
         "MgO": 6.74,
@@ -5591,7 +5591,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3962 site 105 drive 106",
+        "target": "APXS apb_749246492rwp39621050106_______p1",
         "sol": 3962,
         "Na2O": 2.96,
         "MgO": 8.77,
@@ -5622,7 +5622,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3964 site 105 drive 106",
+        "target": "APXS apb_749415098rwp39641050106_______p1",
         "sol": 3964,
         "Na2O": 2.22,
         "MgO": 9.22,
@@ -5653,7 +5653,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3964 site 105 drive 106",
+        "target": "APXS apb_749424093rwp39641050106_______p1",
         "sol": 3964,
         "Na2O": 2.13,
         "MgO": 10.08,
@@ -5684,7 +5684,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3966 site 105 drive 106",
+        "target": "APXS apb_749593318rwp39661050106_______p1",
         "sol": 3966,
         "Na2O": 3.01,
         "MgO": 9.27,
@@ -5715,7 +5715,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3966 site 105 drive 106",
+        "target": "APXS apb_749601713rwp39661050106_______p1",
         "sol": 3966,
         "Na2O": 3.78,
         "MgO": 9.11,
@@ -5746,7 +5746,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3968 site 105 drive 250",
+        "target": "APXS apb_749770595rwp39681050250_______p1",
         "sol": 3968,
         "Na2O": 2.91,
         "MgO": 7.41,
@@ -5777,7 +5777,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3968 site 105 drive 250",
+        "target": "APXS apb_749778929rwp39681050250_______p1",
         "sol": 3968,
         "Na2O": 3.28,
         "MgO": 8.08,
@@ -5808,7 +5808,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3971 site 105 drive 250",
+        "target": "APXS apb_750036998rwp39711050250_______p1",
         "sol": 3971,
         "Na2O": 2.71,
         "MgO": 8.1,
@@ -5839,7 +5839,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3971 site 105 drive 250",
+        "target": "APXS apb_750045392rwp39711050250_______p1",
         "sol": 3971,
         "Na2O": 4.1,
         "MgO": 8.73,
@@ -5870,7 +5870,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3975 site 105 drive 418",
+        "target": "APXS apb_750392060rwp39751050418_______p1",
         "sol": 3975,
         "Na2O": 2.49,
         "MgO": 9.16,
@@ -5901,7 +5901,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3975 site 105 drive 418",
+        "target": "APXS apb_750400857rwp39751050418_______p1",
         "sol": 3975,
         "Na2O": 2.36,
         "MgO": 9.23,
@@ -5932,7 +5932,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3978 site 105 drive 418",
+        "target": "APXS apb_750658702rwp39781050418_______p1",
         "sol": 3978,
         "Na2O": 2.48,
         "MgO": 9.12,
@@ -5963,7 +5963,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 3978 site 105 drive 418",
+        "target": "APXS apb_750667058rwp39781050418_______p1",
         "sol": 3978,
         "Na2O": 2.37,
         "MgO": 9.24,
@@ -5994,7 +5994,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4024 site 105 drive 418",
+        "target": "APXS apb_754748344rwp40241050418_______p1",
         "sol": 4024,
         "Na2O": 2.28,
         "MgO": 9.38,
@@ -6025,7 +6025,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4028 site 105 drive 418",
+        "target": "APXS apb_755069863rwp40281050418_______p1",
         "sol": 4028,
         "Na2O": 2.41,
         "MgO": 9.65,
@@ -6056,7 +6056,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4030 site 105 drive 490",
+        "target": "APXS apb_755247534rwp40301050490_______p1",
         "sol": 4030,
         "Na2O": 2.4,
         "MgO": 9.57,
@@ -6087,7 +6087,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4035 site 105 drive 622",
+        "target": "APXS apb_755691253rwp40351050622_______p1",
         "sol": 4035,
         "Na2O": 2.74,
         "MgO": 7.31,
@@ -6118,7 +6118,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4039 site 105 drive 936",
+        "target": "APXS apb_756073092rwp40391050936_______p1",
         "sol": 4039,
         "Na2O": 2.72,
         "MgO": 7.98,
@@ -6149,7 +6149,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4039 site 105 drive 936",
+        "target": "APXS apb_756081427rwp40391050936_______p1",
         "sol": 4039,
         "Na2O": 2.25,
         "MgO": 9.67,
@@ -6180,7 +6180,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4053 site 105 drive 1108",
+        "target": "APXS apb_757315900rwp40531051108_______p1",
         "sol": 4053,
         "Na2O": 3.36,
         "MgO": 8.87,
@@ -6211,7 +6211,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4053 site 105 drive 1108",
+        "target": "APXS apb_757324235rwp40531051108_______p1",
         "sol": 4053,
         "Na2O": 2.78,
         "MgO": 7.21,
@@ -6242,7 +6242,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4056 site 105 drive 1126",
+        "target": "APXS apb_757580112rwp40561051126_______p1",
         "sol": 4056,
         "Na2O": 2.55,
         "MgO": 10.29,
@@ -6273,7 +6273,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4056 site 105 drive 1126",
+        "target": "APXS apb_757588506rwp40561051126_______p1",
         "sol": 4056,
         "Na2O": 2.75,
         "MgO": 7.58,
@@ -6304,7 +6304,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4062 site 105 drive 1222",
+        "target": "APXS apb_758088621rwp40621051222_______p1",
         "sol": 4062,
         "Na2O": 5.17,
         "MgO": 7.06,
@@ -6335,7 +6335,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4067 site 105 drive 1414",
+        "target": "APXS apb_758560937rwp40671051414_______p1",
         "sol": 4067,
         "Na2O": 2.74,
         "MgO": 8.16,
@@ -6366,7 +6366,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4067 site 105 drive 1414",
+        "target": "APXS apb_758563853rwp40671051414_______p1",
         "sol": 4067,
         "Na2O": 2.58,
         "MgO": 8.45,
@@ -6397,7 +6397,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4067 site 105 drive 1414",
+        "target": "APXS apb_758566992rwp40671051414_______p1",
         "sol": 4067,
         "Na2O": 2.58,
         "MgO": 8.63,
@@ -6428,7 +6428,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4067 site 105 drive 1414",
+        "target": "APXS apb_758570820rwp40671051414_______p1",
         "sol": 4067,
         "Na2O": 2.64,
         "MgO": 8.43,
@@ -6459,7 +6459,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4070 site 105 drive 1684",
+        "target": "APXS apb_758827630rwp40701051684_______p1",
         "sol": 4070,
         "Na2O": 2.25,
         "MgO": 9.68,
@@ -6490,7 +6490,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4070 site 105 drive 1684",
+        "target": "APXS apb_758834198rwp40701051684_______p1",
         "sol": 4070,
         "Na2O": 2.63,
         "MgO": 9.02,
@@ -6521,7 +6521,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4073 site 105 drive 1808",
+        "target": "APXS apb_759094749rwp40731051808_______p1",
         "sol": 4073,
         "Na2O": 2.19,
         "MgO": 10.37,
@@ -6552,7 +6552,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4073 site 105 drive 1808",
+        "target": "APXS apb_759101044rwp40731051808_______p1",
         "sol": 4073,
         "Na2O": 2.91,
         "MgO": 9.07,
@@ -6583,7 +6583,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4076 site 105 drive 1994",
+        "target": "APXS apb_759331668rwp40761051994_______p1",
         "sol": 4076,
         "Na2O": 0.45,
         "MgO": 9.27,
@@ -6614,7 +6614,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4078 site 105 drive 2222",
+        "target": "APXS apb_759508862rwp40781052222_______p1",
         "sol": 4078,
         "Na2O": 2.11,
         "MgO": 8.84,
@@ -6645,7 +6645,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4079 site 105 drive 2450",
+        "target": "APXS apb_759626662rwp40791052450_______p1",
         "sol": 4079,
         "Na2O": 2.41,
         "MgO": 8.5,
@@ -6676,7 +6676,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4079 site 105 drive 2450",
+        "target": "APXS apb_759633257rwp40791052450_______p1",
         "sol": 4079,
         "Na2O": 2.66,
         "MgO": 8.08,
@@ -6707,7 +6707,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4082 site 105 drive 2780",
+        "target": "APXS apb_759892986rwp40821052780_______p1",
         "sol": 4082,
         "Na2O": 2.3,
         "MgO": 8.68,
@@ -6738,7 +6738,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4082 site 105 drive 2780",
+        "target": "APXS apb_759899580rwp40821052780_______p1",
         "sol": 4082,
         "Na2O": 2.31,
         "MgO": 8.83,
@@ -6769,7 +6769,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4084 site 105 drive 2924",
+        "target": "APXS apb_760041634rwp40841052924_______p1",
         "sol": 4084,
         "Na2O": 2.28,
         "MgO": 8.64,
@@ -6800,7 +6800,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4089 site 105 drive 3134",
+        "target": "APXS apb_760485226rwp40891053134_______p1",
         "sol": 4089,
         "Na2O": 1.38,
         "MgO": 9.6,
@@ -6831,7 +6831,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4093 site 106 drive 0",
+        "target": "APXS apb_760869384rwp40931060000_______p1",
         "sol": 4093,
         "Na2O": 2.6,
         "MgO": 9.7,
@@ -6862,7 +6862,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4093 site 106 drive 0",
+        "target": "APXS apb_760875980rwp40931060000_______p1",
         "sol": 4093,
         "Na2O": 2.38,
         "MgO": 9.34,
@@ -6893,7 +6893,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4098 site 106 drive 270",
+        "target": "APXS apb_761285599rwp40981060270_______p1",
         "sol": 4098,
         "Na2O": 2.25,
         "MgO": 8.54,
@@ -6924,7 +6924,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4101 site 106 drive 438",
+        "target": "APXS apb_761579401rwp41011060438_______p1",
         "sol": 4101,
         "Na2O": 3.16,
         "MgO": 9.42,
@@ -6955,7 +6955,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4101 site 106 drive 438",
+        "target": "APXS apb_761585996rwp41011060438_______p1",
         "sol": 4101,
         "Na2O": 5.04,
         "MgO": 10.9,
@@ -6986,7 +6986,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4105 site 106 drive 660",
+        "target": "APXS apb_761935047rwp41051060660_______p1",
         "sol": 4105,
         "Na2O": 7.33,
         "MgO": 12.38,
@@ -7017,7 +7017,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4105 site 106 drive 660",
+        "target": "APXS apb_761941632rwp41051060660_______p1",
         "sol": 4105,
         "Na2O": 7.62,
         "MgO": 8.42,
@@ -7048,7 +7048,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4116 site 106 drive 660",
+        "target": "APXS apb_762910996rwp41161060660_______p1",
         "sol": 4116,
         "Na2O": 6.31,
         "MgO": 9.09,
@@ -7079,7 +7079,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4116 site 106 drive 660",
+        "target": "APXS apb_762918328rwp41161060660_______p1",
         "sol": 4116,
         "Na2O": 7.24,
         "MgO": 9.09,
@@ -7110,7 +7110,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4118 site 106 drive 660",
+        "target": "APXS apb_763089396rwp41181060660_______p1",
         "sol": 4118,
         "Na2O": 8.31,
         "MgO": 13.69,
@@ -7141,7 +7141,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4118 site 106 drive 660",
+        "target": "APXS apb_763095981rwp41181060660_______p1",
         "sol": 4118,
         "Na2O": 7.83,
         "MgO": 11.77,
@@ -7172,7 +7172,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4123 site 106 drive 660",
+        "target": "APXS apb_763531450rwp41231060660_______p1",
         "sol": 4123,
         "Na2O": 5.25,
         "MgO": 9.12,
@@ -7203,7 +7203,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4123 site 106 drive 660",
+        "target": "APXS apb_763538035rwp41231060660_______p1",
         "sol": 4123,
         "Na2O": 6.06,
         "MgO": 9.16,
@@ -7234,7 +7234,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4127 site 106 drive 660",
+        "target": "APXS apb_763888640rwp41271060660_______p1",
         "sol": 4127,
         "Na2O": 8.18,
         "MgO": 8.32,
@@ -7265,7 +7265,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4130 site 106 drive 708",
+        "target": "APXS apb_764125653rwp41301060708_______p1",
         "sol": 4130,
         "Na2O": 2.01,
         "MgO": 10.1,
@@ -7296,7 +7296,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4134 site 106 drive 954",
+        "target": "APXS apb_764510050rwp41341060954_______p1",
         "sol": 4134,
         "Na2O": 2.68,
         "MgO": 9.57,
@@ -7327,7 +7327,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4134 site 106 drive 954",
+        "target": "APXS apb_764516406rwp41341060954_______p1",
         "sol": 4134,
         "Na2O": 3.4,
         "MgO": 8.66,
@@ -7358,7 +7358,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4137 site 106 drive 1140",
+        "target": "APXS apb_764745792rwp41371061140_______p1",
         "sol": 4137,
         "Na2O": 3.04,
         "MgO": 9.23,
@@ -7389,7 +7389,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4139 site 106 drive 1374",
+        "target": "APXS apb_764923231rwp41391061374_______p1",
         "sol": 4139,
         "Na2O": 2.28,
         "MgO": 9.39,
@@ -7420,7 +7420,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4141 site 106 drive 1524",
+        "target": "APXS apb_765131452rwp41411061524_______p1",
         "sol": 4141,
         "Na2O": 2.75,
         "MgO": 8.59,
@@ -7451,7 +7451,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4141 site 106 drive 1524",
+        "target": "APXS apb_765138011rwp41411061524_______p1",
         "sol": 4141,
         "Na2O": 2.75,
         "MgO": 8.57,
@@ -7482,7 +7482,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4144 site 106 drive 1560",
+        "target": "APXS apb_765366974rwp41441061560_______p1",
         "sol": 4144,
         "Na2O": 2.3,
         "MgO": 8.61,
@@ -7513,7 +7513,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4146 site 106 drive 1776",
+        "target": "APXS apb_765544698rwp41461061776_______p1",
         "sol": 4146,
         "Na2O": 2.03,
         "MgO": 9.21,
@@ -7544,7 +7544,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4148 site 106 drive 1858",
+        "target": "APXS apb_765722237rwp41481061858_______p1",
         "sol": 4148,
         "Na2O": 1.82,
         "MgO": 9.81,
@@ -7575,7 +7575,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4152 site 106 drive 2116",
+        "target": "APXS apb_766077509rwp41521062116_______p1",
         "sol": 4152,
         "Na2O": 1.61,
         "MgO": 8.42,
@@ -7606,7 +7606,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4154 site 106 drive 2194",
+        "target": "APXS apb_766292357rwp41541062194_______p1",
         "sol": 4154,
         "Na2O": 2.13,
         "MgO": 9.23,
@@ -7637,7 +7637,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4157 site 106 drive 2386",
+        "target": "APXS apb_766552298rwp41571062386_______p1",
         "sol": 4157,
         "Na2O": 2.67,
         "MgO": 9.01,
@@ -7668,7 +7668,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4157 site 106 drive 2386",
+        "target": "APXS apb_766558894rwp41571062386_______p1",
         "sol": 4157,
         "Na2O": 2.36,
         "MgO": 9.14,
@@ -7699,7 +7699,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4159 site 106 drive 2596",
+        "target": "APXS apb_766698540rwp41591062596_______p1",
         "sol": 4159,
         "Na2O": 1.19,
         "MgO": 8.86,
@@ -7730,7 +7730,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4161 site 106 drive 2692",
+        "target": "APXS apb_766907399rwp41611062692_______p1",
         "sol": 4161,
         "Na2O": 2.16,
         "MgO": 8.99,
@@ -7761,7 +7761,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4161 site 106 drive 2692",
+        "target": "APXS apb_766913994rwp41611062692_______p1",
         "sol": 4161,
         "Na2O": 2.74,
         "MgO": 9.0,
@@ -7792,7 +7792,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4164 site 106 drive 2836",
+        "target": "APXS apb_767142575rwp41641062836_______p1",
         "sol": 4164,
         "Na2O": 3.06,
         "MgO": 7.22,
@@ -7823,7 +7823,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4166 site 106 drive 2950",
+        "target": "APXS apb_767319892rwp41661062950_______p1",
         "sol": 4166,
         "Na2O": 3.1,
         "MgO": 7.96,
@@ -7854,7 +7854,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4168 site 106 drive 3182",
+        "target": "APXS apb_767529085rwp41681063182_______p1",
         "sol": 4168,
         "Na2O": 2.5,
         "MgO": 6.52,
@@ -7885,7 +7885,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4168 site 106 drive 3182",
+        "target": "APXS apb_767535741rwp41681063182_______p1",
         "sol": 4168,
         "Na2O": 3.01,
         "MgO": 8.25,
@@ -7916,7 +7916,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4173 site 107 drive 6",
+        "target": "APXS apb_767973659rwp41731070006_______p1",
         "sol": 4173,
         "Na2O": 2.78,
         "MgO": 7.51,
@@ -7947,7 +7947,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4173 site 107 drive 6",
+        "target": "APXS apb_767980165rwp41731070006_______p1",
         "sol": 4173,
         "Na2O": 2.41,
         "MgO": 5.88,
@@ -7978,7 +7978,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4175 site 107 drive 6",
+        "target": "APXS apb_768150880rwp41751070006_______p1",
         "sol": 4175,
         "Na2O": 2.6,
         "MgO": 8.51,
@@ -8009,7 +8009,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4175 site 107 drive 6",
+        "target": "APXS apb_768157476rwp41751070006_______p1",
         "sol": 4175,
         "Na2O": 2.48,
         "MgO": 6.36,
@@ -8040,7 +8040,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4180 site 107 drive 648",
+        "target": "APXS apb_768564212rwp41801070648_______p1",
         "sol": 4180,
         "Na2O": 2.26,
         "MgO": 9.09,
@@ -8071,7 +8071,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4182 site 107 drive 924",
+        "target": "APXS apb_768769912rwp41821070924_______p1",
         "sol": 4182,
         "Na2O": 3.72,
         "MgO": 8.83,
@@ -8102,7 +8102,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4182 site 107 drive 924",
+        "target": "APXS apb_768776447rwp41821070924_______p1",
         "sol": 4182,
         "Na2O": 4.05,
         "MgO": 9.18,
@@ -8133,7 +8133,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4184 site 107 drive 1140",
+        "target": "APXS apb_768949055rwp41841071140_______p1",
         "sol": 4184,
         "Na2O": 3.1,
         "MgO": 6.68,
@@ -8164,7 +8164,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4184 site 107 drive 1140",
+        "target": "APXS apb_768956850rwp41841071140_______p1",
         "sol": 4184,
         "Na2O": 2.28,
         "MgO": 8.58,
@@ -8195,7 +8195,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4186 site 107 drive 1320",
+        "target": "APXS apb_769127865rwp41861071320_______p1",
         "sol": 4186,
         "Na2O": 2.86,
         "MgO": 8.44,
@@ -8226,7 +8226,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4186 site 107 drive 1320",
+        "target": "APXS apb_769134400rwp41861071320_______p1",
         "sol": 4186,
         "Na2O": 3.82,
         "MgO": 7.89,
@@ -8257,7 +8257,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4191 site 107 drive 1634",
+        "target": "APXS apb_769541297rwp41911071634_______p1",
         "sol": 4191,
         "Na2O": 3.25,
         "MgO": 8.33,
@@ -8288,7 +8288,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4196 site 107 drive 2054",
+        "target": "APXS apb_770016219rwp41961072054_______p1",
         "sol": 4196,
         "Na2O": 2.63,
         "MgO": 8.03,
@@ -8319,7 +8319,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4196 site 107 drive 2054",
+        "target": "APXS apb_770022696rwp41961072054_______p1",
         "sol": 4196,
         "Na2O": 2.51,
         "MgO": 7.14,
@@ -8350,7 +8350,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4199 site 107 drive 2394",
+        "target": "APXS apb_770279727rwp41991072394_______p1",
         "sol": 4199,
         "Na2O": 2.27,
         "MgO": 8.27,
@@ -8381,7 +8381,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4199 site 107 drive 2394",
+        "target": "APXS apb_770288063rwp41991072394_______p1",
         "sol": 4199,
         "Na2O": 2.45,
         "MgO": 8.34,
@@ -8412,7 +8412,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4202 site 107 drive 2484",
+        "target": "APXS apb_770551415rwp42021072484_______p1",
         "sol": 4202,
         "Na2O": 1.2,
         "MgO": 2.46,
@@ -8443,7 +8443,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4203 site 107 drive 2484",
+        "target": "APXS apb_770635305rwp42031072484_______p1",
         "sol": 4203,
         "Na2O": 2.44,
         "MgO": 8.09,
@@ -8474,7 +8474,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4203 site 107 drive 2484",
+        "target": "APXS apb_770643641rwp42031072484_______p1",
         "sol": 4203,
         "Na2O": 2.43,
         "MgO": 8.18,
@@ -8505,7 +8505,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4205 site 107 drive 2484",
+        "target": "APXS apb_770817860rwp42051072484_______p1",
         "sol": 4205,
         "Na2O": 2.16,
         "MgO": 5.66,
@@ -8536,7 +8536,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4207 site 107 drive 2484",
+        "target": "APXS apb_770993638rwp42071072484_______p1",
         "sol": 4207,
         "Na2O": 0.82,
         "MgO": 1.97,
@@ -8567,7 +8567,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4208 site 107 drive 2484",
+        "target": "APXS apb_771083897rwp42081072484_______p1",
         "sol": 4208,
         "Na2O": 0.63,
         "MgO": 1.37,
@@ -8598,7 +8598,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4209 site 107 drive 2484",
+        "target": "APXS apb_771167729rwp42091072484_______p1",
         "sol": 4209,
         "Na2O": 2.24,
         "MgO": 5.65,
@@ -8629,7 +8629,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4209 site 107 drive 2484",
+        "target": "APXS apb_771174163rwp42091072484_______p1",
         "sol": 4209,
         "Na2O": 1.16,
         "MgO": 2.55,
@@ -8660,7 +8660,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4209 site 107 drive 2484",
+        "target": "APXS apb_771177200rwp42091072484_______p1",
         "sol": 4209,
         "Na2O": 1.41,
         "MgO": 3.45,
@@ -8691,7 +8691,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4209 site 107 drive 2484",
+        "target": "APXS apb_771180237rwp42091072484_______p1",
         "sol": 4209,
         "Na2O": 1.08,
         "MgO": 2.31,
@@ -8722,7 +8722,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4212 site 107 drive 2496",
+        "target": "APXS apb_771435573rwp42121072496_______p1",
         "sol": 4212,
         "Na2O": 2.4,
         "MgO": 5.24,
@@ -8753,7 +8753,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4212 site 107 drive 2496",
+        "target": "APXS apb_771443068rwp42121072496_______p1",
         "sol": 4212,
         "Na2O": 2.84,
         "MgO": 5.44,
@@ -8784,7 +8784,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4216 site 107 drive 2496",
+        "target": "APXS apb_771790772rwp42161072496_______p1",
         "sol": 4216,
         "Na2O": 2.9,
         "MgO": 8.18,
@@ -8815,7 +8815,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4216 site 107 drive 2496",
+        "target": "APXS apb_771797895rwp42161072496_______p1",
         "sol": 4216,
         "Na2O": 3.02,
         "MgO": 8.04,
@@ -8846,7 +8846,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4234 site 107 drive 2496",
+        "target": "APXS apb_773393209rwp42341072496_______p1",
         "sol": 4234,
         "Na2O": 2.67,
         "MgO": 4.76,
@@ -8877,7 +8877,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4236 site 107 drive 2496",
+        "target": "APXS apb_773569010rwp42361072496_______p1",
         "sol": 4236,
         "Na2O": 2.77,
         "MgO": 8.08,
@@ -8908,7 +8908,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4239 site 107 drive 2610",
+        "target": "APXS apb_773836830rwp42391072610_______p1",
         "sol": 4239,
         "Na2O": 1.14,
         "MgO": 2.2,
@@ -8939,7 +8939,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4240 site 107 drive 2610",
+        "target": "APXS apb_773921592rwp42401072610_______p1",
         "sol": 4240,
         "Na2O": 1.13,
         "MgO": 2.17,
@@ -8970,7 +8970,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4243 site 107 drive 2694",
+        "target": "APXS apb_774186898rwp42431072694_______p1",
         "sol": 4243,
         "Na2O": 2.45,
         "MgO": 8.12,
@@ -9001,7 +9001,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4243 site 107 drive 2694",
+        "target": "APXS apb_774195593rwp42431072694_______p1",
         "sol": 4243,
         "Na2O": 2.24,
         "MgO": 8.01,
@@ -9032,7 +9032,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4246 site 108 drive 0",
+        "target": "APXS apb_774426307rwp42461080000_______p1",
         "sol": 4246,
         "Na2O": 1.77,
         "MgO": 8.35,
@@ -9063,7 +9063,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4248 site 108 drive 222",
+        "target": "APXS apb_774635486rwp42481080222_______p1",
         "sol": 4248,
         "Na2O": 2.36,
         "MgO": 5.49,
@@ -9094,7 +9094,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4249 site 108 drive 222",
+        "target": "APXS apb_774724398rwp42491080222_______p1",
         "sol": 4249,
         "Na2O": 3.05,
         "MgO": 6.42,
@@ -9125,7 +9125,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4250 site 108 drive 222",
+        "target": "APXS apb_774809411rwp42501080222_______p1",
         "sol": 4250,
         "Na2O": 2.68,
         "MgO": 6.71,
@@ -9156,7 +9156,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4250 site 108 drive 222",
+        "target": "APXS apb_774816427rwp42501080222_______p1",
         "sol": 4250,
         "Na2O": 2.47,
         "MgO": 5.83,
@@ -9187,7 +9187,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4253 site 108 drive 438",
+        "target": "APXS apb_775046654rwp42531080438_______p1",
         "sol": 4253,
         "Na2O": 3.34,
         "MgO": 5.14,
@@ -9218,7 +9218,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4255 site 108 drive 606",
+        "target": "APXS apb_775224633rwp42551080606_______p1",
         "sol": 4255,
         "Na2O": 2.36,
         "MgO": 4.41,
@@ -9249,7 +9249,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4261 site 108 drive 792",
+        "target": "APXS apb_775784931rwp42611080792_______p1",
         "sol": 4261,
         "Na2O": 2.48,
         "MgO": 5.41,
@@ -9280,7 +9280,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4261 site 108 drive 792",
+        "target": "APXS apb_775793327rwp42611080792_______p1",
         "sol": 4261,
         "Na2O": 2.26,
         "MgO": 4.5,
@@ -9311,7 +9311,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4277 site 108 drive 792",
+        "target": "APXS apb_777209711rwp42771080792_______p1",
         "sol": 4277,
         "Na2O": 2.03,
         "MgO": 3.79,
@@ -9342,7 +9342,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4280 site 108 drive 792",
+        "target": "APXS apb_777479504rwp42801080792_______p1",
         "sol": 4280,
         "Na2O": 2.25,
         "MgO": 3.91,
@@ -9373,7 +9373,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4281 site 108 drive 792",
+        "target": "APXS apb_777565553rwp42811080792_______p1",
         "sol": 4281,
         "Na2O": 2.26,
         "MgO": 4.53,
@@ -9404,7 +9404,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4282 site 108 drive 792",
+        "target": "APXS apb_777621325rwp42821080792_______p1",
         "sol": 4282,
         "Na2O": 2.15,
         "MgO": 4.17,
@@ -9435,7 +9435,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4289 site 108 drive 1134",
+        "target": "APXS apb_778242939rwp42891081134_______p1",
         "sol": 4289,
         "Na2O": 2.24,
         "MgO": 5.22,
@@ -9466,7 +9466,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4291 site 108 drive 1384",
+        "target": "APXS apb_778446437rwp42911081384_______p1",
         "sol": 4291,
         "Na2O": 3.51,
         "MgO": 6.95,
@@ -9497,7 +9497,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4291 site 108 drive 1384",
+        "target": "APXS apb_778458898rwp42911081384_______p1",
         "sol": 4291,
         "Na2O": 3.36,
         "MgO": 6.34,
@@ -9528,7 +9528,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4294 site 108 drive 1468",
+        "target": "APXS apb_778687064rwp42941081468_______p1",
         "sol": 4294,
         "Na2O": 2.46,
         "MgO": 5.31,
@@ -9559,7 +9559,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4295 site 108 drive 1480",
+        "target": "APXS apb_778801645rwp42951081480_______p1",
         "sol": 4295,
         "Na2O": 3.05,
         "MgO": 8.13,
@@ -9590,7 +9590,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4295 site 108 drive 1480",
+        "target": "APXS apb_778808080rwp42951081480_______p1",
         "sol": 4295,
         "Na2O": 3.32,
         "MgO": 6.47,
@@ -9621,7 +9621,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4295 site 108 drive 1480",
+        "target": "APXS apb_778814492rwp42951081480_______p1",
         "sol": 4295,
         "Na2O": 3.61,
         "MgO": 6.07,
@@ -9652,7 +9652,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4297 site 108 drive 2018",
+        "target": "APXS apb_778982100rwp42971082018_______p1",
         "sol": 4297,
         "Na2O": 3.11,
         "MgO": 8.55,
@@ -9683,7 +9683,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4297 site 108 drive 2018",
+        "target": "APXS apb_778990596rwp42971082018_______p1",
         "sol": 4297,
         "Na2O": 2.84,
         "MgO": 8.63,
@@ -9714,7 +9714,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4300 site 108 drive 2162",
+        "target": "APXS apb_779253520rwp43001082162_______p1",
         "sol": 4300,
         "Na2O": 2.57,
         "MgO": 8.34,
@@ -9745,7 +9745,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4302 site 108 drive 2378",
+        "target": "APXS apb_779396985rwp43021082378_______p1",
         "sol": 4302,
         "Na2O": 3.42,
         "MgO": 7.37,
@@ -9776,7 +9776,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4304 site 108 drive 2528",
+        "target": "APXS apb_779604529rwp43041082528_______p1",
         "sol": 4304,
         "Na2O": 2.48,
         "MgO": 5.45,
@@ -9807,7 +9807,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4304 site 108 drive 2528",
+        "target": "APXS apb_779612317rwp43041082528_______p1",
         "sol": 4304,
         "Na2O": 2.35,
         "MgO": 4.81,
@@ -9838,7 +9838,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4305 site 108 drive 2528",
+        "target": "APXS apb_779696625rwp43051082528_______p1",
         "sol": 4305,
         "Na2O": 2.94,
         "MgO": 7.51,
@@ -9869,7 +9869,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4307 site 108 drive 2792",
+        "target": "APXS apb_779840932rwp43071082792_______p1",
         "sol": 4307,
         "Na2O": 2.91,
         "MgO": 8.76,
@@ -9900,7 +9900,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4309 site 108 drive 3152",
+        "target": "APXS apb_780018837rwp43091083152_______p1",
         "sol": 4309,
         "Na2O": 2.67,
         "MgO": 6.46,
@@ -9931,7 +9931,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4311 site 109 drive 0",
+        "target": "APXS apb_780225500rwp43111090000_______p1",
         "sol": 4311,
         "Na2O": 2.72,
         "MgO": 7.0,
@@ -9962,7 +9962,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4311 site 109 drive 0",
+        "target": "APXS apb_780233126rwp43111090000_______p1",
         "sol": 4311,
         "Na2O": 2.9,
         "MgO": 6.77,
@@ -9993,7 +9993,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4314 site 109 drive 120",
+        "target": "APXS apb_780462213rwp43141090120_______p1",
         "sol": 4314,
         "Na2O": 2.64,
         "MgO": 7.92,
@@ -10024,7 +10024,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4316 site 109 drive 498",
+        "target": "APXS apb_780639754rwp43161090498_______p1",
         "sol": 4316,
         "Na2O": 2.81,
         "MgO": 8.33,
@@ -10055,7 +10055,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4318 site 109 drive 540",
+        "target": "APXS apb_780847624rwp43181090540_______p1",
         "sol": 4318,
         "Na2O": 1.25,
         "MgO": 2.57,
@@ -10086,7 +10086,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4318 site 109 drive 540",
+        "target": "APXS apb_780855370rwp43181090540_______p1",
         "sol": 4318,
         "Na2O": 0.96,
         "MgO": 1.9,
@@ -10117,7 +10117,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4321 site 109 drive 990",
+        "target": "APXS apb_781084005rwp43211090990_______p1",
         "sol": 4321,
         "Na2O": 2.54,
         "MgO": 8.19,
@@ -10148,7 +10148,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4323 site 109 drive 1128",
+        "target": "APXS apb_781261985rwp43231091128_______p1",
         "sol": 4323,
         "Na2O": 2.81,
         "MgO": 8.98,
@@ -10179,7 +10179,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4325 site 109 drive 1290",
+        "target": "APXS apb_781466615rwp43251091290_______p1",
         "sol": 4325,
         "Na2O": 3.03,
         "MgO": 9.27,
@@ -10210,7 +10210,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4325 site 109 drive 1290",
+        "target": "APXS apb_781476009rwp43251091290_______p1",
         "sol": 4325,
         "Na2O": 2.87,
         "MgO": 9.3,
@@ -10241,7 +10241,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4327 site 109 drive 1494",
+        "target": "APXS apb_781645559rwp43271091494_______p1",
         "sol": 4327,
         "Na2O": 2.54,
         "MgO": 9.12,
@@ -10272,7 +10272,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4327 site 109 drive 1494",
+        "target": "APXS apb_781653745rwp43271091494_______p1",
         "sol": 4327,
         "Na2O": 2.17,
         "MgO": 10.64,
@@ -10303,7 +10303,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4331 site 109 drive 1998",
+        "target": "APXS apb_782000356rwp43311091998_______p1",
         "sol": 4331,
         "Na2O": 2.5,
         "MgO": 9.31,
@@ -10334,7 +10334,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4331 site 109 drive 1998",
+        "target": "APXS apb_782008807rwp43311091998_______p1",
         "sol": 4331,
         "Na2O": 2.24,
         "MgO": 9.46,
@@ -10365,7 +10365,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4334 site 109 drive 2346",
+        "target": "APXS apb_782237998rwp43341092346_______p1",
         "sol": 4334,
         "Na2O": 2.77,
         "MgO": 9.71,
@@ -10396,7 +10396,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4336 site 109 drive 2706",
+        "target": "APXS apb_782416001rwp43361092706_______p1",
         "sol": 4336,
         "Na2O": 2.72,
         "MgO": 9.54,
@@ -10427,7 +10427,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4338 site 110 drive 0",
+        "target": "APXS apb_782621916rwp43381100000_______p1",
         "sol": 4338,
         "Na2O": 2.7,
         "MgO": 9.2,
@@ -10458,7 +10458,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4338 site 110 drive 0",
+        "target": "APXS apb_782630202rwp43381100000_______p1",
         "sol": 4338,
         "Na2O": 2.43,
         "MgO": 9.27,
@@ -10489,7 +10489,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4341 site 110 drive 168",
+        "target": "APXS apb_782888217rwp43411100168_______p1",
         "sol": 4341,
         "Na2O": 3.38,
         "MgO": 8.71,
@@ -10520,7 +10520,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4341 site 110 drive 168",
+        "target": "APXS apb_782896563rwp43411100168_______p1",
         "sol": 4341,
         "Na2O": 2.86,
         "MgO": 9.34,
@@ -10551,7 +10551,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4345 site 110 drive 624",
+        "target": "APXS apb_783243442rwp43451100624_______p1",
         "sol": 4345,
         "Na2O": 2.91,
         "MgO": 9.25,
@@ -10582,7 +10582,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4345 site 110 drive 624",
+        "target": "APXS apb_783251659rwp43451100624_______p1",
         "sol": 4345,
         "Na2O": 2.6,
         "MgO": 9.49,
@@ -10613,7 +10613,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4348 site 110 drive 840",
+        "target": "APXS apb_783480948rwp43481100840_______p1",
         "sol": 4348,
         "Na2O": 3.3,
         "MgO": 9.91,
@@ -10644,7 +10644,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4350 site 110 drive 840",
+        "target": "APXS apb_783658034rwp43501100840_______p1",
         "sol": 4350,
         "Na2O": 3.15,
         "MgO": 9.49,
@@ -10675,7 +10675,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4352 site 110 drive 862",
+        "target": "APXS apb_783864467rwp43521100862_______p1",
         "sol": 4352,
         "Na2O": 2.61,
         "MgO": 8.91,
@@ -10706,7 +10706,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4352 site 110 drive 862",
+        "target": "APXS apb_783872813rwp43521100862_______p1",
         "sol": 4352,
         "Na2O": 2.17,
         "MgO": 10.62,
@@ -10737,7 +10737,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4355 site 111 drive 0",
+        "target": "APXS apb_784102337rwp43551110000_______p1",
         "sol": 4355,
         "Na2O": 2.58,
         "MgO": 9.91,
@@ -10768,7 +10768,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4359 site 111 drive 348",
+        "target": "APXS apb_784485966rwp43591110348_______p1",
         "sol": 4359,
         "Na2O": 5.54,
         "MgO": 11.22,
@@ -10799,7 +10799,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4359 site 111 drive 348",
+        "target": "APXS apb_784494251rwp43591110348_______p1",
         "sol": 4359,
         "Na2O": 2.54,
         "MgO": 8.99,
@@ -10830,7 +10830,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4368 site 111 drive 882",
+        "target": "APXS apb_785284689rwp43681110882_______p1",
         "sol": 4368,
         "Na2O": 2.33,
         "MgO": 10.17,
@@ -10861,7 +10861,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4368 site 111 drive 882",
+        "target": "APXS apb_785292974rwp43681110882_______p1",
         "sol": 4368,
         "Na2O": 2.89,
         "MgO": 9.2,
@@ -10892,7 +10892,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4370 site 111 drive 1116",
+        "target": "APXS apb_785460896rwp43701111116_______p1",
         "sol": 4370,
         "Na2O": 2.72,
         "MgO": 8.82,
@@ -10923,7 +10923,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4370 site 111 drive 1116",
+        "target": "APXS apb_785466842rwp43701111116_______p1",
         "sol": 4370,
         "Na2O": 2.5,
         "MgO": 8.63,
@@ -10954,7 +10954,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4370 site 111 drive 1116",
+        "target": "APXS apb_785472312rwp43701111116_______p1",
         "sol": 4370,
         "Na2O": 2.61,
         "MgO": 8.8,
@@ -10985,7 +10985,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4372 site 111 drive 1290",
+        "target": "APXS apb_785639726rwp43721111290_______p1",
         "sol": 4372,
         "Na2O": 2.37,
         "MgO": 9.81,
@@ -11016,7 +11016,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4372 site 111 drive 1290",
+        "target": "APXS apb_785648002rwp43721111290_______p1",
         "sol": 4372,
         "Na2O": 2.12,
         "MgO": 9.87,
@@ -11047,7 +11047,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4382 site 111 drive 1824",
+        "target": "APXS apb_786498085rwp43821111824_______p1",
         "sol": 4382,
         "Na2O": 5.31,
         "MgO": 8.26,
@@ -11078,7 +11078,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4384 site 111 drive 2124",
+        "target": "APXS apb_786675736rwp43841112124_______p1",
         "sol": 4384,
         "Na2O": 6.26,
         "MgO": 7.0,
@@ -11109,7 +11109,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4386 site 111 drive 2386",
+        "target": "APXS apb_786882259rwp43861112386_______p1",
         "sol": 4386,
         "Na2O": 2.41,
         "MgO": 11.87,
@@ -11140,7 +11140,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4386 site 111 drive 2386",
+        "target": "APXS apb_786890484rwp43861112386_______p1",
         "sol": 4386,
         "Na2O": 2.08,
         "MgO": 9.31,
@@ -11171,7 +11171,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4389 site 111 drive 2548",
+        "target": "APXS apb_787119426rwp43891112548_______p1",
         "sol": 4389,
         "Na2O": 6.91,
         "MgO": 8.12,
@@ -11202,7 +11202,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4393 site 112 drive 0",
+        "target": "APXS apb_787503476rwp43931120000_______p1",
         "sol": 4393,
         "Na2O": 2.15,
         "MgO": 9.37,
@@ -11233,7 +11233,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4393 site 112 drive 0",
+        "target": "APXS apb_787511822rwp43931120000_______p1",
         "sol": 4393,
         "Na2O": 3.97,
         "MgO": 10.74,
@@ -11264,7 +11264,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4416 site 112 drive 798",
+        "target": "APXS apb_789543673rwp44161120798_______p1",
         "sol": 4416,
         "Na2O": 7.67,
         "MgO": 7.4,
@@ -11295,7 +11295,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4416 site 112 drive 798",
+        "target": "APXS apb_789552550rwp44161120798_______p1",
         "sol": 4416,
         "Na2O": 2.0,
         "MgO": 9.46,
@@ -11326,7 +11326,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4425 site 112 drive 1014",
+        "target": "APXS apb_790314465rwp44251121014_______p1",
         "sol": 4425,
         "Na2O": 8.31,
         "MgO": 6.87,
@@ -11357,7 +11357,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4428 site 112 drive 1326",
+        "target": "APXS apb_790609260rwp44281121326_______p1",
         "sol": 4428,
         "Na2O": 5.07,
         "MgO": 8.5,
@@ -11388,7 +11388,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4428 site 112 drive 1326",
+        "target": "APXS apb_790618195rwp44281121326_______p1",
         "sol": 4428,
         "Na2O": 2.28,
         "MgO": 9.49,
@@ -11419,7 +11419,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4431 site 112 drive 1608",
+        "target": "APXS apb_790876192rwp44311121608_______p1",
         "sol": 4431,
         "Na2O": 2.99,
         "MgO": 8.48,
@@ -11450,7 +11450,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4431 site 112 drive 1608",
+        "target": "APXS apb_790884538rwp44311121608_______p1",
         "sol": 4431,
         "Na2O": 1.98,
         "MgO": 9.39,
@@ -11481,7 +11481,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4434 site 112 drive 1860",
+        "target": "APXS apb_791140583rwp44341121860_______p1",
         "sol": 4434,
         "Na2O": 4.79,
         "MgO": 8.81,
@@ -11512,7 +11512,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4434 site 112 drive 1860",
+        "target": "APXS apb_791150064rwp44341121860_______p1",
         "sol": 4434,
         "Na2O": 3.44,
         "MgO": 10.22,
@@ -11543,7 +11543,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4437 site 112 drive 2148",
+        "target": "APXS apb_791380073rwp44371122148_______p1",
         "sol": 4437,
         "Na2O": 2.58,
         "MgO": 8.98,
@@ -11574,7 +11574,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4439 site 112 drive 2394",
+        "target": "APXS apb_791556561rwp44391122394_______p1",
         "sol": 4439,
         "Na2O": 2.41,
         "MgO": 8.91,
@@ -11605,7 +11605,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4443 site 112 drive 2826",
+        "target": "APXS apb_791941005rwp44431122826_______p1",
         "sol": 4443,
         "Na2O": 1.4,
         "MgO": 5.11,
@@ -11636,7 +11636,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4443 site 112 drive 2826",
+        "target": "APXS apb_791949282rwp44431122826_______p1",
         "sol": 4443,
         "Na2O": 1.99,
         "MgO": 9.22,
@@ -11667,7 +11667,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4445 site 113 drive 0",
+        "target": "APXS apb_792118495rwp44451130000_______p1",
         "sol": 4445,
         "Na2O": 2.18,
         "MgO": 9.47,
@@ -11698,7 +11698,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4445 site 113 drive 0",
+        "target": "APXS apb_792126983rwp44451130000_______p1",
         "sol": 4445,
         "Na2O": 4.2,
         "MgO": 8.27,
@@ -11729,7 +11729,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4447 site 113 drive 306",
+        "target": "APXS apb_792296140rwp44471130306_______p1",
         "sol": 4447,
         "Na2O": 2.88,
         "MgO": 9.18,
@@ -11760,7 +11760,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4447 site 113 drive 306",
+        "target": "APXS apb_792304367rwp44471130306_______p1",
         "sol": 4447,
         "Na2O": 3.09,
         "MgO": 9.26,
@@ -11791,7 +11791,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4452 site 113 drive 894",
+        "target": "APXS apb_792710748rwp44521130894_______p1",
         "sol": 4452,
         "Na2O": 2.98,
         "MgO": 9.3,
@@ -11822,7 +11822,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4455 site 113 drive 1128",
+        "target": "APXS apb_793004891rwp44551131128_______p1",
         "sol": 4455,
         "Na2O": 3.95,
         "MgO": 8.65,
@@ -11853,7 +11853,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4455 site 113 drive 1128",
+        "target": "APXS apb_793013992rwp44551131128_______p1",
         "sol": 4455,
         "Na2O": 5.56,
         "MgO": 8.09,
@@ -11884,7 +11884,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4458 site 113 drive 1440",
+        "target": "APXS apb_793272332rwp44581131440_______p1",
         "sol": 4458,
         "Na2O": 2.65,
         "MgO": 9.55,
@@ -11915,7 +11915,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4458 site 113 drive 1440",
+        "target": "APXS apb_793280545rwp44581131440_______p1",
         "sol": 4458,
         "Na2O": 2.37,
         "MgO": 10.02,
@@ -11946,7 +11946,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4461 site 113 drive 1722",
+        "target": "APXS apb_793537471rwp44611131722_______p1",
         "sol": 4461,
         "Na2O": 4.71,
         "MgO": 11.06,
@@ -11977,7 +11977,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4461 site 113 drive 1722",
+        "target": "APXS apb_793546079rwp44611131722_______p1",
         "sol": 4461,
         "Na2O": 5.44,
         "MgO": 7.86,
@@ -12008,7 +12008,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4464 site 113 drive 2040",
+        "target": "APXS apb_793775726rwp44641132040_______p1",
         "sol": 4464,
         "Na2O": 2.82,
         "MgO": 9.26,
@@ -12039,7 +12039,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4466 site 113 drive 2226",
+        "target": "APXS apb_793953818rwp44661132226_______p1",
         "sol": 4466,
         "Na2O": 2.45,
         "MgO": 9.29,
@@ -12070,7 +12070,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4471 site 113 drive 2670",
+        "target": "APXS apb_794397220rwp44711132670_______p1",
         "sol": 4471,
         "Na2O": 1.88,
         "MgO": 9.16,
@@ -12101,7 +12101,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4477 site 114 drive 288",
+        "target": "APXS apb_794965340rwp44771140288_______p1",
         "sol": 4477,
         "Na2O": 2.7,
         "MgO": 9.47,
@@ -12132,7 +12132,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4479 site 114 drive 366",
+        "target": "APXS apb_795140089rwp44791140366_______p1",
         "sol": 4479,
         "Na2O": 2.24,
         "MgO": 10.96,
@@ -12163,7 +12163,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4481 site 114 drive 534",
+        "target": "APXS apb_795316674rwp44811140534_______p1",
         "sol": 4481,
         "Na2O": 2.79,
         "MgO": 8.55,
@@ -12194,7 +12194,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4486 site 114 drive 918",
+        "target": "APXS apb_795757614rwp44861140918_______p1",
         "sol": 4486,
         "Na2O": 2.17,
         "MgO": 9.64,
@@ -12225,7 +12225,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4486 site 114 drive 918",
+        "target": "APXS apb_795765887rwp44861140918_______p1",
         "sol": 4486,
         "Na2O": 2.06,
         "MgO": 9.53,
@@ -12256,7 +12256,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4488 site 114 drive 1164",
+        "target": "APXS apb_795933776rwp44881141164_______p1",
         "sol": 4488,
         "Na2O": 2.72,
         "MgO": 8.79,
@@ -12287,7 +12287,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4488 site 114 drive 1164",
+        "target": "APXS apb_795942823rwp44881141164_______p1",
         "sol": 4488,
         "Na2O": 2.14,
         "MgO": 9.24,
@@ -12318,7 +12318,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4498 site 114 drive 2214",
+        "target": "APXS apb_796793857rwp44981142214_______p1",
         "sol": 4498,
         "Na2O": 2.17,
         "MgO": 9.81,
@@ -12349,7 +12349,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4500 site 114 drive 2292",
+        "target": "APXS apb_796970993rwp45001142292_______p1",
         "sol": 4500,
         "Na2O": 2.56,
         "MgO": 9.49,
@@ -12380,7 +12380,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4505 site 114 drive 2706",
+        "target": "APXS apb_797414855rwp45051142706_______p1",
         "sol": 4505,
         "Na2O": 2.04,
         "MgO": 8.13,
@@ -12411,7 +12411,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4509 site 115 drive 390",
+        "target": "APXS apb_797798946rwp45091150390_______p1",
         "sol": 4509,
         "Na2O": 2.1,
         "MgO": 8.8,
@@ -12442,7 +12442,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4511 site 115 drive 816",
+        "target": "APXS apb_797976149rwp45111150816_______p1",
         "sol": 4511,
         "Na2O": 2.68,
         "MgO": 9.11,
@@ -12473,7 +12473,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4511 site 115 drive 816",
+        "target": "APXS apb_797984992rwp45111150816_______p1",
         "sol": 4511,
         "Na2O": 2.12,
         "MgO": 8.95,
@@ -12504,7 +12504,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4513 site 115 drive 960",
+        "target": "APXS apb_798153122rwp45131150960_______p1",
         "sol": 4513,
         "Na2O": 2.9,
         "MgO": 10.17,
@@ -12535,7 +12535,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4513 site 115 drive 960",
+        "target": "APXS apb_798161528rwp45131150960_______p1",
         "sol": 4513,
         "Na2O": 3.08,
         "MgO": 9.95,
@@ -12566,7 +12566,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4522 site 115 drive 1608",
+        "target": "APXS apb_798957690rwp45221151608_______p1",
         "sol": 4522,
         "Na2O": 3.14,
         "MgO": 9.01,
@@ -12597,7 +12597,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4525 site 115 drive 1770",
+        "target": "APXS apb_799219454rwp45251151770_______p1",
         "sol": 4525,
         "Na2O": 2.03,
         "MgO": 10.31,
@@ -12628,7 +12628,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4525 site 115 drive 1770",
+        "target": "APXS apb_799227664rwp45251151770_______p1",
         "sol": 4525,
         "Na2O": 2.08,
         "MgO": 9.31,
@@ -12659,7 +12659,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4527 site 115 drive 1980",
+        "target": "APXS apb_799367751rwp45271151980_______p1",
         "sol": 4527,
         "Na2O": 2.35,
         "MgO": 11.89,
@@ -12690,7 +12690,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4529 site 115 drive 2232",
+        "target": "APXS apb_799574457rwp45291152232_______p1",
         "sol": 4529,
         "Na2O": 2.6,
         "MgO": 9.4,
@@ -12721,7 +12721,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4529 site 115 drive 2232",
+        "target": "APXS apb_799582681rwp45291152232_______p1",
         "sol": 4529,
         "Na2O": 2.56,
         "MgO": 8.75,
@@ -12752,7 +12752,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4532 site 115 drive 2436",
+        "target": "APXS apb_799811577rwp45321152436_______p1",
         "sol": 4532,
         "Na2O": 2.26,
         "MgO": 8.64,
@@ -12783,7 +12783,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4534 site 115 drive 2616",
+        "target": "APXS apb_799989138rwp45341152616_______p1",
         "sol": 4534,
         "Na2O": 2.28,
         "MgO": 8.34,
@@ -12814,7 +12814,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4536 site 116 drive 0",
+        "target": "APXS apb_800195402rwp45361160000_______p1",
         "sol": 4536,
         "Na2O": 2.86,
         "MgO": 8.33,
@@ -12845,7 +12845,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4536 site 116 drive 0",
+        "target": "APXS apb_800203921rwp45361160000_______p1",
         "sol": 4536,
         "Na2O": 2.11,
         "MgO": 5.49,
@@ -12876,7 +12876,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4539 site 116 drive 156",
+        "target": "APXS apb_800432611rwp45391160156_______p1",
         "sol": 4539,
         "Na2O": 2.69,
         "MgO": 7.68,
@@ -12907,7 +12907,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4543 site 116 drive 414",
+        "target": "APXS apb_800817230rwp45431160414_______p1",
         "sol": 4543,
         "Na2O": 2.4,
         "MgO": 8.4,
@@ -12938,7 +12938,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4543 site 116 drive 414",
+        "target": "APXS apb_800825140rwp45431160414_______p1",
         "sol": 4543,
         "Na2O": 2.53,
         "MgO": 7.68,
@@ -12969,7 +12969,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4546 site 116 drive 576",
+        "target": "APXS apb_801054450rwp45461160576_______p1",
         "sol": 4546,
         "Na2O": 2.2,
         "MgO": 5.36,
@@ -13000,7 +13000,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4547 site 116 drive 870",
+        "target": "APXS apb_801144199rwp45471160870_______p1",
         "sol": 4547,
         "Na2O": 2.79,
         "MgO": 8.2,
@@ -13031,7 +13031,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4547 site 116 drive 870",
+        "target": "APXS apb_801175423rwp45471160870_______p1",
         "sol": 4547,
         "Na2O": 2.85,
         "MgO": 6.89,
@@ -13062,7 +13062,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4550 site 116 drive 1260",
+        "target": "APXS apb_801438263rwp45501161260_______p1",
         "sol": 4550,
         "Na2O": 3.0,
         "MgO": 5.58,
@@ -13093,7 +13093,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4550 site 116 drive 1260",
+        "target": "APXS apb_801446487rwp45501161260_______p1",
         "sol": 4550,
         "Na2O": 2.47,
         "MgO": 6.47,
@@ -13124,7 +13124,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4553 site 116 drive 1596",
+        "target": "APXS apb_801675773rwp45531161596_______p1",
         "sol": 4553,
         "Na2O": 2.71,
         "MgO": 9.29,
@@ -13155,7 +13155,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4559 site 116 drive 1890",
+        "target": "APXS apb_802237246rwp45591161890_______p1",
         "sol": 4559,
         "Na2O": 2.64,
         "MgO": 5.93,
@@ -13186,7 +13186,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4559 site 116 drive 1890",
+        "target": "APXS apb_802245546rwp45591161890_______p1",
         "sol": 4559,
         "Na2O": 2.7,
         "MgO": 7.71,
@@ -13217,7 +13217,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4561 site 116 drive 1944",
+        "target": "APXS apb_802415236rwp45611161944_______p1",
         "sol": 4561,
         "Na2O": 3.08,
         "MgO": 6.13,
@@ -13248,7 +13248,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4561 site 116 drive 1944",
+        "target": "APXS apb_802423273rwp45611161944_______p1",
         "sol": 4561,
         "Na2O": 3.14,
         "MgO": 5.25,
@@ -13279,7 +13279,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4568 site 116 drive 1944",
+        "target": "APXS apb_803040891rwp45681161944_______p1",
         "sol": 4568,
         "Na2O": 2.38,
         "MgO": 5.32,
@@ -13310,7 +13310,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4570 site 116 drive 1944",
+        "target": "APXS apb_803212653rwp45701161944_______p1",
         "sol": 4570,
         "Na2O": 2.52,
         "MgO": 6.72,
@@ -13341,7 +13341,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4570 site 116 drive 1944",
+        "target": "APXS apb_803220691rwp45701161944_______p1",
         "sol": 4570,
         "Na2O": 2.69,
         "MgO": 6.06,
@@ -13372,7 +13372,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4573 site 116 drive 2214",
+        "target": "APXS apb_803455145rwp45731162214_______p1",
         "sol": 4573,
         "Na2O": 2.7,
         "MgO": 8.92,
@@ -13403,7 +13403,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4575 site 116 drive 2562",
+        "target": "APXS apb_803628913rwp45751162562_______p1",
         "sol": 4575,
         "Na2O": 2.74,
         "MgO": 6.14,
@@ -13434,7 +13434,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4577 site 117 drive 0",
+        "target": "APXS apb_803835188rwp45771170000_______p1",
         "sol": 4577,
         "Na2O": 2.63,
         "MgO": 9.66,
@@ -13465,7 +13465,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4577 site 117 drive 0",
+        "target": "APXS apb_803843432rwp45771170000_______p1",
         "sol": 4577,
         "Na2O": 2.67,
         "MgO": 7.44,
@@ -13496,7 +13496,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4580 site 117 drive 168",
+        "target": "APXS apb_804072789rwp45801170168_______p1",
         "sol": 4580,
         "Na2O": 2.68,
         "MgO": 4.66,
@@ -13527,7 +13527,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4584 site 117 drive 492",
+        "target": "APXS apb_804455400rwp45841170492_______p1",
         "sol": 4584,
         "Na2O": 2.54,
         "MgO": 7.81,
@@ -13558,7 +13558,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4584 site 117 drive 492",
+        "target": "APXS apb_804464319rwp45841170492_______p1",
         "sol": 4584,
         "Na2O": 2.88,
         "MgO": 9.02,
@@ -13589,7 +13589,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4586 site 117 drive 702",
+        "target": "APXS apb_804633078rwp45861170702_______p1",
         "sol": 4586,
         "Na2O": 2.54,
         "MgO": 7.97,
@@ -13620,7 +13620,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4586 site 117 drive 702",
+        "target": "APXS apb_804641318rwp45861170702_______p1",
         "sol": 4586,
         "Na2O": 2.5,
         "MgO": 8.68,
@@ -13651,7 +13651,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4588 site 117 drive 840",
+        "target": "APXS apb_804782863rwp45881170840_______p1",
         "sol": 4588,
         "Na2O": 2.62,
         "MgO": 8.91,
@@ -13682,7 +13682,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4590 site 117 drive 1008",
+        "target": "APXS apb_804988493rwp45901171008_______p1",
         "sol": 4590,
         "Na2O": 2.38,
         "MgO": 7.8,
@@ -13713,7 +13713,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4590 site 117 drive 1008",
+        "target": "APXS apb_804997366rwp45901171008_______p1",
         "sol": 4590,
         "Na2O": 2.48,
         "MgO": 6.07,
@@ -13744,7 +13744,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4593 site 117 drive 1122",
+        "target": "APXS apb_805255099rwp45931171122_______p1",
         "sol": 4593,
         "Na2O": 2.25,
         "MgO": 8.4,
@@ -13775,7 +13775,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4593 site 117 drive 1122",
+        "target": "APXS apb_805263561rwp45931171122_______p1",
         "sol": 4593,
         "Na2O": 2.34,
         "MgO": 8.69,
@@ -13806,7 +13806,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4595 site 117 drive 1434",
+        "target": "APXS apb_805431613rwp45951171434_______p1",
         "sol": 4595,
         "Na2O": 2.36,
         "MgO": 10.1,
@@ -13837,7 +13837,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4595 site 117 drive 1434",
+        "target": "APXS apb_805440536rwp45951171434_______p1",
         "sol": 4595,
         "Na2O": 2.38,
         "MgO": 9.38,
@@ -13868,7 +13868,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4597 site 117 drive 1890",
+        "target": "APXS apb_805610634rwp45971171890_______p1",
         "sol": 4597,
         "Na2O": 2.5,
         "MgO": 8.96,
@@ -13899,7 +13899,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4597 site 117 drive 1890",
+        "target": "APXS apb_805618977rwp45971171890_______p1",
         "sol": 4597,
         "Na2O": 2.4,
         "MgO": 7.93,
@@ -13930,7 +13930,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4602 site 117 drive 2370",
+        "target": "APXS apb_806025713rwp46021172370_______p1",
         "sol": 4602,
         "Na2O": 2.9,
         "MgO": 8.11,
@@ -13961,7 +13961,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4604 site 117 drive 2490",
+        "target": "APXS apb_806231447rwp46041172490_______p1",
         "sol": 4604,
         "Na2O": 3.24,
         "MgO": 7.96,
@@ -13992,7 +13992,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4604 site 117 drive 2490",
+        "target": "APXS apb_806239960rwp46041172490_______p1",
         "sol": 4604,
         "Na2O": 2.66,
         "MgO": 8.09,
@@ -14023,7 +14023,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4608 site 117 drive 2538",
+        "target": "APXS apb_806586996rwp46081172538_______p1",
         "sol": 4608,
         "Na2O": 2.37,
         "MgO": 5.32,
@@ -14054,7 +14054,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4608 site 117 drive 2538",
+        "target": "APXS apb_806595205rwp46081172538_______p1",
         "sol": 4608,
         "Na2O": 3.1,
         "MgO": 7.22,
@@ -14085,7 +14085,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4611 site 117 drive 2730",
+        "target": "APXS apb_806853213rwp46111172730_______p1",
         "sol": 4611,
         "Na2O": 2.61,
         "MgO": 6.09,
@@ -14116,7 +14116,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4611 site 117 drive 2730",
+        "target": "APXS apb_806861453rwp46111172730_______p1",
         "sol": 4611,
         "Na2O": 2.62,
         "MgO": 7.45,
@@ -14147,7 +14147,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4614 site 117 drive 2850",
+        "target": "APXS apb_807091123rwp46141172850_______p1",
         "sol": 4614,
         "Na2O": 2.52,
         "MgO": 6.22,
@@ -14178,7 +14178,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4616 site 118 drive 0",
+        "target": "APXS apb_807268619rwp46161180000_______p1",
         "sol": 4616,
         "Na2O": 3.05,
         "MgO": 5.81,
@@ -14209,7 +14209,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4618 site 118 drive 162",
+        "target": "APXS apb_807446156rwp46181180162_______p1",
         "sol": 4618,
         "Na2O": 2.48,
         "MgO": 5.24,
@@ -14240,7 +14240,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4620 site 118 drive 198",
+        "target": "APXS apb_807652436rwp46201180198_______p1",
         "sol": 4620,
         "Na2O": 2.93,
         "MgO": 8.11,
@@ -14271,7 +14271,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4620 site 118 drive 198",
+        "target": "APXS apb_807660659rwp46201180198_______p1",
         "sol": 4620,
         "Na2O": 2.74,
         "MgO": 7.81,
@@ -14302,7 +14302,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4622 site 118 drive 372",
+        "target": "APXS apb_807830570rwp46221180372_______p1",
         "sol": 4622,
         "Na2O": 2.55,
         "MgO": 7.79,
@@ -14333,7 +14333,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4622 site 118 drive 372",
+        "target": "APXS apb_807838192rwp46221180372_______p1",
         "sol": 4622,
         "Na2O": 2.67,
         "MgO": 7.4,
@@ -14364,7 +14364,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4624 site 118 drive 534",
+        "target": "APXS apb_808007129rwp46241180534_______p1",
         "sol": 4624,
         "Na2O": 3.34,
         "MgO": 7.34,
@@ -14395,7 +14395,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4624 site 118 drive 534",
+        "target": "APXS apb_808015402rwp46241180534_______p1",
         "sol": 4624,
         "Na2O": 2.78,
         "MgO": 9.21,
@@ -14426,7 +14426,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4627 site 118 drive 762",
+        "target": "APXS apb_808273408rwp46271180762_______p1",
         "sol": 4627,
         "Na2O": 2.69,
         "MgO": 8.89,
@@ -14457,7 +14457,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4627 site 118 drive 762",
+        "target": "APXS apb_808281676rwp46271180762_______p1",
         "sol": 4627,
         "Na2O": 2.73,
         "MgO": 8.05,
@@ -14488,7 +14488,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4629 site 118 drive 924",
+        "target": "APXS apb_808422310rwp46291180924_______p1",
         "sol": 4629,
         "Na2O": 2.38,
         "MgO": 8.41,
@@ -14519,7 +14519,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4631 site 118 drive 1194",
+        "target": "APXS apb_808628588rwp46311181194_______p1",
         "sol": 4631,
         "Na2O": 2.75,
         "MgO": 9.24,
@@ -14550,7 +14550,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4631 site 118 drive 1194",
+        "target": "APXS apb_808636811rwp46311181194_______p1",
         "sol": 4631,
         "Na2O": 2.76,
         "MgO": 8.32,
@@ -14581,7 +14581,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4634 site 118 drive 1350",
+        "target": "APXS apb_808866564rwp46341181350_______p1",
         "sol": 4634,
         "Na2O": 2.46,
         "MgO": 8.49,
@@ -14612,7 +14612,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4636 site 118 drive 1608",
+        "target": "APXS apb_809043743rwp46361181608_______p1",
         "sol": 4636,
         "Na2O": 3.07,
         "MgO": 7.74,
@@ -14643,7 +14643,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4638 site 118 drive 1752",
+        "target": "APXS apb_809248804rwp46381181752_______p1",
         "sol": 4638,
         "Na2O": 2.73,
         "MgO": 8.09,
@@ -14674,7 +14674,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4638 site 118 drive 1752",
+        "target": "APXS apb_809257818rwp46381181752_______p1",
         "sol": 4638,
         "Na2O": 2.77,
         "MgO": 8.03,
@@ -14705,7 +14705,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4641 site 118 drive 1776",
+        "target": "APXS apb_809487615rwp46411181776_______p1",
         "sol": 4641,
         "Na2O": 2.69,
         "MgO": 7.99,
@@ -14736,7 +14736,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4643 site 118 drive 1944",
+        "target": "APXS apb_809665556rwp46431181944_______p1",
         "sol": 4643,
         "Na2O": 2.99,
         "MgO": 8.29,
@@ -14767,7 +14767,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4646 site 118 drive 2028",
+        "target": "APXS apb_809960041rwp46461182028_______p1",
         "sol": 4646,
         "Na2O": 2.69,
         "MgO": 7.25,
@@ -14798,7 +14798,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4646 site 118 drive 2028",
+        "target": "APXS apb_809968251rwp46461182028_______p1",
         "sol": 4646,
         "Na2O": 3.14,
         "MgO": 7.67,
@@ -14829,7 +14829,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4649 site 118 drive 2268",
+        "target": "APXS apb_810226173rwp46491182268_______p1",
         "sol": 4649,
         "Na2O": 2.47,
         "MgO": 8.43,
@@ -14860,7 +14860,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4649 site 118 drive 2268",
+        "target": "APXS apb_810234524rwp46491182268_______p1",
         "sol": 4649,
         "Na2O": 2.68,
         "MgO": 6.98,
@@ -14891,7 +14891,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4652 site 118 drive 2304",
+        "target": "APXS apb_810492368rwp46521182304_______p1",
         "sol": 4652,
         "Na2O": 2.66,
         "MgO": 7.98,
@@ -14922,7 +14922,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4652 site 118 drive 2304",
+        "target": "APXS apb_810500777rwp46521182304_______p1",
         "sol": 4652,
         "Na2O": 2.55,
         "MgO": 6.71,
@@ -14953,7 +14953,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4655 site 118 drive 2466",
+        "target": "APXS apb_810731160rwp46551182466_______p1",
         "sol": 4655,
         "Na2O": 2.2,
         "MgO": 7.22,
@@ -14984,7 +14984,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4658 site 118 drive 2538",
+        "target": "APXS apb_811028923rwp46581182538_______p1",
         "sol": 4658,
         "Na2O": 2.68,
         "MgO": 4.82,
@@ -15015,7 +15015,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4659 site 118 drive 2538",
+        "target": "APXS apb_811116984rwp46591182538_______p1",
         "sol": 4659,
         "Na2O": 2.42,
         "MgO": 9.78,
@@ -15046,7 +15046,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4661 site 118 drive 2742",
+        "target": "APXS apb_811291522rwp46611182742_______p1",
         "sol": 4661,
         "Na2O": 2.55,
         "MgO": 7.27,
@@ -15077,7 +15077,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4661 site 118 drive 2742",
+        "target": "APXS apb_811299745rwp46611182742_______p1",
         "sol": 4661,
         "Na2O": 2.6,
         "MgO": 9.29,
@@ -15108,7 +15108,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4663 site 118 drive 2832",
+        "target": "APXS apb_811468774rwp46631182832_______p1",
         "sol": 4663,
         "Na2O": 3.28,
         "MgO": 8.16,
@@ -15139,7 +15139,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4663 site 118 drive 2832",
+        "target": "APXS apb_811477291rwp46631182832_______p1",
         "sol": 4663,
         "Na2O": 3.63,
         "MgO": 7.4,
@@ -15170,7 +15170,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4665 site 118 drive 3156",
+        "target": "APXS apb_811646547rwp46651183156_______p1",
         "sol": 4665,
         "Na2O": 2.51,
         "MgO": 7.16,
@@ -15201,7 +15201,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4665 site 118 drive 3156",
+        "target": "APXS apb_811654779rwp46651183156_______p1",
         "sol": 4665,
         "Na2O": 2.82,
         "MgO": 6.07,
@@ -15232,7 +15232,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4668 site 119 drive 0",
+        "target": "APXS apb_811912664rwp46681190000_______p1",
         "sol": 4668,
         "Na2O": 2.82,
         "MgO": 7.86,
@@ -15263,7 +15263,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4668 site 119 drive 0",
+        "target": "APXS apb_811921007rwp46681190000_______p1",
         "sol": 4668,
         "Na2O": 2.86,
         "MgO": 6.16,
@@ -15294,7 +15294,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4670 site 119 drive 198",
+        "target": "APXS apb_812090308rwp46701190198_______p1",
         "sol": 4670,
         "Na2O": 3.39,
         "MgO": 6.29,
@@ -15325,7 +15325,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4670 site 119 drive 198",
+        "target": "APXS apb_812098591rwp46701190198_______p1",
         "sol": 4670,
         "Na2O": 2.47,
         "MgO": 6.86,
@@ -15356,7 +15356,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4672 site 119 drive 486",
+        "target": "APXS apb_812267901rwp46721190486_______p1",
         "sol": 4672,
         "Na2O": 2.95,
         "MgO": 6.17,
@@ -15387,7 +15387,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4672 site 119 drive 486",
+        "target": "APXS apb_812276137rwp46721190486_______p1",
         "sol": 4672,
         "Na2O": 2.19,
         "MgO": 5.92,
@@ -15418,7 +15418,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4676 site 119 drive 846",
+        "target": "APXS apb_812622948rwp46761190846_______p1",
         "sol": 4676,
         "Na2O": 2.61,
         "MgO": 10.35,
@@ -15449,7 +15449,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4676 site 119 drive 846",
+        "target": "APXS apb_812631216rwp46761190846_______p1",
         "sol": 4676,
         "Na2O": 2.5,
         "MgO": 11.48,
@@ -15480,7 +15480,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4679 site 119 drive 924",
+        "target": "APXS apb_812889313rwp46791190924_______p1",
         "sol": 4679,
         "Na2O": 2.71,
         "MgO": 7.74,
@@ -15511,7 +15511,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4679 site 119 drive 924",
+        "target": "APXS apb_812897535rwp46791190924_______p1",
         "sol": 4679,
         "Na2O": 2.48,
         "MgO": 6.47,
@@ -15542,7 +15542,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4683 site 119 drive 1344",
+        "target": "APXS apb_813244332rwp46831191344_______p1",
         "sol": 4683,
         "Na2O": 2.66,
         "MgO": 8.05,
@@ -15573,7 +15573,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4683 site 119 drive 1344",
+        "target": "APXS apb_813252543rwp46831191344_______p1",
         "sol": 4683,
         "Na2O": 2.92,
         "MgO": 7.57,
@@ -15604,7 +15604,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4686 site 119 drive 1554",
+        "target": "APXS apb_813510596rwp46861191554_______p1",
         "sol": 4686,
         "Na2O": 2.53,
         "MgO": 6.64,
@@ -15635,7 +15635,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4686 site 119 drive 1554",
+        "target": "APXS apb_813518803rwp46861191554_______p1",
         "sol": 4686,
         "Na2O": 2.9,
         "MgO": 8.08,
@@ -15666,7 +15666,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4690 site 119 drive 1722",
+        "target": "APXS apb_813865884rwp46901191722_______p1",
         "sol": 4690,
         "Na2O": 2.1,
         "MgO": 10.23,
@@ -15697,7 +15697,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4690 site 119 drive 1722",
+        "target": "APXS apb_813874126rwp46901191722_______p1",
         "sol": 4690,
         "Na2O": 2.11,
         "MgO": 8.88,
@@ -15728,7 +15728,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4706 site 119 drive 1722",
+        "target": "APXS apb_815291021rwp47061191722_______p1",
         "sol": 4706,
         "Na2O": 2.12,
         "MgO": 11.3,
@@ -15759,7 +15759,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4709 site 119 drive 1722",
+        "target": "APXS apb_815526048rwp47091191722_______p1",
         "sol": 4709,
         "Na2O": 1.73,
         "MgO": 10.32,
@@ -15790,7 +15790,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4711 site 120 drive 0",
+        "target": "APXS apb_815703916rwp47111200000_______p1",
         "sol": 4711,
         "Na2O": 2.4,
         "MgO": 7.21,
@@ -15821,7 +15821,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4713 site 120 drive 82",
+        "target": "APXS apb_815909932rwp47131200082_______p1",
         "sol": 4713,
         "Na2O": 2.51,
         "MgO": 7.58,
@@ -15852,7 +15852,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4713 site 120 drive 82",
+        "target": "APXS apb_815916525rwp47131200082_______p1",
         "sol": 4713,
         "Na2O": 2.52,
         "MgO": 7.52,
@@ -15883,7 +15883,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4716 site 120 drive 82",
+        "target": "APXS apb_816173139rwp47161200082_______p1",
         "sol": 4716,
         "Na2O": 2.96,
         "MgO": 7.13,
@@ -15914,7 +15914,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4716 site 120 drive 82",
+        "target": "APXS apb_816180959rwp47161200082_______p1",
         "sol": 4716,
         "Na2O": 2.77,
         "MgO": 6.14,
@@ -15945,7 +15945,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4738 site 120 drive 82",
+        "target": "APXS apb_818133183rwp47381200082_______p1",
         "sol": 4738,
         "Na2O": 2.16,
         "MgO": 8.68,
@@ -15976,7 +15976,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4745 site 120 drive 232",
+        "target": "APXS apb_818748304rwp47451200232_______p1",
         "sol": 4745,
         "Na2O": 2.64,
         "MgO": 8.93,
@@ -16007,7 +16007,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4745 site 120 drive 232",
+        "target": "APXS apb_818756528rwp47451200232_______p1",
         "sol": 4745,
         "Na2O": 2.68,
         "MgO": 10.01,
@@ -16038,7 +16038,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4747 site 120 drive 232",
+        "target": "APXS apb_818929534rwp47471200232_______p1",
         "sol": 4747,
         "Na2O": 2.01,
         "MgO": 11.62,
@@ -16069,7 +16069,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4750 site 120 drive 346",
+        "target": "APXS apb_819191646rwp47501200346_______p1",
         "sol": 4750,
         "Na2O": 2.62,
         "MgO": 8.73,
@@ -16100,7 +16100,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4750 site 120 drive 346",
+        "target": "APXS apb_819199914rwp47501200346_______p1",
         "sol": 4750,
         "Na2O": 2.63,
         "MgO": 8.54,
@@ -16131,7 +16131,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4752 site 120 drive 346",
+        "target": "APXS apb_819343467rwp47521200346_______p1",
         "sol": 4752,
         "Na2O": 2.33,
         "MgO": 8.84,
@@ -16162,7 +16162,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4788 site 120 drive 538",
+        "target": "APXS apb_822564874rwp47881200538_______p1",
         "sol": 4788,
         "Na2O": 1.86,
         "MgO": 5.9,
@@ -16193,7 +16193,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4788 site 120 drive 538",
+        "target": "APXS apb_822570077rwp47881200538_______p1",
         "sol": 4788,
         "Na2O": 2.14,
         "MgO": 8.63,
@@ -16224,7 +16224,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4788 site 120 drive 538",
+        "target": "APXS apb_822575283rwp47881200538_______p1",
         "sol": 4788,
         "Na2O": 1.41,
         "MgO": 9.42,
@@ -16255,7 +16255,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4791 site 120 drive 574",
+        "target": "APXS apb_822835002rwp47911200574_______p1",
         "sol": 4791,
         "Na2O": 2.66,
         "MgO": 6.62,
@@ -16286,7 +16286,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4791 site 120 drive 574",
+        "target": "APXS apb_822841460rwp47911200574_______p1",
         "sol": 4791,
         "Na2O": 3.0,
         "MgO": 5.88,
@@ -16317,7 +16317,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4803 site 120 drive 574",
+        "target": "APXS apb_823903257rwp48031200574_______p1",
         "sol": 4803,
         "Na2O": 2.55,
         "MgO": 6.32,
@@ -16348,7 +16348,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4809 site 120 drive 808",
+        "target": "APXS apb_824430263rwp48091200808_______p1",
         "sol": 4809,
         "Na2O": 2.36,
         "MgO": 7.94,
@@ -16379,7 +16379,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4809 site 120 drive 808",
+        "target": "APXS apb_824438504rwp48091200808_______p1",
         "sol": 4809,
         "Na2O": 2.7,
         "MgO": 7.85,
@@ -16410,7 +16410,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4812 site 120 drive 1042",
+        "target": "APXS apb_824696695rwp48121201042_______p1",
         "sol": 4812,
         "Na2O": 2.93,
         "MgO": 9.36,
@@ -16441,7 +16441,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4812 site 120 drive 1042",
+        "target": "APXS apb_824705039rwp48121201042_______p1",
         "sol": 4812,
         "Na2O": 2.58,
         "MgO": 6.03,
@@ -16472,7 +16472,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4813 site 120 drive 1042",
+        "target": "APXS apb_824756988rwp48131201042_______p1",
         "sol": 4813,
         "Na2O": 2.94,
         "MgO": 8.37,
@@ -16503,7 +16503,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4815 site 120 drive 1264",
+        "target": "APXS apb_824962301rwp48151201264_______p1",
         "sol": 4815,
         "Na2O": 2.01,
         "MgO": 8.69,
@@ -16534,7 +16534,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4815 site 120 drive 1264",
+        "target": "APXS apb_824970544rwp48151201264_______p1",
         "sol": 4815,
         "Na2O": 2.2,
         "MgO": 9.97,
@@ -16565,7 +16565,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4818 site 120 drive 1546",
+        "target": "APXS apb_825201895rwp48181201546_______p1",
         "sol": 4818,
         "Na2O": 2.19,
         "MgO": 7.73,
@@ -16596,7 +16596,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4820 site 120 drive 2030",
+        "target": "APXS apb_825378800rwp48201202030_______p1",
         "sol": 4820,
         "Na2O": 2.78,
         "MgO": 10.32,
@@ -16627,7 +16627,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4822 site 120 drive 2102",
+        "target": "APXS apb_825584234rwp48221202102_______p1",
         "sol": 4822,
         "Na2O": 2.33,
         "MgO": 9.21,
@@ -16658,7 +16658,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4822 site 120 drive 2102",
+        "target": "APXS apb_825592577rwp48221202102_______p1",
         "sol": 4822,
         "Na2O": 2.21,
         "MgO": 9.67,
@@ -16689,7 +16689,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4826 site 120 drive 2192",
+        "target": "APXS apb_825939831rwp48261202192_______p1",
         "sol": 4826,
         "Na2O": 2.31,
         "MgO": 6.84,
@@ -16720,7 +16720,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4826 site 120 drive 2192",
+        "target": "APXS apb_825948236rwp48261202192_______p1",
         "sol": 4826,
         "Na2O": 2.48,
         "MgO": 6.57,
@@ -16751,7 +16751,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4829 site 120 drive 2366",
+        "target": "APXS apb_826205920rwp48291202366_______p1",
         "sol": 4829,
         "Na2O": 2.71,
         "MgO": 7.73,
@@ -16782,7 +16782,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4829 site 120 drive 2366",
+        "target": "APXS apb_826214443rwp48291202366_______p1",
         "sol": 4829,
         "Na2O": 2.02,
         "MgO": 20.1,
@@ -16813,7 +16813,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4833 site 120 drive 2726",
+        "target": "APXS apb_826561541rwp48331202726_______p1",
         "sol": 4833,
         "Na2O": 2.26,
         "MgO": 6.43,
@@ -16844,7 +16844,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4833 site 120 drive 2726",
+        "target": "APXS apb_826569794rwp48331202726_______p1",
         "sol": 4833,
         "Na2O": 2.41,
         "MgO": 8.69,
@@ -16875,7 +16875,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4836 site 121 drive 0",
+        "target": "APXS apb_826827248rwp48361210000_______p1",
         "sol": 4836,
         "Na2O": 1.88,
         "MgO": 10.75,
@@ -16906,7 +16906,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4836 site 121 drive 0",
+        "target": "APXS apb_826836191rwp48361210000_______p1",
         "sol": 4836,
         "Na2O": 2.51,
         "MgO": 10.84,
@@ -16937,7 +16937,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4838 site 121 drive 156",
+        "target": "APXS apb_827005232rwp48381210156_______p1",
         "sol": 4838,
         "Na2O": 2.37,
         "MgO": 5.51,
@@ -16968,7 +16968,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4838 site 121 drive 156",
+        "target": "APXS apb_827013875rwp48381210156_______p1",
         "sol": 4838,
         "Na2O": 2.57,
         "MgO": 4.94,
@@ -16999,7 +16999,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4840 site 121 drive 396",
+        "target": "APXS apb_827187812rwp48401210396_______p1",
         "sol": 4840,
         "Na2O": 2.59,
         "MgO": 8.02,
@@ -17030,7 +17030,7 @@
         ]
       },
       "properties": {
-        "target": "APXS Sol 4842 site 121 drive 762",
+        "target": "APXS apb_827365543rwp48421210762_______p1",
         "sol": 4842,
         "Na2O": 2.14,
         "MgO": 5.86,

@@ -13,7 +13,6 @@ import math
 import re
 import tarfile
 import urllib.request
-from datetime import date
 from pathlib import Path
 
 import numpy as np
@@ -22,13 +21,7 @@ from scipy.io import netcdf_file
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw"
 OUT = ROOT / "app" / "public" / "data"
-REMS_BASE = "https://observatory.lelama.digital/api/series"
-REMS_SERIES = {
-    "ls": "mars.msl.ls.daily",
-    "tmin": "mars.msl.tmin.daily",
-    "tmax": "mars.msl.tmax.daily",
-    "pressure": "mars.msl.pressure.daily",
-}
+REMS_URL = "https://mars.nasa.gov/rss/api/?feed=weather&category=msl&feedtype=json"
 def fetch(url: str, path: Path) -> None:
     if path.exists() and path.stat().st_size:
         return
@@ -38,19 +31,25 @@ def fetch(url: str, path: Path) -> None:
         dest.write(response.read())
 
 
-def read_series(code: str, key: str) -> dict[str, float]:
-    path = RAW / "rems" / f"{key}.json"
-    fetch(f"{REMS_BASE}/{code}.json", path)
-    obj = json.loads(path.read_text(encoding="utf-8"))
-    return {row[0][:10]: float(row[1]) for row in obj["points"] if row[1] is not None}
-
-
 def rems_weather() -> tuple[list[dict], dict]:
-    series = {key: read_series(code, key) for key, code in REMS_SERIES.items()}
+    path = RAW / "rems" / "nasa_weather.json"
+    fetch(REMS_URL, path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
     complete = []
-    for day in sorted(set(series["ls"]) & set(series["tmin"]) & set(series["tmax"]) & set(series["pressure"])):
-        ls = series["ls"][day] % 360
-        complete.append({"date": day, "ls": ls, "tmin": series["tmin"][day], "tmax": series["tmax"][day], "pressure": series["pressure"][day]})
+    for record in payload["soles"]:
+        try:
+            ls = float(record["ls"])
+            tmin = float(record["min_temp"])
+            tmax = float(record["max_temp"])
+            pressure = float(record["pressure"])
+            sol = int(record["sol"])
+        except (TypeError, ValueError, KeyError):
+            continue
+        if not all(math.isfinite(x) for x in (ls, tmin, tmax, pressure)):
+            continue
+        complete.append({"date": record["terrestrial_date"], "sol": sol, "ls": ls % 360,
+                         "tmin": tmin, "tmax": tmax, "pressure": pressure,
+                         "uv": record.get("local_uv_irradiance_index", "--")})
     if not complete:
         raise RuntimeError("No overlapping REMS daily records found")
     seasons = []
@@ -61,28 +60,26 @@ def rems_weather() -> tuple[list[dict], dict]:
         seasons.append({
             "ls_from": start, "ls_to": start + 30,
             "air_temp_min_c": round(min(r["tmin"] for r in rows), 2),
-            "air_temp_min_c_method": "Minimum of daily REMS air-temperature minima (°C) in this 30° Ls bin; overlapping public daily reports.",
+            "air_temp_min_c_method": "Minimum of daily REMS air-temperature minima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
             "air_temp_max_c": round(max(r["tmax"] for r in rows), 2),
-            "air_temp_max_c_method": "Maximum of daily REMS air-temperature maxima (°C) in this 30° Ls bin; overlapping public daily reports.",
+            "air_temp_max_c_method": "Maximum of daily REMS air-temperature maxima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
             "pressure_pa": round(float(np.mean([r["pressure"] for r in rows])), 2),
-            "pressure_pa_method": "Arithmetic mean of daily mean REMS pressure (Pa) in this 30° Ls bin.",
-            "uv": "unknown",
-            "uv_method": "No UV field is published in the daily report series used; category is unknown rather than inferred.",
+            "pressure_pa_method": "Arithmetic mean of daily mean REMS pressure values (Pa) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+            "uv": max((r["uv"] for r in rows if r["uv"] not in (None, "--", "")), key=lambda v: sum(r["uv"] == v for r in rows), default="unknown"),
+            "uv_method": "Most frequent reported daily local UV irradiance category in this 30° Ls bin; unknown when none is available.",
             "n_sols": len(rows),
-            "n_sols_method": "Count of distinct terrestrial-date daily reports with Ls, air-temperature min/max and pressure.",
+            "n_sols_method": "Count of distinct mission sols with numeric Ls, temperature extrema and pressure in the CAB/INTA-supplied NASA feed.",
         })
-    last = complete[-1]
-    # Sol 1 began on 2012-08-07; convert elapsed UTC time by the mean Martian sol.
-    sol = round((date.fromisoformat(last["date"]) - date(2012, 8, 7)).days / 1.02749125) + 1
+    last = max(complete, key=lambda r: r["sol"])
     latest = {
-        "sol": sol, "terrestrial_date": last["date"],
+        "sol": last["sol"], "terrestrial_date": last["date"],
+        "sol_method": "Mission sol number as reported by the CAB/INTA-supplied NASA weather feed.",
         "air_temp_min_c": round(last["tmin"], 2),
-        "air_temp_min_c_method": "Latest available daily REMS minimum air temperature (°C).",
+        "air_temp_min_c_method": "Latest available daily REMS minimum air temperature (degrees C) from the CAB/INTA-supplied NASA feed.",
         "air_temp_max_c": round(last["tmax"], 2),
-        "air_temp_max_c_method": "Latest available daily REMS maximum air temperature (°C).",
+        "air_temp_max_c_method": "Latest available daily REMS maximum air temperature (degrees C) from the CAB/INTA-supplied NASA feed.",
         "pressure_pa": round(last["pressure"], 2),
-        "pressure_pa_method": "Latest available daily REMS mean pressure (Pa).",
-        "sol_method": "Estimated from terrestrial date since Curiosity sol 1 using 1.02749125 Earth days per Martian sol.",
+        "pressure_pa_method": "Latest available daily REMS mean pressure (Pa) from the CAB/INTA-supplied NASA feed.",
     }
     return seasons, latest
 
@@ -166,7 +163,7 @@ def main() -> None:
     dust_bins = dust_seasons()
     data = {
         "weather": {
-            "source": "REMS daily reports, Curiosity (Spain: Centro de Astrobiología / INTA; NASA/JPL-Caltech credit)",
+            "source": "CAB/INTA-supplied REMS daily weather reports served by NASA/JPL; scientific archive: PDS Atmospheres",
             "by_season": weather_bins,
             "latest": latest,
         },
@@ -175,8 +172,8 @@ def main() -> None:
             "surface_dose_mgy_per_day": dose,
             "surface_dose_mgy_per_day_method": dose_method,
             "solar_event_mgy_per_day": elevated,
-            "solar_event_mgy_per_day_method": "99th percentile of the unfiltered RAD dose-rate column; data-derived elevated proxy, not an event-specific reconstruction. " + dose_method,
-            "note": "Measured at Gale. Filtered baseline and elevated unfiltered tail are RAD-derived proxies.",
+            "solar_event_mgy_per_day_method": "Maximum per-sol mean filtered RAD dose rate; data-derived elevated proxy, not an event-specific reconstruction. " + dose_method,
+            "note": "Measured at Gale. Both values are derived from filtered RAD dose records.",
         },
         "dust": {
             "source": "Mars Climate Database dust climatology (Montabone et al.)",
@@ -188,7 +185,7 @@ def main() -> None:
     with target.open("w", encoding="utf-8", newline="\n") as f:
         f.write(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
     print(f"{target}: {len(weather_bins)} weather seasons, {sum(x['n_sols'] for x in weather_bins)} REMS sols, {len(dust_bins)} dust seasons")
-    print(f"RAD typical {dose} mGy/day; elevated {elevated} mGy/day; weather UV category unknown (source series has no UV field)")
+    print(f"RAD typical {dose} mGy/day; elevated {elevated} mGy/day; weather UV categories from CAB-supplied NASA feed")
 
 
 if __name__ == "__main__":

@@ -86,9 +86,16 @@ def main() -> None:
                         "pose_sol": int(pose.sol), "lon": lon, "lat": lat,
                         "inside": inside, "distance2": distance2})
 
+    # Inventory entries identify individual APXS RWP observation products. A
+    # repeated inventory row with the same product and sol is an exact duplicate;
+    # different products at the same rover pose remain separate observations.
+    unique_entries = {}
+    for entry in entries:
+        unique_entries.setdefault((entry["name"], entry["sol"]), entry)
+    before_dedup = sum(e["inside"] for e in entries)
     features = []
     nearest = sorted((e for e in entries if not e["inside"]), key=lambda e: e["distance2"])[:5]
-    in_area = [e for e in entries if e["inside"]]
+    in_area = [e for e in unique_entries.values() if e["inside"]]
 
     def cached_csv(entry):
         sol_dir = f"sol{entry['sol']:05d}"
@@ -103,7 +110,7 @@ def main() -> None:
         compositions = list(pool.map(cached_csv, in_area))
     for entry, oxides in compositions:
         properties = {
-            "target": f"APXS Sol {entry['sol']} site {entry['site']} drive {entry['drive']}",
+            "target": f"APXS {entry['name']}",
             "sol": entry["sol"],
             **oxides,
             "source": f"{BASE}/sol{entry['sol']:05d}/{entry['name']}.csv",
@@ -114,7 +121,7 @@ def main() -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     with target.open("w", encoding="utf-8", newline="\n") as f:
         f.write(json.dumps({"type": "FeatureCollection", "features": features}, indent=2, ensure_ascii=False) + "\n")
-    print(f"{target}: {len(features)} APXS targets inside [{BOUNDS[0]}, {BOUNDS[1]}, {BOUNDS[2]}, {BOUNDS[3]}]")
+    print(f"{target}: {before_dedup} indexed in-area products before exact target+sol dedup; {len(features)} after; {len({f['properties']['target'] for f in features})} distinct observation targets")
     if not features:
         print("No APXS target fell inside the Gale walk area. Nearest indexed APXS locations (separate from GeoJSON):")
         for e in nearest:
