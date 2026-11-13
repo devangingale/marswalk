@@ -54,3 +54,14 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 ## AI tools
 
 - Claude (Anthropic) and Gemini (Google): writing code and documentation, directed and reviewed by the team.
+
+## Challenge-listed NASA resources
+
+| Resource | How we use it |
+|---|---|
+| Mars Perseverance Raw Images Gallery (mars.nasa.gov/mars2020/multimedia/raw-images) | Source of point-of-view photos at Jezero stops |
+| Curiosity raw images feed (mars.nasa.gov/msl/multimedia/raw-images) | Source of point-of-view photos at Mount Sharp stops |
+| NASA/JPL proposed-route map for Curiosity on lower Mount Sharp | Visual reference for how a science route map reads |
+| JPL Mars Trek | Reference for regional layering; our tool works at walk scale instead |
+| USGS–NASA Planetary Geologic Mapping Program | Geologic context (global map SIM 3292 on disk) |
+| NASA Worldview | Reference for layered time-aware map interfaces |
