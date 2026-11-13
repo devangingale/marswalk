@@ -1,0 +1,75 @@
+/* Written with AI assistance, directed and reviewed by the team. */
+
+/* Structural layout hooks for Phase 3 shell */
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: sans-serif;
+}
+
+.s48-app {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.s48-header {
+  display: flex;
+  align-items: center;
+  justifyContent: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid #ccc;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.s48-main {
+  flex: 1;
+  position: relative;
+  display: flex;
+  overflow: hidden;
+}
+
+.s48-map-container {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.s48-map-viewport {
+  width: 100%;
+  height: 100%;
+}
+
+.s48-layer-panel {
+  width: 320px;
+  max-width: 85vw;
+  border-right: 1px solid #ccc;
+  overflow-y: auto;
+  padding: 12px;
+  box-sizing: border-box;
+  background-color: #ffffff;
+}
+
+.s48-scale-bar {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid #333;
+  padding: 4px 8px;
+  font-family: monospace;
+}
+
+.s48-scale-line {
+  height: 4px;
+  background-color: #000;
+  margin-top: 2px;
+}
