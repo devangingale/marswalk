@@ -48,12 +48,18 @@ def build_grid(dem_path: Path, out: Path, bounds=None) -> dict:
             resampling=Resampling.bilinear,
         )
     dx = true_dx(cell_x_src, (bottom + top) / 2)
-    dzdy, dzdx = np.gradient(elev, cell_y_src, dx)
+    valid = np.isfinite(elev)
+    # Fill gaps only for the neighbourhood derivative; nodata cells themselves
+    # remain marked impassable below.
+    slope_surface = elev.copy()
+    if (~valid).any():
+        nearest = ndi.distance_transform_edt(~valid, return_distances=False, return_indices=True)
+        slope_surface[~valid] = elev[tuple(nearest)][~valid]
+    dzdy, dzdx = np.gradient(slope_surface, cell_y_src, dx)
     slope = np.degrees(np.arctan(np.hypot(dzdx, dzdy)))
     # Equivalent 5 m window, odd-sized, to retain a centred local statistic.
     kx = max(3, int(round(5 / 2)) | 1)
     ky = max(3, int(round(5 / 2)) | 1)
-    valid = np.isfinite(elev)
     safe = np.where(valid, elev, 0.0)
     weights = ndi.uniform_filter(valid.astype(np.float32), size=(ky, kx), mode="nearest")
     mean = ndi.uniform_filter(safe, size=(ky, kx), mode="nearest") / np.maximum(weights, 1e-6)
@@ -87,7 +93,8 @@ def build_grid(dem_path: Path, out: Path, bounds=None) -> dict:
     describe("grid elevation (m)", elev, grid_tf)
     describe("grid slope (degrees)", slope, grid_tf)
     describe("grid roughness (m)", rough, grid_tf)
-    print(f"grid cost values: {int(cost.min())}..{int(cost.max())}; impassable {100 * np.count_nonzero(cost == 255) / cost.size:.2f}%")
+    nodata_pct = 100 * np.count_nonzero(~valid) / valid.size
+    print(f"grid cost values: {int(cost.min())}..{int(cost.max())}; nodata {nodata_pct:.2f}%; impassable {100 * np.count_nonzero(cost == 255) / cost.size:.2f}%")
     print(f"grid dimensions: {width}x{height}, true cell 2.000x2.000 m, size {width * 2:.2f} x {height * 2:.2f} m; elevation encoding {offset}..{float(finite.max()):.3f} m")
     return header
 
