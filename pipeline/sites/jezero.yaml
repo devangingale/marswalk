@@ -7,9 +7,8 @@ dem: data/raw/jezero_hirise_dtm/JEZ_hirise_soc_006_DTM_MOLAtopography_DeltaGeoid
 image: data/raw/jezero_hirise_ortho/ESP_045994_1985_Edited_affine_25cm_Eqc_latTs0_lon0.tif
 poses: data/raw/pds_places/best_interp.csv
 
-# Walk area: [left, bottom, right, top] in source metres. Set in phase 5
-# after checking where the path, DEM and image all overlap.
-area: null
-train_area: null
+# Walk area [left, bottom, right, top]: where the path, DEM and 25 cm image overlap.
+area: [4587000, 1092300, 4591000, 1096300]
+train_area: [4577400, 1091500, 4592000, 1097000]
 
 out: data/sites/jezero
