@@ -60,6 +60,7 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 | Vite | Frontend build tooling and static compilation | MIT |
 | Vitest | Unit tests for the app shell and for the route planner, energy model, grid and plan libraries | MIT |
 | TypeScript | Static type safety and data contract typing | Apache-2.0 |
+| @types/node | Node type definitions for the planner test that writes the sample plan fixture | MIT |
 
 ## Images, fonts, icons, text
 
