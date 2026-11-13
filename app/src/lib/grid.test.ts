@@ -4,7 +4,6 @@ import { describe, it, expect } from 'vitest';
 import {
   createGrid,
   degToRad,
-  radToDeg,
   lonlatToLocalMetres,
   localMetresToLonLat,
   localMetresToRowCol,
@@ -47,7 +46,6 @@ describe('grid coordinate conversions (Contracts Section 3)', () => {
   });
 
   it('correctly maps local metres to row/col for row-major grid with row 0 = north', () => {
-    const width = 100;
     const height = 100;
     const cell_x_m = 2.0;
     const cell_y_m = 2.0;

@@ -2,7 +2,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { createGrid, GridHeader, GridOrigin, lonlatToLocalMetres } from './grid';
-import { buildPlan, densifyLine, validatePlan, PlanParams, PlanStart, PlanStop } from './plan';
+import { buildPlan, densifyLine, validatePlan, PlanParams } from './plan';
 import { MARS_R, degToRad } from './grid';
 
 describe('Plan builder and validation (Contracts Section 7 and 10)', () => {
@@ -19,12 +19,6 @@ describe('Plan builder and validation (Contracts Section 7 and 10)', () => {
     body_mass_kg: 80,
     stop_time_s: 1200,
     solar_event: false,
-  };
-
-  const start: PlanStart = {
-    lon: 137.39,
-    lat: -4.78,
-    label: 'Rover drop-off',
   };
 
   it('densifies line so that no two consecutive points are more than 4 m apart', () => {
