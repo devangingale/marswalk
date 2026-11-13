@@ -39,6 +39,13 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 
 - ESA Mars Express HRSC, as part of the HRSC–MOLA blended global DEM (`mola_hrsc_blend`). HRSC portion CC BY-SA 3.0 IGO.
 
+## Scientific models and literature
+
+| Model / Paper | Used for | Citation / Licence |
+|---|---|---|
+| Pandolf load-carriage equation | Walking metabolic power on level and uphill terrain | Pandolf, K. B., Givoni, B., & Goldman, R. F. (1977). *Predicting energy expenditure with loads while standing or walking very slowly to moderate walking speeds.* Journal of Applied Physiology, 43(4), 577–581. doi:10.1152/jappl.1977.43.4.577. Simplified with uniform Mars gravity scaling (3.71 m/s²). |
+| Santee downhill correction | Downhill metabolic energy expenditure and eccentric braking correction | Santee, W. R., Allison, W. F., Blanchard, L. A., & Small, M. G. (2001). *A proposed model for load carriage on sloped terrain.* Aviation, Space, and Environmental Medicine, 72(6), 562–566. |
+
 ## Software and libraries
 
 | Name | Used for | Licence |
@@ -47,7 +54,7 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 | MapLibre GL JS | Mars surface map rendering and 3D terrain relief | BSD-3-Clause |
 | PMTiles | Cloud-native single-file tile archive reader | BSD-3-Clause |
 | Vite | Frontend build tooling and static compilation | MIT |
-| Vitest | Unit test execution and contract verification | MIT |
+| Vitest | Unit tests for the app shell and for the route planner, energy model, grid and plan libraries | MIT |
 | TypeScript | Static type safety and data contract typing | Apache-2.0 |
 
 ## Images, fonts, icons, text
