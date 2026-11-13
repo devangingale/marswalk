@@ -2,7 +2,7 @@
 
 > Read [`00-contracts.md`](00-contracts.md) first. File formats, coordinates and units are defined there and override anything below.
 
-**Owner:** Dev's machine (needs `data/`). **Window:** hours 14–24. **Branch:** `dev/p5-jezero`.
+**Owner:** Dev's machine (needs `data/`). **Window:** hours 14–24. **Branch:** `dev/p5-jezero-science`.
 
 ## Goal
 

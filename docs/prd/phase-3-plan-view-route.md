@@ -2,7 +2,7 @@
 
 > Read [`00-contracts.md`](00-contracts.md) first. File formats, coordinates and units are defined there and override anything below.
 
-**Owner:** Samruddhi's machine (git only, no raw data). **Window:** hours 1–14. **Branch:** `samruddhi/p3-plan-view`.
+**Owner:** Samruddhi's machine (git only, no raw data). **Window:** hours 1–14. **Branch:** `samruddhi/p3-plan-view-route`.
 
 ## Goal
 

@@ -2,7 +2,7 @@
 
 > Read [`00-contracts.md`](00-contracts.md) first. File formats, coordinates and units are defined there and override anything below.
 
-**Owner:** Dev's machine (needs `data/`). **Window:** hours 1–6. **Branch:** `dev/p1-site-data`.
+**Owner:** Dev's machine (needs `data/`). **Window:** hours 1–6. **Branch:** `dev/p1-site-data-tiles`.
 
 ## Goal
 
