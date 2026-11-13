@@ -9,48 +9,25 @@ interface ModeSwitchProps {
 }
 
 export const ModeSwitch: React.FC<ModeSwitchProps> = ({ currentMode, onModeChange }) => {
-  const modes: { id: AppMode; label: string; description: string }[] = [
-    { id: 'plan', label: 'Plan', description: 'Habitat Route Console' },
-    { id: 'walk', label: 'Walk', description: 'Tablet Field Navigation' },
-    { id: 'visor', label: 'Visor', description: 'Helmet HUD & Imagery' },
+  const modes: { id: AppMode; label: string }[] = [
+    { id: 'plan', label: 'Plan' },
+    { id: 'walk', label: 'Walk' },
+    { id: 'visor', label: 'Visor' },
   ];
 
   return (
-    <div
-      style={{
-        display: 'inline-flex',
-        backgroundColor: '#0f172a',
-        borderRadius: '6px',
-        padding: '3px',
-        border: '1px solid #334155',
-      }}
-    >
-      {modes.map((mode) => {
-        const isActive = currentMode === mode.id;
-        return (
-          <button
-            key={mode.id}
-            onClick={() => onModeChange(mode.id)}
-            style={{
-              padding: '6px 14px',
-              fontSize: '13px',
-              fontWeight: isActive ? 600 : 500,
-              color: isActive ? '#ffffff' : '#94a3b8',
-              backgroundColor: isActive ? '#2563eb' : 'transparent',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-            title={mode.description}
-          >
-            <span>{mode.label}</span>
-          </button>
-        );
-      })}
-    </div>
+    <nav aria-label="Mode selector" className="s48-mode-switch">
+      {modes.map((mode) => (
+        <button
+          key={mode.id}
+          type="button"
+          className={`s48-mode-btn ${currentMode === mode.id ? 's48-mode-btn-active' : ''}`}
+          onClick={() => onModeChange(mode.id)}
+          aria-current={currentMode === mode.id ? 'page' : undefined}
+        >
+          {mode.label}
+        </button>
+      ))}
+    </nav>
   );
 };

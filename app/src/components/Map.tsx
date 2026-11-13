@@ -36,9 +36,7 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
   const markerRef = useRef<Marker | null>(null);
   const [mapInstance, setMapInstance] = useState<MapLibreMap | null>(null);
   const [is3D, setIs3D] = useState(false);
-  const [currentZoom, setCurrentZoom] = useState(13);
 
-  // Initialize Map
   useEffect(() => {
     setupPMTilesProtocol();
 
@@ -93,13 +91,8 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
     map.addControl(new NavigationControl({ showCompass: true }), 'top-right');
     map.addControl(new AttributionControl({ compact: true }), 'bottom-right');
 
-    map.on('zoom', () => {
-      setCurrentZoom(map.getZoom());
-    });
-
-    // Suppress unhandled tile 404 warnings from breaking console
     map.on('error', (e: { error?: { message?: string } }) => {
-      // Tile 404s when PMTiles / Trek tiles are absent are expected in stub mode
+      // 404s when PMTiles or Mars Trek tiles are missing are expected during local scaffold
       if (e?.error?.message?.includes('404')) {
         return;
       }
@@ -109,16 +102,15 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
       mapRef.current = map;
       setMapInstance(map);
 
-      // Fit site bounds
       map.fitBounds(
         [
           [bounds[0], bounds[1]],
           [bounds[2], bounds[3]],
         ],
-        { padding: 30, maxZoom: 14 }
+        { padding: 20, maxZoom: 14 }
       );
 
-      // 5. Terrain from terrain.pmtiles (terrain-RGB, Mapbox encoding) with modest exaggeration
+      // Terrain from terrain.pmtiles (terrain-RGB, Mapbox encoding)
       if (siteData.terrain?.url) {
         try {
           const terrainUrl = resolveSiteAssetUrl(siteData.id, siteData.terrain.url);
@@ -135,7 +127,7 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
             exaggeration: 1.35,
           });
         } catch {
-          // Terrain file will load once bundled
+          // Terrain will bind when file is present
         }
       }
 
@@ -181,47 +173,37 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
                 visibility: state.enabled ? 'visible' : 'none',
               },
               paint: {
-                'circle-radius': 5.5,
+                'circle-radius': 5,
                 'circle-color': '#f59e0b',
-                'circle-stroke-width': 1.5,
+                'circle-stroke-width': 1,
                 'circle-stroke-color': '#ffffff',
                 'circle-opacity': state.opacity,
               },
             });
           }
         } catch {
-          // Layer will render as assets arrive
+          // Layer will bind when file is present
         }
       });
 
-      // Default Rover drop-off marker
+      // Rover drop-off marker
       if (siteData.default_start) {
         const el = document.createElement('div');
-        el.className = 'rover-marker';
-        el.style.width = '24px';
-        el.style.height = '24px';
-        el.style.backgroundColor = '#2563eb';
-        el.style.border = '2px solid #ffffff';
+        el.className = 's48-rover-marker';
+        el.textContent = 'R';
+        el.style.width = '20px';
+        el.style.height = '20px';
         el.style.borderRadius = '50%';
-        el.style.boxShadow = '0 0 10px rgba(37,99,235,0.8)';
-        el.style.cursor = 'pointer';
-        el.style.display = 'flex';
-        el.style.alignItems = 'center';
-        el.style.justifyContent = 'center';
-        el.innerHTML = `<span style="font-size:11px;color:#fff;font-weight:bold;">R</span>`;
+        el.style.backgroundColor = '#2563eb';
+        el.style.color = '#ffffff';
+        el.style.textAlign = 'center';
+        el.style.lineHeight = '20px';
+        el.style.fontWeight = 'bold';
+        el.style.fontSize = '12px';
 
-        const popup = new Popup({ offset: 15 }).setHTML(`
-          <div style="color:#0f172a;padding:4px;font-family:sans-serif;">
-            <strong style="font-size:13px;">${siteData.default_start.label}</strong>
-            <div style="font-size:11px;color:#475569;margin-top:2px;">
-              Lon: ${siteData.default_start.lon.toFixed(4)}°<br/>
-              Lat: ${siteData.default_start.lat.toFixed(4)}°
-            </div>
-            <div style="font-size:10px;color:#2563eb;margin-top:4px;font-weight:600;">
-              Mission Origin / Return Point
-            </div>
-          </div>
-        `);
+        const popup = new Popup({ offset: 12 }).setText(
+          `${siteData.default_start.label} (${siteData.default_start.lon.toFixed(4)}°, ${siteData.default_start.lat.toFixed(4)}°)`
+        );
 
         markerRef.current = new Marker({ element: el })
           .setLngLat([siteData.default_start.lon, siteData.default_start.lat])
@@ -240,7 +222,6 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
     };
   }, [siteData]);
 
-  // Synchronize layer visibility & opacity updates
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
@@ -266,73 +247,24 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
     if (!map) return;
 
     if (is3D) {
-      map.easeTo({ pitch: 0, bearing: 0, duration: 800 });
+      map.easeTo({ pitch: 0, bearing: 0, duration: 600 });
       setIs3D(false);
     } else {
-      map.easeTo({ pitch: 55, bearing: -15, duration: 800 });
+      map.easeTo({ pitch: 55, bearing: -15, duration: 600 });
       setIs3D(true);
     }
   };
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      {/* Map Container */}
-      <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
+    <div className="s48-map-container">
+      <div ref={mapContainerRef} className="s48-map-viewport" />
 
-      {/* 2D / 3D Terrain Pitch Toggle */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '16px',
-          right: '54px',
-          zIndex: 20,
-        }}
-      >
-        <button
-          onClick={toggle3D}
-          style={{
-            backgroundColor: '#0f172a',
-            color: is3D ? '#38bdf8' : '#f8fafc',
-            border: is3D ? '1px solid #38bdf8' : '1px solid #334155',
-            borderRadius: '4px',
-            padding: '6px 12px',
-            fontSize: '12px',
-            fontWeight: 700,
-            cursor: 'pointer',
-            boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
-            transition: 'all 0.15s ease',
-          }}
-          title="Toggle 2D Plan / 3D Relief Pitch"
-        >
-          {is3D ? '3D Relief (Active)' : '2D Plan'}
+      <div className="s48-terrain-toggle" style={{ position: 'absolute', top: 12, right: 50, zIndex: 10 }}>
+        <button type="button" onClick={toggle3D}>
+          {is3D ? '2D View' : '3D Relief'}
         </button>
       </div>
 
-      {/* Coordinate & Zoom Telemetry */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '16px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 20,
-          backgroundColor: 'rgba(15, 23, 42, 0.85)',
-          backdropFilter: 'blur(4px)',
-          border: '1px solid rgba(51, 65, 85, 0.8)',
-          borderRadius: '4px',
-          padding: '4px 10px',
-          fontSize: '11px',
-          fontFamily: 'monospace',
-          color: '#cbd5e1',
-          pointerEvents: 'none',
-        }}
-      >
-        <span>CENTER: {siteData.origin.lon0.toFixed(3)}°E, {siteData.origin.lat_c.toFixed(3)}°N</span>
-        <span style={{ margin: '0 6px', color: '#64748b' }}>|</span>
-        <span>ZOOM: {currentZoom.toFixed(1)}</span>
-      </div>
-
-      {/* 6. Custom Scale Bar in True Mars Metres */}
       <ScaleBar map={mapInstance} defaultLat={siteData.origin.lat_c} />
     </div>
   );

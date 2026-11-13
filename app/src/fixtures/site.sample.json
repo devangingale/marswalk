@@ -1,6 +1,6 @@
 {
   "id": "gale",
-  "title": "Mount Sharp, Gale crater",
+  "title": "Mount Sharp, Gale crater (Stub Specification)",
   "rover": "Curiosity",
   "origin": { "lon0": 137.3628, "lat0": -4.8250, "lat_c": -4.7913 },
   "size_m": { "width": 3986, "height": 4000 },
@@ -79,8 +79,8 @@
   "chemistry_url": "/data/gale/chemistry.geojson",
   "stops_url": "/data/gale/stops.json",
   "validation": {
-    "text": "Curiosity traverse validation: 86.4% on walkable ground.",
-    "model_auc": 0.88,
-    "baseline_auc": 0.76
+    "text": "Stub specification: validation metrics will be recorded from pipeline evaluation.",
+    "model_auc": null,
+    "baseline_auc": null
   }
 }
