@@ -43,7 +43,12 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 
 | Name | Used for | Licence |
 |---|---|---|
-| _add as introduced_ | | |
+| React | UI rendering and component architecture | MIT |
+| MapLibre GL JS | Mars surface map rendering and 3D terrain relief | BSD-3-Clause |
+| PMTiles | Cloud-native single-file tile archive reader | BSD-3-Clause |
+| Vite | Frontend build tooling and static compilation | MIT |
+| Vitest | Unit test execution and contract verification | MIT |
+| TypeScript | Static type safety and data contract typing | Apache-2.0 |
 
 ## Images, fonts, icons, text
 
