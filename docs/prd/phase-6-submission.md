@@ -2,7 +2,7 @@
 
 > Read [`00-contracts.md`](00-contracts.md) first. File formats, coordinates and units are defined there and override anything below.
 
-**Owner:** Archisha (deck, text, video) + Dev (deploy, final submit). **Window:** hours 20–30, but the deck skeleton, `docs/submission.md` and `docs/references.md` are kept current from the start.
+**Owner:** Archisha (deck, text, video) + Dev (deploy, final submit). **Branch:** `archisha/p6-submission`. **Window:** hours 20–30, but the deck skeleton, `docs/submission.md` and `docs/references.md` are kept current from the start.
 
 ## Hard rules (breaking any makes the project ineligible)
 
