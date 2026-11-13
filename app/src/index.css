@@ -1,79 +1,75 @@
 /* Written with AI assistance, directed and reviewed by the team. */
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
+/* Structural layout hooks for Phase 3 shell */
 html,
 body,
 #root {
   width: 100%;
   height: 100%;
+  margin: 0;
+  padding: 0;
   overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background-color: #090d16;
-  color: #f8fafc;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: sans-serif;
 }
 
-/* Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+.s48-app {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
 }
 
-::-webkit-scrollbar-track {
-  background: #0f172a;
+.s48-header {
+  display: flex;
+  align-items: center;
+  justifyContent: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid #ccc;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 3px;
+.s48-main {
+  flex: 1;
+  position: relative;
+  display: flex;
+  overflow: hidden;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+.s48-map-container {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
 }
 
-/* MapLibre custom dark theme integration */
-.maplibregl-ctrl-group {
-  background-color: #0f172a !important;
-  border: 1px solid #334155 !important;
-  border-radius: 4px !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+.s48-map-viewport {
+  width: 100%;
+  height: 100%;
 }
 
-.maplibregl-ctrl-group button {
-  border-bottom: 1px solid #1e293b !important;
+.s48-layer-panel {
+  width: 320px;
+  max-width: 85vw;
+  border-right: 1px solid #ccc;
+  overflow-y: auto;
+  padding: 12px;
+  box-sizing: border-box;
+  background-color: #ffffff;
 }
 
-.maplibregl-ctrl-group button:last-child {
-  border-bottom: none !important;
+.s48-scale-bar {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid #333;
+  padding: 4px 8px;
+  font-family: monospace;
 }
 
-.maplibregl-ctrl-group button .maplibregl-ctrl-icon {
-  filter: invert(1) hue-rotate(180deg);
-}
-
-.maplibregl-ctrl-attrib {
-  background-color: rgba(15, 23, 42, 0.8) !important;
-  color: #94a3b8 !important;
-  font-size: 10px !important;
-}
-
-.maplibregl-ctrl-attrib a {
-  color: #38bdf8 !important;
-  text-decoration: none;
-}
-
-/* Rover marker animation */
-.rover-marker {
-  transition: transform 0.2s ease;
-}
-
-.rover-marker:hover {
-  transform: scale(1.15);
+.s48-scale-line {
+  height: 4px;
+  background-color: #000;
+  margin-top: 2px;
 }

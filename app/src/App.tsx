@@ -24,9 +24,8 @@ export const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [mode, setMode] = useState<AppMode>('plan');
   const [layerStates, setLayerStates] = useState<Record<string, LayerState>>({});
-  const [isPanelOpen, setIsPanelOpen] = useState<boolean>(window.innerWidth >= 1024);
+  const [isPanelOpen, setIsPanelOpen] = useState<boolean>(true);
 
-  // Load site.json or fall back to stub
   const loadSite = useCallback(async (siteId: string) => {
     setIsLoading(true);
     const targetUrl = getSiteJsonUrl(siteId);
@@ -40,7 +39,6 @@ export const App: React.FC = () => {
       setSiteData(data);
       setIsSampleFallback(false);
 
-      // Initialize layer states
       const initialStates: Record<string, LayerState> = {};
       data.layers.forEach((layer) => {
         initialStates[layer.id] = {
@@ -50,11 +48,10 @@ export const App: React.FC = () => {
       });
       setLayerStates(initialStates);
     } catch {
-      // Fallback to contract-shaped stub fixture
       const fallbackData = {
         ...(stubSiteSample as unknown as SiteData),
         id: siteId,
-        title: siteId === 'jezero' ? 'Jezero Crater Delta (Sample Stub)' : stubSiteSample.title,
+        title: siteId === 'jezero' ? 'Jezero Crater Delta (Stub Specification)' : stubSiteSample.title,
         rover: siteId === 'jezero' ? 'Perseverance' : stubSiteSample.rover,
       };
 
@@ -113,95 +110,31 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        width: '100vw',
-        height: '100vh',
-        overflow: 'hidden',
-        backgroundColor: '#090d16',
-        color: '#f8fafc',
-      }}
-    >
-      {/* 7. Visible "sample data missing" notice when falling back to stub */}
+    <div className="s48-app">
       <NoticeBanner
         isSampleFallback={isSampleFallback}
         siteId={currentSiteId}
         tilesBase={TILES_BASE}
       />
 
-      {/* Top Application Header */}
-      <header
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '8px 16px',
-          backgroundColor: '#0f172a',
-          borderBottom: '1px solid #1e293b',
-          zIndex: 40,
-          flexWrap: 'wrap',
-          gap: '12px',
-        }}
-      >
-        {/* Brand & Mission Title (No NASA insignia per constraints) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontWeight: 800,
-              fontSize: '15px',
-              letterSpacing: '0.04em',
-              color: '#f8fafc',
-            }}
-          >
-            <span
-              style={{
-                display: 'inline-block',
-                width: '10px',
-                height: '10px',
-                borderRadius: '50%',
-                backgroundColor: '#e06c53', // Mars Oxide
-                boxShadow: '0 0 8px #e06c53',
-              }}
-            />
-            <span>SOL-48</span>
-            <span style={{ color: '#64748b', fontWeight: 400, fontSize: '13px' }}>| MARSWALK</span>
-          </div>
-
-          <div style={{ height: '18px', width: '1px', backgroundColor: '#334155' }} />
-
-          {/* 2. Site Switcher (Gale / Jezero) */}
+      <header className="s48-header">
+        <div className="s48-brand-site-group" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span className="s48-app-title">Sol-48 Marswalk</span>
           <SiteSwitcher
             availableSites={AVAILABLE_SITES}
             currentSite={currentSiteId}
             onSiteChange={handleSiteChange}
             siteTitle={siteData.title}
-            roverName={siteData.rover}
           />
         </div>
 
-        {/* 3. Top-Level Mode Switch: Plan / Walk / Visor */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div className="s48-header-controls" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <ModeSwitch currentMode={mode} onModeChange={setMode} />
-
-          {/* Layer Panel Toggle for mobile/tablet */}
           {mode === 'plan' && (
             <button
+              type="button"
+              className="s48-layer-toggle-btn"
               onClick={() => setIsPanelOpen(!isPanelOpen)}
-              style={{
-                backgroundColor: isPanelOpen ? '#1e293b' : '#0f172a',
-                color: isPanelOpen ? '#38bdf8' : '#cbd5e1',
-                border: '1px solid #334155',
-                borderRadius: '4px',
-                padding: '6px 10px',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
             >
               {isPanelOpen ? 'Hide Layers' : 'Show Layers'}
             </button>
@@ -209,25 +142,11 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Viewport Content */}
-      <main style={{ flex: 1, position: 'relative', display: 'flex', overflow: 'hidden' }}>
+      <main className="s48-main">
         {isLoading ? (
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#94a3b8',
-              fontSize: '14px',
-              fontFamily: 'monospace',
-            }}
-          >
-            LOADING MISSION DATA [{currentSiteId.toUpperCase()}]...
-          </div>
+          <div className="s48-loading-indicator">Loading site...</div>
         ) : mode === 'plan' ? (
           <>
-            {/* 4. Layer Panel grouped by kind */}
             <LayerPanel
               layers={siteData.layers}
               layerStates={layerStates}
@@ -236,20 +155,12 @@ export const App: React.FC = () => {
               isOpen={isPanelOpen}
               onTogglePanel={() => setIsPanelOpen(!isPanelOpen)}
             />
-
-            {/* Interactive Map with PMTiles, Terrain, and Custom Mars Scale Bar */}
             <Map siteData={siteData} layerStates={layerStates} />
           </>
         ) : mode === 'walk' ? (
-          <WalkPlaceholder
-            siteData={siteData}
-            onReturnToPlan={() => setMode('plan')}
-          />
+          <WalkPlaceholder onReturnToPlan={() => setMode('plan')} />
         ) : (
-          <VisorPlaceholder
-            siteData={siteData}
-            onReturnToPlan={() => setMode('plan')}
-          />
+          <VisorPlaceholder onReturnToPlan={() => setMode('plan')} />
         )}
       </main>
     </div>

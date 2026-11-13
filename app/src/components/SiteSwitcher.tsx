@@ -7,7 +7,6 @@ interface SiteSwitcherProps {
   currentSite: string;
   onSiteChange: (siteId: string) => void;
   siteTitle?: string;
-  roverName?: string;
 }
 
 export const SiteSwitcher: React.FC<SiteSwitcherProps> = ({
@@ -15,37 +14,15 @@ export const SiteSwitcher: React.FC<SiteSwitcherProps> = ({
   currentSite,
   onSiteChange,
   siteTitle,
-  roverName,
 }) => {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-      <label
-        htmlFor="site-select"
-        style={{
-          fontSize: '11px',
-          fontWeight: 600,
-          color: '#94a3b8',
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-        }}
-      >
-        Site:
-      </label>
+    <div className="s48-site-switcher">
+      <label htmlFor="s48-site-select" className="s48-site-label">Site: </label>
       <select
-        id="site-select"
+        id="s48-site-select"
+        className="s48-site-select"
         value={currentSite}
         onChange={(e) => onSiteChange(e.target.value)}
-        style={{
-          backgroundColor: '#0f172a',
-          color: '#f8fafc',
-          border: '1px solid #334155',
-          borderRadius: '4px',
-          padding: '6px 10px',
-          fontSize: '13px',
-          fontWeight: 500,
-          cursor: 'pointer',
-          outline: 'none',
-        }}
       >
         {availableSites.map((site) => (
           <option key={site} value={site}>
@@ -53,21 +30,7 @@ export const SiteSwitcher: React.FC<SiteSwitcherProps> = ({
           </option>
         ))}
       </select>
-      {siteTitle && (
-        <span
-          style={{
-            fontSize: '12px',
-            color: '#cbd5e1',
-            maxWidth: '220px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-          title={siteTitle}
-        >
-          {siteTitle} {roverName ? `(${roverName})` : ''}
-        </span>
-      )}
+      {siteTitle && <span className="s48-site-title"> {siteTitle}</span>}
     </div>
   );
 };
