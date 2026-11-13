@@ -1,5 +1,7 @@
 # Phase 6 — Deploy, project page, deck, video, submit
 
+> Read [`00-contracts.md`](00-contracts.md) first. File formats, coordinates and units are defined there and override anything below.
+
 **Owner:** Archisha (deck, text, video) + Dev (deploy, final submit). **Window:** hours 20–30, but the deck skeleton, `docs/submission.md` and `docs/references.md` are kept current from the start.
 
 ## Hard rules (breaking any makes the project ineligible)
@@ -37,3 +39,8 @@
 - Slide count ≤ 7 and video length ≤ 30 s, both checked.
 - References compared against `docs/references.md`, `app/package.json` and the Python environment.
 - "Submit for Judging" clicked and the confirmation banner seen.
+
+## Additions (contracts v1)
+
+- Partner agencies to credit, each confirmed against the instrument's official page before submission: ESA (Mars Express), Spain (REMS, MEDA), Canada (APXS), and UAE (Hope) only if used.
+- App on Vercel, tiles on Cloudflare R2, both on personal accounts.
