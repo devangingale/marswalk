@@ -190,7 +190,7 @@ describe('Plan builder and validation (Contracts Section 7 and 10)', () => {
 
   it('generates app/src/fixtures/plan.sample.json valid against Contracts Section 7', async () => {
     const fs = await import('node:fs');
-    const path = await import('node:path');
+    const { fileURLToPath } = await import('node:url');
 
     // Synthetic Gale-scale grid (500x500 cells, 8m resolution = 4000x4000m)
     const width = 500;
@@ -280,12 +280,8 @@ describe('Plan builder and validation (Contracts Section 7 and 10)', () => {
       }
     }
 
-    // Write to app/src/fixtures/plan.sample.json
-    const fixtureDir = path.resolve(process.cwd(), 'app/src/fixtures');
-    if (!fs.existsSync(fixtureDir)) {
-      fs.mkdirSync(fixtureDir, { recursive: true });
-    }
-    const fixturePath = path.join(fixtureDir, 'plan.sample.json');
+    // Write to app/src/fixtures/plan.sample.json, resolved from this file so the working directory does not matter
+    const fixturePath = fileURLToPath(new URL('../fixtures/plan.sample.json', import.meta.url));
     fs.writeFileSync(fixturePath, JSON.stringify(samplePlan, null, 2), 'utf-8');
 
     expect(fs.existsSync(fixturePath)).toBe(true);
