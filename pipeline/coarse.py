@@ -74,7 +74,7 @@ def _describe(name: str, arr: np.ndarray, transform) -> tuple[float, float, floa
     print(
         f"{name}: {w}x{h} px, extent x {transform.c:.0f}..{transform.c + w * transform.a:.0f}, "
         f"y {transform.f + h * transform.e:.0f}..{transform.f:.0f}, "
-        f"grid res {transform.a:g} m, range {lo:.6g}..{hi:.6g}, valid {percent:.1f}%"
+        f"grid res {transform.a:g} m, range {lo:.6g}..{hi:.6g}, valid {percent:.3f}%"
     )
     return lo, hi, percent
 
@@ -190,7 +190,7 @@ def main() -> None:
         thermal = np.full((height, width), np.nan, dtype="float32")
         for path in thermal_paths:
             with rasterio.open(path) as src:
-                _source_info("THEMIS thermal inertia", src, float(np.mean(src.res)), "J m-2 K-1 s-1/2 (TIU)")
+                _source_info("THEMIS thermal inertia", src, float(np.mean(src.res)), "J m^-2 K^-1 s^-1/2")
                 # The supplied source bundle is partial; read only the area window so
                 # unrelated missing blocks elsewhere in the global mosaic do not fail.
                 win = from_bounds(*bounds, transform=src.transform).round_offsets().round_lengths()
@@ -209,7 +209,7 @@ def main() -> None:
                 thermal[np.isfinite(warped)] = warped[np.isfinite(warped)]
         _write_layer(out_dir, "thermal", "THEMIS thermal inertia", "thermal", 100.0,
                      "THEMIS quantitative thermal inertia mosaic (100 m); values indicate near-surface thermal inertia.",
-                     "J m-2 K-1 s-1/2 (TIU)", ["#313695", "#74add1", "#ffffbf", "#a50026"],
+                     "J m^-2 K^-1 s^-1/2", ["#313695", "#74add1", "#ffffbf", "#a50026"],
                      thermal, transform, area_crs)
 
     center_x = (bounds[0] + bounds[2]) / 2
