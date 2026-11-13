@@ -12,7 +12,7 @@
  */
 
 import { RouteGrid } from './grid';
-import { EnergyModelParams, evaluateStep, StepEvaluation } from './energy';
+import { EnergyModelParams, evaluateStep } from './energy';
 
 export interface RowCol {
   row: number;
