@@ -1,0 +1,18 @@
+# Gale crater / Mount Sharp. Walk area covers the boxwork region Curiosity
+# reached around sol 4400-4868 plus the climb leading to it.
+name: gale
+title: Mount Sharp, Gale crater
+rover: Curiosity
+
+# All source rasters are equirectangular (lat_ts=0, lon_0=0, R=3396190 m).
+dem: data/raw/gale_dem/MSL_Gale_DEM_Mosaic_1m_v3.tif
+image: data/raw/gale_dem/MSL_Gale_HiRISE-LRGB_78quads_sharp_cog.tif
+poses: data/raw/pds_places/localized_interp.csv
+
+# Walk area in source-projection metres: [left, bottom, right, top]. 4 x 4 km.
+area: [8142000, -286000, 8146000, -282000]
+
+# Corridor used only for model training: the whole traverse plus a margin.
+train_area: [8141000, -286000, 8147800, -271500]
+
+out: data/sites/gale
