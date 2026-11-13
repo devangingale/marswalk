@@ -1,5 +1,7 @@
 # Phase 4 — Rover photos, Walk and Visor views
 
+> Read [`00-contracts.md`](00-contracts.md) first. File formats, coordinates and units are defined there and override anything below.
+
 **Owner:** Archisha's machine (git only, no raw data). **Window:** hours 1–20. **Branch:** `archisha/p4-walk-visor`.
 
 ## Goal
@@ -35,3 +37,18 @@ Let the astronaut walk the planned route: a tablet view and a helmet-visor view,
 ## Done when
 
 A route planned in the Plan view can be walked start to finish in both views, with a real photo and credit at each stop that has one nearby, and a clear "no photo here" state where none exists.
+
+## Additions (contracts v1)
+
+- `photos.json` exactly as contracts section 8. The pose tables are already in the repository at `shared/poses/`.
+- The Curiosity image feed has been tested and works; each record carries `site` and `drive`.
+- Walk and Visor read the plan object in contracts section 7. Until phase 3 lands, use `app/src/fixtures/plan.sample.json`.
+- At each stop also show current conditions from `conditions.json` and, where a chemistry point is within 30 m, its composition.
+- All positions along the route come from `route.legs[].line`; distances come from the leg fields, never from the map library.
+
+## Reviewer check
+
+1. Load the sample plan: the marker travels the whole route and returns to the start; remaining budget reaches the totals in the plan.
+2. Open five photos at random: each shows a credit line, and its map position is on or beside the rover path.
+3. Visor view shows only heading, distance to next stop, budget remaining and the hazard cue.
+4. A stop with no photo nearby shows a clear "no photo here" state.
