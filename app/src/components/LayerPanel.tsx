@@ -50,68 +50,79 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
     return acc;
   }, {});
 
+  const activeCount = Object.values(layerStates).filter((s) => s.enabled).length;
+
   return (
     <aside
-      className={`s48-layer-panel ${isOpen ? 's48-layer-panel-open' : 's48-layer-panel-closed'}`}
-      style={{ display: isOpen ? 'block' : 'none' }}
+      className="panel"
+      style={{
+        display: isOpen ? 'block' : 'none',
+        overflowY: 'auto',
+      }}
     >
-      <div className="s48-layer-panel-header">
-        <h2>Layers</h2>
-        <button
-          type="button"
-          className="s48-layer-panel-toggle-btn"
-          onClick={onTogglePanel}
-          aria-label="Toggle layer panel"
-        >
-          Hide
-        </button>
-      </div>
+      <div className="panel-sec" style={{ borderBottom: 0 }}>
+        <h3>
+          <span>Layers <small>{activeCount} on</small></span>
+          <button
+            type="button"
+            className="s48-btn s48-btn--quiet"
+            onClick={onTogglePanel}
+            aria-label="Close layer panel"
+          >
+            Hide
+          </button>
+        </h3>
 
-      <div className="s48-layer-panel-body">
-        {Object.entries(groupedLayers).map(([kind, kindLayers]) => {
-          const kindKey = kind as SiteKind;
-          const kindTitle = KIND_LABELS[kindKey] || kind;
+        <div className="s48-layers">
+          {Object.entries(groupedLayers).map(([kind, kindLayers]) => {
+            const kindKey = kind as SiteKind;
+            const kindTitle = KIND_LABELS[kindKey] || kind;
 
-          return (
-            <section key={kind} className="s48-layer-group">
-              <h3 className="s48-layer-group-title">{kindTitle}</h3>
-              <ul className="s48-layer-list">
+            return (
+              <div key={kind}>
+                <h4>{kindTitle}</h4>
                 {kindLayers.map((layer) => {
                   const state = layerStates[layer.id] || {
                     enabled: layer.default_on,
                     opacity: 1.0,
                   };
 
+                  const isCoarse = layer.resolution_m >= 5;
+
                   return (
-                    <li key={layer.id} className="s48-layer-item">
-                      <div className="s48-layer-row">
-                        <label className="s48-layer-label">
+                    <div key={layer.id} className="s48-layer">
+                      <div className="s48-layer__head">
+                        <label>
                           <input
                             type="checkbox"
-                            className="s48-layer-checkbox"
+                            className="s48-check"
                             checked={state.enabled}
                             onChange={() => onToggleLayer(layer.id)}
                           />
-                          <span className="s48-layer-title">{layer.title}</span>
+                          <span>{layer.title}</span>
                         </label>
-                        <span className="s48-layer-resolution">
-                          · {formatResolution(layer.resolution_m)}
-                        </span>
-                        <span className="s48-layer-type-badge">
-                          ({layer.type === 'raster' ? 'PMTiles' : 'GeoJSON'})
-                        </span>
+                        {isCoarse && (
+                          <span className="s48-chip">
+                            <svg className="i" viewBox="0 0 16 16" aria-hidden="true">
+                              <rect x="2" y="2" width="12" height="12" />
+                              <path d="M6 2v12M10 2v12M2 6h12M2 10h12" />
+                            </svg>
+                            Coarse · {formatResolution(layer.resolution_m)}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="s48-layer__note">
+                        {layer.type === 'points' ? 'Points' : formatResolution(layer.resolution_m)} · {layer.source} · {layer.agency}
                       </div>
 
                       {state.enabled && (
-                        <div className="s48-layer-details">
-                          <div className="s48-layer-opacity">
-                            <label htmlFor={`s48-opacity-${layer.id}`}>
-                              Opacity: {Math.round(state.opacity * 100)}%
-                            </label>
+                        <div className="s48-layer__body">
+                          <div className="s48-opacity">
+                            <span>Opacity</span>
                             <input
-                              id={`s48-opacity-${layer.id}`}
                               type="range"
-                              className="s48-layer-slider"
+                              className="s48-range"
                               min="0"
                               max="1"
                               step="0.05"
@@ -120,45 +131,45 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
                                 onOpacityChange(layer.id, parseFloat(e.target.value))
                               }
                             />
+                            <output>{Math.round(state.opacity * 100)} %</output>
                           </div>
 
                           {layer.legend && layer.legend.stops && layer.legend.stops.length > 0 && (
-                            <div className="s48-layer-legend">
-                              <span className="s48-layer-legend-title">
-                                Legend {layer.units ? `(${layer.units})` : ''}:
-                              </span>
-                              <div className="s48-layer-legend-stops">
-                                {layer.legend.stops.map(([val, color], idx) => (
-                                  <span
-                                    key={idx}
-                                    className="s48-layer-legend-chip"
-                                    style={{
-                                      display: 'inline-block',
-                                      width: '16px',
-                                      height: '10px',
-                                      backgroundColor: color,
-                                      marginRight: '2px',
-                                      verticalAlign: 'middle',
-                                    }}
-                                    title={`${val} ${layer.units || ''}`}
-                                  />
-                                ))}
+                            <div className="s48-legend">
+                              <div
+                                className="s48-legend__ramp"
+                                style={{
+                                  background: `linear-gradient(to right, ${layer.legend.stops
+                                    .map(([, color]) => color)
+                                    .join(', ')})`,
+                                }}
+                              />
+                              <div className="s48-legend__ends">
+                                <span>
+                                  <b>{layer.legend.stops[0][0]}</b> {layer.units || ''}
+                                </span>
+                                <span>
+                                  <b>{layer.legend.stops[layer.legend.stops.length - 1][0]}</b>
+                                </span>
                               </div>
                             </div>
                           )}
 
-                          <div className="s48-layer-source">
-                            {layer.source} · {layer.agency}
-                          </div>
+                          {layer.type === 'points' && (
+                            <div className="s48-legend s48-legend--points">
+                              <span className="pt" />
+                              <span>{layer.title} ({layer.units || 'target point'})</span>
+                            </div>
+                          )}
                         </div>
                       )}
-                    </li>
+                    </div>
                   );
                 })}
-              </ul>
-            </section>
-          );
-        })}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </aside>
   );

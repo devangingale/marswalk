@@ -54,7 +54,7 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 
 | Item | Source | Licence / credit |
 |---|---|---|
-| _add as introduced_ | | |
+| Barlow, Barlow Semi Condensed, Barlow Condensed | Google Fonts (Jeremy Tribby) | SIL Open Font License 1.1 |
 
 ## AI tools
 

@@ -51,7 +51,7 @@ export const App: React.FC = () => {
       const fallbackData = {
         ...(stubSiteSample as unknown as SiteData),
         id: siteId,
-        title: siteId === 'jezero' ? 'Jezero Crater Delta (Stub Specification)' : stubSiteSample.title,
+        title: siteId === 'jezero' ? 'Jezero crater delta (Stub Specification)' : stubSiteSample.title,
         rover: siteId === 'jezero' ? 'Perseverance' : stubSiteSample.rover,
       };
 
@@ -110,43 +110,56 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="s48-app">
+    <div className="mock plan-mock" style={{ width: '100vw', height: '100vh' }}>
+      <header className="mock-top">
+        <span className="wordmark">Sol-48</span>
+
+        <ModeSwitch currentMode={mode} onModeChange={setMode} />
+
+        <SiteSwitcher
+          availableSites={AVAILABLE_SITES}
+          currentSite={currentSiteId}
+          onSiteChange={handleSiteChange}
+          siteTitle={siteData.title}
+          roverName={siteData.rover}
+        />
+
+        <span className="grow" />
+
+        {mode === 'plan' && (
+          <button
+            type="button"
+            className="s48-btn s48-btn--secondary"
+            onClick={() => setIsPanelOpen(!isPanelOpen)}
+            aria-label="Toggle layer panel"
+          >
+            <svg className="i" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M8 2l6 3.2-6 3.2-6-3.2z" />
+              <path d="M2 8.4l6 3.2 6-3.2" />
+              <path d="M2 11.4l6 3.2 6-3.2" />
+            </svg>
+            <span>{isPanelOpen ? 'Hide layers' : 'Layers'}</span>
+          </button>
+        )}
+
+        <span className="meta">
+          {siteData.size_m ? `${Math.round(siteData.size_m.width / 1000)} × ${Math.round(siteData.size_m.height / 1000)} km` : ''}
+        </span>
+      </header>
+
       <NoticeBanner
         isSampleFallback={isSampleFallback}
         siteId={currentSiteId}
         tilesBase={TILES_BASE}
       />
 
-      <header className="s48-header">
-        <div className="s48-brand-site-group" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span className="s48-app-title">Sol-48 Marswalk</span>
-          <SiteSwitcher
-            availableSites={AVAILABLE_SITES}
-            currentSite={currentSiteId}
-            onSiteChange={handleSiteChange}
-            siteTitle={siteData.title}
-          />
-        </div>
-
-        <div className="s48-header-controls" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <ModeSwitch currentMode={mode} onModeChange={setMode} />
-          {mode === 'plan' && (
-            <button
-              type="button"
-              className="s48-layer-toggle-btn"
-              onClick={() => setIsPanelOpen(!isPanelOpen)}
-            >
-              {isPanelOpen ? 'Hide Layers' : 'Show Layers'}
-            </button>
-          )}
-        </div>
-      </header>
-
-      <main className="s48-main">
+      <div style={{ flex: 1, minHeight: 0, position: 'relative', overflow: 'hidden' }}>
         {isLoading ? (
-          <div className="s48-loading-indicator">Loading site...</div>
+          <div style={{ padding: 'var(--space-6)', color: 'var(--color-text-muted)' }}>
+            Loading site...
+          </div>
         ) : mode === 'plan' ? (
-          <>
+          <div className="plan-body">
             <LayerPanel
               layers={siteData.layers}
               layerStates={layerStates}
@@ -156,13 +169,13 @@ export const App: React.FC = () => {
               onTogglePanel={() => setIsPanelOpen(!isPanelOpen)}
             />
             <Map siteData={siteData} layerStates={layerStates} />
-          </>
+          </div>
         ) : mode === 'walk' ? (
           <WalkPlaceholder onReturnToPlan={() => setMode('plan')} />
         ) : (
           <VisorPlaceholder onReturnToPlan={() => setMode('plan')} />
         )}
-      </main>
+      </div>
     </div>
   );
 };

@@ -16,18 +16,17 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({ currentMode, onModeChang
   ];
 
   return (
-    <nav aria-label="Mode selector" className="s48-mode-switch">
+    <div className="s48-seg" role="group" aria-label="Mode">
       {modes.map((mode) => (
         <button
           key={mode.id}
           type="button"
-          className={`s48-mode-btn ${currentMode === mode.id ? 's48-mode-btn-active' : ''}`}
+          aria-pressed={currentMode === mode.id}
           onClick={() => onModeChange(mode.id)}
-          aria-current={currentMode === mode.id ? 'page' : undefined}
         >
           {mode.label}
         </button>
       ))}
-    </nav>
+    </div>
   );
 };
