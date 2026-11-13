@@ -1,0 +1,23 @@
+{
+  "width": 250,
+  "height": 250,
+  "cell_x_m": 2.0,
+  "cell_y_m": 2.0,
+  "elev": {
+    "file": "elev.bin",
+    "dtype": "uint16",
+    "scale_m": 0.1,
+    "offset_m": -4083,
+    "nodata": 65535
+  },
+  "cost": {
+    "file": "cost.bin",
+    "dtype": "uint8",
+    "impassable": 255,
+    "multiplier": "1 + value / 50"
+  },
+  "limits": {
+    "max_slope_deg": 20
+  },
+  "cost_source": "slope-roughness-rule-v1"
+}
