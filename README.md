@@ -1,4 +1,4 @@
-# Marswalk
+# Sol-48
 
 A layered, walk-scale map for planning and carrying out a Marswalk. Built for the NASA Space Apps Challenge 2026.
 

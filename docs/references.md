@@ -38,6 +38,10 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 ## Space Agency Partner data
 
 - ESA Mars Express HRSC, as part of the HRSC–MOLA blended global DEM (`mola_hrsc_blend`). HRSC portion CC BY-SA 3.0 IGO.
+- REMS, Curiosity / Gale: daily weather reports (sol, Ls, air-temperature extrema, pressure, and UV category) downloaded from NASA/JPL's [`weather` feed](https://mars.nasa.gov/rss/api/?feed=weather&category=msl&feedtype=json), which identifies Centro de Astrobiología (CAB/CSIC-INTA, Spain) as the data provider. The certified [PDS Atmospheres REMS archive](https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/MARS/curiosity/rems.html) is the scientific archive; the NASA feed's own disclaimer says its daily report file is for outreach use and points scientific users to PDS. Feed cache: `data/raw/rems/nasa_weather.json`. No separate licence is stated for the feed; credit CAB/CSIC-INTA, NASA/JPL-Caltech, and the PDS Atmospheres Node.
+- Curiosity APXS reduced oxide abundances: [PDS Geosciences Node MSL APXS archive](https://pds-geosciences.wustl.edu/missions/msl/apxs.htm), including its [RDR data inventory](https://pds-geosciences.wustl.edu/msl/msl-m-apxs-4_5-rdr-v1/mslapx_1xxx/data/collection_data_inventory.csv) and CSV products under `https://pds-geosciences.wustl.edu/msl/msl-m-apxs-4_5-rdr-v1/mslapx_1xxx/data/`. PDS/NASA data are public domain; credit the APXS Science Team at the University of Guelph and the Canadian Space Agency (instrument funder).
+- Curiosity RAD absorbed-dose records: [MSL RAD Dose rates, Zenodo](https://doi.org/10.5281/zenodo.20536564), cached in `data/raw/msl_rad_dose/`. CC BY 4.0; cite Heber & Löwe, “MSL/RAD Dose rates”. The radiation layer uses the per-sol median of filtered RAD E-dose rate; its elevated-rate proxy uses the highest per-sol mean from those same data.
+- Gale dust climatology: [Montabone et al. Mars Climate Database column dust optical depth v2](https://www-mars.lmd.jussieu.fr/mars/dust_climatology/index.html), direct archive [`krigedcdod_v2.tar.gz`](https://www-mars.lmd.jussieu.fr/mars/dust_climatology/dataset_v2/krigedcdod_v2.tar.gz), cached in `data/raw/montabone_dust/`. CC BY-SA 3.0; cite Montabone et al. (2015), Icarus, doi:10.1016/j.icarus.2014.12.034, and Montabone et al. (2020), JGR Planets, doi:10.1029/2019JE006111.
 
 ## Scientific models and literature
 
@@ -51,6 +55,8 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 | Name | Used for | Licence |
 |---|---|---|
 | vitest | Unit testing framework for route planner, energy model, grid, and plan libraries | MIT |
+| LightGBM (`lightgbm`) | Gradient-boosted tree walkability classifier | MIT |
+| scikit-learn (`scikit-learn`) | ROC AUC metrics and model interfaces | BSD-3-Clause |
 
 ## Images, fonts, icons, text
 
