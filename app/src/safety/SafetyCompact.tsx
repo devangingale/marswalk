@@ -22,7 +22,14 @@ export const SafetyCompact: React.FC<{ model: SafetyModel; surface: 'walk' | 'vi
     <WarningLadder result={model.ladder} shelter={model.shelter} shelterEtaS={model.shelterEtaS} compact />
     <div className="s48-safety__scroll">
       <PairWarning pair={model.pair} compact />
-      {model.night && <NightPanel night={model.night} lonEast={model.lonEast} compact />}
+      {model.night && (
+        <NightPanel
+          night={model.night}
+          lonEast={model.lonEast}
+          compact
+          rover={{ distanceM: model.rover.distanceM, arrivalHhmm: model.roverArrivalHhmm, onCall: model.onComeToMe }}
+        />
+      )}
       <DaylightBeeper
         schedule={model.schedule}
         nowMs={model.nowWall}

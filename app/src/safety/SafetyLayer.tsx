@@ -48,6 +48,7 @@ export const SafetyLayer: React.FC<SafetyLayerProps> = ({ plan, origin, siteId, 
 
   if (!model) return null;
   const { night } = model;
+  const roverCall = { distanceM: model.rover.distanceM, arrivalHhmm: model.roverArrivalHhmm, onCall: model.onComeToMe };
 
   return (
     <div className="s48-safety" data-over-map aria-label="Safety and links">
@@ -59,16 +60,15 @@ export const SafetyLayer: React.FC<SafetyLayerProps> = ({ plan, origin, siteId, 
         detailOpen={ladderDetailOpen}
         detailId={ladderDetailId}
         onDetailToggle={() => setLadderDetailOpen((v) => !v)}
+        compact={night !== null}
       />
       <PairWarning pair={model.pair} />
-      {night && <NightPanel night={night} lonEast={model.lonEast} />}
       <div className="s48-safety__scroll">
+        {night && <NightPanel night={night} lonEast={model.lonEast} rover={roverCall} />}
         {ladderDetailOpen && (
           <LadderDetail id={ladderDetailId} result={model.ladder} hazard={model.hazard} onHazardChange={model.setHazard} />
         )}
         <RoverPanel
-          key={night ? 'night' : 'day'}
-          defaultOpen={night !== null}
           rover={model.rover}
           crew={model.lead}
           distanceM={model.rover.distanceM}

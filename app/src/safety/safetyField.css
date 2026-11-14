@@ -134,9 +134,9 @@
   right: auto;
   top: var(--space-4);
   width: 320px;
-  /* Clear of the playback bar and the Cesium credits at the bottom. */
+  /* Clear of the playback bar (its top sits 120 px above the map foot) and the credits under it. */
   max-height: calc(100% - var(--space-4) - var(--s48-bottom-clear));
-  --s48-bottom-clear: 168px;
+  --s48-bottom-clear: calc(var(--hit-walk) + var(--space-16) + var(--space-1));
 }
 .s48-safety--compact > .s48-ladder {
   flex: none;
@@ -182,4 +182,47 @@
   .s48-safety--visor {
     width: 280px;
   }
+}
+
+/* Rover call inside the night return. */
+.s48-night__call {
+  display: grid;
+  gap: var(--space-1);
+}
+.s48-safety--compact .s48-night__call .s48-rover__send {
+  min-height: var(--hit-walk);
+  font-size: var(--text-lg);
+}
+.s48-night__effect,
+.s48-night__called {
+  margin: 0;
+  font-family: var(--font-data);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-variant-numeric: var(--numeric);
+  color: var(--color-text-muted);
+}
+.s48-night__called {
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+
+/* Short screens (tablet landscape): the night readouts step down one size. */
+@media (max-height: 860px) {
+  .s48-safety .s48-night__dist {
+    font-size: var(--text-readout-md);
+    line-height: var(--leading-readout-md);
+  }
+  .s48-safety .s48-night__bearing {
+    font-size: var(--text-2xl);
+    line-height: var(--leading-2xl);
+  }
+}
+
+
+/* Walk and Visor: the ladder headline already names the night return. */
+.s48-safety--compact .s48-night__title {
+  display: none;
 }

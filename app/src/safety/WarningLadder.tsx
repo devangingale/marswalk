@@ -1,6 +1,6 @@
 // Written with AI assistance, directed and reviewed by the team.
 import React from 'react';
-import type { LadderLevel, LadderResult, ShelterChoice, Hazard } from './ladder';
+import type { LadderLevel, LadderResult, ShelterChoice, ShelterKind, Hazard } from './ladder';
 import { formatDuration, formatSignedDuration, formatDistance, NBSP } from './format';
 import { CheckCircle, Notch, Alert } from './glyphs';
 import { DisclosureButton } from './Disclosure';
@@ -152,7 +152,12 @@ export const LadderDetail: React.FC<{
 );
 
 function shelterName(choice: ShelterChoice): string {
-  switch (choice.shelter.kind) {
+  return shelterKindName(choice.shelter.kind);
+}
+
+/** The shelter as named on screen. */
+export function shelterKindName(kind: ShelterKind): string {
+  switch (kind) {
     case 'habitat':
       return 'Habitat';
     case 'rover':

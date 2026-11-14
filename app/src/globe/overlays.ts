@@ -632,7 +632,7 @@ export class GlobeOverlays {
         {
           position: live((m) => this.surfacePosition(member(m).lon, member(m).lat), this.surfacePosition(first.lon, first.lat)) as never,
           billboard: this.billboard(this.crewImage(), REGION),
-          label: { ...this.label(crewLabel(first), REGION, [left ? -20 : 20, 0], left), text: live((m) => crewLabel(member(m)), '') },
+          label: { ...this.label(crewLabel(first), REGION, [left ? -24 : 24, 0], left), text: live((m) => crewLabel(member(m)), '') },
         },
         { kind: 'text', lines: [first.id, formatLatLon(first.lon, first.lat)] },
       );

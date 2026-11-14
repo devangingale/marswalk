@@ -26,12 +26,10 @@ export const RoverPanel: React.FC<{
   arrivalLocalHhmm: string;
   simulated: boolean;
   onComeToMe: () => Promise<CommandReceipt>;
-  /** Opens with the command showing, for the night contingency. */
-  defaultOpen?: boolean;
-}> = ({ rover, crew, distanceM, etaToCrewS, arrivalLocalHhmm, simulated, onComeToMe, defaultOpen }) => {
+}> = ({ rover, crew, distanceM, etaToCrewS, arrivalLocalHhmm, simulated, onComeToMe }) => {
   const [receipt, setReceipt] = useState<CommandReceipt | null>(null);
   const [sending, setSending] = useState(false);
-  const [open, setOpen] = useState(defaultOpen ?? false);
+  const [open, setOpen] = useState(false);
   const bodyId = useId();
 
   const send = () => {

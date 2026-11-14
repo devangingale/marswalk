@@ -17,7 +17,15 @@ import type { Pass } from '../lib/relay';
 import { buildTrack, walkStateAt, type RouteTrack } from '../walk/track';
 import { hazardFlags } from '../walk/hazard';
 import { getSiteBaseUrl } from '../config';
-import { ladderLevel, chooseShelter, type Hazard, type LadderResult, type ShelterCandidate, type ShelterChoice } from './ladder';
+import {
+  ladderLevel,
+  chooseShelter,
+  type Hazard,
+  type LadderResult,
+  type ShelterCandidate,
+  type ShelterChoice,
+  type ShelterKind,
+} from './ladder';
 import { beeperSchedule, type BeeperStep } from './beeper';
 import {
   parsePasses,
@@ -34,7 +42,15 @@ import { computeMissionTiming } from './mission';
 import { readPairSpread, readScenario, scenarioLadderInput } from './scenario';
 import { formatLocalClock } from './format';
 import { pairSeparation, hazardMarginM, type PairSeparation } from './pair';
-import { distanceBearing, nextHazardOnReturn, nightReturnRoute, nightTrigger, type LonLat, type NightTrigger } from './navigate';
+import {
+  distanceBearing,
+  nextHazardOnReturn,
+  nightReturnRoute,
+  nightShelter,
+  nightTrigger,
+  type LonLat,
+  type NightTrigger,
+} from './navigate';
 import { applyCrewSpread, roverLabel, type CrewMarker, type CrewMarkerModel } from './crewMarkers';
 import { buildHabitatAlert, createSimulatedHabitat, type HabitatReceipt } from './habitatAlert';
 
@@ -63,8 +79,8 @@ export interface SafetyModelOptions {
 
 export interface NightModel {
   trigger: NightTrigger;
-  /** Straight line from the lead to the end of the way back (the rover drop-off). */
-  shelter: { distanceM: number; bearingDeg: number };
+  /** Straight line from the lead to the shelter at the end of the way back. */
+  shelter: { distanceM: number; bearingDeg: number; kind: ShelterKind };
   /** The way back over the walked track. */
   wayBackM: number;
   /** Next hazard along the way back; null when none, undefined while the grid loads. */
@@ -223,9 +239,10 @@ export function useSafetyModel({ plan, origin, siteId, lat, lonEast, elapsedS }:
     const planSpeedMS = track.durationS > 0 ? trackLengthM / track.durationS : 1;
     const suitTimeLeftS = Math.max(0, track.durationS + EVA_SECONDARY_O2_S - elapsed);
 
-    const candidates = shelterCandidates(plan, track, lead);
-    const shelter = chooseShelter(hazard, candidates);
-    const shelterEtaS = shelter ? shelter.shelter.distanceM / planSpeedMS : null;
+    const sites = shelterSites(plan, track);
+    const candidates = shelterCandidates(sites, lead);
+    let shelter = chooseShelter(hazard, candidates);
+    let shelterEtaS = shelter ? shelter.shelter.distanceM / planSpeedMS : null;
 
     const ladderInput = scenario
       ? scenarioLadderInput(scenario, { backByMs: timing.backByMs, sunsetMs: timing.sunsetUtcMs }).input
@@ -243,8 +260,21 @@ export function useSafetyModel({ plan, origin, siteId, lat, lonEast, elapsedS }:
 
     let night: NightModel | null = null;
     let returnLine: LonLat[] | null = null;
-    if (trigger) {
-      const wayBack = nightReturnRoute(track.vertices, walk.alongM, lead);
+    // The night way back ends at the nearest shelter behind the crew on the walked track,
+    // and the ladder names that same shelter.
+    const nightSite = trigger ? nightShelter(sites, walk.alongM) : null;
+    if (trigger && nightSite) {
+      const wayBack = nightReturnRoute(
+        track.vertices.filter((v) => v.along_m >= (nightSite.alongM ?? 0)),
+        walk.alongM,
+        lead,
+      );
+      const toShelter = distanceBearing(lead, nightSite);
+      shelter = {
+        shelter: { ...nightSite.candidate, distanceM: toShelter.distanceM },
+        reason: 'Nearest shelter on the walked track.',
+      };
+      shelterEtaS = wayBack.lengthM / planSpeedMS;
       returnLine = wayBack.line;
       const marginM = hazardMarginM(lead.uncertaintyM, 'night');
       const bucket = Math.ceil(marginM / MARGIN_STEP_M) * MARGIN_STEP_M;
@@ -253,7 +283,9 @@ export function useSafetyModel({ plan, origin, siteId, lat, lonEast, elapsedS }:
         const key = `${track.vertices.length}:${bucket}`;
         if (flagsCache.current?.key !== key) flagsCache.current = { key, flags: hazardFlags(track.vertices, grid, bucket) };
         const next = nextHazardOnReturn(track.vertices, flagsCache.current.flags, walk.alongM);
-        hazardNav = next
+        // A hazard behind the shelter is not on the way back.
+        const onWayBack = next && next.alongReturnM <= walk.alongM - (nightSite.alongM ?? 0);
+        hazardNav = next && onWayBack
           ? { alongM: next.alongReturnM, bearingDeg: distanceBearing(lead, next).bearingDeg, marginM: bucket }
           : null;
       } else {
@@ -261,7 +293,7 @@ export function useSafetyModel({ plan, origin, siteId, lat, lonEast, elapsedS }:
       }
       night = {
         trigger,
-        shelter: distanceBearing(lead, { lon: plan.start.lon, lat: plan.start.lat }),
+        shelter: { ...toShelter, kind: nightSite.candidate.kind },
         wayBackM: wayBack.lengthM,
         hazard: hazardNav,
         habitat: habitatReceipt,
@@ -353,22 +385,34 @@ export function useSafetyModel({ plan, origin, siteId, lat, lonEast, elapsedS }:
   return model;
 }
 
-/** Simulated shelter candidates near the walk, distances measured from the lead. */
-function shelterCandidates(plan: Plan, track: RouteTrack, crew: LonLat): ShelterCandidate[] {
+interface ShelterSite extends LonLat {
+  candidate: Omit<ShelterCandidate, 'distanceM'>;
+  /** Distance along the planned track where the shelter sits; null when it is off the track. */
+  alongM: number | null;
+}
+
+/** Simulated shelters near the walk (positions are simulated, labelled so on screen). */
+function shelterSites(plan: Plan, track: RouteTrack): ShelterSite[] {
   const start = { lon: plan.start.lon, lat: plan.start.lat };
-  const toDrop = localMetreDistance(crew, start);
-  // A habitat offset roughly 1.2 km north of the drop-off (simulated position).
-  const habitat = { lon: start.lon, lat: start.lat + 1200 / 59000 };
+  const at = (frac: number) => track.vertices[Math.floor(track.vertices.length * frac)] ?? track.vertices[0];
   // A habitat node sited on the planned route, about 70 % along.
-  const mid = track.vertices[Math.floor(track.vertices.length * 0.7)] ?? track.vertices[0];
+  const node = at(0.7);
   // A crater-wall shelter near the route, about 40 % along.
-  const shield = track.vertices[Math.floor(track.vertices.length * 0.4)] ?? track.vertices[0];
+  const shield = at(0.4);
   return [
-    { id: 'dropoff', kind: 'dropoff', distanceM: toDrop },
-    { id: 'rover', kind: 'rover', distanceM: toDrop },
-    { id: 'habitat', kind: 'habitat', distanceM: localMetreDistance(crew, habitat) },
-    { id: 'habitat-route', kind: 'habitat', distanceM: localMetreDistance(crew, mid), onRoute: true },
-    { id: 'shield', kind: 'terrain-shield', distanceM: localMetreDistance(crew, shield), skyBlockedFrac: 0.55 },
+    { ...start, alongM: 0, candidate: { id: 'dropoff', kind: 'dropoff' } },
+    { ...start, alongM: 0, candidate: { id: 'rover', kind: 'rover' } },
+    // A habitat roughly 1.2 km north of the drop-off.
+    { lon: start.lon, lat: start.lat + 1200 / 59000, alongM: null, candidate: { id: 'habitat', kind: 'habitat' } },
+    { lon: node.lon, lat: node.lat, alongM: node.along_m, candidate: { id: 'habitat-route', kind: 'habitat', onRoute: true } },
+    { lon: shield.lon, lat: shield.lat, alongM: null, candidate: { id: 'shield', kind: 'terrain-shield', skyBlockedFrac: 0.55 } },
+  ];
+}
+
+/** Shelter candidates with straight-line distances from the lead; the cave is not surveyed. */
+function shelterCandidates(sites: ShelterSite[], crew: LonLat): ShelterCandidate[] {
+  return [
+    ...sites.map((s) => ({ ...s.candidate, distanceM: localMetreDistance(crew, s) })),
     { id: 'cave', kind: 'cave', distanceM: 90, accessible: false },
   ];
 }

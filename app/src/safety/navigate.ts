@@ -91,3 +91,17 @@ export function nightTrigger(r: { minutesToBackBy: number; arrivalAfterSunsetMin
   if (r.arrivalAfterSunsetMin > 0) return 'arrival-after-sunset';
   return null;
 }
+
+/**
+ * The shelter for the night return: the nearest shelter behind the crew on the walked
+ * track (largest `alongM` not past the crew), so the way back ends there. Shelters off
+ * the track (`alongM` null) are not reachable over known ground. Null when none is.
+ */
+export function nightShelter<T extends { alongM: number | null }>(sites: T[], crewAlongM: number): T | null {
+  let best: T | null = null;
+  for (const s of sites) {
+    if (s.alongM === null || s.alongM > crewAlongM) continue;
+    if (best === null || s.alongM > (best.alongM as number)) best = s;
+  }
+  return best;
+}

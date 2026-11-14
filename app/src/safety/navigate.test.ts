@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { MARS_R } from '../lib/grid';
 import type { TrackVertex } from '../walk/track';
-import { distanceBearing, nightReturnRoute, nextHazardOnReturn, nightTrigger } from './navigate';
+import { distanceBearing, nightReturnRoute, nextHazardOnReturn, nightShelter, nightTrigger } from './navigate';
 
 const M_PER_DEG = (MARS_R * Math.PI) / 180;
 
@@ -113,5 +113,29 @@ describe('nightTrigger', () => {
   it('triggers when the crew is still out at back-by', () => {
     expect(nightTrigger({ ...base, minutesToBackBy: 0 })).toBe('out-at-back-by');
     expect(nightTrigger({ minutesToBackBy: -5, arrivalAfterSunsetMin: 40 })).toBe('out-at-back-by');
+  });
+});
+
+describe('nightShelter', () => {
+  const sites = [
+    { id: 'dropoff', alongM: 0 },
+    { id: 'node', alongM: 300 },
+    { id: 'off-track', alongM: null },
+  ];
+
+  it('picks the nearest shelter behind the crew on the walked track', () => {
+    expect(nightShelter(sites, 450)!.id).toBe('node');
+  });
+
+  it('falls back to the drop-off before the crew reaches a node', () => {
+    expect(nightShelter(sites, 250)!.id).toBe('dropoff');
+  });
+
+  it('counts a shelter the crew is standing at', () => {
+    expect(nightShelter(sites, 300)!.id).toBe('node');
+  });
+
+  it('is null when no shelter is on the walked track', () => {
+    expect(nightShelter([{ id: 'off-track', alongM: null }], 450)).toBeNull();
   });
 });
