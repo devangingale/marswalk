@@ -5,6 +5,8 @@
  */
 
 export interface SunEvents {
+  polar: 'day' | 'night' | null;
+  solStartUtcMs: number;
   sunriseUtcMs: number | null;
   sunsetUtcMs: number | null;
   sunriseLmst: number | null;
@@ -50,9 +52,16 @@ export function startWindow(
   if (totalTimeS > timeLimitS) {
     return null;
   }
-  if (events.sunriseUtcMs === null) {
+  if (events.polar === 'night') {
     return null;
   }
+
+  if (events.polar === 'day') {
+    const earliestUtcMs = events.solStartUtcMs;
+    return { earliestUtcMs, latestUtcMs: earliestUtcMs + (timeLimitS - totalTimeS) * 1000 };
+  }
+
+  if (events.sunriseUtcMs === null) return null;
 
   const earliestUtcMs = events.sunriseUtcMs + sunriseMarginS * 1000;
 

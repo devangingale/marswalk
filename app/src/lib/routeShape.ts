@@ -50,12 +50,12 @@ export interface ChevronPosition {
 }
 
 export interface SlopeStats {
-  highM: number;
-  highAt: [number, number];
-  lowM: number;
-  lowAt: [number, number];
-  steepestDeg: number;
-  steepestAt: [number, number];
+  highM: number | null;
+  highAt: [number, number] | null;
+  lowM: number | null;
+  lowAt: [number, number] | null;
+  steepestDeg: number | null;
+  steepestAt: [number, number] | null;
   climbM: number;
   descentM: number;
   gradientDeg: number[];
@@ -646,12 +646,12 @@ export function slopeStats(
 ): SlopeStats {
   if (line.length === 0) {
     return {
-      highM: 0,
-      highAt: [0, 0],
-      lowM: 0,
-      lowAt: [0, 0],
-      steepestDeg: 0,
-      steepestAt: [0, 0],
+      highM: null,
+      highAt: null,
+      lowM: null,
+      lowAt: null,
+      steepestDeg: null,
+      steepestAt: null,
       climbM: 0,
       descentM: 0,
       gradientDeg: [],
@@ -665,17 +665,19 @@ export function slopeStats(
     elevations.push(elev);
   }
 
-  let highM = elevations[0];
-  let highAt: [number, number] = line[0];
-  let lowM = elevations[0];
-  let lowAt: [number, number] = line[0];
+  const finiteIndices = elevations.map((e, i) => Number.isFinite(e) ? i : -1).filter(i => i >= 0);
+  let highM: number | null = finiteIndices.length ? elevations[finiteIndices[0]] : null;
+  let highAt: [number, number] | null = finiteIndices.length ? line[finiteIndices[0]] : null;
+  let lowM: number | null = highM;
+  let lowAt: [number, number] | null = highAt;
 
   for (let i = 1; i < line.length; i++) {
-    if (elevations[i] > highM) {
+    if (!Number.isFinite(elevations[i])) continue;
+    if (highM === null || elevations[i] > highM) {
       highM = elevations[i];
       highAt = line[i];
     }
-    if (elevations[i] < lowM) {
+    if (lowM === null || elevations[i] < lowM) {
       lowM = elevations[i];
       lowAt = line[i];
     }
@@ -684,21 +686,15 @@ export function slopeStats(
   let climbM = 0;
   let descentM = 0;
   const gradientDeg: number[] = [];
-  let steepestDeg = 0;
-  let steepestAt: [number, number] = line[0];
-
-  if (line.length >= 2) {
-    const p1_m = grid.lonlatToLocalMetres(line[0][0], line[0][1]);
-    const p2_m = grid.lonlatToLocalMetres(line[1][0], line[1][1]);
-    const initMid = grid.localMetresToLonLat((p1_m.x_m + p2_m.x_m) / 2, (p1_m.y_m + p2_m.y_m) / 2);
-    steepestAt = [initMid.lon, initMid.lat];
-  }
+  let steepestDeg: number | null = null;
+  let steepestAt: [number, number] | null = null;
 
   for (let i = 0; i < line.length - 1; i++) {
     const p1_m = grid.lonlatToLocalMetres(line[i][0], line[i][1]);
     const p2_m = grid.lonlatToLocalMetres(line[i + 1][0], line[i + 1][1]);
     const hDist = Math.hypot(p2_m.x_m - p1_m.x_m, p2_m.y_m - p1_m.y_m);
     const dz = elevations[i + 1] - elevations[i];
+    if (!Number.isFinite(dz)) { gradientDeg.push(NaN); continue; }
 
     if (dz > 0) {
       climbM += dz;
@@ -710,7 +706,7 @@ export function slopeStats(
     gradientDeg.push(grad);
 
     const absGrad = Math.abs(grad);
-    if (absGrad > steepestDeg || (i === 0 && absGrad === steepestDeg)) {
+    if (steepestDeg === null || absGrad > steepestDeg) {
       steepestDeg = absGrad;
       const mid = grid.localMetresToLonLat((p1_m.x_m + p2_m.x_m) / 2, (p1_m.y_m + p2_m.y_m) / 2);
       steepestAt = [mid.lon, mid.lat];

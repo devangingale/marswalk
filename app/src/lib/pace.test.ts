@@ -58,6 +58,8 @@ describe('pace and daylight planning', () => {
   it('3. calculates start window with sunrise and sunset', () => {
     // startWindow with sunrise 05:58, sunset 17:46, total 3 h 35 min, limit 8 h: earliest 06:28, latest 13:41.
     const events: SunEvents = {
+      polar: null,
+      solStartUtcMs: baseDate(0, 0),
       sunriseUtcMs: baseDate(5, 58),
       sunsetUtcMs: baseDate(17, 46),
       sunriseLmst: 5.9667,
@@ -74,6 +76,8 @@ describe('pace and daylight planning', () => {
 
   it('4. returns null when total time exceeds daylight span or in polar night', () => {
     const events: SunEvents = {
+      polar: null,
+      solStartUtcMs: baseDate(0, 0),
       sunriseUtcMs: baseDate(5, 58),
       sunsetUtcMs: baseDate(17, 46),
       sunriseLmst: 5.9667,
@@ -91,6 +95,8 @@ describe('pace and daylight planning', () => {
 
     // Polar night: sunrise and sunset both null
     const polarNight: SunEvents = {
+      polar: 'night',
+      solStartUtcMs: baseDate(0, 0),
       sunriseUtcMs: null,
       sunsetUtcMs: null,
       sunriseLmst: null,
@@ -150,7 +156,9 @@ describe('pace and daylight planning', () => {
     // Polar day: sun does not set (sunsetUtcMs === null).
     // Window is [sunrise + margin, earliest + (timeLimitS - totalTimeS)]
     const polarDay: SunEvents = {
-      sunriseUtcMs: baseDate(4, 0),
+      polar: 'day',
+      solStartUtcMs: baseDate(4, 0),
+      sunriseUtcMs: null,
       sunsetUtcMs: null,
       sunriseLmst: 4,
       sunsetLmst: null,
@@ -159,8 +167,8 @@ describe('pace and daylight planning', () => {
     const limitS = 8 * 3600; // 28800 s
     const win = startWindow(polarDay, totalTimeS, limitS);
     expect(win).not.toBeNull();
-    expect(win!.earliestUtcMs).toBe(baseDate(4, 30));
-    expect(win!.latestUtcMs).toBe(baseDate(4, 30) + (limitS - totalTimeS) * 1000);
+    expect(win!.earliestUtcMs).toBe(baseDate(4, 0));
+    expect(win!.latestUtcMs).toBe(baseDate(4, 0) + (limitS - totalTimeS) * 1000);
 
     // Deadline when sunset is null
     const dlNoSunset = deadline(null, baseDate(9, 0), 8 * 3600);

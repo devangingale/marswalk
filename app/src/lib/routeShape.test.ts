@@ -284,9 +284,19 @@ describe('routeShape', () => {
     const expectedSteepestDeg = radToDeg(Math.atan(10.0 / 100.0));
     expect(stats.steepestDeg).toBeCloseTo(expectedSteepestDeg, 9);
 
-    const steepestMid = lonlatToLocalMetres(stats.steepestAt[0], stats.steepestAt[1], testOrigin);
+    const steepestMid = lonlatToLocalMetres(stats.steepestAt![0], stats.steepestAt![1], testOrigin);
     expect(steepestMid.x_m).toBeCloseTo(50.0, 1);
     expect(steepestMid.y_m).toBeCloseTo(0.0, 1);
+  });
+
+  it('ignores a non-finite first elevation when calculating slope statistics', () => {
+    const grid = createSyntheticRampGrid(testOrigin);
+    const stats = slopeStats([[99, 99], ...[pt(55, 500), pt(95, 500)]], grid);
+    expect(stats.highM).toBe(9.5);
+    expect(stats.lowM).toBe(5.5);
+    expect(stats.climbM).toBe(4);
+    expect(stats.descentM).toBe(0);
+    expect(stats.steepestDeg).not.toBeNull();
   });
 
   it('5. sharedSegments for a single one-way leg returns one stretch with legs [0] and directions [\'fwd\']', () => {
