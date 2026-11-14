@@ -35,6 +35,7 @@ Not every dataset below ends up in the final product; trim this list to what is 
 | rover_images | `data/raw/rover_images` | Raw images from NASA are not copyrighted (#55); retain each feed credit and check third-party assets. |
 | naif_spice | `data/raw/naif_spice` | NASA PDS / ESA — public domain (US Government work / ESA open access) |
 | rems | `data/raw/rems` | Public domain / NASA content; credit NASA/JPL-Caltech/CAB(CSIC-INTA) |
+| mcs_ddr_v62 | `data/raw/mcs_ddr_v62` | NASA PDS MRO-M-MCS-5-DDR-V6.2; NASA government data, public domain; no separate product-specific licence text stated |
 
 ## Site-finder criteria
 
@@ -53,6 +54,7 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 - ESA Mars Express and ExoMars Trace Gas Orbiter SPICE kernels: reconstructed and forward predicted orbit ephemerides from the ESA SPICE Service (`https://spiftp.esac.esa.int/data/SPICE/`). Open access; cite ESA SPICE Service and the respective mission operations teams.
 - Global water-ice consistency: [SWIM4MIM global products](https://swim.psi.edu/SWIM4MIMProducts.php), cached in `data/raw/swim_ice/`. Morgan & Putzig et al. (2025), Planetary Science Journal; the product page does not state a licence, so retain source credit and check with PSI before redistribution.
 - Mars Global Cave Candidate Catalog: [USGS Astrogeology catalog page](https://astrogeology.usgs.gov/search/map/mars_global_cave_candidate_catalog_v1_cushing) and [PDS Imaging Node archive bundle](https://doi.org/10.17189/1519222), cached in `data/raw/mgc3_caves/`. Cushing (2015); public domain per the data.gov listing, though the USGS page does not state a licence.
+- MRO Mars Climate Sounder surface temperature: [PDS Atmospheres Node MCS archive](https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/MARS/mcs.html), subset of DDR V6.2 profiles cached in `data/raw/mcs_ddr_v62/`. McCleese and Schofield, *MRO Mars Climate Sounder Level 5 DDR V6.2*, NASA PDS, doi:10.17189/6khc-s052. The archive page does not state a separate product licence; credit the PDS archive and MCS team.
 
 ## Scientific models and literature
 
