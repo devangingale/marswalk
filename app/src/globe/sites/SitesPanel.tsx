@@ -56,7 +56,7 @@ export const SitesPanel: React.FC<SitesPanelProps> = ({
   const normalized = normalizeWeights(weights);
 
   return (
-    <aside className="panel sites-panel">
+    <aside className="panel sites-panel" data-over-map>
       <div className="panel-sec sites-controls">
         <h3>
           <span>

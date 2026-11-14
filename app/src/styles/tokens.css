@@ -140,6 +140,11 @@
   --map-grade-3: #7ab3ee;               /* 10 to 15 */
   --map-grade-4: #a9d0f7;               /* 15 to 20 */
   --map-grade-5: #e3f0fd;               /* 20 and over, above the planner limit */
+  --map-site-score-0: #bcd9c7;
+  --map-site-score-1: #8ecaa5;
+  --map-site-score-2: #5fb985;
+  --map-site-score-3: #2f9f64;
+  --map-site-score-4: #178a4e;
 
   /* Recommended sequential ramp for overlays (cividis, colour-blind safe, no red or green). */
   --ramp-seq-0: #00224e;
