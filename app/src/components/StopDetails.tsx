@@ -102,9 +102,7 @@ export const StopDetails: React.FC<StopDetailsProps> = ({ waypoint, arrived, fee
                     mGy/day
                   </dd>
                 </dl>
-                <p className="s48-source">
-                  {conditions.weather ? `${conditions.weather.source}. ` : ''}{conditions.radiation.source}. {conditions.radiation.note}
-                </p>
+                <details className="s48-source"><summary>Sources</summary><span>{conditions.weather?.source} · {conditions.radiation.source}</span></details>
               </>
             ) : (
               <p className="s48-stop-no-conditions">No conditions file for this site.</p>
