@@ -19,6 +19,7 @@ interface PhotoSiteProperties {
 }
 
 const TRAVERSE_LAYER = 'rover-traverse-line';
+const TRAVERSE_CASING_LAYER = 'rover-traverse-casing';
 const PHOTO_LAYER = 'rover-photo-sites';
 const PHOTO_SOURCE = 'rover-photo-sites-source';
 const TRAVERSE_SOURCE = 'rover-traverse-source';
@@ -85,33 +86,53 @@ export async function addRoverOverlays(
 
     map.addSource(TRAVERSE_SOURCE, { type: 'geojson', data: traverse });
     map.addLayer({
+      id: TRAVERSE_CASING_LAYER,
+      type: 'line',
+      source: TRAVERSE_SOURCE,
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': token('--map-label-halo'), 'line-width': 3.5, 'line-opacity': 0.9 },
+    });
+    map.addLayer({
       id: TRAVERSE_LAYER,
       type: 'line',
       source: TRAVERSE_SOURCE,
       layout: { visibility: enabled.traverse ? 'visible' : 'none', 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': token('--ramp-seq-3'), 'line-width': 1.5, 'line-opacity': 0.8 },
+      paint: { 'line-color': token('--map-label-text'), 'line-width': 1.5, 'line-opacity': 0.95 },
     });
 
-    map.addSource(PHOTO_SOURCE, { type: 'geojson', data: groupPhotoSites(photos) });
+    map.addSource(PHOTO_SOURCE, { type: 'geojson', data: groupPhotoSites(photos), generateId: true });
     map.addLayer({
       id: PHOTO_LAYER,
       type: 'circle',
       source: PHOTO_SOURCE,
       layout: { visibility: enabled.photos ? 'visible' : 'none' },
       paint: {
-        'circle-radius': ['interpolate', ['linear'], ['get', 'count'], 1, 2, 20, 4.5, 100, 6],
-        'circle-color': token('--ramp-seq-5'),
-        'circle-opacity': 0.78,
-        'circle-stroke-width': 0.75,
-        'circle-stroke-color': token('--map-label-halo'),
+        'circle-radius': [
+          'interpolate', ['linear'], ['zoom'],
+          10, ['case', ['boolean', ['feature-state', 'hover'], false], 3,
+            ['interpolate', ['linear'], ['get', 'count'], 1, 1.25, 20, 1.7, 100, 2.2]],
+          14, ['case', ['boolean', ['feature-state', 'hover'], false], 5,
+            ['interpolate', ['linear'], ['get', 'count'], 1, 2, 20, 3, 100, 4]],
+        ],
+        'circle-color': token('--ramp-seq-2'),
+        'circle-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.95, 0.48],
+        'circle-stroke-width': 0,
       },
     });
 
     const popup = new Popup({ closeButton: false, closeOnClick: false, offset: 8, className: 'rover-photo-label' });
-    map.on('mouseenter', PHOTO_LAYER, (event) => {
+    let hoveredFeatureId: number | string | undefined;
+    map.on('mousemove', PHOTO_LAYER, (event) => {
       map.getCanvas().style.cursor = 'pointer';
       const feature = event.features?.[0];
       if (!feature?.geometry || feature.geometry.type !== 'Point') return;
+      if (hoveredFeatureId !== undefined) {
+        map.setFeatureState({ source: PHOTO_SOURCE, id: hoveredFeatureId }, { hover: false });
+      }
+      hoveredFeatureId = feature.id;
+      if (hoveredFeatureId !== undefined) {
+        map.setFeatureState({ source: PHOTO_SOURCE, id: hoveredFeatureId }, { hover: true });
+      }
       const properties = feature.properties as PhotoSiteProperties;
       const coordinates = feature.geometry.coordinates as [number, number];
       popup.setLngLat(coordinates)
@@ -121,9 +142,14 @@ export async function addRoverOverlays(
     });
     map.on('mouseleave', PHOTO_LAYER, () => {
       map.getCanvas().style.cursor = '';
+      if (hoveredFeatureId !== undefined) {
+        map.setFeatureState({ source: PHOTO_SOURCE, id: hoveredFeatureId }, { hover: false });
+        hoveredFeatureId = undefined;
+      }
       popup.remove();
     });
 
+    map.moveLayer(TRAVERSE_CASING_LAYER);
     map.moveLayer(TRAVERSE_LAYER);
     map.moveLayer(PHOTO_LAYER);
     if (map.getLayer('planned-route-casing')) map.moveLayer('planned-route-casing');
@@ -134,6 +160,7 @@ export async function addRoverOverlays(
 }
 
 export function setRoverOverlayVisibility(map: MapLibreMap, state: RoverOverlayState): void {
+  if (map.getLayer(TRAVERSE_CASING_LAYER)) map.setLayoutProperty(TRAVERSE_CASING_LAYER, 'visibility', state.traverse ? 'visible' : 'none');
   if (map.getLayer(TRAVERSE_LAYER)) map.setLayoutProperty(TRAVERSE_LAYER, 'visibility', state.traverse ? 'visible' : 'none');
   if (map.getLayer(PHOTO_LAYER)) map.setLayoutProperty(PHOTO_LAYER, 'visibility', state.photos ? 'visible' : 'none');
 }

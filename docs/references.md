@@ -69,6 +69,7 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 
 | Item | Source | Licence / credit |
 |---|---|---|
+| Perseverance Navcam and Mastcam-Z raw images at Jezero stops, hot-linked in `app/public/data/jezero/photos.json` | NASA Mars raw-image RSS feed (`https://mars.nasa.gov/rss/api/?feed=raw_images&category=mars2020&feedtype=json`); positions joined by site and drive to `shared/poses/jezero_poses.csv` | NASA/JPL-Caltech and instrument-team credits retained per image; NASA raw images are not copyrighted |
 | Eight Curiosity Navcam images (sols 4861 and 4865) listed in `app/src/fixtures/photos.sample.json`, hot-linked, not copied | Metadata from NASA's raw-image API, `https://mars.nasa.gov/api/v1/raw_image_items/` (filtered by mission `msl` and sol); positions from joining each image's `site` and `drive` to `shared/poses/gale_poses.csv`; `heading_deg` is the pose heading plus the image's mast azimuth | Shown with the feed's credit line, NASA/JPL-Caltech |
 | Curiosity raw images at Gale stops (Navcam, Hazcam, Mastcam), hot-linked, listed in `app/public/data/gale/photos.json` by `pipeline/fetch_photos.py` | mars.nasa.gov/api/v1/raw_image_items (feed behind mars.nasa.gov/msl/multimedia/raw-images) | NASA raw images, not copyrighted; credit shown with each photo: NASA/JPL-Caltech (Navcam, Hazcam), NASA/JPL-Caltech/MSSS (Mastcam) |
 | Barlow, Barlow Semi Condensed, Barlow Condensed | Google Fonts (Jeremy Tribby) | SIL Open Font License 1.1 |
