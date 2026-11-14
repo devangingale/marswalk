@@ -125,6 +125,26 @@
   --map-tag-bg: rgba(10, 24, 40, 0.85);
   --map-overlay-opacity: 0.7;           /* default opacity for a data layer over imagery */
   --map-background: #3b2e26;            /* stable beyond regional raster coverage */
+  --map-route-dash: #e3f0fd;            /* light dashed core down the middle of the route */
+  --map-route-shared: #6fd3e8;          /* ground walked by more than one leg, drawn once */
+  --map-route-highlight: #c4e0fb;       /* section under the cursor */
+  --map-route-dim-opacity: 0.35;        /* the rest of the route while a section is hovered */
+  --map-chevron: #f2f5f7;               /* direction of travel, on the route */
+  --map-fork: #f2f5f7;                  /* diamond where the line splits or merges */
+  --map-fork-ring: #0a1828;
+  --map-cave: #b48cf0;                  /* cave candidates: small triangle, violet from the layer palette */
+  --map-graticule: rgba(242, 245, 247, 0.45);
+  /* Route gradient, one blue family, flat to steep (no red or green). */
+  --map-grade-1: #2f6db5;               /* under 5 degrees */
+  --map-grade-2: #4a8fde;               /* 5 to 10 */
+  --map-grade-3: #7ab3ee;               /* 10 to 15 */
+  --map-grade-4: #a9d0f7;               /* 15 to 20 */
+  --map-grade-5: #e3f0fd;               /* 20 and over, above the planner limit */
+  --map-site-score-0: #bcd9c7;
+  --map-site-score-1: #8ecaa5;
+  --map-site-score-2: #5fb985;
+  --map-site-score-3: #2f9f64;
+  --map-site-score-4: #178a4e;
 
   /* Recommended sequential ramp for overlays (cividis, colour-blind safe, no red or green). */
   --ramp-seq-0: #00224e;

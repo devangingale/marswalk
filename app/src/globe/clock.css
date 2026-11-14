@@ -18,6 +18,11 @@
   color: var(--color-text);
 }
 
+.globe-body:has(.sites-card-wrap) .globe-view .s48-clock {
+  right: calc(320px + 2 * var(--space-4));
+  flex-wrap: wrap;
+}
+
 .s48-clock__controls {
   display: flex;
   gap: var(--space-1);
@@ -127,5 +132,10 @@
     order: 4;
     border-left: none;
     padding-left: 0;
+  }
+
+  .globe-body:has(.sites-card-wrap) .globe-view .s48-clock__readout {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
   }
 }
