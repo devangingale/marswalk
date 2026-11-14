@@ -1,6 +1,6 @@
 // Written with AI assistance, directed and reviewed by the team.
 import { describe, it, expect } from 'vitest';
-import { parsePasses, relayStripModel, sosEarthArrival, type PassesFile } from './relayStrip';
+import { parsePasses, relayStripModel, simulatedRelayQueue, sosEarthArrival, type PassesFile } from './relayStrip';
 
 const file: PassesFile = {
   version: 1,
@@ -95,5 +95,25 @@ describe('sosEarthArrival', () => {
 
   it('is null when no pass remains', () => {
     expect(sosEarthArrival(passes, Date.parse('2026-11-14T10:00:00Z'), file.lon_east)).toBeNull();
+  });
+});
+
+describe('simulatedRelayQueue', () => {
+  const start = Date.parse('2026-11-14T06:00:00Z');
+
+  it('starts with a few items: the departure fix and the fixes since', () => {
+    const q = simulatedRelayQueue({ startMs: start, nowMs: start + 60000, warning: null, sosAtMs: null });
+    expect(q).toHaveLength(3);
+    expect(q.every((i) => i.kind === 'position')).toBe(true);
+  });
+
+  it('adds one fix every 30 s, with no cap', () => {
+    const q = simulatedRelayQueue({ startMs: start, nowMs: start + 3600000, warning: null, sosAtMs: null });
+    expect(q).toHaveLength(121);
+  });
+
+  it('queues the latest warning ahead of positions, and the SOS ahead of all', () => {
+    const q = simulatedRelayQueue({ startMs: start, nowMs: start + 30000, warning: 'turn-back', sosAtMs: start + 30000 });
+    expect(q.map((i) => i.kind)).toEqual(['sos', 'warning', 'position', 'position']);
   });
 });

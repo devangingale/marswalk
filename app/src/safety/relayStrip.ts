@@ -10,7 +10,7 @@
  * next pass and formats the strip, plus the SOS Earth-arrival estimate.
  */
 
-import { nextPass, type Pass } from '../lib/relay';
+import { nextPass, queueOrder, type Pass, type RelayItem } from '../lib/relay';
 import { formatLocalClock, formatUtcClock } from './format';
 import { oneWayLightMinutes } from './lightTime';
 
@@ -112,4 +112,32 @@ export function sosEarthArrival(
     lightMin: Math.round(lightMin),
     earthUtcHhmm: formatUtcClock(earthMs),
   };
+}
+
+/** Cadence of crew position fixes queued for Earth (design: one every 30 s). */
+export const POSITION_CADENCE_MS = 30000;
+
+/**
+ * The simulated relay queue: one crew position fix every 30 s since the queue
+ * started (the departure fix included), the latest active warning, and the SOS
+ * once sent. Nothing is capped; the strip shows the real length of this list.
+ * Pure over its inputs; item sizes are nominal (simulated).
+ */
+export function simulatedRelayQueue(opts: {
+  startMs: number;
+  nowMs: number;
+  /** Latest active warning (a ladder level other than on pace), or null. */
+  warning: string | null;
+  /** When the SOS was sent, or null. */
+  sosAtMs: number | null;
+}): RelayItem[] {
+  const items: RelayItem[] = [];
+  const span = Math.max(0, opts.nowMs - opts.startMs);
+  const fixes = Math.floor(span / POSITION_CADENCE_MS) + 1;
+  for (let i = 0; i < fixes; i++) {
+    items.push({ id: `pos-${i}`, kind: 'position', createdMs: opts.startMs + i * POSITION_CADENCE_MS, bytes: 64 });
+  }
+  if (opts.warning) items.push({ id: `warn-${opts.warning}`, kind: 'warning', createdMs: opts.nowMs, bytes: 128 });
+  if (opts.sosAtMs !== null) items.push({ id: 'sos', kind: 'sos', createdMs: opts.sosAtMs, bytes: 256 });
+  return queueOrder(items);
 }
