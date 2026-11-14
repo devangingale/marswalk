@@ -185,7 +185,7 @@ svg.i.fill {
   background: var(--color-surface-raised);
   border: var(--border-width) solid var(--color-control-border);
   border-radius: var(--radius-2);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-popover);
 }
 .s48-site__list li {
   display: flex;
@@ -265,10 +265,10 @@ svg.i.fill {
 .standin-tag {
   font-size: var(--text-xs);
   color: var(--map-label-text);
-  background: rgba(10, 24, 40, 0.85);
+  background: var(--map-tag-bg);
   padding: 1px 6px;
   border-radius: var(--radius-1);
-  border: 1px solid var(--color-rule);
+  border: var(--border-width) solid var(--color-rule);
 }
 
 /* Layer panel */
@@ -451,14 +451,14 @@ svg.i.fill {
 .s48-scale__bar {
   display: flex;
   height: 6px;
-  box-shadow: 0 0 0 1px #0a1828;
+  box-shadow: 0 0 0 var(--border-width) var(--map-scale-dark);
 }
 .s48-scale__bar i {
   flex: 1;
-  background: #f2f5f7;
+  background: var(--map-scale-light);
 }
 .s48-scale__bar i:nth-child(2n) {
-  background: #0a1828;
+  background: var(--map-scale-dark);
 }
 .s48-scale__label {
   font-family: var(--font-data);
@@ -485,7 +485,7 @@ svg.i.fill {
 .map-label {
   font-family: var(--font-data);
   font-weight: var(--weight-semibold);
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--map-label-text);
   text-shadow: 0 0 2px var(--map-label-halo), 0 0 2px var(--map-label-halo), 0 0 3px var(--map-label-halo);
 }
@@ -556,7 +556,7 @@ svg.i.fill {
     max-width: 85vw;
     z-index: 30;
     border-right: var(--border-width) solid var(--color-rule);
-    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-drawer);
     background: var(--color-surface);
   }
 }
