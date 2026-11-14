@@ -3,6 +3,7 @@ import { ImageryLayer, ImageryLayerCollection } from 'cesium';
 import { resolveSiteAssetUrl } from '../config';
 import type { LayerState, SiteData, SiteLayer } from '../types';
 import { createPMTilesImagery } from './pmtilesImagery';
+import { offlineImagerySet } from './offline/imagerySet';
 
 export interface ImageryLayerView {
   show: boolean;
@@ -48,16 +49,31 @@ export class GlobeImagery {
   private site: SiteData | null = null;
   private states: Record<string, LayerState> = {};
   private generation = 0;
+  private basemap: ImageryLayer | null = null;
 
   constructor(target: ImageryLayerCollection) {
     this.target = target;
   }
 
-  async setSite(site: SiteData): Promise<void> {
+  async setSite(site: SiteData, mode: 'ion' | 'offline' = 'ion'): Promise<void> {
     this.clear();
     this.site = site;
     const generation = ++this.generation;
-    const { add } = syncImageryLayers(this.layers, site.layers, this.states);
+    const imagerySet = offlineImagerySet(mode, site);
+    const { add } = syncImageryLayers(this.layers, imagerySet.layers, this.states);
+    if (imagerySet.basemap) {
+      try {
+        const provider = await createPMTilesImagery(
+          resolveSiteAssetUrl(site.id, imagerySet.basemap.url),
+          imagerySet.basemap.source,
+        );
+        if (generation !== this.generation) return;
+        this.basemap = new ImageryLayer(provider);
+        this.target.add(this.basemap, 0);
+      } catch (error) {
+        console.warn(`Site basemap did not load`, error);
+      }
+    }
     const created = await Promise.all(
       add.map(async (id) => {
         const layer = site.layers.find((l) => l.id === id)!;
@@ -97,6 +113,8 @@ export class GlobeImagery {
     this.generation++;
     for (const imagery of this.layers.values()) this.target.remove(imagery, true);
     this.layers.clear();
+    if (this.basemap) this.target.remove(this.basemap, true);
+    this.basemap = null;
     this.site = null;
   }
 }
