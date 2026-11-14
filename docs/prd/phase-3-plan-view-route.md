@@ -1,6 +1,8 @@
 # Phase 3 — App shell, Plan view, route and budgets
 
-**Owner:** Samruddhi's machine (git only, no raw data). **Window:** hours 1–14. **Branch:** `samruddhi/p3-plan-view`.
+> Read [`00-contracts.md`](00-contracts.md) first. File formats, coordinates and units are defined there and override anything below.
+
+**Owner:** Samruddhi's machine (git only, no raw data). **Window:** hours 1–14. **Branch:** `samruddhi/p3-plan-view-route`.
 
 ## Goal
 
@@ -33,3 +35,21 @@ The habitat-console view: stack layers, drop science stops, get a safe route wit
 - Route unit tests pass on synthetic grids: a wall, a ramp, an unreachable stop.
 - Works at laptop width and at tablet width.
 - Switching the site list entry reloads everything with no code change.
+
+## Additions (contracts v1)
+
+- Build against `app/public/sample/gale/` until real tiles are published; the only switch is the `TILES_BASE` config value.
+- Route grids, plan object and budgets exactly as contracts sections 6, 7 and 10. The planner reads `cost.bin` and `elev.bin`; it does not compute slope limits itself.
+- **Conditions panel:** season selector driving weather, dust and radiation from `conditions.json` (section 9), each value shown with its source and agency.
+- **Chemistry points** from `chemistry.geojson` as a `points` layer; clicking one shows composition and offers "add as stop".
+- **Suggested stops** from `stops.json`, shown as suggestions the user accepts.
+- Start marker is movable and labelled "Rover drop-off"; the route always returns to it.
+- Commit `app/src/fixtures/plan.sample.json` in the first pull request so phase 4 can start.
+- Deploys to Vercel from `main`.
+
+## Reviewer check
+
+1. On the sample bundle, drop three stops: a route appears, every budget has a value, a turn-back marker is shown.
+2. Put a stop on ground marked impassable: the app says it cannot be reached and draws nothing through red ground.
+3. Measure one leg by hand from the local-metre formulas in contracts section 3; it matches `distance_m` within 2 %.
+4. Export the plan; it validates against the shape in contracts section 7.
