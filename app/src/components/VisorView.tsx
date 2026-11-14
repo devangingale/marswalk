@@ -19,9 +19,9 @@ const EARTH_R = 6371008.8;
 const EXAGGERATION = EARTH_R / MARS_R;
 const TERRAIN = 'visor-terrain';
 type HazardData = { status: 'loading' } | { status: 'ready'; flags: boolean[] } | { status: 'error' };
-interface VisorViewProps { siteData: SiteData; plan: Plan; track: RouteTrack; elapsedS: number }
+interface VisorViewProps { siteData: SiteData; plan: Plan; track: RouteTrack; elapsedS: number; onPlan: () => void }
 
-export const VisorView: React.FC<VisorViewProps> = ({ siteData, plan, track, elapsedS }) => {
+export const VisorView: React.FC<VisorViewProps> = ({ siteData, plan, track, elapsedS, onPlan }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const playback = useSharedPlayback(track.durationS, elapsedS);
@@ -42,16 +42,17 @@ export const VisorView: React.FC<VisorViewProps> = ({ siteData, plan, track, ela
       'sky-color': skyToken('--visor-sky'),
       'horizon-color': skyToken('--visor-horizon'),
       'fog-color': skyToken('--visor-fog'),
-      'sky-horizon-blend': 0.35,
-      'horizon-fog-blend': 0.8,
-      'atmosphere-blend': 0.7,
+      'sky-horizon-blend': 0.5,
+      'horizon-fog-blend': 0.5,
+      'fog-ground-blend': 0.5,
+      'atmosphere-blend': 0.5,
     };
     const decoding = shiftedDemDecoding(siteData.terrain);
     style.sources[TERRAIN] = { type:'raster-dem', url:`pmtiles://${resolveSiteAssetUrl(siteData.id, siteData.terrain.url)}`, tileSize:256, encoding:'custom', ...decoding };
     style.terrain = { source:TERRAIN, exaggeration:EXAGGERATION };
     const map = new MapLibreMap({ container:containerRef.current, style, center:[poseRef.current.lon,poseRef.current.lat], zoom:18, maxPitch:85, pitch:82, bearing:poseRef.current.headingDeg, interactive:false, attributionControl:false, centerClampedToGround:false });
     const placeCamera = () => { try { placeEyeCamera(map, poseRef.current); } catch (error) { console.error('Visor camera placement failed', error); } };
-    map.on('load', () => { try { addOpticalImage(map, siteData); mapRef.current = map; placeCamera(); } catch (error) { console.error('Visor terrain setup failed', error); } });
+    map.on('load', () => { try { map.setPaintProperty('mars-background', 'background-color', skyToken('--visor-horizon')); addOpticalImage(map, siteData); map.setPaintProperty('site-optical', 'raster-opacity', Number(skyToken('--map-overlay-opacity'))); mapRef.current = map; placeCamera(); } catch (error) { console.error('Visor terrain setup failed', error); } });
     map.on('error', e => console.error('Visor map error', e.error));
     map.on('sourcedata', e => { if (e.sourceId === TERRAIN && e.isSourceLoaded) placeCamera(); });
     return () => { mapRef.current = null; map.remove(); };
@@ -65,6 +66,10 @@ export const VisorView: React.FC<VisorViewProps> = ({ siteData, plan, track, ela
     return () => window.clearTimeout(timeout);
   }, [hazardM]);
   const next = state.next ? waypointById(plan, state.next.id) : null;
+  if (plan.stops.length === 0) return <div className="s48-visor s48-visor--empty" data-theme="dark">
+    <div ref={containerRef} className="s48-visor-map" />
+    <div className="s48-empty-route"><button type="button" onClick={onPlan}>Add stops in Plan</button></div>
+  </div>;
   return <div className="s48-visor" data-theme="dark">
     <div ref={containerRef} className="s48-visor-map" />
     <div className="s48-visor-overlay">
@@ -82,5 +87,5 @@ export const VisorView: React.FC<VisorViewProps> = ({ siteData, plan, track, ela
 function placeEyeCamera(map: MapLibreMap, pose: {lon:number;lat:number;headingDeg:number}) {
   const at:[number,number]=[pose.lon,pose.lat]; const ground=map.queryTerrainElevation(at) ?? 0;
   map.jumpTo({center:at,elevation:ground});
-  map.jumpTo(map.calculateCameraOptionsFromCameraLngLatAltRotation(at,ground+1.7*EXAGGERATION,pose.headingDeg,82));
+  map.jumpTo(map.calculateCameraOptionsFromCameraLngLatAltRotation(at,ground+1.7*EXAGGERATION,pose.headingDeg,70));
 }

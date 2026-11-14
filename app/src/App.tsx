@@ -28,6 +28,7 @@ import { loadGrid, type RouteGrid } from './lib/grid';
 import type { PlanStop } from './lib/plan';
 import { DEFAULT_SURFACE_DOSE_MGY_PER_DAY, DEFAULT_SOLAR_EVENT_MGY_PER_DAY } from './lib/energy';
 import './plan/plan.css';
+import './styles/visualReview.css';
 
 export const App: React.FC = () => {
   const [currentSiteId, setCurrentSiteId] = useState<string>(DEFAULT_SITE);
@@ -289,9 +290,9 @@ export const App: React.FC = () => {
             <PlanRail plan={plan} grid={routeGrid} computing={computing} onChange={changePlan} onImport={(imported) => { userBuiltPlan.current = true; setPlan(imported); }} />
           </div>
         ) : mode === 'walk' ? (
-          <WalkView siteData={siteData} plan={plan} track={track} playback={playback} />
+          <WalkView siteData={siteData} plan={plan} track={track} playback={playback} onPlan={() => setMode('plan')} />
         ) : (
-          <VisorView siteData={siteData} plan={plan} track={track} elapsedS={playback.elapsedS} />
+          <VisorView siteData={siteData} plan={plan} track={track} elapsedS={playback.elapsedS} onPlan={() => setMode('plan')} />
         )}
       </div>
     </div>
