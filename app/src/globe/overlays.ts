@@ -113,13 +113,15 @@ export interface OverlayOptions {
 const SHARED_TOLERANCE_M = 3;
 /** Forks closer than this are one fork on screen. */
 const FORK_MERGE_M = 15;
+/** A split that rejoins within this distance is a planner wobble, not a fork worth marking. */
+const FORK_BUBBLE_M = 60;
 /** Branch labels sit this far along each branch from the fork. */
 const BRANCH_LABEL_M = 45;
 /** Gap between a branch and its label, in pixels. */
 const BRANCH_LABEL_GAP_PX = 10;
 
 /** Camera distances (metres) beyond which small route marks are hidden. */
-const NEAR = new DistanceDisplayCondition(0, 6_000);
+const NEAR = new DistanceDisplayCondition(0, 1_500);
 const SITE = new DistanceDisplayCondition(0, 60_000);
 const REGION = new DistanceDisplayCondition(0, 1_500_000);
 
@@ -367,7 +369,7 @@ export class GlobeOverlays {
   }
 
   private drawForks(plan: Plan, frame: GridOrigin): void {
-    const forks = mergeForks(forkPoints(plan.route.legs, frame, SHARED_TOLERANCE_M), frame);
+    const forks = dropBubbles(mergeForks(forkPoints(plan.route.legs, frame, SHARED_TOLERANCE_M), frame), frame);
     for (const fork of forks) {
       const lines = fork.branches.map((b) => branchLabel(b.toLabel, plan));
       this.add(
@@ -592,6 +594,24 @@ export class GlobeOverlays {
 function northAt(position: Cartesian3): Cartesian3 {
   const north = Matrix4.getColumn(Transforms.eastNorthUpToFixedFrame(position, Ellipsoid.MARS), 1, new Cartesian4());
   return Cartesian3.normalize(new Cartesian3(north.x, north.y, north.z), new Cartesian3());
+}
+
+/**
+ * Drops pairs of forks with the same branches that lie close together: legs that part and
+ * rejoin a few metres later (an out-and-back path that wanders off itself), not a real fork.
+ */
+export function dropBubbles<T extends { lon: number; lat: number; branches: { toLabel: string }[] }>(
+  forks: T[],
+  origin: GridOrigin,
+  withinM = FORK_BUBBLE_M,
+): T[] {
+  const key = (f: T) => [...new Set(f.branches.map((b) => b.toLabel))].sort().join('|');
+  const metres = (a: T, b: T) => {
+    const pa = lonlatToLocalMetres(a.lon, a.lat, origin);
+    const pb = lonlatToLocalMetres(b.lon, b.lat, origin);
+    return Math.hypot(pb.x_m - pa.x_m, pb.y_m - pa.y_m);
+  };
+  return forks.filter((f, i) => !forks.some((g, j) => j !== i && key(g) === key(f) && metres(f, g) <= withinM));
 }
 
 /** Joins forks within a few metres of each other, keeping each branch once. */

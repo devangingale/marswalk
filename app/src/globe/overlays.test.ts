@@ -5,7 +5,7 @@ import samplePlanJson from '../fixtures/plan.sample.json';
 import type { Plan } from '../lib/plan';
 import { buildCornerPlan } from './cornerPlan';
 import type { MarkerImages } from './markerImages';
-import { GlobeOverlays, mergeForks, photoSites } from './overlays';
+import { GlobeOverlays, dropBubbles, mergeForks, photoSites } from './overlays';
 
 const samplePlan = samplePlanJson as unknown as Plan;
 const ORIGIN = { lon0: 137.36045619776752, lat0: -4.765947140908848, lat_c: -4.761729489694319 };
@@ -144,5 +144,28 @@ describe('mergeForks', () => {
       ['c2', 'c3'],
       ['c1', 'drop-off'],
     ]);
+  });
+});
+
+describe('dropBubbles', () => {
+  const branches = (...labels: string[]) => labels.map((toLabel, legIndex) => ({ legIndex, toLabel }));
+  // 40 m apart along a line north of the origin, then one 200 m further.
+  const north = (m: number) => ORIGIN.lat0 + (m / 3396190) * (180 / Math.PI);
+
+  it('drops a split and merge with the same branches a few tens of metres apart', () => {
+    const forks = [
+      { lon: ORIGIN.lon0, lat: north(0), branches: branches('s1', 'drop-off') },
+      { lon: ORIGIN.lon0, lat: north(40), branches: branches('drop-off', 's1') },
+      { lon: ORIGIN.lon0, lat: north(240), branches: branches('s1', 'drop-off') },
+    ];
+    expect(dropBubbles(forks, ORIGIN).map((f) => Math.round((f.lat - ORIGIN.lat0) * 59274.7))).toEqual([240]);
+  });
+
+  it('keeps nearby forks that lead to different places', () => {
+    const forks = [
+      { lon: ORIGIN.lon0, lat: north(0), branches: branches('c1', 'drop-off') },
+      { lon: ORIGIN.lon0, lat: north(40), branches: branches('c2', 'c3') },
+    ];
+    expect(dropBubbles(forks, ORIGIN).length).toBe(2);
   });
 });
