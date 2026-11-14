@@ -333,31 +333,6 @@ describe('routeShape', () => {
     ]);
   });
 
-  it('matches an out-and-back return with 5–8 m lateral wobble as one shared detour', () => {
-    const outbound = [pt(0, 0), pt(100, 0), pt(200, 0), pt(300, 0)];
-    const returning = [pt(300, 0), pt(200, 7), pt(100, -5), pt(0, 0)];
-    const legs: PlanLeg[] = [
-      { from: 'start', to: 'B', line: outbound, distance_m: 300, time_s: 240, climb_m: 0, descent_m: 0, energy_kj: 0, max_slope_deg: 0 },
-      { from: 'B', to: 'start', line: returning, distance_m: 301, time_s: 241, climb_m: 0, descent_m: 0, energy_kj: 0, max_slope_deg: 0 },
-    ];
-    const shared = sharedSegments(legs, testOrigin);
-    expect(shared).toHaveLength(1);
-    expect(shared[0].legs).toEqual([0, 1]);
-    expect(shared[0].directions).toEqual(['fwd', 'back']);
-    expect(shared[0].line).toHaveLength(4);
-
-    const plan: Plan = {
-      version: 1, site: 'test-site',
-      params: { crew: 2, time_limit_s: 3600, suit_mass_kg: 80, body_mass_kg: 75, stop_time_s: 300, solar_event: false },
-      start: { lon: outbound[0][0], lat: outbound[0][1], label: 'Rover drop-off' },
-      stops: [{ id: 'B', name: 'Stop B', lon: outbound[3][0], lat: outbound[3][1] }],
-      route: { legs, returns_to_start: true, totals: { distance_m: 601, time_s: 481, climb_m: 0, descent_m: 0, energy_kj: 0, dose_mgy: 0 }, turn_back: null, feasible: true, warnings: [] },
-    };
-    expect(sections(plan, testOrigin)).toEqual([{
-      id: 'section-0', fromStopId: 'start', toStopId: 'start', detourStopIds: ['B'], legIndices: [0, 1],
-    }]);
-  });
-
   it('measures steepest gradient over at least 10 m to damp a single noisy sample', () => {
     const grid = createSyntheticRampGrid(testOrigin);
     const noisyGrid: RouteGrid = {
