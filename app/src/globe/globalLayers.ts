@@ -17,6 +17,7 @@ import {
   globeAssetUrl,
   readValue,
 } from './layerManifest';
+import { imageryLayerRank, orderImageryLayer } from './layerOrder';
 
 export * from './layerManifest';
 
@@ -66,10 +67,10 @@ export class GlobeGlobalLayers {
     private readonly base: string,
     readonly layers: GlobeLayer[],
   ) {
-    for (const layer of [...layers].reverse()) {
+    for (const [order, layer] of layers.entries()) {
       const imagery = new ImageryLayer(createGlobalImagery(base, layer), { show: false });
       target.add(imagery);
-      target.lowerToBottom(imagery);
+      orderImageryLayer(target, imagery, imageryLayerRank('whole-planet', order));
       this.imagery.set(layer.id, imagery);
     }
   }
