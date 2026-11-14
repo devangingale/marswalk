@@ -1,0 +1,51 @@
+.s48-walk, .s48-visor { height:100%; }
+.s48-walk { flex:1; min-height:0; min-width:0; display:grid; grid-template-columns:minmax(0,1fr) minmax(340px,var(--walk-side-width)); background:var(--color-bg); color:var(--color-text); }
+.s48-walk-map-area { position:relative; min-width:0; min-height:0; }
+.s48-walk-map-area > .s48-walk-map { position:absolute; inset:0; min-height:0; }
+.s48-walk-sheet { min-height:0; overflow:auto; padding:var(--space-4); border-left:var(--border-width) solid var(--color-rule); background:var(--color-surface); }
+.s48-walk-headline { padding-bottom:var(--space-3); border-bottom:var(--border-width) solid var(--color-rule); }
+.s48-walk-headline h1 { margin:0 0 var(--space-2); font:600 var(--text-2xl)/var(--leading-2xl) var(--font-readout); }
+.s48-walk-distance { display:flex; align-items:baseline; gap:var(--space-3); font-family:var(--font-data); font-variant-numeric:var(--numeric); }
+.s48-walk-distance strong { font:600 var(--text-readout-md)/var(--leading-readout-md) var(--font-readout); }
+.s48-walk-distance span { color:var(--color-text-muted); font-size:var(--text-md); }
+.s48-walk-budget { margin:var(--space-3) 0; display:grid; gap:var(--space-2); }
+.s48-budget-row { display:grid; grid-template-columns:72px 1fr; align-items:center; gap:var(--space-3); font:var(--text-md)/var(--leading-md) var(--font-ui); }
+.s48-budget-row dt { color:var(--color-text-muted); }
+.s48-budget-row dd { margin:0; display:grid; grid-template-columns:76px 1fr; align-items:center; gap:var(--space-2); font-family:var(--font-data); font-variant-numeric:var(--numeric); }
+.s48-budget-rail { height:6px; display:block; background:var(--color-surface-sunken); }
+.s48-budget-rail i { display:block; height:100%; background:var(--color-accent); }
+.s48-walk-turnback { margin:0; padding:var(--space-2) 0; border-top:var(--border-width) solid var(--color-rule); color:var(--color-caution); font-size:var(--text-sm); }
+.s48-playback { display:flex; align-items:center; gap:var(--space-3); min-height:var(--hit-walk); padding:var(--space-2) var(--space-3); background:var(--color-surface); border-top:var(--border-width) solid var(--color-rule); color:var(--color-text); }
+.s48-walk-map-area > .s48-playback { position:absolute; z-index:2; left:var(--space-4); right:var(--space-4); bottom:var(--space-4); border:var(--border-width) solid var(--color-rule); }
+.s48-playback button { width:var(--hit-walk); height:var(--hit-walk); border:var(--border-width) solid var(--color-control-border); border-radius:var(--radius-2); background:var(--color-text); color:var(--color-bg); font-size:var(--text-lg); }
+.s48-playback input { flex:1; min-width:60px; accent-color:var(--color-accent); }
+.s48-playback output,.s48-playback span { white-space:nowrap; font:var(--text-sm)/var(--leading-sm) var(--font-data); font-variant-numeric:var(--numeric); }
+.s48-stop { margin-top:var(--space-3); }
+.s48-stop-header { margin-bottom:var(--space-3); }
+.s48-stop-status { display:none; }
+.s48-stop-name { display:none; }
+.s48-stop-note { margin:0; color:var(--color-text-muted); font-size:var(--text-sm); }
+.s48-stop h3 { margin:var(--space-3) 0 var(--space-2); font:600 var(--text-lg)/var(--leading-lg) var(--font-ui); }
+.s48-photo-list { display:grid; grid-template-columns:1fr; gap:var(--space-2); list-style:none; padding:0; margin:0; }
+.s48-photo figure { margin:0; }
+.s48-photo-thumb { display:block; width:100%; height:clamp(150px,22vh,240px); object-fit:cover; border:var(--border-width) solid var(--color-rule); border-radius:var(--radius-2); }
+.s48-photo-caption { display:block; margin-top:var(--space-1); color:var(--color-text-muted); font-size:var(--text-xs); line-height:var(--leading-xs); }
+.s48-conditions-list { margin:0; display:grid; grid-template-columns:1fr auto; gap:var(--space-1) var(--space-3); font-size:var(--text-sm); }
+.s48-conditions-list dt { color:var(--color-text-muted); }.s48-conditions-list dd { margin:0; font-family:var(--font-data); font-variant-numeric:var(--numeric); text-align:right; }
+.s48-source { margin:var(--space-2) 0 0; color:var(--color-text-muted); font-size:var(--text-xs); }
+.s48-chem-table-wrap { overflow:auto; max-width:100%; }.s48-chem-table { border-collapse:collapse; font:var(--text-xs)/var(--leading-xs) var(--font-data); font-variant-numeric:var(--numeric); }.s48-chem-table th,.s48-chem-table td { padding:var(--space-1) var(--space-2); border-bottom:var(--border-width) solid var(--color-rule); text-align:right; }
+.s48-visor { position:relative; flex:1; min-height:0; min-width:0; overflow:hidden; background:var(--color-bg); }
+.s48-visor-map { position:absolute; inset:0; }
+.s48-visor-overlay { position:absolute; inset:0; pointer-events:none; color:var(--visor-text); font-family:var(--font-readout); }
+.s48-visor-overlay > div:not(.s48-visor-hazard) { position:absolute; display:grid; gap:var(--space-1); padding:var(--space-3) var(--space-4); border-radius:var(--radius-2); background:var(--visor-plate); }
+.s48-visor-overlay span { color:var(--visor-text-muted); font-size:var(--text-visor-label); }
+.s48-visor-overlay strong { font-size:var(--text-visor-value); line-height:1; font-variant-numeric:var(--numeric); }
+.s48-visor-overlay small { font-size:var(--text-lg); }
+.s48-visor-heading { top:var(--space-4); left:50%; transform:translateX(-50%); text-align:center; }
+.s48-visor-next { top:var(--space-4); left:var(--space-4); }.s48-visor-budget { bottom:88px; left:var(--space-4); }
+.s48-visor-hazard { position:absolute; top:var(--space-16); left:50%; transform:translateX(-50%); padding:var(--space-3) var(--space-4); background:var(--visor-hazard); color:var(--visor-hazard-text); font:600 var(--text-lg)/var(--leading-lg) var(--font-ui); }
+.s48-visor-controls { position:absolute; left:20%; right:20%; bottom:var(--space-4); }
+.s48-visor-controls .s48-playback { border:var(--border-width) solid var(--color-rule); }
+@media (max-width:1279px) { .s48-walk { grid-template-columns:minmax(0,1fr) minmax(300px,36vw); } }
+@media (max-width:1023px) { .s48-walk { display:flex; flex-direction:column; } .s48-walk-map-area { flex:1; min-height:48vh; } .s48-walk-sheet { max-height:40vh; border-left:0; border-top:var(--border-width) solid var(--color-rule); } .s48-photo-thumb { height:140px; } }
+@media (max-width:700px) { .s48-visor-controls { left:var(--space-2); right:var(--space-2); } .s48-playback output { font-size:var(--text-xs); } }

@@ -1,21 +1,15 @@
-// Written with AI assistance, directed and reviewed by the team.
-
 import React from 'react';
+import './walk.css';
 import { Plan } from '../lib/plan';
 import { SiteData } from '../types';
 import { useSiteFeeds } from '../walk/feeds';
 import { formatDistance, formatDose, formatDuration, formatEnergy } from '../walk/format';
-import { budgetRemaining, RouteTrack, START_ID, walkStateAt, waypointById } from '../walk/track';
-import { Playback, PLAYBACK_RATE } from '../walk/usePlayback';
+import { budgetRemaining, RouteTrack, walkStateAt, waypointById, START_ID } from '../walk/track';
+import { Playback } from '../walk/usePlayback';
 import { StopDetails } from './StopDetails';
 import { WalkMap } from './WalkMap';
 
-interface WalkViewProps {
-  siteData: SiteData;
-  plan: Plan;
-  track: RouteTrack;
-  playback: Playback;
-}
+interface WalkViewProps { siteData: SiteData; plan: Plan; track: RouteTrack; playback: Playback }
 
 export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playback }) => {
   const feeds = useSiteFeeds(siteData);
@@ -24,72 +18,33 @@ export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playb
   const next = state.next ? waypointById(plan, state.next.id) : null;
   const focus = waypointById(plan, state.atWaypointId ?? state.next?.id ?? START_ID);
   const turnBack = plan.route.turn_back;
-
-  return (
-    <div className="s48-walk">
-      <WalkMap siteData={siteData} plan={plan} track={track} lon={state.lon} lat={state.lat} />
-
-      <section className="s48-walk-sheet" aria-label="Walk">
-        <div className="s48-walk-controls">
-          <button type="button" className="s48-walk-play" onClick={playback.toggle}>
-            {playback.playing ? 'Pause' : 'Play'}
-          </button>
-          <label className="s48-walk-scrubber">
-            <span className="s48-walk-scrubber-label">Walk time</span>
-            <input
-              type="range"
-              min={0}
-              max={track.durationS}
-              step={1}
-              value={state.elapsedS}
-              onChange={(e) => playback.seek(Number(e.target.value))}
-            />
-          </label>
-          <output className="s48-walk-clock">
-            {formatDuration(state.elapsedS)} of {formatDuration(track.durationS)}
-          </output>
-          <p className="s48-walk-rate">Replay at {PLAYBACK_RATE}× walking speed</p>
-        </div>
-
-        <dl className="s48-walk-readout">
-          <dt>Next stop</dt>
-          <dd>{next ? next.name :`Walk complete, back at ${plan.start.label}`}</dd>
-          {state.next && (
-            <>
-              <dt>Distance to it</dt>
-              <dd>{formatDistance(state.next.distanceM)}</dd>
-              <dt>Time to it</dt>
-              <dd>{formatDuration(state.next.timeS)}</dd>
-            </>
-          )}
-          <dt>Time left</dt>
-          <dd>
-            {formatDuration(budget.time.remaining)} of {formatDuration(budget.time.total)} limit
-          </dd>
-          <dt>Energy left</dt>
-          <dd>
-            {formatEnergy(budget.energy.remaining)} of {formatEnergy(budget.energy.total)}{' '}
-            {budget.energy.basis === 'limit' ? 'limit' : 'planned'}
-          </dd>
-          <dt>Dose left</dt>
-          <dd>
-            {formatDose(budget.dose.remaining)} of {formatDose(budget.dose.total)} planned
-          </dd>
-          <dt>Turn-back point</dt>
-          <dd className="s48-walk-turnback">
-            {state.turnBackPassed === null || !turnBack
-              ? 'None in this plan'
-              : `${state.turnBackPassed ? 'Passed' : 'Not yet passed'} (binding limit: ${turnBack.reason})`}
-          </dd>
-        </dl>
-
-        <StopDetails
-          waypoint={focus}
-          arrived={state.atWaypointId === focus.id}
-          feeds={feeds}
-          solarEvent={plan.params.solar_event}
-        />
-      </section>
+  return <div className="s48-walk">
+    <div className="s48-walk-map-area"><WalkMap siteData={siteData} plan={plan} track={track} lon={state.lon} lat={state.lat} />
+      <PlaybackBar playback={playback} durationS={track.durationS} elapsedS={state.elapsedS} />
     </div>
-  );
+    <section className="s48-walk-sheet" aria-label="Walk">
+      <header className="s48-walk-headline"><h1>{next?.name ?? `Back at ${plan.start.label}`}</h1>
+        {state.next && <div className="s48-walk-distance"><strong>{formatDistance(state.next.distanceM)}</strong><span>{formatDuration(state.next.timeS)} to stop</span></div>}
+      </header>
+      <dl className="s48-walk-budget">
+        <Budget label="Time" value={formatDuration(budget.time.remaining)} max={budget.time.total} remaining={budget.time.remaining} />
+        <Budget label="Energy" value={formatEnergy(budget.energy.remaining)} max={budget.energy.total} remaining={budget.energy.remaining} />
+        <Budget label="Dose" value={formatDose(budget.dose.remaining)} max={budget.dose.total} remaining={budget.dose.remaining} />
+      </dl>
+      <p className="s48-walk-turnback">{turnBack ? `${state.turnBackPassed ? 'Past' : 'Before'} turn-back point � ${turnBack.reason} limit` : 'No turn-back point'}</p>
+      <StopDetails waypoint={focus} arrived={state.atWaypointId === focus.id} feeds={feeds} solarEvent={plan.params.solar_event} />
+    </section>
+  </div>;
 };
+
+export function PlaybackBar({ playback, durationS, elapsedS }: { playback: Playback; durationS: number; elapsedS: number }) {
+  return <div className="s48-playback">
+    <button type="button" className="s48-walk-play" onClick={playback.toggle} aria-label={playback.playing ? 'Pause' : 'Play'}>{playback.playing ? '?' : '?'}</button>
+    <input aria-label="Walk position" type="range" min={0} max={durationS} step={1} value={elapsedS} onChange={(e) => playback.seek(Number(e.target.value))} />
+    <output>{formatDuration(elapsedS)} / {formatDuration(durationS)}</output><span>�60</span>
+  </div>;
+}
+function Budget({ label, value, max, remaining }: { label: string; value: string; max: number; remaining: number }) {
+  const ratio = max > 0 ? Math.max(0, Math.min(100, remaining / max * 100)) : 0;
+  return <div className="s48-budget-row"><dt>{label}</dt><dd>{value}<span className="s48-budget-rail"><i style={{ width: `${ratio}%` }} /></span></dd></div>;
+}
