@@ -38,7 +38,7 @@ import {
   type SlopeStats,
 } from '../lib/routeShape';
 import { lonLatToCartesian, type Pose } from './frame';
-import { circleRing, crewLabel, type CrewMarkerModel } from '../safety/crewMarkers';
+import { circleRing, crewLabel, labelOnLeft, type CrewMarkerModel } from '../safety/crewMarkers';
 import { crewRingImage } from '../safety/crewMarkerImage';
 import { canvasMarkerImages, readToken, type MarkerImage, type MarkerImages, type TokenReader } from './markerImages';
 import {
@@ -625,14 +625,21 @@ export class GlobeOverlays {
         },
       });
       line(live((m) => (member(m).uncertaintyM > 0 ? circleRing(member(m), member(m).uncertaintyM).map(lifted) : []), []), 2, ring);
-      // The lead's label sits right of its ring and the second's left, so a close pair stays legible.
-      const left = i % 2 === 1;
       this.add(
         'crew',
         {
           position: live((m) => this.surfacePosition(member(m).lon, member(m).lat), this.surfacePosition(first.lon, first.lat)) as never,
           billboard: this.billboard(this.crewImage(), REGION),
-          label: { ...this.label(crewLabel(first), REGION, [left ? -24 : 24, 0], left), text: live((m) => crewLabel(member(m)), '') },
+          // Each label faces away from the rest of the crew, so a separated pair's labels never meet.
+          label: {
+            ...this.label(crewLabel(first), REGION, [24, 0]),
+            text: live((m) => crewLabel(member(m)), ''),
+            pixelOffset: live((m) => new Cartesian2(labelOnLeft(m.crew)[i] ? -24 : 24, 0), new Cartesian2(24, 0)),
+            horizontalOrigin: live(
+              (m) => (labelOnLeft(m.crew)[i] ? HorizontalOrigin.RIGHT : HorizontalOrigin.LEFT),
+              HorizontalOrigin.LEFT,
+            ),
+          },
         },
         { kind: 'text', lines: [first.id, formatLatLon(first.lon, first.lat)] },
       );

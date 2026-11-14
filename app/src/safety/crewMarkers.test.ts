@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { MARS_R } from '../lib/grid';
 import { NBSP } from './format';
 import { distanceBearing } from './navigate';
-import { circleRing, crewLabel, roverLabel, applyCrewSpread } from './crewMarkers';
+import { circleRing, crewLabel, roverLabel, applyCrewSpread, labelOnLeft } from './crewMarkers';
 
 const M_PER_DEG = (MARS_R * Math.PI) / 180;
 
@@ -62,5 +62,24 @@ describe('applyCrewSpread', () => {
 
   it('leaves the crew alone without a spread', () => {
     expect(applyCrewSpread(crew, null)).toBe(crew);
+  });
+});
+
+describe('labelOnLeft', () => {
+  it('puts each label on the side away from the rest of the crew', () => {
+    const crew = [
+      { lon: 0.002, lat: 0 },
+      { lon: 0.001, lat: 0 },
+    ];
+    expect(labelOnLeft(crew)).toEqual([false, true]);
+    expect(labelOnLeft([...crew].reverse())).toEqual([true, false]);
+  });
+
+  it('alternates for a pair on the same meridian', () => {
+    expect(labelOnLeft([{ lon: 1, lat: 0 }, { lon: 1, lat: 0.001 }])).toEqual([false, true]);
+  });
+
+  it('puts a lone astronaut label on the right', () => {
+    expect(labelOnLeft([{ lon: 1, lat: 0 }])).toEqual([false]);
   });
 });

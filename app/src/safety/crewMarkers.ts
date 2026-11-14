@@ -66,3 +66,17 @@ export function applyCrewSpread<T extends CrewMarker>(crew: T[], spreadM: number
   const lead = crew[0];
   return crew.map((c, i) => (i === 0 ? c : { ...c, ...offsetLonLat(lead, spreadM * i, 90) }));
 }
+
+/**
+ * Which side each astronaut's map label sits on: away from the crew's mean longitude,
+ * so a separated pair's labels never meet between them. Crew on the same meridian
+ * alternate right, left. True means the label sits left of the ring.
+ */
+export function labelOnLeft(crew: LonLat[]): boolean[] {
+  if (crew.length === 0) return [];
+  const meanLon = crew.reduce((sum, c) => sum + c.lon, 0) / crew.length;
+  return crew.map((c, i) => {
+    const d = c.lon - meanLon;
+    return Math.abs(d) < 1e-9 ? i % 2 === 1 : d < 0;
+  });
+}
