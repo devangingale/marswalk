@@ -1,0 +1,61 @@
+name,type,lat,lon_east,frame,precision_deg,source_url,status,note
+Viking 1 Lander,landed,22.2700,312.0500,planetocentric,0.05,https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1975-075C,cited,NSSDC states planetocentric 22.27N 312.05E
+Mars 3 Lander,landed,-45.0000,202.0000,unstated,1.0,https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1971-049F,unverified,approximate Soviet landing estimate; source page returns error (audit A)
+Viking 2 Lander,landed,47.6673,134.2809,unstated,0.3,https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1975-083C,cited_frame_unknown,NSSDC 47.6673N 134.2809E; frame not stated
+Mars Pathfinder (Carl Sagan Memorial Station),landed,19.3300,326.4500,unstated,0.3,https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1996-068A,unverified,not re-sourced; JPL PIA01124 gives 19.17N 33.21W (USGS frame) vs inertial 19.30N 33.52W
+"Spirit (MER-A, Columbia Memorial Station)",landed,-14.5684,175.4729,unstated,0.1,https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=2003-027A,unverified,NSSDC page has no coordinates (audit A)
+"Opportunity (MER-B, Challenger Memorial Station)",landed,-1.9462,354.4734,unstated,0.1,https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=2003-032A,unverified,NSSDC page has no coordinates (audit A)
+Phoenix Lander,landed,68.1500,234.1000,unstated,0.2,https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=2007-034A,cited_nominal,"NSSDC 'nominally at 68.15 N, 125.9 W'"
+"Curiosity (MSL, Bradbury Landing)",landed,-4.5896,137.4417,planetocentric,0.01,https://naif.jpl.nasa.gov/pub/naif/pds/data/mex-e_m-spice-6-v2.0/mexsp_2000/DATA/FK/MEX_RELAY_LOCATIONS_V03.TF,cited,NAIF MEX_MSL_LS_TARGET planetodetic -4.643851 converted to planetocentric
+InSight Lander,landed,4.5024,135.6234,planetocentric,0.01,https://naif.jpl.nasa.gov/pub/naif/pds/data/mex-e_m-spice-6-v2.0/mexsp_2000/DATA/FK/MEX_RELAY_LOCATIONS_V03.TF,cited,NAIF MEX_INSIGHT_TARGET planetodetic 4.555681 converted to planetocentric
+"Perseverance (Mars 2020, Octavia E. Butler Landing)",landed,18.4447,77.4508,ambiguous,0.25,https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=2020-052A,cited_frame_ambiguous,NAIF lists 18.4447/77.4508 and labels it planetodetic; NASA press materials give the same numbers without a frame. Planetocentric would be ~18.23 if NAIF's label is right
+Zhurong (Tianwen-1 Lander),landed,25.0660,109.9250,unstated,0.2,https://doi.org/10.1038/s41550-022-01618-2,cited_frame_unknown,Nature Astronomy doi:10.1038/s41550-022-01618-2; NAIF gives 25.1/109.9 planetodetic
+Phlegra Dorsa / Arcadia Planitia,ez,39.0,172.0,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1002.pdf,cited,
+Southern Nectaris Fossae,ez,-28.88,300.29,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1005.pdf,cited,
+Southern Acidalia Planitia (Vallis Marineris Mouth),ez,20.0,320.0,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1006.pdf,cited,
+Eastern Melas Chasma,ez,-11.7,290.0,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1007.pdf,cited,
+Gusev Crater (Longo),ez,-14.5,175.4,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1008.pdf,cited,
+Mawrth Vallis,ez,24.3,340.8,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1009.pdf,cited,
+Nili Fossae,ez,22.05,76.95,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1010.pdf,cited,
+Arcadia Planitia (Viola),ez,39.0,192.1,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1011.pdf,cited,
+Erebus Montes / Acheron Fossae,ez,39.8,220.6,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1011.pdf,cited,
+Hebrus Valles,ez,20.08,126.63,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1012.pdf,cited,
+Newton Crater,ez,-40.6,200.0,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1015.pdf,cited,
+Hills Zephyria Planum,ez,-1.37,157.14,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1016.pdf,cited,
+Cerberus Fossae,ez,10.0,162.0,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1017.pdf,cited,
+Arcadia Ice-Rich Ground (Stoker),ez,46.16,188.8,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1018.pdf,cited,
+Chryse Planitia (VL-1 Repurposing),ez,22.3,311.7,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1019.pdf,cited,
+Gale Crater (Calef),ez,-4.6,137.4,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1020.pdf,cited,
+Western Noachis Terra Chloride Deposits,ez,-37.42,350.58,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1021.pdf,cited,
+Gale Crater (Yun),ez,-4.6,137.0,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1022.pdf,cited,
+Melas Chasma / SW Candor Chasma,ez,-18.83,310.79,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1023.pdf,cited,
+McLaughlin Crater,ez,21.9,337.6,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1025.pdf,cited,
+South of Firsoff Crater (Arabia Terra),ez,0.39,351.64,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1026.pdf,cited,
+Ismenius Cavus,ez,33.82,17.17,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1027.pdf,cited,
+Hale Crater,ez,-35.3,323.14,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1028.pdf,cited,
+Phaethontis / Terra Sirenum,ez,-49.2,190.8,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1029.pdf,cited,
+Southwestern Meridiani Planum (Cohen),ez,-2.0,354.5,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1030.pdf,cited,
+Huygens Crater,ez,-13.5,55.5,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1032.pdf,cited,
+Deuteronilus Mensae Dichotomy Boundary (DBDM),ez,39.11,23.2,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1033.pdf,cited,
+Jezero Crater Watershed / Nili Fossae,ez,17.75,77.04,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1034.pdf,cited,
+Mesopotamia (East Rim of Hellas),ez,-35.0,94.02,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1035.pdf,cited,
+Coprates Chasma (Valles Marineris),ez,-11.68,293.37,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1036.pdf,cited,
+Hellas Rim Glacial / Crater Terrain,ez,-39.05,101.91,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1037.pdf,cited,
+Eastern Rim of Hellas Basin (Rice),ez,-40.0,104.0,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1038.pdf,cited,
+Gale Crater Ground Truth Assessment,ez,-4.6,137.4,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1040.pdf,cited,
+Columbus Crater,ez,-29.0,194.0,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1041.pdf,cited,
+SW Sinus Meridiani (Wilkinson),ez,-2.25,353.57,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1042.pdf,cited,
+Apollinaris Sulci,ez,-12.67,176.67,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1043.pdf,cited,
+Deuteronilus Mensae (Plaut),ez,41.0,23.0,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1044.pdf,cited,
+Ausonia Cavus,ez,-32.0,96.5,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1045.pdf,cited,
+Kasei Valles,ez,24.81,287.37,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1045.pdf,cited,
+Gusev Crater - Apollinaris Sulci,ez,-13.0,175.0,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1046.pdf,cited,
+Aram Chaos,ez,2.42,339.97,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1048.pdf,cited,
+Holden Crater,ez,-26.37,326.01,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1049.pdf,cited,
+Noctis Landing (Noctis Labyrinthus),ez,-6.49,267.55,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1050.pdf,cited,
+Hypanis Delta (Xanthe Terra),ez,11.8,314.7,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1051.pdf,cited,
+Hadriacus Palus / Hadriacus Cavi,ez,-26.84,77.47,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1052.pdf,cited,
+Protonilus Mensae,ez,42.19,48.06,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1053.pdf,cited,
+Eastern Outlet of Vallis Marineris (Eos Chaos),ez,-4.1,324.8,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1054.pdf,cited,
+Southern Edge of Meridiani Planum (Clarke),ez,-3.17,355.48,planetocentric_assumed,0.05,https://www.hou.usra.edu/meetings/explorationzone2015/pdf/1057.pdf,cited,
+Tempe Terra (Gallegos),ez,42.0,318.0,planetocentric_assumed,0.05,https://ntrs.nasa.gov/api/citations/20160001040/downloads/20160001040.pdf,cited,
