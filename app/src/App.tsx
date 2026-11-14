@@ -37,6 +37,7 @@ export const App: React.FC = () => {
   const [mode, setMode] = useState<AppMode>('plan');
   const [layerStates, setLayerStates] = useState<Record<string, LayerState>>({});
   const [roverOverlayState, setRoverOverlayState] = useState<RoverOverlayState>({ traverse: true, photos: true });
+  const [photosAvailable, setPhotosAvailable] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(() => window.innerWidth >= 1200);
   // The plan Walk and Visor replay (contracts section 7). The Plan view sets it; until then, the sample plan.
   const [plan, setPlan] = useState<Plan>(samplePlan as unknown as Plan);
@@ -103,6 +104,19 @@ export const App: React.FC = () => {
   useEffect(() => {
     loadSite(currentSiteId);
   }, [currentSiteId, loadSite]);
+
+  useEffect(() => {
+    let active = true;
+    setPhotosAvailable(false);
+    if (!siteData.photos_url) return () => { active = false; };
+    void fetch(resolveSiteAssetUrl(siteData.id, siteData.photos_url), { method: 'HEAD' })
+      .then((response) => {
+        if (!active) return;
+        setPhotosAvailable(response.ok && (response.headers.get('content-type')?.includes('json') ?? false));
+      })
+      .catch(() => { if (active) setPhotosAvailable(false); });
+    return () => { active = false; };
+  }, [siteData.id, siteData.photos_url]);
 
   useEffect(() => {
     let active = true;
@@ -264,6 +278,7 @@ export const App: React.FC = () => {
               layers={siteData.layers}
               layerStates={layerStates}
               roverOverlayState={roverOverlayState}
+              photosAvailable={photosAvailable}
               onToggleRoverOverlay={toggleRoverOverlay}
               onToggleLayer={handleToggleLayer}
               onOpacityChange={handleOpacityChange}

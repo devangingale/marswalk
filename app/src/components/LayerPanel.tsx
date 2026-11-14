@@ -16,6 +16,7 @@ interface LayerPanelProps {
   layers: SiteLayer[];
   layerStates: Record<string, LayerState>;
   roverOverlayState: RoverOverlayState;
+  photosAvailable: boolean;
   onToggleRoverOverlay: (layer: keyof RoverOverlayState) => void;
   onToggleLayer: (layerId: string) => void;
   onOpacityChange: (layerId: string, opacity: number) => void;
@@ -38,6 +39,7 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
   layers,
   layerStates,
   roverOverlayState,
+  photosAvailable,
   onToggleRoverOverlay,
   onToggleLayer,
   onOpacityChange,
@@ -63,7 +65,7 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
   }, {});
 
   const activeCount = Object.values(layerStates).filter((s) => s.enabled).length
-    + Number(roverOverlayState.traverse) + Number(roverOverlayState.photos);
+    + Number(roverOverlayState.traverse) + Number(photosAvailable && roverOverlayState.photos);
 
   return (
     <aside
@@ -229,7 +231,7 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
             <h4>Rover</h4>
             {([
               ['traverse', 'Rover traverse'],
-              ['photos', 'Rover photos'],
+              ...(photosAvailable ? [['photos', 'Rover photos'] as const] : []),
             ] as const).map(([key, title]) => (
               <div key={key} className="s48-layer rover-overlay-layer">
                 <div className="s48-layer__head">
@@ -243,12 +245,6 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
                     <span className="s48-layer__title">{title}</span>
                   </label>
                 </div>
-                {roverOverlayState[key] && (
-                  <div className="s48-legend rover-overlay-layer__legend">
-                    <span className={`rover-overlay-swatch rover-overlay-swatch--${key}`} aria-hidden="true" />
-                    <span>{key === 'traverse' ? 'Rover path' : 'Photo site · size by count'}</span>
-                  </div>
-                )}
               </div>
             ))}
           </div>
