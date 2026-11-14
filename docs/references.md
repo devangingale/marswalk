@@ -58,8 +58,9 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 | MapLibre GL JS | Mars surface map rendering and 3D terrain relief | BSD-3-Clause |
 | PMTiles | Cloud-native single-file tile archive reader | BSD-3-Clause |
 | Vite | Frontend build tooling and static compilation | MIT |
-| Vitest | Unit test execution and contract verification | MIT |
+| Vitest | Unit tests for the app shell and for the route planner, energy model, grid and plan libraries | MIT |
 | TypeScript | Static type safety and data contract typing | Apache-2.0 |
+| @types/node | Node type definitions for the planner test that writes the sample plan fixture | MIT |
 | LightGBM (`lightgbm`) | Gradient-boosted tree walkability classifier | MIT |
 | scikit-learn (`scikit-learn`) | ROC AUC metrics and model interfaces | BSD-3-Clause |
 
@@ -67,6 +68,7 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 
 | Item | Source | Licence / credit |
 |---|---|---|
+| Eight Curiosity Navcam images (sols 4861 and 4865) listed in `app/src/fixtures/photos.sample.json`, hot-linked, not copied | Metadata from NASA's raw-image API, `https://mars.nasa.gov/api/v1/raw_image_items/` (filtered by mission `msl` and sol); positions from joining each image's `site` and `drive` to `shared/poses/gale_poses.csv`; `heading_deg` is the pose heading plus the image's mast azimuth | Shown with the feed's credit line, NASA/JPL-Caltech |
 | Curiosity raw images at Gale stops (Navcam, Hazcam, Mastcam), hot-linked, listed in `app/public/data/gale/photos.json` by `pipeline/fetch_photos.py` | mars.nasa.gov/api/v1/raw_image_items (feed behind mars.nasa.gov/msl/multimedia/raw-images) | NASA raw images, not copyrighted; credit shown with each photo: NASA/JPL-Caltech (Navcam, Hazcam), NASA/JPL-Caltech/MSSS (Mastcam) |
 | Barlow, Barlow Semi Condensed, Barlow Condensed | Google Fonts (Jeremy Tribby) | SIL Open Font License 1.1 |
 

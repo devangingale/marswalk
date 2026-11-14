@@ -9,7 +9,6 @@ import {
   calculateRadiationDose,
   dwellEnergyKj,
   MARS_GRAVITY,
-  EARTH_GRAVITY,
   GRAVITY_RATIO,
   MARS_SOL_HOURS,
   DEFAULT_BODY_MASS_KG,

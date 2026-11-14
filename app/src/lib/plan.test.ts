@@ -2,7 +2,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { createGrid, GridHeader, GridOrigin, lonlatToLocalMetres } from './grid';
-import { buildPlan, densifyLine, validatePlan, PlanParams, PlanStart, PlanStop } from './plan';
+import { buildPlan, densifyLine, validatePlan, PlanParams } from './plan';
 import { MARS_R, degToRad } from './grid';
 
 describe('Plan builder and validation (Contracts Section 7 and 10)', () => {
@@ -19,12 +19,6 @@ describe('Plan builder and validation (Contracts Section 7 and 10)', () => {
     body_mass_kg: 80,
     stop_time_s: 1200,
     solar_event: false,
-  };
-
-  const start: PlanStart = {
-    lon: 137.39,
-    lat: -4.78,
-    label: 'Rover drop-off',
   };
 
   it('densifies line so that no two consecutive points are more than 4 m apart', () => {
@@ -196,7 +190,7 @@ describe('Plan builder and validation (Contracts Section 7 and 10)', () => {
 
   it('generates app/src/fixtures/plan.sample.json valid against Contracts Section 7', async () => {
     const fs = await import('node:fs');
-    const path = await import('node:path');
+    const { fileURLToPath } = await import('node:url');
 
     // Synthetic Gale-scale grid (500x500 cells, 8m resolution = 4000x4000m)
     const width = 500;
@@ -286,12 +280,8 @@ describe('Plan builder and validation (Contracts Section 7 and 10)', () => {
       }
     }
 
-    // Write to app/src/fixtures/plan.sample.json
-    const fixtureDir = path.resolve(process.cwd(), 'app/src/fixtures');
-    if (!fs.existsSync(fixtureDir)) {
-      fs.mkdirSync(fixtureDir, { recursive: true });
-    }
-    const fixturePath = path.join(fixtureDir, 'plan.sample.json');
+    // Write to app/src/fixtures/plan.sample.json, resolved from this file so the working directory does not matter
+    const fixturePath = fileURLToPath(new URL('../fixtures/plan.sample.json', import.meta.url));
     fs.writeFileSync(fixturePath, JSON.stringify(samplePlan, null, 2), 'utf-8');
 
     expect(fs.existsSync(fixturePath)).toBe(true);
