@@ -35,7 +35,7 @@ export const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [mode, setMode] = useState<AppMode>('plan');
   const [layerStates, setLayerStates] = useState<Record<string, LayerState>>({});
-  const [isPanelOpen, setIsPanelOpen] = useState<boolean>(true);
+  const [isPanelOpen, setIsPanelOpen] = useState<boolean>(() => window.innerWidth >= 1200);
   // The plan Walk and Visor replay (contracts section 7). The Plan view sets it; until then, the sample plan.
   const [plan, setPlan] = useState<Plan>(samplePlan as unknown as Plan);
   const [routeGrid, setRouteGrid] = useState<RouteGrid | null>(null);
@@ -253,7 +253,7 @@ export const App: React.FC = () => {
             Loading site...
           </div>
         ) : mode === 'plan' ? (
-          <div className="plan-body">
+          <div className={`plan-body${isPanelOpen ? '' : ' plan-body--layers-closed'}`}>
             <LayerPanel
               layers={siteData.layers}
               layerStates={layerStates}
