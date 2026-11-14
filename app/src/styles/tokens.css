@@ -143,6 +143,10 @@
   --visor-hazard: #eb517c;
   --visor-hazard-text: #14060c;
   --visor-tick: rgba(242, 245, 247, 0.6);
+  /* MapLibre sky uses literal token values; CSS variables cannot be passed in style JSON. */
+  --visor-sky: #766a5b;                /* dusty brown-grey above the horizon */
+  --visor-horizon: #d2a76d;            /* butterscotch horizon */
+  --visor-fog: #b79a77;                /* distance haze over far terrain */
 }
 
 /* ------------------------------------------------------------------ */
