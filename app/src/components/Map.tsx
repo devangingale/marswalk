@@ -9,6 +9,7 @@ import {
   AttributionControl,
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import type { GeoJSONSource } from 'maplibre-gl';
 import type { SiteData, LayerState, ChemistryProperties } from '../types';
 import { resolveSiteAssetUrl } from '../config';
 import { groupChemistryByPosition } from '../lib/chemistry';
@@ -16,17 +17,23 @@ import type { ChemistryFeature } from '../lib/chemistry';
 import { shiftedDemDecoding } from '../lib/terrain';
 import { ScaleBar } from './ScaleBar';
 import { marsBaseStyle, setupPMTilesProtocol } from './mapSetup';
+import type { Plan, PlanStart, PlanStop } from '../lib/plan';
 
 interface MapProps {
   siteData: SiteData;
   layerStates: Record<string, LayerState>;
+  plan?: Plan;
+  onMapPoint?: (point: { lon: number; lat: number }) => void;
+  onStartChange?: (start: PlanStart) => void;
+  onStopChange?: (stop: PlanStop) => void;
 }
 
-export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
+export const Map: React.FC<MapProps> = ({ siteData, layerStates, plan, onMapPoint, onStartChange, onStopChange }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
   const chemistryMarkersRef = useRef<Marker[]>([]);
+  const planMarkersRef = useRef<Marker[]>([]);
   const [mapInstance, setMapInstance] = useState<MapLibreMap | null>(null);
   const [is3D, setIs3D] = useState(false);
 
@@ -69,6 +76,11 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
         ],
         { padding: 20, maxZoom: 14 }
       );
+
+      map.addSource('planned-route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addLayer({ id: 'planned-route-casing', type: 'line', source: 'planned-route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': getComputedStyle(document.documentElement).getPropertyValue('--map-route-casing').trim(), 'line-width': 8 } });
+      map.addLayer({ id: 'planned-route-core', type: 'line', source: 'planned-route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': getComputedStyle(document.documentElement).getPropertyValue('--map-route-core').trim(), 'line-width': 4 } });
+      map.on('click', (event) => onMapPoint?.({ lon: event.lngLat.lng, lat: event.lngLat.lat }));
 
       // Terrain from terrain.pmtiles (terrain-RGB, Mapbox encoding)
       if (siteData.terrain?.url) {
@@ -183,8 +195,11 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
         }
       });
 
+      map.moveLayer('planned-route-casing');
+      map.moveLayer('planned-route-core');
+
       // Start / Habitat marker: 20x20 square with dark casing (contracts section 5, design section 6)
-      if (siteData.default_start) {
+      if (siteData.default_start && !plan) {
         const el = document.createElement('div');
         el.className = 's48-square';
         el.setAttribute('title', siteData.default_start.label);
@@ -212,6 +227,36 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
       setMapInstance(null);
     };
   }, [siteData]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map?.isStyleLoaded() || !plan) return;
+    const source = map.getSource('planned-route') as GeoJSONSource | undefined;
+    if (source) {
+      const coordinates = plan.route.legs.flatMap((leg, index) => index ? leg.line.slice(1) : leg.line);
+      source.setData({ type: 'FeatureCollection', features: coordinates.length > 1 ? [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates } }] : [] });
+    }
+    planMarkersRef.current.forEach((marker) => marker.remove());
+    planMarkersRef.current = [];
+    const startElement = document.createElement('div');
+    startElement.className = 'plan-map-start'; startElement.title = 'Rover drop-off'; startElement.setAttribute('aria-label', 'Rover drop-off');
+    const startLabel = document.createElement('span'); startLabel.textContent = 'Rover drop-off'; startElement.appendChild(startLabel);
+    const startMarker = new Marker({ element: startElement, draggable: true }).setLngLat([plan.start.lon, plan.start.lat]).addTo(map);
+    startMarker.on('dragend', () => onStartChange?.({ ...plan.start, lon: startMarker.getLngLat().lng, lat: startMarker.getLngLat().lat }));
+    planMarkersRef.current.push(startMarker);
+    plan.stops.forEach((stop, index) => {
+      const element = document.createElement('div');
+      element.className = `plan-map-stop${plan.route.warnings.some((warning) => warning.includes(stop.name)) ? ' is-unreachable' : ''}`;
+      element.textContent = String(index + 1); element.title = stop.name; element.setAttribute('aria-label', `${stop.name}${element.classList.contains('is-unreachable') ? ', unreachable' : ''}`);
+      const stopMarker = new Marker({ element, draggable: true }).setLngLat([stop.lon, stop.lat]).addTo(map);
+      stopMarker.on('dragend', () => onStopChange?.({ ...stop, lon: stopMarker.getLngLat().lng, lat: stopMarker.getLngLat().lat }));
+      planMarkersRef.current.push(stopMarker);
+    });
+    if (plan.stops.length > 0 && plan.route.turn_back) {
+      const turn = document.createElement('div'); turn.className = 'plan-map-turn'; turn.title = 'Turn-back point'; turn.setAttribute('aria-label', 'Turn-back point');
+      planMarkersRef.current.push(new Marker({ element: turn }).setLngLat([plan.route.turn_back.lon, plan.route.turn_back.lat]).addTo(map));
+    }
+  }, [plan, onStartChange, onStopChange]);
 
   useEffect(() => {
     const map = mapRef.current;
