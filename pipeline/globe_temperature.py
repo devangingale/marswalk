@@ -42,9 +42,11 @@ OUT = DATA / "globe"
 TEMPERATURE_OUT = OUT / "temperature"
 MANIFEST_OUT = OUT / "temperature.json"
 
+GRID_RES = 3.0
+VALUE_WIDTH = 120
+VALUE_HEIGHT = 60
+MIN_CELL_OBSERVATIONS = 3
 WORLD_RES = 0.25
-VALUE_WIDTH = 1440
-VALUE_HEIGHT = 720
 TILE_LEVELS = range(5)
 NIGHT_HOURS = (0.0, 4.0)
 AFTERNOON_HOURS = (12.0, 16.0)
@@ -79,6 +81,29 @@ def select_local_time(local_time_hours: float | np.ndarray, period: str) -> bool
     if isinstance(local_time_hours, np.ndarray):
         return np.isfinite(local_time_hours) & (local_time_hours >= start) & (local_time_hours < end)
     return math.isfinite(local_time_hours) and start <= local_time_hours < end
+
+
+def coarse_cell(lat: float, lon: float, resolution: float = GRID_RES) -> tuple[int, int]:
+    """Return (row, column) in a global coarse grid, wrapping longitude at 180 degrees."""
+    if not math.isfinite(lat) or not -90.0 <= lat <= 90.0 or not math.isfinite(lon):
+        raise ValueError("latitude and longitude must be finite and latitude within [-90, 90]")
+    if not math.isfinite(resolution) or resolution <= 0 or not math.isclose(360.0 % resolution, 0.0):
+        raise ValueError("resolution must be a positive divisor of 360 degrees")
+    width = round(360.0 / resolution)
+    height = round(180.0 / resolution)
+    wrapped_lon = ((lon + 180.0) % 360.0) - 180.0
+    col = min(width - 1, int((wrapped_lon + 180.0) / resolution))
+    row = min(height - 1, max(0, int((90.0 - lat) / resolution)))
+    return row, col
+
+
+def median_with_min_count(observations: list[float], minimum: int = MIN_CELL_OBSERVATIONS) -> float:
+    """Return a cell median when enough observations exist, else NaN."""
+    if minimum < 1:
+        raise ValueError("minimum must be positive")
+    if len(observations) < minimum:
+        return math.nan
+    return float(np.median(observations))
 
 
 def _register_temperature_cmap() -> None:
@@ -150,15 +175,14 @@ def _manifest_inputs() -> tuple[dict, list[Path]]:
 
 
 def _append_observation(groups: dict, ls: float, local_time: float, lat: float, lon_east: float, temp_k: float,
-                        t_quality: float, surf_quality: float, obs_date: str) -> None:
+                        t_quality: float, surf_quality: float, obs_date: str,
+                        resolution: float = GRID_RES) -> None:
     if (not math.isfinite(temp_k) or not SURFACE_TEMP_RANGE_K[0] <= temp_k <= SURFACE_TEMP_RANGE_K[1]
             or t_quality not in (0.0, 1.0) or surf_quality not in (0.0, 1.0, 2.0, 3.0)
             or not math.isfinite(lat) or not -90.0 <= lat <= 90.0
             or not math.isfinite(lon_east)):
         return
-    lon = ((lon_east + 180.0) % 360.0) - 180.0
-    x = min(VALUE_WIDTH - 1, int((lon + 180.0) / WORLD_RES))
-    y = min(VALUE_HEIGHT - 1, max(0, int((90.0 - lat) / WORLD_RES)))
+    y, x = coarse_cell(lat, lon_east, resolution)
     slot = ls_bin(ls)
     period = "night" if select_local_time(local_time, "night") else "afternoon" if select_local_time(local_time, "afternoon") else None
     if period is None:
@@ -166,27 +190,33 @@ def _append_observation(groups: dict, ls: float, local_time: float, lat: float, 
     groups[(slot, period, y, x)].append((temp_k, obs_date))
 
 
-def _build_grids(source_paths: list[Path]) -> tuple[list[dict[str, np.ndarray]], list[dict], dict[str, int]]:
+def _build_grids(source_paths: list[Path], resolution: float = GRID_RES) -> tuple[list[dict[str, np.ndarray]], list[dict], dict[str, int]]:
+    width = round(360.0 / resolution)
+    height = round(180.0 / resolution)
     groups: dict[tuple[int, str, int, int], list[tuple[float, str]]] = defaultdict(list)
     for path in source_paths:
         for profile in iter_profiles(path):
             _append_observation(groups, float(profile["ls"]), float(profile["ltst_hours"]),
                                 float(profile["lat"]), float(profile["lon_east"]),
                                 float(profile["temperature_k"]), float(profile["temperature_quality"]),
-                                float(profile["surface_quality"]), str(profile["date"]))
+                                float(profile["surface_quality"]), str(profile["date"]), resolution)
     grids: list[dict[str, np.ndarray]] = []
     coverage: list[dict] = []
     for slot in range(12):
         bin_arrays: dict[str, np.ndarray] = {}
         bin_coverage: dict[str, dict] = {}
         for kind, period in (("t_min", "night"), ("t_max", "afternoon")):
-            values = np.full((VALUE_HEIGHT, VALUE_WIDTH), np.nan, dtype=np.float32)
+            values = np.full((height, width), np.nan, dtype=np.float32)
+            observation_counts = np.zeros((height, width), dtype=np.uint32)
             used_dates: set[str] = set()
             sample_count = 0
             for (group_bin, group_period, y, x), records in groups.items():
                 if group_bin != slot or group_period != period:
                     continue
-                values[y, x] = np.float32(np.median([item[0] for item in records]) - 273.15)
+                observation_counts[y, x] = len(records)
+                median_k = median_with_min_count([item[0] for item in records])
+                if math.isfinite(median_k):
+                    values[y, x] = np.float32(median_k - 273.15)
                 sample_count += len(records)
                 used_dates.update(item[1] for item in records)
             valid = np.isfinite(values)
@@ -196,6 +226,8 @@ def _build_grids(source_paths: list[Path]) -> tuple[list[dict[str, np.ndarray]],
                 "observed_cells": int(valid.sum()),
                 "grid_cells": int(valid.size),
                 "samples": sample_count,
+                "min_observations_per_cell": MIN_CELL_OBSERVATIONS,
+                "counts": observation_counts,
                 "days_used": sorted(used_dates),
                 "local_time_hours": list(NIGHT_HOURS if kind == "t_min" else AFTERNOON_HOURS),
             }
@@ -208,19 +240,26 @@ def _build_grids(source_paths: list[Path]) -> tuple[list[dict[str, np.ndarray]],
     return grids, coverage, counts
 
 
-def _save_values(values: np.ndarray, target: Path, min_value: float, max_value: float) -> dict:
+def _save_values(values: np.ndarray, counts: np.ndarray, target: Path,
+                 min_value: float, max_value: float, resolution: float) -> dict:
     encoded, scale, offset = quantise_values(values, min_value, max_value)
     target.parent.mkdir(parents=True, exist_ok=True)
     encoded.tofile(target)
+    counts_path = target.parent / "counts.bin"
+    counts.astype("<u4", copy=False).tofile(counts_path)
     return {
-        "url": target.relative_to(OUT).as_posix(), "width": VALUE_WIDTH, "height": VALUE_HEIGHT,
-        "west": -180.0, "north": 90.0, "res_deg": WORLD_RES,
+        "url": target.relative_to(OUT).as_posix(), "width": values.shape[1], "height": values.shape[0],
+        "west": -180.0, "north": 90.0, "res_deg": resolution,
         "scale": scale, "offset": offset, "nodata": NODATA,
+        "counts": {"url": counts_path.relative_to(OUT).as_posix(), "width": counts.shape[1],
+                   "height": counts.shape[0], "res_deg": resolution, "dtype": "uint32", "byte_order": "little",
+                   "units": "observations", "nodata": 0},
+        "min_observations_per_cell": MIN_CELL_OBSERVATIONS,
     }
 
 
-def _tile_grid(values: np.ndarray, low: float, high: float, folder: Path) -> None:
-    transform = Affine(WORLD_RES, 0.0, -180.0, 0.0, -WORLD_RES, 90.0)
+def _tile_grid(values: np.ndarray, low: float, high: float, folder: Path, resolution: float = GRID_RES) -> None:
+    transform = Affine(resolution, 0.0, -180.0, 0.0, -resolution, 90.0)
     for level in TILE_LEVELS:
         for y in range(2**level):
             for x in range(2 ** (level + 1)):
@@ -256,7 +295,10 @@ def _write_previews(grids: list[dict[str, np.ndarray]], low: float, high: float)
     shots.mkdir(exist_ok=True)
     for slot in (3, 9):
         for kind in ("t_min", "t_max"):
-            values = grids[slot][kind]
+            values = resample_to_world(grids[slot][kind],
+                                       Affine(GRID_RES, 0.0, -180.0, 0.0, -GRID_RES, 90.0),
+                                       MARS_LONLAT, WORLD_RES, Resampling.nearest,
+                                       (-180.0, -90.0, 180.0, 90.0))
             rgba = colour_ramp(values, low, high, TEMPERATURE_CMAP_NAME)
             rgba[np.isfinite(values), 3] = TEMPERATURE_ALPHA
             background = Image.fromarray(base, "RGB").convert("RGBA")
@@ -267,7 +309,12 @@ def _write_previews(grids: list[dict[str, np.ndarray]], low: float, high: float)
 
 def build() -> dict:
     source_manifest, source_paths = _manifest_inputs()
-    grids, coverage, sample_counts = _build_grids(source_paths)
+    grids, coverage, sample_counts = _build_grids(source_paths, GRID_RES)
+    fallback_slots = [slot for slot in range(12)
+                      if any(coverage[slot][kind]["fraction"] < 0.5 for kind in ("t_min", "t_max"))]
+    fallback_grids = fallback_coverage = None
+    if fallback_slots:
+        fallback_grids, fallback_coverage, _ = _build_grids(source_paths, 6.0)
     valid_values = np.concatenate([arr[np.isfinite(arr)] for bin_data in grids for arr in bin_data.values()])
     if not valid_values.size:
         raise ValueError("no valid MCS surface-temperature observations were assigned to Ls bins")
@@ -289,11 +336,12 @@ def build() -> dict:
             values = bin_data[kind]
             folder = TEMPERATURE_OUT / f"{slot:02d}" / kind
             _tile_grid(values, low, high, folder)
-            value_meta = _save_values(values, folder / "values.bin", low, high)
+            value_meta = _save_values(values, coverage[slot][kind]["counts"], folder / "values.bin",
+                                      low, high, GRID_RES)
             layer_entry[kind] = {
                 "tiles": f"temperature/{slot:02d}/{kind}/{{z}}/{{x}}/{{y}}.png",
                 "values": value_meta,
-                "coverage": coverage[slot][kind],
+                "coverage": {key: value for key, value in coverage[slot][kind].items() if key != "counts"},
             }
             valid = np.isfinite(values)
             if valid.any():
@@ -302,8 +350,8 @@ def build() -> dict:
                 row, col = int(chosen[0]), int(chosen[1])
                 extreme = {
                     "t_c": float(values[row, col]),
-                    "lat": 90.0 - (row + 0.5) * WORLD_RES,
-                    "lon": ((-180.0 + (col + 0.5) * WORLD_RES + 180.0) % 360.0) - 180.0,
+                    "lat": 90.0 - (row + 0.5) * GRID_RES,
+                    "lon": ((-180.0 + (col + 0.5) * GRID_RES + 180.0) % 360.0) - 180.0,
                 }
             else:
                 extreme = None
@@ -317,6 +365,26 @@ def build() -> dict:
             "t_max": coverage[slot]["t_max"]["days_used"],
         }
         layer_entry["local_time_hours"] = {"t_min": list(NIGHT_HOURS), "t_max": list(AFTERNOON_HOURS)}
+        if slot in fallback_slots and fallback_grids is not None and fallback_coverage is not None:
+            fallback = {}
+            for kind in ("t_min", "t_max"):
+                fallback_folder = TEMPERATURE_OUT / f"{slot:02d}" / f"{kind}_6deg"
+                fallback_values = fallback_grids[slot][kind]
+                _tile_grid(fallback_values, low, high, fallback_folder, 6.0)
+                fallback_meta = _save_values(
+                    fallback_values, fallback_coverage[slot][kind]["counts"],
+                    fallback_folder / "values.bin", low, high, 6.0,
+                )
+                fallback[kind] = {
+                    "tiles": f"temperature/{slot:02d}/{kind}_6deg/{{z}}/{{x}}/{{y}}.png",
+                    "values": fallback_meta,
+                    "coverage": {key: value for key, value in fallback_coverage[slot][kind].items()
+                                 if key != "counts"},
+                }
+            layer_entry["fallback_6deg"] = fallback
+            layer_entry["fallback_6deg_coverage_fraction"] = {
+                kind: fallback_coverage[slot][kind]["fraction"] for kind in ("t_min", "t_max")
+            }
         bins.append(layer_entry)
         extremes.append(layer_extreme)
 
@@ -325,7 +393,7 @@ def build() -> dict:
         "dataset": "MRO Mars Climate Sounder (MCS) DDR V6.2",
         "landing_page": source_manifest["landing_page"],
         "selection_reason": "MCS DDR profiles provide surface temperature, LTST and surface coordinates for both the near-pre-dawn and afternoon orbit passes, allowing both temperature maps to come from one PDS product.",
-        "sampling": "Sparse sample from selected Mars Year 32 and 35 days near Ls+5 and Ls+25 (four dates in most bins), with extra Mars Year 37 days in Ls 120-150; per-cell median of observed MCS surface temperatures. The days_used arrays record each bin's actual dates.",
+        "sampling": "Expanded sparse sample across multiple Mars Years; per-cell median from MCS observations in each bin's recorded days_used. Cells with fewer than 3 selected observations are nodata; 6-degree fallback grids are included for bins whose 3-degree coverage is below 50%.",
         "local_time_selection": {
             "t_min": {"hours": list(NIGHT_HOURS), "label": "night-side, near pre-dawn (MCS orbit local times around 3 am)"},
             "t_max": {"hours": list(AFTERNOON_HOURS), "label": "day-side, afternoon (MCS orbit local times around 3 pm)"},
