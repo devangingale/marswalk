@@ -343,8 +343,25 @@ class TestSpikeFilter:
         for i in range(11):
             assert cleaned[i]["t_min_c"] == temps[i]
 
-    def test_tmax_isolated_spike_nulled(self):
-        """A warm isolated spike in t_max_c exceeding surrounding median by >15 °C is nulled."""
+    def test_downward_tmax_spike_nulled(self):
+        """A cold isolated downward spike in t_max_c (e.g. -67 °C amidst -30 °C) is nulled."""
+        temps_max = [-30, -31, -30, -29, -30, -67, -30, -29, -31, -30, -32]
+        days = [
+            {"sol": s, "earth_date": f"2021-10-{s:02d}", "ls": 200, "t_min_c": -75, "t_max_c": t, "pressure_pa": 750}
+            for s, t in enumerate(temps_max, start=1)
+        ]
+
+        cleaned, dropped = filter_temperature_spikes(days, window_size=5, threshold_deg=15.0)
+
+        assert dropped["t_max_c"] == 1
+        assert cleaned[5]["sol"] == 6
+        assert cleaned[5]["t_max_c"] is None
+        for i in range(11):
+            if i != 5:
+                assert cleaned[i]["t_max_c"] == temps_max[i]
+
+    def test_upward_tmax_spike_nulled(self):
+        """A warm isolated upward spike in t_max_c (e.g. 10 °C amidst -20 °C) is nulled."""
         temps_max = [-20, -21, -20, -19, -20, 10, -20, -19, -21, -20, -22]
         days = [
             {"sol": s, "earth_date": f"2022-03-{s:02d}", "ls": 120, "t_min_c": -75, "t_max_c": t, "pressure_pa": 750}
@@ -359,3 +376,20 @@ class TestSpikeFilter:
         for i in range(11):
             if i != 5:
                 assert cleaned[i]["t_max_c"] == temps_max[i]
+
+    def test_upward_tmin_spike_nulled(self):
+        """A warm isolated upward spike in t_min_c (e.g. -44 °C amidst -72 °C) is nulled."""
+        temps_min = [-72, -73, -71, -72, -73, -44, -72, -71, -73, -72, -74]
+        days = [
+            {"sol": s, "earth_date": f"2026-01-{s:02d}", "ls": 300, "t_min_c": t, "t_max_c": -10, "pressure_pa": 780}
+            for s, t in enumerate(temps_min, start=1)
+        ]
+
+        cleaned, dropped = filter_temperature_spikes(days, window_size=5, threshold_deg=15.0)
+
+        assert dropped["t_min_c"] == 1
+        assert cleaned[5]["sol"] == 6
+        assert cleaned[5]["t_min_c"] is None
+        for i in range(11):
+            if i != 5:
+                assert cleaned[i]["t_min_c"] == temps_min[i]

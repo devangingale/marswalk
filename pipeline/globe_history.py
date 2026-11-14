@@ -244,18 +244,18 @@ def filter_temperature_spikes(
 ) -> tuple[list[dict[str, Any]], dict[str, int]]:
     """Filter isolated one-sol temperature spikes (sensor glitches) without gap-filling.
 
-    A value is considered an isolated spike if:
-    - for t_min_c: it is more than threshold_deg below both the median of the window_size
-      valid sols before and the window_size valid sols after.
-    - for t_max_c: it is more than threshold_deg above both the median of the window_size
-      valid sols before and the window_size valid sols after.
+    A value is considered an isolated spike if it differs by more than threshold_deg from
+    both the median of the window_size valid sols before and the median of the window_size
+    valid sols after, in either direction (whether up or down):
+      (val < med_before - threshold_deg and val < med_after - threshold_deg) or
+      (val > med_before + threshold_deg and val > med_after + threshold_deg)
 
     Spike values are set to None. Returns (cleaned_days, dropped_counts).
     """
     cleaned_days = [dict(d) for d in days]
     dropped_counts = {"t_min_c": 0, "t_max_c": 0}
 
-    for key, mode in [("t_min_c", "min"), ("t_max_c", "max")]:
+    for key in ["t_min_c", "t_max_c"]:
         valid_indices = [i for i, d in enumerate(cleaned_days) if d.get(key) is not None]
         spikes_to_null: list[int] = []
 
@@ -270,12 +270,11 @@ def filter_temperature_spikes(
             med_after = float(np.median(after))
             val = cleaned_days[idx][key]
 
-            if mode == "min":
-                if (val < med_before - threshold_deg) and (val < med_after - threshold_deg):
-                    spikes_to_null.append(idx)
-            elif mode == "max":
-                if (val > med_before + threshold_deg) and (val > med_after + threshold_deg):
-                    spikes_to_null.append(idx)
+            is_downward_spike = (val < med_before - threshold_deg) and (val < med_after - threshold_deg)
+            is_upward_spike = (val > med_before + threshold_deg) and (val > med_after + threshold_deg)
+
+            if is_downward_spike or is_upward_spike:
+                spikes_to_null.append(idx)
 
         for idx in spikes_to_null:
             cleaned_days[idx][key] = None
@@ -447,9 +446,8 @@ def build_weather(
             "Space Science Reviews, 170, 583–640. Daily reports of the REMS team, NASA/JPL-Caltech/CAB(CSIC-INTA)."
         ),
         "notes": (
-            f"Filtered isolated 1-sol sensor glitches (>15 °C below both the 5-sol preceding and succeeding medians "
-            f"for t_min_c, or >15 °C above for t_max_c): dropped {dropped['t_min_c']} t_min_c spikes "
-            f"and {dropped['t_max_c']} t_max_c spikes to null."
+            f"Filtered isolated 1-sol sensor glitches (>15 °C difference from both the 5-sol preceding and succeeding medians, "
+            f"whether up or down): dropped {dropped['t_min_c']} t_min_c spikes and {dropped['t_max_c']} t_max_c spikes to null."
         ),
     }
 
