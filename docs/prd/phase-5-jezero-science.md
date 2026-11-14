@@ -1,6 +1,8 @@
 # Phase 5 — Jezero through the same pipeline; science ranking
 
-**Owner:** Dev's machine (needs `data/`). **Window:** hours 14–24. **Branch:** `dev/p5-jezero`.
+> Read [`00-contracts.md`](00-contracts.md) first. File formats, coordinates and units are defined there and override anything below.
+
+**Owner:** Dev's machine (needs `data/`). **Window:** hours 14–24. **Branch:** `dev/p5-jezero-science`.
 
 ## Goal
 
@@ -25,3 +27,14 @@ Show the tool is a generator, not a one-off: Jezero appears in the site switcher
 
 - Switching to Jezero works end to end (layers, route, walk) with zero site-specific code.
 - The validation panel shows the real number and method in one sentence.
+
+## Additions (contracts v1)
+
+- Jezero's bundle follows contracts section 4 with no exceptions; weather comes from Perseverance's station (MEDA, Spain).
+- Stretch, only after Jezero is live: regional dust and temperature context from the UAE Hope orbiter as one extra `atmospheric` layer.
+- If the model did not pass its gate, part B is curated named stops only.
+
+## Reviewer check
+
+1. Switch sites in the deployed app: layers, route and walk all work on Jezero.
+2. `git diff main --stat` for this phase shows changes only under `pipeline/sites/`, data outputs and docs.
