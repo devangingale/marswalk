@@ -48,7 +48,7 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates, plan, onMapPoin
 
     const map = new MapLibreMap({
       container: mapContainerRef.current,
-      style: marsBaseStyle(),
+      style: marsBaseStyle(siteData),
       center: [centerLon, centerLat],
       zoom: 13,
       maxPitch: 75,
@@ -121,6 +121,7 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates, plan, onMapPoin
               type: 'raster',
               url: `pmtiles://${resolvedUrl}`,
               tileSize: 256,
+              bounds: siteData.bounds_lonlat,
             });
 
             map.addLayer({
