@@ -37,6 +37,7 @@ import { cartesianToLonLat, lonLatToCartesian, siteHeightOffsetM } from './frame
 import { GlobeGlobalLayers, GlobeLayer, globeAssetUrl, loadGlobeManifest } from './globalLayers';
 import { GlobeGraticule, cullLabels, graticuleLines, type Box, type GraticuleLine, type ViewBounds } from './graticule';
 import { GlobeImagery } from './imageryLayers';
+import { attachSiteTerrain, type SiteTerrainMesh } from './siteTerrain';
 import { GlobeTimeTools } from './Clock';
 import { marsSolarLongitude } from '../lib/sun';
 import { GlobeTemperatureLayer, loadTemperatureManifest } from './temperature/temperatureLayer';
@@ -190,6 +191,7 @@ export const GlobePage: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
   const siteImageryRef = useRef<GlobeImagery | null>(null);
+  const siteTerrainRef = useRef<SiteTerrainMesh | null>(null);
   const globalRef = useRef<GlobeGlobalLayers | null>(null);
   const temperatureRef = useRef<GlobeTemperatureLayer | null>(null);
   const cavesRef = useRef<CustomDataSource | null>(null);
@@ -406,6 +408,7 @@ export const GlobePage: React.FC = () => {
           setLayerStates(states);
           siteImageryRef.current!.apply(states);
           await siteImageryRef.current!.setSite(site, mode);
+          siteTerrainRef.current = await attachSiteTerrain(viewer, tileset, site);
           const loaded = await loadGrid(getSiteBaseUrl(site.id), site.origin);
           if (disposed) return;
           gridRef.current = loaded;
@@ -484,6 +487,7 @@ export const GlobePage: React.FC = () => {
       overlaysRef.current?.clear();
       graticuleRef.current?.clear();
       siteImageryRef.current?.clear();
+      siteTerrainRef.current?.destroy();
       globalRef.current?.destroy();
       temperatureRef.current?.destroy();
       viewerRef.current?.destroy();
