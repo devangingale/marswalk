@@ -48,6 +48,8 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 | Name | Used for | Licence |
 |---|---|---|
 | _add as introduced_ | | |
+| LightGBM (`lightgbm`) | Gradient-boosted tree walkability classifier | MIT |
+| scikit-learn (`scikit-learn`) | ROC AUC metrics and model interfaces | BSD-3-Clause |
 
 ## Images, fonts, icons, text
 
