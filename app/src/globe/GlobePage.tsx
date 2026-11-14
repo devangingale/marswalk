@@ -47,6 +47,7 @@ import { canvasMarkerImages } from './markerImages';
 import { GlobeOverlays } from './overlays';
 import { formatElevation, formatLatLon, graticuleStep, screenSpan, sectionLabel } from './routeLook';
 import { useGlobeTheme } from './theme/useGlobeTheme';
+import { SafetyLayer } from '../safety/SafetyLayer';
 
 const CAVE_CREDIT = 'Mars Global Cave Candidate Catalog (MGC³), USGS Astrogeology Science Center';
 /** Data overlays start at the --map-overlay-opacity token value. */
@@ -681,7 +682,8 @@ export const GlobePage: React.FC = () => {
             }}
           >
             <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
-            {dustScene && <GlobeTimeTools scene={dustScene} onLs={setLs} />}
+            {/* The clock, dust history and conditions are Earth-mode planning chrome; Mars mode stays minimal. */}
+            {mode === 'earth' && dustScene && <GlobeTimeTools scene={dustScene} onLs={setLs} />}
             {siteData && (
               <div className="globe-sites" data-over-map>
                 <button type="button" className="s48-btn s48-btn--secondary" onClick={flyToPlanet}>
@@ -740,6 +742,15 @@ export const GlobePage: React.FC = () => {
                   <p className="globe-route__note">No elevation grid under this route in the sample bundle.</p>
                 )}
               </section>
+            )}
+            {mode === 'mars' && siteData && (
+              <SafetyLayer
+                plan={shownPlan}
+                origin={siteData.origin}
+                siteId={siteData.id}
+                lat={siteData.origin.lat0}
+                lonEast={siteData.origin.lon0}
+              />
             )}
             {notice && <div className="globe-notice" style={{ top: 'calc(var(--space-16) * 4)' }}>{notice}</div>}
             {edges.map((label) => (
