@@ -19,41 +19,38 @@ export function setupPMTilesProtocol() {
   }
 }
 
-/** Dark background with the Mars Trek MOLA shaded-relief basemap. */
-export function marsBaseStyle(): StyleSpecification {
+/** Regional MOLA/HRSC hillshade under the site raster, when the bundle provides it. */
+export function marsBaseStyle(siteData?: SiteData): StyleSpecification {
+  const background = getComputedStyle(document.documentElement).getPropertyValue('--map-background').trim();
+  const basemapUrl = siteData?.basemap?.url;
+  const layers: StyleSpecification['layers'] = [
+    {
+      id: 'mars-background',
+      type: 'background',
+      paint: { 'background-color': background },
+    },
+  ];
+  if (basemapUrl) {
+    layers.push({
+      id: 'mars-basemap-layer',
+      type: 'raster',
+      source: 'mars_basemap',
+      minzoom: 0,
+      paint: { 'raster-opacity': 1 },
+    });
+  }
   return {
     version: 8,
     name: 'Sol-48 Mars Basemap',
-    sources: {
-      mars_mola_trek: {
+    sources: basemapUrl ? {
+      mars_basemap: {
         type: 'raster',
-        tiles: [
-          'https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg',
-        ],
+        url: `pmtiles://${resolveSiteAssetUrl(siteData.id, basemapUrl)}`,
         tileSize: 256,
-        maxzoom: 8,
-        attribution: 'NASA/JPL/GSFC Mars Trek',
+        attribution: siteData.basemap?.source ?? 'MOLA/HRSC BlendDEM, USGS Astrogeology',
       },
-    },
-    layers: [
-      {
-        id: 'mars-background',
-        type: 'background',
-        paint: {
-          'background-color': '#3b2e26',
-        },
-      },
-      {
-        id: 'mars-trek-layer',
-        type: 'raster',
-        source: 'mars_mola_trek',
-        minzoom: 0,
-        maxzoom: 9,
-        paint: {
-          'raster-opacity': 0.75,
-        },
-      },
-    ],
+    } : {},
+    layers,
   };
 }
 
@@ -65,6 +62,7 @@ export function addOpticalImage(map: MapLibreMap, siteData: SiteData) {
     type: 'raster',
     url: `pmtiles://${resolveSiteAssetUrl(siteData.id, optical.url)}`,
     tileSize: 256,
+    bounds: siteData.bounds_lonlat,
   });
   map.addLayer({ id: 'site-optical', type: 'raster', source: 'site-optical' });
 }

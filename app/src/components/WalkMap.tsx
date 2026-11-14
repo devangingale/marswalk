@@ -25,7 +25,7 @@ export const WalkMap: React.FC<WalkMapProps> = ({ siteData, plan, track, lon, la
     const token = (name: string) => css.getPropertyValue(name).trim();
     const markerElement = document.createElement('div');
     markerElement.className = 's48-walk-position';
-    const map = new MapLibreMap({ container: containerRef.current, style: marsBaseStyle(), center: positionRef.current, zoom: 14 });
+    const map = new MapLibreMap({ container: containerRef.current, style: marsBaseStyle(siteData), center: positionRef.current, zoom: 14 });
     const marker = new Marker({ element: markerElement, anchor: 'center' }).setLngLat(positionRef.current).addTo(map);
     markerRef.current = marker;
 
