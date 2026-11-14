@@ -124,35 +124,38 @@ export const App: React.FC = () => {
 
         <ModeSwitch currentMode={mode} onModeChange={setMode} />
 
-        <SiteSwitcher
-          availableSites={AVAILABLE_SITES}
-          currentSite={currentSiteId}
-          onSiteChange={handleSiteChange}
-          siteTitle={siteData.title}
-          roverName={siteData.rover}
-        />
+        <div className="s48-site-identity">
+          <SiteSwitcher
+            availableSites={AVAILABLE_SITES}
+            currentSite={currentSiteId}
+            onSiteChange={handleSiteChange}
+            siteTitle={siteData.title}
+            roverName={siteData.rover}
+          />
+          {siteData.size_m && (
+            <span className="s48-site-extent num" title="Site footprint">
+              {Math.round(siteData.size_m.width / 1000)} × {Math.round(siteData.size_m.height / 1000)} km
+            </span>
+          )}
+        </div>
 
         <span className="grow" />
 
-        {mode === 'plan' && (
+        {mode === 'plan' && !isPanelOpen && (
           <button
             type="button"
             className="s48-btn s48-btn--secondary"
-            onClick={() => setIsPanelOpen(!isPanelOpen)}
-            aria-label="Toggle layer panel"
+            onClick={() => setIsPanelOpen(true)}
+            aria-label="Open layer panel"
           >
             <svg className="i" viewBox="0 0 16 16" aria-hidden="true">
               <path d="M8 2l6 3.2-6 3.2-6-3.2z" />
               <path d="M2 8.4l6 3.2 6-3.2" />
               <path d="M2 11.4l6 3.2 6-3.2" />
             </svg>
-            <span>{isPanelOpen ? 'Hide layers' : 'Layers'}</span>
+            <span>Layers</span>
           </button>
         )}
-
-        <span className="meta">
-          {siteData.size_m ? `${Math.round(siteData.size_m.width / 1000)} × ${Math.round(siteData.size_m.height / 1000)} km` : ''}
-        </span>
       </header>
 
       <NoticeBanner
