@@ -95,6 +95,7 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
       }
 
       viewerRef.current = viewer;
+      (container as any)._viewer = viewer;
       if (tileset) {
         tileset.enableCollision = true;
       }
@@ -112,6 +113,10 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
       viewer.scene.fog.screenSpaceErrorFactor = 2;
       viewer.scene.skyAtmosphere = new SkyAtmosphere(Ellipsoid.MARS);
       viewer.scene.skyAtmosphere.show = true;
+      viewer.scene.skyAtmosphere.hueShift = -0.48;
+      viewer.scene.skyAtmosphere.saturationShift = -0.3;
+      viewer.scene.skyAtmosphere.brightnessShift = -0.15;
+      viewer.scene.skyAtmosphere.perFragmentAtmosphere = true;
 
       // Field of view ~70 degrees, near plane 0.1 m
       if ('fov' in viewer.camera.frustum) {
@@ -176,9 +181,10 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
   }
 
   const hazardM = hazardData.status === 'ready' ? hazardAhead(track.vertices, hazardData.flags, state.alongM) : null;
-  const [visibleHazardM, setVisibleHazardM] = useState<number | null>(hazardM);
+  const hasHazard = hazardM !== null && hazardM > 0;
+  const [visibleHazardM, setVisibleHazardM] = useState<number | null>(hasHazard ? hazardM : null);
   useEffect(() => {
-    if (hazardM !== null) {
+    if (hazardM !== null && hazardM > 0) {
       setVisibleHazardM(hazardM);
       return;
     }
@@ -233,10 +239,10 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
         </div>
         <div
           role="alert"
-          aria-hidden={hazardM === null}
-          className={`s48-visor-hazard${hazardM === null ? ' is-hidden' : ''}`}
+          aria-hidden={!hasHazard}
+          className={`s48-visor-hazard${!hasHazard ? ' is-hidden' : ''}`}
         >
-          {visibleHazardM !== null && `Impassable ${formatDistance(visibleHazardM)} ahead`}
+          {visibleHazardM !== null && visibleHazardM > 0 && `Impassable ${formatDistance(visibleHazardM)} ahead`}
         </div>
       </div>
       <div className="s48-visor-controls">
