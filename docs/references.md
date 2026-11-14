@@ -33,6 +33,7 @@ Not every dataset below ends up in the final product; trim this list to what is 
 | pds_places | `data/raw/pds_places` | NASA PDS public domain (US Government work) |
 | localized_rover_poses | `shared/poses/gale_poses.csv`, `shared/poses/jezero_poses.csv` | NASA/JPL PDS Places rover-position records, public domain (US Government work) |
 | rover_images | `data/raw/rover_images` | Raw images from NASA are not copyrighted (#55); retain each feed credit and check third-party assets. |
+| naif_spice | `data/raw/naif_spice` | NASA PDS / ESA — public domain (US Government work / ESA open access) |
 
 Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic (`gale_dem`), Jezero HiRISE DTM and orthoimages, Jezero CTX DEM and mosaic, Curiosity RAD records (`msl_rad_rdr`), rover location tables (`pds_places`), rover raw-image metadata (`rover_images`), OMNI solar wind data, solar-cycle forecasts. Licences and sources to be confirmed and added above.
 
@@ -43,6 +44,7 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 - Curiosity APXS reduced oxide abundances: [PDS Geosciences Node MSL APXS archive](https://pds-geosciences.wustl.edu/missions/msl/apxs.htm), including its [RDR data inventory](https://pds-geosciences.wustl.edu/msl/msl-m-apxs-4_5-rdr-v1/mslapx_1xxx/data/collection_data_inventory.csv) and CSV products under `https://pds-geosciences.wustl.edu/msl/msl-m-apxs-4_5-rdr-v1/mslapx_1xxx/data/`. PDS/NASA data are public domain; credit the APXS Science Team at the University of Guelph and the Canadian Space Agency (instrument funder).
 - Curiosity RAD absorbed-dose records: [MSL RAD Dose rates, Zenodo](https://doi.org/10.5281/zenodo.20536564), cached in `data/raw/msl_rad_dose/`. CC BY 4.0; cite Heber & Löwe, “MSL/RAD Dose rates”. The radiation layer uses the per-sol median of filtered RAD E-dose rate; its elevated-rate proxy uses the highest per-sol mean from those same data.
 - Gale dust climatology: [Montabone et al. Mars Climate Database column dust optical depth v2](https://www-mars.lmd.jussieu.fr/mars/dust_climatology/index.html), direct archive [`krigedcdod_v2.tar.gz`](https://www-mars.lmd.jussieu.fr/mars/dust_climatology/dataset_v2/krigedcdod_v2.tar.gz), cached in `data/raw/montabone_dust/`. CC BY-SA 3.0; cite Montabone et al. (2015), Icarus, doi:10.1016/j.icarus.2014.12.034, and Montabone et al. (2020), JGR Planets, doi:10.1029/2019JE006111.
+- ESA Mars Express and ExoMars Trace Gas Orbiter SPICE kernels: reconstructed and forward predicted orbit ephemerides from the ESA SPICE Service (`https://spiftp.esac.esa.int/data/SPICE/`). Open access; cite ESA SPICE Service and the respective mission operations teams.
 
 ## Scientific models and literature
 
@@ -50,6 +52,7 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 |---|---|---|
 | Pandolf load-carriage equation | Walking metabolic power on level and uphill terrain | Pandolf, K. B., Givoni, B., & Goldman, R. F. (1977). *Predicting energy expenditure with loads while standing or walking very slowly to moderate walking speeds.* Journal of Applied Physiology, 43(4), 577–581. doi:10.1152/jappl.1977.43.4.577. Simplified with uniform Mars gravity scaling (3.71 m/s²). |
 | Santee downhill correction | Downhill metabolic energy expenditure and eccentric braking correction | Santee, W. R., Allison, W. F., Blanchard, L. A., & Small, M. G. (2001). *A proposed model for load carriage on sloped terrain.* Aviation, Space, and Environmental Medicine, 72(6), 562–566. |
+| NASA NAIF SPICE ephemerides | Orbiter pass prediction (MRO, 2001 Mars Odyssey, ExoMars TGO, Mars Express) | Acton, C. H. (1996). *Ancillary Data Services of NASA's Navigation and Ancillary Information Facility.* Planetary and Space Science, 44(1), 65–70; Public domain. |
 
 ## Software and libraries
 
@@ -64,6 +67,7 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 | @types/node | Node type definitions for the planner test that writes the sample plan fixture | MIT |
 | LightGBM (`lightgbm`) | Gradient-boosted tree walkability classifier | MIT |
 | scikit-learn (`scikit-learn`) | ROC AUC metrics and model interfaces | BSD-3-Clause |
+| spiceypy (`spiceypy==8.4.0`) | Python wrapper for CSPICE (NAIF SPICE toolkit N0067) for orbiter pass prediction | MIT |
 
 ## Images, fonts, icons, text
 
