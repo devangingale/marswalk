@@ -1,5 +1,5 @@
 # Datasets live only on the coordinator machine (45 GB). Never commit.
-data/
+/data/
 
 # Python
 __pycache__/
