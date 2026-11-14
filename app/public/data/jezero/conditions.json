@@ -1,0 +1,10 @@
+{
+  "radiation": {
+    "source": "RAD, Curiosity (NASA / SwRI), measured at Gale and carried over for Jezero",
+    "surface_dose_mgy_per_day": 0.2877,
+    "surface_dose_mgy_per_day_method": "Median of 2806 per-sol mean filtered RAD E-dose rates; each mean uses the filtered-dose column in µGy/day, converted to mGy/day. Elevated rate is the highest per-sol mean in the same record series.",
+    "solar_event_mgy_per_day": 1.4527,
+    "solar_event_mgy_per_day_method": "Maximum per-sol mean filtered RAD dose rate; data-derived elevated proxy, not an event-specific reconstruction. Median of 2806 per-sol mean filtered RAD E-dose rates; each mean uses the filtered-dose column in µGy/day, converted to mGy/day. Elevated rate is the highest per-sol mean in the same record series.",
+    "note": "These values were measured at Gale and are carried over for Jezero; they are not Jezero measurements."
+  }
+}

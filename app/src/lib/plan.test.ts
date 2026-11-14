@@ -1,7 +1,7 @@
 // Written with AI assistance, directed and reviewed by the team.
 
 import { describe, it, expect } from 'vitest';
-import { createGrid, GridHeader, GridOrigin, lonlatToLocalMetres } from './grid';
+import { createGrid, GridHeader, GridOrigin, lonlatToLocalMetres, localMetresToLonLat } from './grid';
 import { buildPlan, densifyLine, validatePlan, PlanParams } from './plan';
 import { MARS_R, degToRad } from './grid';
 
@@ -244,13 +244,12 @@ describe('Plan builder and validation (Contracts Section 7 and 10)', () => {
       site: 'gale',
       grid,
       params: galeParams,
-      start: { lon: 137.39, lat: -4.78, label: 'Rover drop-off' },
+      start: { ...localMetresToLonLat(65, 65, galeOrigin), label: 'Rover drop-off' },
       stops: [
         {
           id: 's1',
           name: 'Boxwork ridge',
-          lon: 137.3795,
-          lat: -4.812,
+          ...localMetresToLonLat(410, 430, galeOrigin),
           note: 'Mineral veins standing as ridges',
           dwell_s: 1200,
         },

@@ -43,7 +43,9 @@ export const StopDetails: React.FC<StopDetailsProps> = ({ waypoint, arrived, fee
         <>
           <section className="s48-stop-photos" aria-label="Rover photos">
             <h3>Rover photos</h3>
-            {photos.length === 0 ? (
+            {!feeds.photosAvailable ? (
+              <p className="s48-stop-no-photo">Rover photos are not available for this site.</p>
+            ) : photos.length === 0 ? (
               <p className="s48-stop-no-photo">
                 No rover photo near this stop (none within {formatDistance(PHOTO_RADIUS_M)}).
               </p>
@@ -76,16 +78,21 @@ export const StopDetails: React.FC<StopDetailsProps> = ({ waypoint, arrived, fee
             {conditions ? (
               <>
                 <dl className="s48-conditions-list">
-                  <dt>Air temperature</dt>
-                  <dd>
-                    {conditions.weather.latest.air_temp_min_c} to {conditions.weather.latest.air_temp_max_c} °C
-                  </dd>
-                  <dt>Pressure</dt>
-                  <dd>{conditions.weather.latest.pressure_pa} Pa</dd>
-                  <dt>Measured</dt>
-                  <dd>
-                    Sol {conditions.weather.latest.sol} ({conditions.weather.latest.terrestrial_date})
-                  </dd>
+                  {conditions.weather ? (
+                    <>
+                      <dt>Air temperature</dt>
+                      <dd>{conditions.weather.latest.air_temp_min_c} to {conditions.weather.latest.air_temp_max_c} °C</dd>
+                      <dt>Pressure</dt>
+                      <dd>{conditions.weather.latest.pressure_pa} Pa</dd>
+                      <dt>Measured</dt>
+                      <dd>Sol {conditions.weather.latest.sol} ({conditions.weather.latest.terrestrial_date})</dd>
+                    </>
+                  ) : (
+                    <>
+                      <dt>Weather</dt>
+                      <dd>Weather data are not available for this site.</dd>
+                    </>
+                  )}
                   <dt>Radiation{solarEvent ? ' (solar event)' : ''}</dt>
                   <dd>
                     {(solarEvent
@@ -96,7 +103,7 @@ export const StopDetails: React.FC<StopDetailsProps> = ({ waypoint, arrived, fee
                   </dd>
                 </dl>
                 <p className="s48-source">
-                  {conditions.weather.source}. {conditions.radiation.source}. {conditions.radiation.note}
+                  {conditions.weather ? `${conditions.weather.source}. ` : ''}{conditions.radiation.source}. {conditions.radiation.note}
                 </p>
               </>
             ) : (
@@ -106,7 +113,9 @@ export const StopDetails: React.FC<StopDetailsProps> = ({ waypoint, arrived, fee
 
           <section className="s48-stop-chemistry" aria-label="Chemistry">
             <h3>Chemistry</h3>
-            {chemistry ? (
+            {!feeds.chemistryAvailable ? (
+              <p className="s48-stop-no-chemistry">Chemistry data are not available for this site.</p>
+            ) : chemistry ? (
               <>
                 <p>
                   {chemistry.measurements.length} APXS measurement

@@ -9,8 +9,11 @@ import {
   AttributionControl,
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { SiteData, LayerState } from '../types';
+import type { SiteData, LayerState, ChemistryProperties } from '../types';
 import { resolveSiteAssetUrl } from '../config';
+import { groupChemistryByPosition } from '../lib/chemistry';
+import type { ChemistryFeature } from '../lib/chemistry';
+import { shiftedDemDecoding } from '../lib/terrain';
 import { ScaleBar } from './ScaleBar';
 import { marsBaseStyle, setupPMTilesProtocol } from './mapSetup';
 
@@ -23,6 +26,7 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
+  const chemistryMarkersRef = useRef<Marker[]>([]);
   const [mapInstance, setMapInstance] = useState<MapLibreMap | null>(null);
   const [is3D, setIs3D] = useState(false);
 
@@ -74,7 +78,8 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
             type: 'raster-dem',
             url: `pmtiles://${terrainUrl}`,
             tileSize: 256,
-            encoding: siteData.terrain.encoding || 'mapbox',
+            encoding: 'custom',
+            ...shiftedDemDecoding(siteData.terrain),
             maxzoom: 15,
           });
 
@@ -115,6 +120,42 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
                 'raster-opacity': state.opacity,
               },
             });
+          } else if (layer.type === 'points' && layer.id === 'chemistry_apxs') {
+            void fetch(resolvedUrl)
+              .then((response) => {
+                if (!response.ok) throw new Error(`Chemistry request failed: ${response.status}`);
+                return response.json() as Promise<{ features: ChemistryFeature[] }>;
+              })
+              .then((geojson) => {
+                for (const group of groupChemistryByPosition(geojson.features)) {
+                  const marker = document.createElement('div');
+                  marker.setAttribute('aria-label', `${group.measurements.length} APXS observations`);
+                  marker.style.width = '12px';
+                  marker.style.height = '12px';
+                  marker.style.borderRadius = '50%';
+                  marker.style.background = '#f2f5f7';
+                  marker.style.border = '2px solid #0a1828';
+                  marker.style.opacity = String(state.opacity);
+                  const names = group.measurements.map((measurement: ChemistryProperties) =>
+                    String(measurement.target ?? 'APXS observation')
+                  );
+                  const list = document.createElement('ul');
+                  for (const name of names) {
+                    const item = document.createElement('li');
+                    item.textContent = name;
+                    list.appendChild(item);
+                  }
+                  const popup = new Popup({ offset: 10, maxWidth: '320px' }).setDOMContent(list);
+                  const chemistryMarker = new Marker({ element: marker })
+                    .setLngLat([group.lon, group.lat])
+                    .setPopup(popup)
+                    .addTo(map);
+                  chemistryMarkersRef.current.push(chemistryMarker);
+                }
+              })
+              .catch(() => {
+                // Chemistry is optional in the Plan map.
+              });
           } else if (layer.type === 'points') {
             map.addSource(`src-${layer.id}`, {
               type: 'geojson',
@@ -164,6 +205,8 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
       if (markerRef.current) {
         markerRef.current.remove();
       }
+      chemistryMarkersRef.current.forEach((marker) => marker.remove());
+      chemistryMarkersRef.current = [];
       map.remove();
       mapRef.current = null;
       setMapInstance(null);
@@ -179,6 +222,13 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
       if (!state) return;
 
       const layerId = `lyr-${layer.id}`;
+      if (layer.id === 'chemistry_apxs') {
+        chemistryMarkersRef.current.forEach((marker) => {
+          const element = marker.getElement();
+          element.style.display = state.enabled ? '' : 'none';
+          element.style.opacity = String(state.opacity);
+        });
+      }
       if (map.getLayer(layerId)) {
         map.setLayoutProperty(layerId, 'visibility', state.enabled ? 'visible' : 'none');
         if (layer.type === 'raster') {
