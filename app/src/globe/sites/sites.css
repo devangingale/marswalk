@@ -1,22 +1,18 @@
 /* Written with AI assistance, directed and reviewed by the team. */
 /*
  * Site-finder styling. Colours come from the design tokens (styles/tokens.css).
- * The site-score green ramp realises the "site score green" entry in the globe
- * design palette (docs/superpowers/specs/2026-11-14-sol48-globe-design.md); it
- * is a single-hue sequential scale (light to saturated), read by lightness so
- * it survives red-green colour blindness, and is theme-independent like the
- * other --map-* colours. The pins read these values with getComputedStyle.
+ * Site score and pin colours come from the theme-independent map tokens.
  */
 :root {
-  --sites-score-0: #bcd9c7;
-  --sites-score-1: #8ecaa5;
-  --sites-score-2: #5fb985;
-  --sites-score-3: #2f9f64;
-  --sites-score-4: #178a4e;
-  --sites-known-fill: #0a1828; /* matches --map-stop-fill: dark, reads as a hollow ring */
-  --sites-known-ring: #f2f5f7; /* white ring: landed spacecraft */
-  --sites-zone-ring: #98a2ac; /* muted ring: 2015 exploration zones */
-  --sites-veto-ring: #eb517c; /* matches --map-impassable: disqualified site */
+  --sites-score-0: var(--map-site-score-0);
+  --sites-score-1: var(--map-site-score-1);
+  --sites-score-2: var(--map-site-score-2);
+  --sites-score-3: var(--map-site-score-3);
+  --sites-score-4: var(--map-site-score-4);
+  --sites-known-fill: var(--map-stop-fill);
+  --sites-known-ring: var(--map-stop-ring);
+  --sites-zone-ring: var(--map-route-walked);
+  --sites-veto-ring: var(--map-impassable);
 }
 
 /* Tabs in the top bar switch the left panel between Layers and Sites. */
@@ -200,12 +196,12 @@
 .sites-card-wrap {
   position: absolute;
   right: var(--space-4);
-  bottom: var(--space-12); /* clear of the time-slider bar at the globe foot */
+  bottom: var(--space-6);
   z-index: 5;
   display: flex;
   width: 320px;
   max-width: calc(100% - 2 * var(--space-4));
-  max-height: calc(100% - var(--space-16) - var(--space-4));
+  max-height: min(calc(100% - var(--space-16) - var(--space-4)), 400px);
 }
 .sites-card {
   width: 100%;
@@ -360,4 +356,10 @@
 .sites-detail--ready {
   color: var(--color-ok);
   font-weight: var(--weight-medium);
+}
+
+@media (max-width: 1024px) {
+  .sites-card-wrap {
+    max-height: min(calc(100% - var(--space-16) - var(--space-4)), 320px);
+  }
 }
