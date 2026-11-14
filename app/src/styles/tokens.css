@@ -5,8 +5,13 @@
  * Theming
  *   - No attribute: follows prefers-color-scheme (light by default, dark when the OS asks).
  *   - data-theme="dark" or data-theme="light" on any element forces that theme for its subtree.
+ *   - data-theme="day" is an alias of "light" and data-theme="night" an alias of "dark":
+ *     the globe page writes day/night (see app/src/globe/theme/theme.ts); both select the
+ *     same high-contrast light / low-glare dark token set.
  *   - The visor is always dark: wrap it in data-theme="dark" and use the --visor-* tokens.
- *   - Map styling (--map-*) is the same in both themes: the imagery does not change with the theme.
+ *   - Map marks (--map-route-*, --map-stop-*, labels) sit on the imagery, which does not change
+ *     with the theme, so they are the same in both and checked over both. The globe background
+ *     (--map-sky) does change with the theme.
  *
  * The dark values appear twice (attribute block and media-query block). Keep them identical;
  * docs/design/check-contrast.mjs fails if they drift.
@@ -154,8 +159,12 @@
 /* Light (daylight) theme: the default when nothing else applies       */
 /* ------------------------------------------------------------------ */
 :root,
-[data-theme="light"] {
+[data-theme="light"],
+[data-theme="day"] {
   color-scheme: light;
+
+  /* Globe background (space behind the planet): light neutral in a bright room. */
+  --map-sky: #c4ccd4;
 
   --color-bg: #e9edf1;
   --color-surface: #f6f8fa;
@@ -185,8 +194,12 @@
 /* ------------------------------------------------------------------ */
 /* Dark (habitat) theme                                                */
 /* ------------------------------------------------------------------ */
-[data-theme="dark"] {
+[data-theme="dark"],
+[data-theme="night"] {
   color-scheme: dark;
+
+  /* Globe background (space behind the planet): near-black, low glare. */
+  --map-sky: #05070a;
 
   --color-bg: #0d1115;
   --color-surface: #141a20;
@@ -214,8 +227,10 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root:not([data-theme="light"]):not([data-theme="day"]) {
     color-scheme: dark;
+
+    --map-sky: #05070a;
 
     --color-bg: #0d1115;
     --color-surface: #141a20;
