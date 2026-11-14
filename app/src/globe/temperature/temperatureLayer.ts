@@ -12,6 +12,7 @@ import {
   UrlTemplateImageryProvider,
 } from 'cesium';
 import { globeAssetUrl } from '../layerManifest';
+import { imageryLayerRank, orderImageryLayer } from '../layerOrder';
 import {
   TemperatureGrid,
   TemperatureKind,
@@ -92,15 +93,9 @@ export class GlobeTemperatureLayer {
         credit: new Credit(this.manifest.source.dataset),
       });
       const next = new ImageryLayer(provider);
-      // Swap in place: the new season takes the old layer's slot, under the site layers.
-      if (this.imagery) {
-        const index = this.target.indexOf(this.imagery);
-        this.target.add(next, Math.max(0, index));
-        this.target.remove(this.imagery, true);
-      } else {
-        this.target.add(next);
-        this.target.lowerToBottom(next);
-      }
+      this.target.add(next);
+      orderImageryLayer(this.target, next, imageryLayerRank('temperature'));
+      if (this.imagery) this.target.remove(this.imagery, true);
       this.imagery = next;
       this.key = key;
     }

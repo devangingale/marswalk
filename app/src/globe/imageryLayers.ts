@@ -4,6 +4,7 @@ import { resolveSiteAssetUrl } from '../config';
 import type { LayerState, SiteData, SiteLayer } from '../types';
 import { createPMTilesImagery } from './pmtilesImagery';
 import { offlineImagerySet } from './offline/imagerySet';
+import { imageryLayerRank, orderImageryLayer } from './layerOrder';
 
 export interface ImageryLayerView {
   show: boolean;
@@ -69,7 +70,8 @@ export class GlobeImagery {
         );
         if (generation !== this.generation) return;
         this.basemap = new ImageryLayer(provider);
-        this.target.add(this.basemap, 0);
+        this.target.add(this.basemap);
+        orderImageryLayer(this.target, this.basemap, imageryLayerRank('offline-basemap'));
       } catch (error) {
         console.warn(`Site basemap did not load`, error);
       }
@@ -92,6 +94,11 @@ export class GlobeImagery {
       const imagery = new ImageryLayer(provider, { show: false });
       this.target.add(imagery);
       this.layers.set(id, imagery);
+      const siteLayerOrder = this.site?.layers.findIndex((layer) => layer.id === id) ?? 0;
+      const rank = id === 'image'
+        ? imageryLayerRank('site-orbital')
+        : imageryLayerRank('site-data', siteLayerOrder, id);
+      orderImageryLayer(this.target, imagery, rank);
     });
     this.apply(this.states, true);
   }
