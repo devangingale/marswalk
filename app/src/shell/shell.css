@@ -189,3 +189,22 @@
     background: var(--color-surface);
   }
 }
+
+/* Stepped legend bar for globe layers: one cell per sampled colour */
+.s48-legend__ramp--steps {
+  display: flex;
+  overflow: hidden;
+}
+
+.s48-legend__ramp--steps i {
+  flex: 1;
+}
+
+.s48-cave-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: var(--radius-round);
+  background: var(--map-cave);
+  box-shadow: 0 0 0 1px var(--map-label-halo);
+}
