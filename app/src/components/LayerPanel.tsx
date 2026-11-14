@@ -11,13 +11,28 @@ import {
   formatLegendValue,
   cleanUnits,
 } from '../shell/layerFormat';
+import { GlobeLayer, groupGlobeLayers, legendSteps } from '../globe/layerManifest';
+
+const LEGEND_STEPS = 16;
+
+export interface CaveOverlay {
+  enabled: boolean;
+  count: number;
+  credit: string;
+  onToggle: () => void;
+}
 
 interface LayerPanelProps {
   layers: SiteLayer[];
   layerStates: Record<string, LayerState>;
-  roverOverlayState: RoverOverlayState;
-  photosAvailable: boolean;
-  onToggleRoverOverlay: (layer: keyof RoverOverlayState) => void;
+  roverOverlayState?: RoverOverlayState;
+  photosAvailable?: boolean;
+  onToggleRoverOverlay?: (layer: keyof RoverOverlayState) => void;
+  globalLayers?: GlobeLayer[];
+  globalStates?: Record<string, LayerState>;
+  onToggleGlobal?: (layerId: string) => void;
+  onGlobalOpacityChange?: (layerId: string, opacity: number) => void;
+  caves?: CaveOverlay;
   onToggleLayer: (layerId: string) => void;
   onOpacityChange: (layerId: string, opacity: number) => void;
   isOpen: boolean;
@@ -39,8 +54,13 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
   layers,
   layerStates,
   roverOverlayState,
-  photosAvailable,
+  photosAvailable = false,
   onToggleRoverOverlay,
+  globalLayers = [],
+  globalStates = {},
+  onToggleGlobal,
+  onGlobalOpacityChange,
+  caves,
   onToggleLayer,
   onOpacityChange,
   isOpen,
@@ -65,7 +85,12 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
   }, {});
 
   const activeCount = Object.values(layerStates).filter((s) => s.enabled).length
-    + Number(roverOverlayState.traverse) + Number(photosAvailable && roverOverlayState.photos);
+    + Object.values(globalStates).filter((s) => s.enabled).length
+    + Number(!!caves?.enabled)
+    + Number(!!roverOverlayState?.traverse) + Number(photosAvailable && !!roverOverlayState?.photos);
+
+  const globalGroups = groupGlobeLayers(globalLayers);
+  const caveGroupShown = !!caves && !globalGroups.some((g) => g.group === 'caves');
 
   return (
     <aside
@@ -126,22 +151,12 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
                           </span>
                         </label>
 
-                        <button
-                          type="button"
-                          className={`s48-layer__info-btn ${isExpanded ? 'is-active' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleInfo(layer.id);
-                          }}
-                          aria-expanded={isExpanded}
-                          aria-label={`About ${displayName}`}
+                        <InfoButton
+                          expanded={isExpanded}
+                          label={displayName}
                           title={layer.source || displayName}
-                        >
-                          <svg className="i" viewBox="0 0 16 16" aria-hidden="true">
-                            <circle cx="8" cy="8" r="6.5" />
-                            <path d="M8 7v4M8 5h.01" />
-                          </svg>
-                        </button>
+                          onClick={() => toggleInfo(layer.id)}
+                        />
                       </div>
 
                       {isExpanded && layer.source && (
@@ -227,29 +242,184 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
               </div>
             );
           })}
-          <div>
-            <h4>Rover</h4>
-            {([
-              ['traverse', 'Rover traverse'],
-              ...(photosAvailable ? [['photos', 'Rover photos'] as const] : []),
-            ] as const).map(([key, title]) => (
-              <div key={key} className="s48-layer rover-overlay-layer">
-                <div className="s48-layer__head">
-                  <label>
-                    <input
-                      type="checkbox"
-                      className="s48-check"
-                      checked={roverOverlayState[key]}
-                      onChange={() => onToggleRoverOverlay(key)}
-                    />
-                    <span className="s48-layer__title">{title}</span>
-                  </label>
+          {roverOverlayState && onToggleRoverOverlay && (
+            <div>
+              <h4>Rover</h4>
+              {([
+                ['traverse', 'Rover traverse'],
+                ...(photosAvailable ? [['photos', 'Rover photos'] as const] : []),
+              ] as const).map(([key, title]) => (
+                <div key={key} className="s48-layer rover-overlay-layer">
+                  <div className="s48-layer__head">
+                    <label>
+                      <input
+                        type="checkbox"
+                        className="s48-check"
+                        checked={roverOverlayState[key]}
+                        onChange={() => onToggleRoverOverlay(key)}
+                      />
+                      <span className="s48-layer__title">{title}</span>
+                    </label>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
+
+      {(globalGroups.length > 0 || caves) && (
+        <div className="panel-sec" style={{ borderBottom: 0 }}>
+          <h3>
+            <span>Whole planet</span>
+          </h3>
+          <div className="s48-layers">
+            {globalGroups.map(({ group, label, layers: groupLayers }) => (
+              <div key={group}>
+                <h4>{label}</h4>
+                {groupLayers.map((layer) => {
+                  const state = globalStates[layer.id] || { enabled: false, opacity: 1 };
+                  const isExpanded = !!expandedInfo[`global:${layer.id}`];
+                  return (
+                    <div key={layer.id} className="s48-layer">
+                      <div className="s48-layer__head">
+                        <label>
+                          <input
+                            type="checkbox"
+                            className="s48-check"
+                            checked={state.enabled}
+                            onChange={() => onToggleGlobal?.(layer.id)}
+                          />
+                          <span className="s48-layer__title" title={layer.title}>
+                            {layer.title}
+                          </span>
+                        </label>
+                        <InfoButton
+                          expanded={isExpanded}
+                          label={layer.title}
+                          onClick={() => toggleInfo(`global:${layer.id}`)}
+                        />
+                      </div>
+
+                      {isExpanded && (
+                        <div className="s48-layer__desc">
+                          <p>{layer.description}</p>
+                          <div className="s48-layer__desc-meta">Source: {layer.source.citation}</div>
+                          <div className="s48-layer__desc-meta">Licence: {layer.source.licence}</div>
+                          {layer.source.licence_note && (
+                            <div className="s48-layer__desc-meta">{layer.source.licence_note}</div>
+                          )}
+                        </div>
+                      )}
+
+                      {state.enabled && (
+                        <div className="s48-layer__body">
+                          <div className="s48-opacity">
+                            <span>Opacity</span>
+                            <input
+                              type="range"
+                              className="s48-range"
+                              min="0"
+                              max="1"
+                              step="0.05"
+                              value={state.opacity}
+                              onChange={(e) => onGlobalOpacityChange?.(layer.id, parseFloat(e.target.value))}
+                              aria-label={`${layer.title} opacity`}
+                            />
+                            <output>{Math.round(state.opacity * 100)} %</output>
+                          </div>
+                          <div className="s48-legend">
+                            <div className="s48-legend__ramp s48-legend__ramp--steps" aria-hidden="true">
+                              {legendSteps(layer.legend.stops, layer.legend.min, layer.legend.max, LEGEND_STEPS).map(
+                                (colour, i) => (
+                                  <i key={i} style={{ background: colour }} />
+                                ),
+                              )}
+                            </div>
+                            <div className="s48-legend__ends">
+                              <span>
+                                <b>{layer.legend.min_label}</b>
+                              </span>
+                              <span>
+                                <b>{layer.legend.max_label}</b>
+                                {layer.legend.units && (
+                                  <span className="s48-legend__unit">{layer.legend.units}</span>
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {group === 'caves' && caves && <CaveRow caves={caves} />}
+              </div>
+            ))}
+            {caveGroupShown && caves && (
+              <div>
+                <h4>Caves</h4>
+                <CaveRow caves={caves} />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </aside>
+  );
+};
+
+const InfoButton: React.FC<{ expanded: boolean; label: string; title?: string; onClick: () => void }> = ({
+  expanded,
+  label,
+  title,
+  onClick,
+}) => (
+  <button
+    type="button"
+    className={`s48-layer__info-btn ${expanded ? 'is-active' : ''}`}
+    onClick={(e) => {
+      e.stopPropagation();
+      onClick();
+    }}
+    aria-expanded={expanded}
+    aria-label={`About ${label}`}
+    title={title || label}
+  >
+    <svg className="i" viewBox="0 0 16 16" aria-hidden="true">
+      <circle cx="8" cy="8" r="6.5" />
+      <path d="M8 7v4M8 5h.01" />
+    </svg>
+  </button>
+);
+
+const CaveRow: React.FC<{ caves: CaveOverlay }> = ({ caves }) => {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="s48-layer">
+      <div className="s48-layer__head">
+        <label>
+          <input type="checkbox" className="s48-check" checked={caves.enabled} onChange={caves.onToggle} />
+          <span className="s48-layer__title">Cave candidates</span>
+        </label>
+        <InfoButton expanded={expanded} label="Cave candidates" onClick={() => setExpanded(!expanded)} />
+      </div>
+      {expanded && (
+        <div className="s48-layer__desc">
+          <p>Possible cave entrances seen in orbital images. None has been explored.</p>
+          <div className="s48-layer__desc-meta">Source: {caves.credit}</div>
+        </div>
+      )}
+      {caves.enabled && (
+        <div className="s48-layer__body">
+          <div className="s48-legend s48-legend--points">
+            <span className="s48-cave-dot" />
+            <span>
+              <span className="num">{caves.count}</span> points
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
