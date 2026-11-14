@@ -11,7 +11,10 @@
   right: var(--space-4);
   width: 360px;
   max-width: calc(100% - 2 * var(--space-4));
-  max-height: calc(100% - 2 * var(--space-4));
+  /* Never taller than the map less the Cesium ion logo and credit strip at the
+     bottom right, so the credits and the pinned SOS stay on screen together. */
+  --s48-credits-clear: 48px;
+  max-height: calc(100% - var(--space-4) - var(--s48-credits-clear));
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -19,14 +22,62 @@
   font-family: var(--font-ui);
   color: var(--color-text);
 }
+.s48-safety > .s48-relay,
+.s48-safety > .s48-ladder,
+.s48-safety > .s48-sos {
+  flex: none;
+}
 
+/* The panels between the strip and SOS scroll inside the column, never the page. */
 .s48-safety__scroll {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   min-height: 0;
+  flex: 0 1 auto;
   overflow-y: auto;
-  padding-right: var(--space-1);
+  overscroll-behavior: contain;
+}
+.s48-safety__scroll > section {
+  flex: none;
+}
+
+/* ---- Panel disclosure (ladder detail, beeper, rover) ---- */
+.s48-panel-head {
+  flex: 1;
+  min-width: 0;
+}
+.s48-disclosure {
+  width: 100%;
+  min-height: var(--hit-plan);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.s48-disclosure__label {
+  min-width: 0;
+  flex: 1;
+}
+.s48-disclosure__chev {
+  display: inline-flex;
+  color: var(--color-text-muted);
+  transition: transform 120ms ease-out;
+}
+.s48-disclosure.is-open .s48-disclosure__chev {
+  transform: rotate(180deg);
+}
+.s48-ladder > .s48-disclosure {
+  min-height: var(--hit-plan-min);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
 }
 
 .s48-safety section {
@@ -201,20 +252,28 @@
   font-variant-numeric: var(--numeric);
   color: var(--color-text);
 }
+.s48-ladder-detail {
+  display: grid;
+  gap: var(--space-2);
+}
+/* Four rungs side by side: the whole escalation in one row. */
 .s48-ladder__rungs {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 2px;
 }
 .s48-ladder__rungs li {
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 4px var(--space-2);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 4px 6px;
   border-radius: var(--radius-1);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
   color: var(--color-text-disabled);
 }
 .s48-ladder__rungs li.is-passed {
@@ -253,14 +312,10 @@
 .s48-ladder__rungs li.is-current.is-danger .s48-ladder__rung-dot {
   background: var(--color-danger);
 }
-.s48-ladder__shelter {
-  display: grid;
-  gap: var(--space-2);
-  padding-top: var(--space-2);
-  border-top: var(--border-width) solid var(--color-rule);
-}
 .s48-ladder__shelter-line {
   margin: 0;
+  padding-top: var(--space-2);
+  border-top: var(--border-width) solid var(--color-rule);
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -277,11 +332,6 @@
 .s48-ladder__shelter-line--none {
   color: var(--color-text-muted);
   font-size: var(--text-sm);
-}
-.s48-ladder__shelter-reason {
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
 }
 
 /* ------------------------------------------------------------------ */
@@ -398,18 +448,20 @@
 }
 .s48-sos__head {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
-.s48-sos__reasonlabel {
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
+  align-items: center;
+  gap: var(--space-2);
 }
 .s48-sos__reasons {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
+}
+.s48-sos__reasons {
+  flex-wrap: nowrap;
 }
 .s48-sos__reasons button {
-  flex: 1;
+  flex: 1 1 auto;
+  padding: 0 6px;
+  white-space: nowrap;
 }
 .s48-sos__btn {
   position: relative;
@@ -507,6 +559,18 @@
   align-items: baseline;
   gap: var(--space-2);
 }
+.s48-rover__summary {
+  margin-left: auto;
+  font-family: var(--font-data);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-regular);
+  font-variant-numeric: var(--numeric);
+  color: var(--color-text-muted);
+}
+.s48-rover__body {
+  display: grid;
+  gap: var(--space-2);
+}
 .s48-rover__sim {
   font-size: var(--text-xs);
   color: var(--color-text-muted);
@@ -592,7 +656,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .s48-sos__btn-fill,
-  .s48-rover__send-fill {
+  .s48-rover__send-fill,
+  .s48-disclosure__chev {
     transition: none;
   }
 }

@@ -1,8 +1,9 @@
 // Written with AI assistance, directed and reviewed by the team.
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { currentBeeperStep, type BeeperStep } from './beeper';
 import type { BeeperPlayer } from './beeperPlayer';
 import { formatLocalClock, formatDuration, NBSP } from './format';
+import { DisclosureButton } from './Disclosure';
 
 /**
  * Daylight beeper (design: "Daylight beeper"). Shows the four-step countdown to
@@ -21,6 +22,8 @@ export const DaylightBeeper: React.FC<{
   const [mutedAdvisory, setMutedAdvisory] = useState(false);
   const [acknowledged, setAcknowledged] = useState<Set<string>>(() => new Set());
   const lastKeyRef = useRef<string>('');
+  const [open, setOpen] = useState(false);
+  const stepsId = useId();
 
   const current = useMemo(
     () => currentBeeperStep(schedule, nowMs, acknowledged),
@@ -60,7 +63,11 @@ export const DaylightBeeper: React.FC<{
   return (
     <section className="s48-beeper" aria-label="Daylight beeper">
       <div className="s48-beeper__head">
-        <h3>Daylight beeper</h3>
+        <h3 className="s48-panel-head">
+          <DisclosureButton open={open} onToggle={() => setOpen((v) => !v)} controls={stepsId}>
+            Daylight beeper
+          </DisclosureButton>
+        </h3>
         <button
           type="button"
           className="s48-btn s48-btn--secondary s48-btn--sm"
@@ -71,8 +78,8 @@ export const DaylightBeeper: React.FC<{
         </button>
       </div>
 
-      <ol className="s48-beeper__steps">
-        {schedule.map((step) => {
+      <ol className="s48-beeper__steps" id={stepsId}>
+        {(open ? schedule : focusStep(schedule, nowMs, current)).map((step) => {
           const live = current?.id === step.id && !silenced;
           const past = step.atMs <= nowMs;
           const acked = acknowledged.has(step.id);
@@ -128,3 +135,14 @@ export const DaylightBeeper: React.FC<{
     </section>
   );
 };
+
+/**
+ * The one step the collapsed beeper shows: the sounding step, else the next one
+ * to come, else the last (all passed).
+ */
+function focusStep(schedule: BeeperStep[], nowMs: number, current: BeeperStep | null): BeeperStep[] {
+  if (current) return [current];
+  const next = schedule.find((s) => s.atMs > nowMs);
+  if (next) return [next];
+  return schedule.length > 0 ? [schedule[schedule.length - 1]] : [];
+}

@@ -3,6 +3,7 @@ import React from 'react';
 import type { LadderLevel, LadderResult, ShelterChoice, Hazard } from './ladder';
 import { formatDuration, formatSignedDuration, formatDistance, NBSP } from './format';
 import { CheckCircle, Notch, Alert } from './glyphs';
+import { DisclosureButton } from './Disclosure';
 
 const RUNGS: { level: LadderLevel; label: string }[] = [
   { level: 'ok', label: 'On pace' },
@@ -32,16 +33,18 @@ const HAZARDS: { id: Hazard; label: string }[] = [
 ];
 
 /**
- * The warning ladder in Mars mode: large-type headline in the rung's colour, the
- * supporting numbers, the four-rung ladder, and the shelter the hazard selects.
+ * The warning ladder in Mars mode, compact: the large-type headline in the
+ * rung's colour, the four rungs, and the shelter the hazard selects. It never
+ * scrolls away; its detail (`LadderDetail`) opens in the column's scrolling part.
  */
 export const WarningLadder: React.FC<{
   result: LadderResult;
-  hazard: Hazard;
   shelter: ShelterChoice | null;
   shelterEtaS: number | null;
-  onHazardChange: (h: Hazard) => void;
-}> = ({ result, hazard, shelter, shelterEtaS, onHazardChange }) => {
+  detailOpen: boolean;
+  detailId: string;
+  onDetailToggle: () => void;
+}> = ({ result, shelter, shelterEtaS, detailOpen, detailId, onDetailToggle }) => {
   const rank = RUNGS.findIndex((r) => r.level === result.level);
   return (
     <section className={`s48-ladder ${TONE_CLASS[result.level]}`} aria-label="Warning ladder">
@@ -51,30 +54,6 @@ export const WarningLadder: React.FC<{
         </span>
         <h2 className="s48-ladder__headline">{result.headline}</h2>
       </div>
-      <p className="s48-ladder__detail">{result.detail}</p>
-
-      <dl className="s48-ladder__figs">
-        <div>
-          <dt>Sunset</dt>
-          <dd>
-            {result.minutesToSunset >= 0
-              ? `in ${formatDuration(result.minutesToSunset * 60000)}`
-              : `${formatDuration(-result.minutesToSunset * 60000)} ago`}
-          </dd>
-        </div>
-        <div>
-          <dt>Back-by</dt>
-          <dd>
-            {result.minutesToBackBy >= 0
-              ? `in ${formatDuration(result.minutesToBackBy * 60000)}`
-              : `${formatDuration(-result.minutesToBackBy * 60000)} ago`}
-          </dd>
-        </div>
-        <div>
-          <dt>Arrival vs back-by</dt>
-          <dd>{formatSignedDuration(result.arrivalAfterBackByMin)}</dd>
-        </div>
-      </dl>
 
       <ol className="s48-ladder__rungs" aria-label="Escalation">
         {RUNGS.map((r, i) => (
@@ -83,6 +62,7 @@ export const WarningLadder: React.FC<{
             className={`${TONE_CLASS[r.level]} ${i === rank ? 'is-current' : ''} ${
               i < rank ? 'is-passed' : ''
             }`}
+            aria-current={i === rank ? 'step' : undefined}
           >
             <span className="s48-ladder__rung-dot" />
             {r.label}
@@ -90,42 +70,77 @@ export const WarningLadder: React.FC<{
         ))}
       </ol>
 
-      <div className="s48-ladder__shelter">
-        <div className="s48-seg s48-seg--sm" role="group" aria-label="Hazard">
-          {HAZARDS.map((h) => (
-            <button
-              key={h.id}
-              type="button"
-              aria-pressed={hazard === h.id}
-              onClick={() => onHazardChange(h.id)}
-            >
-              {h.label}
-            </button>
-          ))}
-        </div>
-        {shelter ? (
-          <p className="s48-ladder__shelter-line">
-            <span className="s48-ladder__shelter-name">{shelterName(shelter)}</span>
-            <span className="s48-ladder__shelter-dist">
-              {formatDistance(shelter.shelter.distanceM)}
-              {shelterEtaS !== null ? (
-                <>
-                  {NBSP}·{NBSP}
-                  {formatDuration(shelterEtaS * 1000)}
-                </>
-              ) : null}
-            </span>
-          </p>
-        ) : (
-          <p className="s48-ladder__shelter-line s48-ladder__shelter-line--none">
-            No shelter of this kind in range.
-          </p>
-        )}
-        {shelter && <p className="s48-ladder__shelter-reason">{shelter.reason}</p>}
-      </div>
+      {shelter ? (
+        <p className="s48-ladder__shelter-line">
+          <span className="s48-ladder__shelter-name">{shelterName(shelter)}</span>
+          <span className="s48-ladder__shelter-dist">
+            {formatDistance(shelter.shelter.distanceM)}
+            {shelterEtaS !== null ? (
+              <>
+                {NBSP}·{NBSP}
+                {formatDuration(shelterEtaS * 1000)}
+              </>
+            ) : null}
+          </span>
+        </p>
+      ) : (
+        <p className="s48-ladder__shelter-line s48-ladder__shelter-line--none">
+          No shelter of this kind in range.
+        </p>
+      )}
+
+      <DisclosureButton open={detailOpen} onToggle={onDetailToggle} controls={detailId}>
+        Details
+      </DisclosureButton>
     </section>
   );
 };
+
+/**
+ * The ladder's detail, opened from the ladder card: the sentence, the supporting
+ * times, and the hazard that picks the shelter.
+ */
+export const LadderDetail: React.FC<{
+  id: string;
+  result: LadderResult;
+  hazard: Hazard;
+  onHazardChange: (h: Hazard) => void;
+}> = ({ id, result, hazard, onHazardChange }) => (
+  <section className="s48-ladder-detail" id={id} aria-label="Warning detail">
+    <p className="s48-ladder__detail">{result.detail}</p>
+
+    <dl className="s48-ladder__figs">
+      <div>
+        <dt>Sunset</dt>
+        <dd>
+          {result.minutesToSunset >= 0
+            ? `in ${formatDuration(result.minutesToSunset * 60000)}`
+            : `${formatDuration(-result.minutesToSunset * 60000)} ago`}
+        </dd>
+      </div>
+      <div>
+        <dt>Back-by</dt>
+        <dd>
+          {result.minutesToBackBy >= 0
+            ? `in ${formatDuration(result.minutesToBackBy * 60000)}`
+            : `${formatDuration(-result.minutesToBackBy * 60000)} ago`}
+        </dd>
+      </div>
+      <div>
+        <dt>Arrival vs back-by</dt>
+        <dd>{formatSignedDuration(result.arrivalAfterBackByMin)}</dd>
+      </div>
+    </dl>
+
+    <div className="s48-seg s48-seg--sm" role="group" aria-label="Shelter for hazard">
+      {HAZARDS.map((h) => (
+        <button key={h.id} type="button" aria-pressed={hazard === h.id} onClick={() => onHazardChange(h.id)}>
+          {h.label}
+        </button>
+      ))}
+    </div>
+  </section>
+);
 
 function shelterName(choice: ShelterChoice): string {
   switch (choice.shelter.kind) {

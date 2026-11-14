@@ -56,3 +56,10 @@ export const Alert: React.FC = () => (
     <circle cx="8" cy="11.4" r="0.9" fill="currentColor" />
   </svg>
 );
+
+/** Chevron: a disclosure that opens downward; rotated by CSS when open. */
+export const Chevron: React.FC = () => (
+  <svg {...base} viewBox="0 0 16 16" role="img">
+    <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);

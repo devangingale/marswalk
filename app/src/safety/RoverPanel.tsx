@@ -1,5 +1,6 @@
 // Written with AI assistance, directed and reviewed by the team.
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
+import { DisclosureButton } from './Disclosure';
 import type { CommandReceipt } from '../lib/telemetry';
 import { useHold } from './useHold';
 import { formatDistance, formatDuration, NBSP } from './format';
@@ -28,6 +29,8 @@ export const RoverPanel: React.FC<{
 }> = ({ rover, crew, distanceM, etaToCrewS, arrivalLocalHhmm, simulated, onComeToMe }) => {
   const [receipt, setReceipt] = useState<CommandReceipt | null>(null);
   const [sending, setSending] = useState(false);
+  const [open, setOpen] = useState(false);
+  const bodyId = useId();
 
   const send = () => {
     setSending(true);
@@ -40,11 +43,20 @@ export const RoverPanel: React.FC<{
 
   return (
     <section className="s48-rover" aria-label="Rover">
-      <div className="s48-rover__head">
-        <h3>Rover</h3>
-        {simulated && <span className="s48-rover__sim">simulated</span>}
-      </div>
+      <h3 className="s48-panel-head">
+        <DisclosureButton open={open} onToggle={() => setOpen((v) => !v)} controls={bodyId}>
+          <span className="s48-rover__head">
+            <span>Rover</span>
+            {simulated && <span className="s48-rover__sim">simulated</span>}
+            <span className="s48-rover__summary">
+              {formatDistance(distanceM)} · {formatDuration(etaToCrewS * 1000)}
+            </span>
+          </span>
+        </DisclosureButton>
+      </h3>
 
+      {open && (
+      <div className="s48-rover__body" id={bodyId}>
       <dl className="s48-rover__grid">
         <div>
           <dt>Position</dt>
@@ -102,6 +114,8 @@ export const RoverPanel: React.FC<{
         <p className="s48-rover__log">
           Logged {receipt.logId}; copied to the habitat. The rover&rsquo;s own hazard checks decide.
         </p>
+      )}
+      </div>
       )}
     </section>
   );

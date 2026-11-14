@@ -43,21 +43,21 @@ export const SosControl: React.FC<{
     <section className="s48-sos" aria-label="SOS">
       <div className="s48-sos__head">
         <h3>SOS</h3>
-        <span className="s48-sos__reasonlabel">Reason</span>
-      </div>
-
-      <div className="s48-seg s48-seg--sm s48-sos__reasons" role="group" aria-label="SOS reason">
-        {SOS_REASONS.map((r) => (
-          <button
-            key={r.id}
-            type="button"
-            aria-pressed={reason === r.id}
-            disabled={state.phase === 'sent'}
-            onClick={() => onReason(r.id)}
-          >
-            {r.label}
-          </button>
-        ))}
+        {/* Once sent, the sent line names the reason; the picker steps aside. */}
+        {state.phase !== 'sent' && (
+          <div className="s48-seg s48-seg--sm s48-sos__reasons" role="group" aria-label="SOS reason">
+            {SOS_REASONS.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                aria-pressed={reason === r.id}
+                onClick={() => onReason(r.id)}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {state.phase !== 'sent' ? (
@@ -75,16 +75,14 @@ export const SosControl: React.FC<{
             <span className="s48-sos__btn-fill" />
             <span className="s48-sos__btn-text">
               <Alert />
-              {state.phase === 'armed' ? 'SOS armed' : state.phase === 'holding' ? 'Keep holding' : 'Hold 2 s to send SOS'}
+              {state.phase === 'armed'
+                ? 'SOS armed'
+                : state.phase === 'holding'
+                  ? 'Keep holding; release to cancel'
+                  : 'Hold 2 s to send SOS'}
             </span>
           </button>
 
-          {state.phase === 'idle' && (
-            <p className="s48-sos__hint">Hold the button for 2 seconds to arm.</p>
-          )}
-          {state.phase === 'holding' && (
-            <p className="s48-sos__hint">Keep holding to arm; release to cancel.</p>
-          )}
           {state.phase === 'armed' && (
             <div className="s48-sos__armed">
               <p>

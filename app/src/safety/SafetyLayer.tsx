@@ -1,5 +1,5 @@
 // Written with AI assistance, directed and reviewed by the team.
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { Plan } from '../lib/plan';
 import type { GridOrigin } from '../lib/grid';
 import type { CommandReceipt, TelemetrySnapshot } from '../lib/telemetry';
@@ -15,7 +15,7 @@ import {
 import { getSiteBaseUrl } from '../config';
 import { ladderLevel, chooseShelter, type Hazard, type ShelterCandidate } from './ladder';
 import { beeperSchedule } from './beeper';
-import { parsePasses, relayStripModel, sosEarthArrival, type PassesFile } from './relayStrip';
+import { parsePasses, relayStripModel, simulatedRelayQueue, sosEarthArrival, type PassesFile } from './relayStrip';
 import { createSosController, type SosController, type SosState, type SosReason, initialSosState } from './sos';
 import { createBeeperPlayer } from './beeperPlayer';
 import { computeMissionTiming } from './mission';
@@ -23,7 +23,7 @@ import { readScenario, scenarioLadderInput } from './scenario';
 import { formatLocalClock } from './format';
 import type { Pass } from '../lib/relay';
 import { RelayStrip } from './RelayStripPanel';
-import { WarningLadder } from './WarningLadder';
+import { LadderDetail, WarningLadder } from './WarningLadder';
 import { DaylightBeeper } from './DaylightBeeper';
 import { SosControl } from './SosControl';
 import { RoverPanel } from './RoverPanel';
@@ -32,6 +32,9 @@ import './safety.css';
 /** Passes window, so a stray device clock cannot land the demo outside real data. */
 const WINDOW_START = Date.UTC(2026, 10, 2);
 const WINDOW_END = Date.UTC(2026, 11, 28);
+
+/** How far before the layer opened the simulated relay queue's first fix sits. */
+const QUEUE_LEAD_MS = 60000;
 
 function clampBase(nowMs: number): number {
   if (nowMs < WINDOW_START || nowMs > WINDOW_END) return Date.UTC(2026, 10, 14, 12, 0);
@@ -109,13 +112,13 @@ export const SafetyLayer: React.FC<SafetyLayerProps> = ({ plan, origin, siteId, 
 
   // SOS controller (real clock for a responsive hold).
   const [sosState, setSosState] = useState<SosState>(() => initialSosState());
-  const [sosQueuedExtra, setSosQueuedExtra] = useState(0);
+  const [sosSentAtMs, setSosSentAtMs] = useState<number | null>(null);
   const sosRef = useRef<SosController | null>(null);
   if (sosRef.current === null) {
     sosRef.current = createSosController({
       clock: () => Date.now(),
       onChange: setSosState,
-      onSent: () => setSosQueuedExtra(1),
+      onSent: () => setSosSentAtMs((t) => t ?? Date.now()),
     });
   }
   useEffect(() => () => sosRef.current?.dispose(), []);
@@ -125,6 +128,8 @@ export const SafetyLayer: React.FC<SafetyLayerProps> = ({ plan, origin, siteId, 
   useEffect(() => () => playerRef.current.dispose(), []);
 
   const [hazard, setHazard] = useState<Hazard>('daylight');
+  const [ladderDetailOpen, setLadderDetailOpen] = useState(false);
+  const ladderDetailId = useId();
 
   if (!plan || !track || !timing) return null;
 
@@ -169,7 +174,17 @@ export const SafetyLayer: React.FC<SafetyLayerProps> = ({ plan, origin, siteId, 
 
   const schedule = beeperSchedule(timing.backByMs, timing.sunsetUtcMs);
 
-  const queued = queuedCount(passes, nowWall, timing.departUtcMs, ladder.level !== 'ok') + sosQueuedExtra;
+  // Simulated relay queue on the real clock: the queue's departure fix is set
+  // one minute before the layer opened, so it starts with a few items (three
+  // fixes, plus the latest warning) and grows by one fix every 30 s.
+  const queue = simulatedRelayQueue({
+    startMs: mountRealRef.current - QUEUE_LEAD_MS,
+    nowMs: Date.now(),
+    warning: ladder.level !== 'ok' ? ladder.level : null,
+    sosAtMs: sosSentAtMs,
+  });
+  const queued = queue.length;
+  const queuedBeforeSos = queue.filter((i) => i.kind !== 'sos').length;
   const relay = relayStripModel({
     passes,
     nowMs: nowWall,
@@ -189,23 +204,20 @@ export const SafetyLayer: React.FC<SafetyLayerProps> = ({ plan, origin, siteId, 
   return (
     <div className="s48-safety" data-over-map aria-label="Safety and links">
       <RelayStrip model={relay} simulated />
+      {/* The compact ladder never scrolls away; its detail opens in the scrolling part. */}
+      <WarningLadder
+        result={ladder}
+        shelter={shelter}
+        shelterEtaS={shelterEtaS}
+        detailOpen={ladderDetailOpen}
+        detailId={ladderDetailId}
+        onDetailToggle={() => setLadderDetailOpen((v) => !v)}
+      />
       <div className="s48-safety__scroll">
-        <WarningLadder
-          result={ladder}
-          hazard={hazard}
-          shelter={shelter}
-          shelterEtaS={shelterEtaS}
-          onHazardChange={setHazard}
-        />
+        {ladderDetailOpen && (
+          <LadderDetail id={ladderDetailId} result={ladder} hazard={hazard} onHazardChange={setHazard} />
+        )}
         <DaylightBeeper schedule={schedule} nowMs={nowWall} lonEastDeg={lonEast} player={playerRef.current} />
-        <SosControl
-          controller={sosRef.current}
-          state={sosState}
-          reason={sosState.reason}
-          onReason={(r: SosReason) => sosRef.current?.setReason(r)}
-          earthArrival={earthArrival}
-          queuedBefore={queued}
-        />
         <RoverPanel
           rover={{ lon: rover.lon, lat: rover.lat, batteryPct: snapshot?.rover.batteryPct ?? 100 }}
           crew={crew}
@@ -216,6 +228,15 @@ export const SafetyLayer: React.FC<SafetyLayerProps> = ({ plan, origin, siteId, 
           onComeToMe={onComeToMe}
         />
       </div>
+      {/* Pinned below the scrolling panels: SOS is always on screen. */}
+      <SosControl
+        controller={sosRef.current}
+        state={sosState}
+        reason={sosState.reason}
+        onReason={(r: SosReason) => sosRef.current?.setReason(r)}
+        earthArrival={earthArrival}
+        queuedBefore={queuedBeforeSos}
+      />
     </div>
   );
 };
@@ -231,23 +252,6 @@ function scenarioNowFor(
 
 function formatArrival(utcMs: number, lonEast: number): string {
   return formatLocalClock(utcMs, lonEast);
-}
-
-/**
- * Simulated store-and-forward depth: one position fix per 30 s per astronaut
- * (design) since the last completed pass, plus a small science baseline and the
- * active warning. Real cadence, simulated volume.
- */
-function queuedCount(passes: Pass[], nowMs: number, departMs: number, warning: boolean): number {
-  let lastSet = departMs;
-  for (const p of passes) {
-    if (p.setUtcMs <= nowMs && p.setUtcMs > lastSet) lastSet = p.setUtcMs;
-  }
-  const sinceS = Math.max(0, (nowMs - lastSet) / 1000);
-  const positions = Math.floor(sinceS / 30) * 2;
-  const science = 4;
-  // One pass clears most of the backlog, so a believable depth caps near 99.
-  return Math.min(99, positions + science + (warning ? 1 : 0));
 }
 
 /** Simulated shelter candidates near the walk, distances measured from the crew. */
