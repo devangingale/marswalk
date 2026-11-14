@@ -187,7 +187,9 @@ export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, register
       entity.point.outlineWidth = (isSelected ? 3 : site.kind === 'new' ? 1 : 2) as never;
       entity.point.pixelSize = size as never;
     }
-  }, [data, ranked, selectedId, filters.showVetoed]);
+    // `viewer` is a dep so the first paint runs once the pins exist (the pins
+    // are built only after the viewer is ready, which is after the data loads).
+  }, [viewer, data, ranked, selectedId, filters.showVetoed]);
 
   // Register the hover-line resolver with the globe page's single tooltip.
   useEffect(() => {
