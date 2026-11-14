@@ -13,6 +13,10 @@ interface StopDetailsProps {
   solarEvent: boolean;
 }
 
+export function isSafePhotoUrl(url: string): boolean {
+  return url.startsWith('https://') || url.startsWith('/');
+}
+
 export const StopDetails: React.FC<StopDetailsProps> = ({ waypoint, arrived, feeds, solarEvent }) => {
   const photos = useMemo(
     () => photosNear(feeds.photos, waypoint.lon, waypoint.lat),
@@ -54,14 +58,14 @@ export const StopDetails: React.FC<StopDetailsProps> = ({ waypoint, arrived, fee
                 {photos.map(({ photo }) => (
                   <li key={photo.id} className="s48-photo">
                     <figure>
-                      <a href={photo.url} target="_blank" rel="noreferrer">
+                      {isSafePhotoUrl(photo.url) ? <a href={photo.url} target="_blank" rel="noreferrer">
                         <img
                           className="s48-photo-thumb"
                           src={photo.thumb}
                           alt={`${photo.camera}, sol ${photo.sol}`}
                           loading="lazy"
                         />
-                      </a>
+                      </a> : <img className="s48-photo-thumb" src={photo.thumb} alt={`${photo.camera}, sol ${photo.sol}`} loading="lazy" />}
                       <figcaption className="s48-photo-caption">
                         Sol {photo.sol} · {photo.camera} · {photo.credit}
                       </figcaption>
