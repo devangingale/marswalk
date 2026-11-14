@@ -61,8 +61,6 @@ export interface SlopeStats {
   gradientDeg: number[];
 }
 
-/** Nearby shared-path vertices represent the same ground within this lateral offset. */
-const SHARED_MATCH_TOLERANCE_M = 15;
 /** Fork candidates within this distance are one junction; branches are combined. */
 const FORK_MERGE_TOLERANCE_M = 10;
 /** Ignore shorter baselines when reporting the steepest grade, to damp grid noise. */
@@ -107,15 +105,16 @@ function getToLabel(to: string): string {
 /**
  * Splits the union of all leg lines into stretches; each stretch lists every
  * leg index that walks it and whether that leg walks it in the stretch's own
- * direction ('fwd') or reversed ('back'). `matchToleranceM` (15 m by default,
- * never below `toleranceM`) lets nearby sampled paths count
- * as the same ground despite planner/A* lateral wobble.
+ * direction ('fwd') or reversed ('back'). Points of different legs within
+ * `matchToleranceM` (default `toleranceM`) count as the same ground. Vertices are
+ * clustered transitively, so keep it below the line's vertex spacing: a larger value
+ * merges a densified route into one cluster.
  */
 export function sharedSegments(
   legs: PlanLeg[],
   origin: GridOrigin,
   toleranceM = 3,
-  matchToleranceM = SHARED_MATCH_TOLERANCE_M
+  matchToleranceM = toleranceM
 ): SharedSegment[] {
   if (legs.length === 0) return [];
   const effectiveMatchToleranceM = Math.max(toleranceM, matchToleranceM);
