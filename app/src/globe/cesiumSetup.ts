@@ -1,5 +1,6 @@
 // Written with AI assistance, directed and reviewed by the team.
 import { Cesium3DTileset, Ellipsoid, Ion, Viewer } from 'cesium';
+import { patchAntimeridianImagery } from './antimeridian';
 
 export const CESIUM_MARS_ASSET_ID = 3644333;
 
@@ -8,6 +9,7 @@ let mode: 'ion' | 'offline' = 'offline';
 export function initCesium(token: string | undefined): 'ion' | 'offline' {
   globalThis.CESIUM_BASE_URL = '/cesium/';
   Ellipsoid.default = Ellipsoid.MARS;
+  patchAntimeridianImagery();
   if (token) {
     Ion.defaultAccessToken = token;
     mode = 'ion';
