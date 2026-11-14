@@ -37,6 +37,8 @@ OKLAB_RAMPS = {
     "pressure_teal": ("#e4f3eb", "#087f7b"),
     "crustal_olive": ("#f3edcf", "#777735"),
     "unit_slate_sand": ("#707d87", "#dcc895"),
+    "swim_ice": ("#3a7fd0", "#eef7ff"),
+    "ice_distance": ("#256fc1", "#dbeeff"),
 }
 PALETTE_LABELS = {
     "dose_yellow": "OKLab pale yellow to bright yellow (#ffe94d)",
@@ -44,8 +46,8 @@ PALETTE_LABELS = {
     "pressure_teal": "OKLab pale teal to deep teal",
     "crustal_olive": "OKLab khaki to olive",
     "unit_slate_sand": "OKLab slate to sand",
-    "ice_distance": "Blues: near ice is bright; fades to transparent at 500 km",
-    "swim_ice": "Blues: positive consistency is pale blue at 0+ to near-white at +1",
+    "ice_distance": "OKLab strong blue near ice; fades to transparent at 500 km",
+    "swim_ice": "OKLab blue at 0+ through light blue to near-white at +1",
 }
 
 
@@ -121,18 +123,16 @@ def colour_ramp(values: np.ndarray, minimum: float, maximum: float, cmap_name: s
     rgba = np.zeros((*values.shape, 4), dtype=np.uint8)
     if valid.any():
         if cmap_name in OKLAB_RAMPS:
-            rgb = _oklab_colour(t[valid], cmap_name)
-        elif cmap_name == "swim_ice":
-            cmap = colormaps["Blues_r"]
-            positive_t = np.clip(values[valid], 0, 1)
-            rgb = np.rint(cmap(0.7 + 0.3 * positive_t)[:, :3] * 255).astype(np.uint8)
+            colour_t = np.clip(values[valid], 0, 1) if cmap_name == "swim_ice" else t[valid]
+            rgb = _oklab_colour(colour_t, cmap_name)
         else:
-            cmap = colormaps["Blues" if cmap_name == "ice_distance" else cmap_name]
+            cmap = colormaps[cmap_name]
             rgb = np.rint(cmap(t[valid])[:, :3] * 255).astype(np.uint8)
         if cmap_name == "ice_distance":
             alpha_t = np.clip((500 - values[valid]) / 500, 0, 1)
         elif cmap_name == "swim_ice":
-            alpha_t = np.clip(values[valid], 0, 1)
+            positive = np.clip(values[valid], 0, 1)
+            alpha_t = np.where(positive > 0, 0.35 + 0.65 * np.power(positive, 0.65), 0)
         else:
             alpha_t = t[valid]
         alpha = np.rint(np.power(alpha_t, 0.65) * 240).astype(np.uint8)
