@@ -20,7 +20,6 @@ interface GaleDay {
   t_min_c: number | null;
   t_max_c: number | null;
   pressure_pa: number | null;
-  atmo_opacity: string | null;
 }
 
 /** Nearest Gale day to a target Earth time, over Earth times sorted ascending. */
@@ -122,7 +121,7 @@ export const Clock: React.FC<{ scene: Scene }> = ({ scene }) => {
   return (
     <>
       <ConditionsPanel />
-      <div className="s48-clock" role="group" aria-label="Mars time slider">
+      <div className="s48-clock" data-over-map role="group" aria-label="Mars time slider">
         <div className="s48-clock__controls">
           <button
             type="button"
@@ -192,12 +191,6 @@ export const Clock: React.FC<{ scene: Scene }> = ({ scene }) => {
             <dt>pressure</dt>
             <dd>{day && day.pressure_pa !== null ? `${Math.round(day.pressure_pa)} Pa` : '–'}</dd>
           </div>
-          {day?.atmo_opacity && (
-            <div className="s48-clock__field">
-              <dt>sky</dt>
-              <dd>{day.atmo_opacity}</dd>
-            </div>
-          )}
         </dl>
       </div>
     </>

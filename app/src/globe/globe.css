@@ -1,10 +1,5 @@
 /* Written with AI assistance, directed and reviewed by the team. */
 
-:root {
-  /* Caves: violet from the approved layer palette. Not yet in tokens.css; move it there. */
-  --map-cave: #b48cf0;
-}
-
 .globe-body {
   display: flex;
   width: 100%;
@@ -33,6 +28,11 @@
     z-index: 30;
     box-shadow: var(--shadow-drawer);
   }
+
+  .globe-body:has(> aside.panel[style*='display: block']) .globe-view,
+  .globe-body:has(.sites-panel) .globe-view {
+    margin-left: min(var(--panel-left-width), 85vw);
+  }
 }
 
 .globe-view {
@@ -58,8 +58,8 @@
 
 .globe-sites {
   position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
+  top: calc(var(--space-16) * 3 + var(--space-4));
+  left: var(--space-4);
   display: flex;
   gap: var(--space-2);
   z-index: 2;
@@ -113,4 +113,115 @@
   right: var(--space-2);
   display: flex;
   justify-content: flex-end;
+}
+
+/* Route card: plan switch, sections (linked to the hover on the globe), view toggles. */
+.globe-route {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  z-index: 2;
+  width: 320px;
+  max-width: calc(100% - 2 * var(--space-4));
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-rule);
+  border-radius: var(--radius-2);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+}
+
+.globe-route .s48-seg {
+  display: flex;
+}
+
+.globe-route .s48-seg button {
+  flex: 1;
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.globe-route__sections {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 2px;
+  font-family: var(--font-data);
+  font-variant-numeric: var(--numeric);
+}
+
+.globe-route__sections li {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-1);
+  border-left: 3px solid transparent;
+}
+
+.globe-route__sections li.is-hovered {
+  background: var(--color-surface-raised);
+  border-left-color: var(--map-route-core);
+}
+
+.globe-route__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.globe-route__actions label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  cursor: pointer;
+}
+
+.globe-route__note {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+/* Graticule edge labels and the cursor readout, in the map label style. */
+.globe-edge {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  white-space: nowrap;
+  font-size: var(--text-xs);
+  font-variant-numeric: var(--numeric);
+}
+
+.globe-edge--lon {
+  transform: translate(-50%, 0);
+}
+
+.globe-edge--lat {
+  transform: translate(0, -50%);
+}
+
+.globe-cursor {
+  position: absolute;
+  left: var(--space-4);
+  bottom: calc(var(--space-12) + var(--space-16));
+  z-index: 2;
+  pointer-events: none;
+  white-space: nowrap;
+  font-variant-numeric: var(--numeric);
+}
+
+@media (max-width: 1024px) {
+  .globe-cursor {
+    bottom: calc(var(--space-16) + var(--space-16));
+  }
+}
+
+/* Caves are small triangles on the globe; the layer panel swatch matches. */
+.globe-body .s48-cave-dot {
+  width: 10px;
+  height: 9px;
+  border-radius: 0;
+  box-shadow: none;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
