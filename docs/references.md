@@ -33,6 +33,8 @@ Not every dataset below ends up in the final product; trim this list to what is 
 | pds_places | `data/raw/pds_places` | NASA PDS public domain (US Government work) |
 | localized_rover_poses | `shared/poses/gale_poses.csv`, `shared/poses/jezero_poses.csv` | NASA/JPL PDS Places rover-position records, public domain (US Government work) |
 | rover_images | `data/raw/rover_images` | Raw images from NASA are not copyrighted (#55); retain each feed credit and check third-party assets. |
+| naif_spice | `data/raw/naif_spice` | NASA PDS / ESA — public domain (US Government work / ESA open access) |
+| rems | `data/raw/rems` | Public domain / NASA content; credit NASA/JPL-Caltech/CAB(CSIC-INTA) |
 
 ## Site-finder criteria
 
@@ -48,6 +50,9 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 - Curiosity APXS reduced oxide abundances: [PDS Geosciences Node MSL APXS archive](https://pds-geosciences.wustl.edu/missions/msl/apxs.htm), including its [RDR data inventory](https://pds-geosciences.wustl.edu/msl/msl-m-apxs-4_5-rdr-v1/mslapx_1xxx/data/collection_data_inventory.csv) and CSV products under `https://pds-geosciences.wustl.edu/msl/msl-m-apxs-4_5-rdr-v1/mslapx_1xxx/data/`. PDS/NASA data are public domain; credit the APXS Science Team at the University of Guelph and the Canadian Space Agency (instrument funder).
 - Curiosity RAD absorbed-dose records: [MSL RAD Dose rates, Zenodo](https://doi.org/10.5281/zenodo.20536564), cached in `data/raw/msl_rad_dose/`. CC BY 4.0; cite Heber & Löwe, “MSL/RAD Dose rates”. The radiation layer uses the per-sol median of filtered RAD E-dose rate; its elevated-rate proxy uses the highest per-sol mean from those same data.
 - Gale dust climatology: [Montabone et al. Mars Climate Database column dust optical depth v2](https://www-mars.lmd.jussieu.fr/mars/dust_climatology/index.html), direct archive [`krigedcdod_v2.tar.gz`](https://www-mars.lmd.jussieu.fr/mars/dust_climatology/dataset_v2/krigedcdod_v2.tar.gz), cached in `data/raw/montabone_dust/`. CC BY-SA 3.0; cite Montabone et al. (2015), Icarus, doi:10.1016/j.icarus.2014.12.034, and Montabone et al. (2020), JGR Planets, doi:10.1029/2019JE006111.
+- ESA Mars Express and ExoMars Trace Gas Orbiter SPICE kernels: reconstructed and forward predicted orbit ephemerides from the ESA SPICE Service (`https://spiftp.esac.esa.int/data/SPICE/`). Open access; cite ESA SPICE Service and the respective mission operations teams.
+- Global water-ice consistency: [SWIM4MIM global products](https://swim.psi.edu/SWIM4MIMProducts.php), cached in `data/raw/swim_ice/`. Morgan & Putzig et al. (2025), Planetary Science Journal; the product page does not state a licence, so retain source credit and check with PSI before redistribution.
+- Mars Global Cave Candidate Catalog: [USGS Astrogeology catalog page](https://astrogeology.usgs.gov/search/map/mars_global_cave_candidate_catalog_v1_cushing) and [PDS Imaging Node archive bundle](https://doi.org/10.17189/1519222), cached in `data/raw/mgc3_caves/`. Cushing (2015); public domain per the data.gov listing, though the USGS page does not state a licence.
 
 ## Scientific models and literature
 
@@ -55,6 +60,8 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 |---|---|---|
 | Pandolf load-carriage equation | Walking metabolic power on level and uphill terrain | Pandolf, K. B., Givoni, B., & Goldman, R. F. (1977). *Predicting energy expenditure with loads while standing or walking very slowly to moderate walking speeds.* Journal of Applied Physiology, 43(4), 577–581. doi:10.1152/jappl.1977.43.4.577. Simplified with uniform Mars gravity scaling (3.71 m/s²). |
 | Santee downhill correction | Downhill metabolic energy expenditure and eccentric braking correction | Santee, W. R., Allison, W. F., Blanchard, L. A., & Small, M. G. (2001). *A proposed model for load carriage on sloped terrain.* Aviation, Space, and Environmental Medicine, 72(6), 562–566. |
+| NASA NAIF SPICE ephemerides | Orbiter pass prediction (MRO, 2001 Mars Odyssey, ExoMars TGO, Mars Express) | Acton, C. H. (1996). *Ancillary Data Services of NASA's Navigation and Ancillary Information Facility.* Planetary and Space Science, 44(1), 65–70; Public domain. |
+| Martian calendar (Clancy / Piqueux) | Martian year and sol to Earth date calculation | Clancy, R. T., et al. (2000). *An intercomparison of ground-based millimeter, MGS TES, and Viking atmospheric temperature measurements: Seasonal and interannual variability of temperatures and dust loading in the global Mars atmosphere.* Journal of Geophysical Research: Planets, 105(E4), 9553–9571. doi:10.1029/1999JE001089. Piqueux, S., et al. (2015). *Calculation of Mars solar longitude (Ls) and Martian calendar.* Icarus, 251, 332–339. doi:10.1016/j.icarus.2014.12.014. |
 
 ## Software and libraries
 
@@ -69,6 +76,7 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 | @types/node | Node type definitions for the planner test that writes the sample plan fixture | MIT |
 | LightGBM (`lightgbm`) | Gradient-boosted tree walkability classifier | MIT |
 | scikit-learn (`scikit-learn`) | ROC AUC metrics and model interfaces | BSD-3-Clause |
+| spiceypy (`spiceypy==8.4.0`) | Python wrapper for CSPICE (NAIF SPICE toolkit N0067) for orbiter pass prediction | MIT |
 
 ## Images, fonts, icons, text
 
