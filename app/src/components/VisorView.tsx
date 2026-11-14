@@ -10,6 +10,7 @@ import { formatDistance, formatDose, formatDuration, formatEnergy, formatHeading
 import { hazardAhead, hazardFlags } from '../walk/hazard';
 import { budgetRemaining, RouteTrack, walkStateAt, waypointById } from '../walk/track';
 import { useSharedPlayback } from '../walk/usePlayback';
+import { usePlaybackKeys } from '../walk/usePlaybackKeys';
 import { PlaybackBar } from '../walk/PlaybackBar';
 import { addOpticalImage, marsBaseStyle, setupPMTilesProtocol } from './mapSetup';
 import './walk.css';
@@ -24,6 +25,7 @@ export const VisorView: React.FC<VisorViewProps> = ({ siteData, plan, track, ela
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const playback = useSharedPlayback(track.durationS, elapsedS);
+  usePlaybackKeys(playback, track);
   const [hazardData, setHazardData] = useState<HazardData>({ status: 'loading' });
   const state = walkStateAt(plan, track, elapsedS);
   const budget = budgetRemaining(plan, state.used);
