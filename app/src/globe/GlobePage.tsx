@@ -27,6 +27,7 @@ import { cartesianToLonLat, lonLatToCartesian, siteHeightOffsetM } from './frame
 import { GlobeGlobalLayers, GlobeLayer, globeAssetUrl, loadGlobeManifest } from './globalLayers';
 import { GlobeImagery } from './imageryLayers';
 import { GlobeTimeTools } from './Clock';
+import { SiteFinder } from './sites/SiteFinder';
 
 const CAVE_CREDIT = 'Mars Global Cave Candidate Catalog (MGC³), USGS Astrogeology Science Center';
 /** Data overlays start at the --map-overlay-opacity token value. */
@@ -87,10 +88,17 @@ export const GlobePage: React.FC = () => {
   const [cavesOn, setCavesOn] = useState(initial.caves);
   const [caveCount, setCaveCount] = useState(0);
   const [panelOpen, setPanelOpen] = useState(true);
+  const [panelTab, setPanelTab] = useState<'layers' | 'sites'>('layers');
   const [notice, setNotice] = useState<string | null>(null);
   const [hover, setHover] = useState<Hover | null>(null);
-  // Set once the Mars scene is ready; gates the time tools mount.
+  // Set once the Mars scene is ready; gates the time tools and site-finder mounts.
   const [dustScene, setDustScene] = useState<Scene | null>(null);
+  const [viewer, setViewer] = useState<Viewer | null>(null);
+  // The site-finder registers a resolver here so site pins share the one tooltip.
+  const siteHoverRef = useRef<((entity: Entity | null) => string[] | null) | null>(null);
+  const registerSiteHover = useCallback((fn: ((entity: Entity | null) => string[] | null) | null) => {
+    siteHoverRef.current = fn;
+  }, []);
 
   const statesRef = useRef({ layerStates, globalStates, cavesOn });
   statesRef.current = { layerStates, globalStates, cavesOn };
@@ -109,6 +117,7 @@ export const GlobePage: React.FC = () => {
         return;
       }
       viewerRef.current = viewer;
+      setViewer(viewer);
       viewer.camera.setView({ destination: lonLatToCartesian(PLANET_VIEW.lon, PLANET_VIEW.lat, PLANET_VIEW.heightM) });
       if (!tileset) {
         setNotice('Cesium Mars didn’t load, so layers can’t be draped. Check the Cesium ion token and connection.');
@@ -201,6 +210,11 @@ export const GlobePage: React.FC = () => {
             place([`Cave candidate ${picked.id.name}`, CAVE_HOVER]);
             return;
           }
+          const siteLines = siteHoverRef.current?.(picked?.id instanceof Entity ? picked.id : null);
+          if (siteLines && siteLines.length) {
+            place(siteLines);
+            return;
+          }
           const position = viewer.scene.pickPositionSupported ? viewer.scene.pickPosition(at) : undefined;
           const point = cartesianToLonLat(position);
           place(point && globalRef.current ? globalRef.current.readouts(point.lon, point.lat) : []);
@@ -247,17 +261,31 @@ export const GlobePage: React.FC = () => {
     <div className="mock plan-mock">
       <header className="mock-top">
         <span className="wordmark">Sol-48</span>
-        <span className="grow" />
-        {!panelOpen && (
+        <div className="s48-seg globe-tabs" role="tablist" aria-label="Left panel">
           <button
             type="button"
-            className="s48-btn s48-btn--secondary"
-            onClick={() => setPanelOpen(true)}
-            aria-label="Open layer panel"
+            role="tab"
+            aria-pressed={panelOpen && panelTab === 'layers'}
+            onClick={() => {
+              setPanelTab('layers');
+              setPanelOpen(true);
+            }}
           >
-            <span>Layers</span>
+            Layers
           </button>
-        )}
+          <button
+            type="button"
+            role="tab"
+            aria-pressed={panelOpen && panelTab === 'sites'}
+            onClick={() => {
+              setPanelTab('sites');
+              setPanelOpen(true);
+            }}
+          >
+            Sites
+          </button>
+        </div>
+        <span className="grow" />
       </header>
       <div style={{ flex: 1, minHeight: 0, position: 'relative', overflow: 'hidden' }}>
         <div className="globe-body">
@@ -275,8 +303,14 @@ export const GlobePage: React.FC = () => {
                 ? { enabled: cavesOn, count: caveCount, credit: CAVE_CREDIT, onToggle: () => setCavesOn((v) => !v) }
                 : undefined
             }
-            isOpen={panelOpen}
+            isOpen={panelOpen && panelTab === 'layers'}
             onTogglePanel={() => setPanelOpen(!panelOpen)}
+          />
+          <SiteFinder
+            viewer={viewer}
+            active={panelOpen && panelTab === 'sites'}
+            registerHover={registerSiteHover}
+            onHide={() => setPanelOpen(false)}
           />
           <div className="globe-view" onMouseLeave={() => setHover(null)}>
             <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
