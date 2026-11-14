@@ -33,6 +33,8 @@ interface LayerPanelProps {
   onToggleGlobal?: (layerId: string) => void;
   onGlobalOpacityChange?: (layerId: string, opacity: number) => void;
   caves?: CaveOverlay;
+  /** Whole-planet temperature entry, shown as its own group after the manifest layers. */
+  temperature?: { enabled: boolean; row: React.ReactNode };
   onToggleLayer: (layerId: string) => void;
   onOpacityChange: (layerId: string, opacity: number) => void;
   isOpen: boolean;
@@ -61,6 +63,7 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
   onToggleGlobal,
   onGlobalOpacityChange,
   caves,
+  temperature,
   onToggleLayer,
   onOpacityChange,
   isOpen,
@@ -87,6 +90,7 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
   const activeCount = Object.values(layerStates).filter((s) => s.enabled).length
     + Object.values(globalStates).filter((s) => s.enabled).length
     + Number(!!caves?.enabled)
+    + Number(!!temperature?.enabled)
     + Number(!!roverOverlayState?.traverse) + Number(photosAvailable && !!roverOverlayState?.photos);
 
   const globalGroups = groupGlobeLayers(globalLayers);
@@ -268,7 +272,7 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
         </div>
       </div>
 
-      {(globalGroups.length > 0 || caves) && (
+      {(globalGroups.length > 0 || caves || temperature) && (
         <div className="panel-sec" style={{ borderBottom: 0 }}>
           <h3>
             <span>Whole planet</span>
@@ -356,6 +360,12 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
                 {group === 'caves' && caves && <CaveRow caves={caves} />}
               </div>
             ))}
+            {temperature && (
+              <div>
+                <h4>Temperature</h4>
+                {temperature.row}
+              </div>
+            )}
             {caveGroupShown && caves && (
               <div>
                 <h4>Caves</h4>
