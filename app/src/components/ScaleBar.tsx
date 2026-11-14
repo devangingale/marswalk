@@ -1,71 +1,31 @@
 // Written with AI assistance, directed and reviewed by the team.
 
-import React, { useEffect, useState } from 'react';
-import type { Map as MapLibreMap } from 'maplibre-gl';
-import { calculateMarsScaleBar, MarsScaleResult } from '../utils/scale';
+import React from 'react';
 
 interface ScaleBarProps {
-  map: MapLibreMap | null;
-  defaultLat?: number;
+  metresPerPixel: number;
 }
 
-export const ScaleBar: React.FC<ScaleBarProps> = ({ map, defaultLat = -4.7913 }) => {
-  const [scale, setScale] = useState<MarsScaleResult>({
-    distanceMeters: 100,
-    pixelWidth: 100,
-    label: '100 m',
-    metersPerPixel: 1,
-  });
+const CANDIDATES = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10_000, 20_000, 50_000];
 
-  useEffect(() => {
-    if (!map) return;
-
-    const updateScale = () => {
-      const container = map.getContainer();
-      const width = container.clientWidth;
-      const height = container.clientHeight;
-
-      if (width <= 0 || height <= 0) return;
-
-      const y = Math.max(10, height - 30);
-      const xLeft = 20;
-      const xRight = xLeft + 100;
-
-      const pLeft = map.unproject([xLeft, y]);
-      const pRight = map.unproject([xRight, y]);
-
-      const result = calculateMarsScaleBar(
-        pLeft.lng,
-        pRight.lng,
-        (pLeft.lat + pRight.lat) / 2 || defaultLat,
-        100,
-        120
-      );
-
-      setScale(result);
-    };
-
-    updateScale();
-
-    map.on('move', updateScale);
-    map.on('zoom', updateScale);
-    map.on('resize', updateScale);
-
-    return () => {
-      map.off('move', updateScale);
-      map.off('zoom', updateScale);
-      map.off('resize', updateScale);
-    };
-  }, [map, defaultLat]);
+export const ScaleBar: React.FC<ScaleBarProps> = ({ metresPerPixel }) => {
+  const safeScale = Number.isFinite(metresPerPixel) && metresPerPixel > 0 ? metresPerPixel : 1;
+  const distance = CANDIDATES.reduce((best, value) => {
+    const width = value / safeScale;
+    if (width < 50 || width > 220) return best;
+    return Math.abs(width - 120) < Math.abs(best / safeScale - 120) ? value : best;
+  }, CANDIDATES[0]);
+  const pixelWidth = Math.max(50, Math.min(220, Math.round(distance / safeScale)));
+  const label = distance >= 1000 ? `${distance / 1000} km` : `${distance} m`;
 
   return (
     <div
       className="map-ui"
-      style={{ left: 'var(--space-4)', bottom: 'var(--space-4)' }}
-      title="True Mars ground scale (R = 3396190 m, contracts section 3)"
+      style={{ left: 'var(--space-4)', bottom: 'calc(var(--space-4) + var(--space-6))' }}
+      title="Mars ground scale"
     >
-      <div className="s48-scale" style={{ width: `${scale.pixelWidth}px` }}>
-        <div className="s48-scale__label">{scale.label}</div>
+      <div className="s48-scale" style={{ width: `${pixelWidth}px` }}>
+        <div className="s48-scale__label">{label}</div>
         <div className="s48-scale__bar" aria-hidden="true">
           <i />
           <i />

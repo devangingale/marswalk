@@ -1,0 +1,36 @@
+.globe-plan-profile h2,
+.globe-plan-pace h2 { margin: 0; font-size: var(--text-lg); line-height: var(--leading-lg); font-weight: var(--weight-semibold); }
+.globe-plan-profile svg { display: block; width: 100%; height: 88px; margin-top: var(--space-2); overflow: visible; touch-action: pan-y; }
+.globe-plan-profile .profile-axis { stroke: var(--color-control-border); stroke-width: 1; }
+.globe-plan-profile .profile-line { fill: none; stroke: var(--map-route-core); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.globe-plan-profile .profile-label { fill: var(--color-text-muted); font: var(--weight-medium) var(--text-xs) / var(--leading-xs) var(--font-data); font-variant-numeric: var(--numeric); }
+.globe-profile-cursor { fill: var(--map-route-core); stroke: var(--map-route-casing); stroke-width: 2; }
+.globe-plan-heading { display: flex; justify-content: space-between; align-items: baseline; }
+.globe-plan-heading > b { color: var(--color-ok); font: var(--weight-semibold) var(--text-sm) / var(--leading-sm) var(--font-data); }
+.globe-plan-heading > b.is-caution { color: var(--color-caution); }
+.globe-pace-window { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); margin: var(--space-2) 0; color: var(--color-text-muted); font: var(--weight-medium) var(--text-xs) / var(--leading-xs) var(--font-data); font-variant-numeric: var(--numeric); }
+.globe-pace-window input { width: 100%; accent-color: var(--color-accent); }
+.globe-pace-values { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); font-size: var(--text-xs); color: var(--color-text-muted); }
+.globe-pace-values span { display: grid; gap: 2px; }
+.globe-pace-values b, .globe-plan-pace small { color: var(--color-text); font: var(--weight-semibold) var(--text-sm) / var(--leading-sm) var(--font-data); font-variant-numeric: var(--numeric); }
+.globe-plan-pace small { display: block; margin-top: var(--space-2); color: var(--color-text-muted); font-weight: var(--weight-regular); }
+.globe-mover { border: 0; border-bottom: var(--border-width) solid var(--color-rule); margin: 0; padding: 0 0 var(--space-3); }
+.globe-mover legend { padding: 0; font-size: var(--text-lg); line-height: var(--leading-lg); font-weight: var(--weight-semibold); }
+.globe-mover > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-1); margin-top: var(--space-2); }
+.globe-mover button { min-height: var(--hit-plan); border: var(--border-width) solid var(--color-control-border); border-radius: var(--radius-1); background: var(--color-surface); color: var(--color-text); padding: 0 var(--space-1); font: var(--weight-medium) var(--text-sm) / var(--leading-sm) var(--font-ui); }
+.globe-mover button.is-selected { background: var(--color-accent-subtle); border-color: var(--color-accent); }
+.globe-mover__budget { display: block; margin-top: var(--space-2); color: var(--color-text-muted); font: var(--weight-medium) var(--text-sm) / var(--leading-sm) var(--font-data); font-variant-numeric: var(--numeric); }
+.globe-plan-map { position: relative; min-width: 0; height: 100%; overflow: hidden; background: var(--map-background); }
+.globe-plan-map > .globe-plan-canvas { position: absolute; inset: 0; }
+.globe-plan-map .cesium-viewer,
+.globe-plan-map .cesium-viewer-cesiumWidgetContainer,
+.globe-plan-map .cesium-widget { width: 100%; height: 100%; }
+.globe-plan-map canvas { display: block; width: 100%; height: 100%; }
+.globe-plan-controls { position: absolute; top: var(--space-3); right: var(--space-3); z-index: 4; display: flex; gap: var(--space-2); }
+.globe-plan-controls button { min-height: var(--hit-plan); border: var(--border-width) solid var(--color-control-border); border-radius: var(--radius-2); background: var(--color-surface); color: var(--color-text); padding: 0 var(--space-3); font: var(--weight-medium) var(--text-md) / var(--leading-md) var(--font-ui); }
+.globe-plan-offline { position: absolute; left: var(--space-4); top: var(--space-3); z-index: 4; padding: var(--space-1) var(--space-2); background: var(--map-tag-bg); color: var(--map-label-text); font-size: var(--text-sm); }
+.globe-plan-hover { position: absolute; z-index: 5; max-width: 280px; white-space: pre-line; padding: var(--space-1) var(--space-2); border-radius: var(--radius-1); background: var(--map-tag-bg); color: var(--map-label-text); font: var(--weight-medium) var(--text-sm) / var(--leading-sm) var(--font-data); pointer-events: none; }
+@media (max-width: 1024px) {
+  .globe-mover button { font-size: var(--text-xs); }
+  .globe-plan-map .s48-scale { transform-origin: bottom left; }
+}

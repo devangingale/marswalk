@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { SiteLayer, LayerState, SiteKind } from '../types';
 import '../shell/shell.css';
-import type { RoverOverlayState } from './roverOverlays';
+import type { RoverOverlayState } from '../types';
 import {
   formatResolution,
   getLayerDisplayName,

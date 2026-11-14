@@ -101,6 +101,14 @@ export function photoSiteLabel(site: PhotoSite): string {
   return `${photos} · ${sols}`;
 }
 
+/** Cesium surface height at a point, using the bundle DEM plus its measured datum offset. */
+export function surfaceHeightM(grid: RouteGrid | null, lon: number, lat: number, heightOffsetM: number): number {
+  if (!grid) return heightOffsetM;
+  const { row, col } = grid.lonlatToRowCol(lon, lat);
+  const elevationM = grid.getElevation(row, col);
+  return heightOffsetM + (Number.isFinite(elevationM) ? elevationM : 0);
+}
+
 export interface OverlayOptions {
   token?: TokenReader;
   images?: MarkerImages;
@@ -109,8 +117,8 @@ export interface OverlayOptions {
   onSectionHover?: (sectionId: string | null) => void;
 }
 
-/** Tolerance for legs sharing ground, in metres. */
-const SHARED_TOLERANCE_M = 3;
+/** Keep vertex clustering below the bundle grid's 2 m spacing. */
+const SHARED_TOLERANCE_M = 0.5;
 /** Forks closer than this are one fork on screen. */
 const FORK_MERGE_M = 15;
 /** A split that rejoins within this distance is a planner wobble, not a fork worth marking. */
@@ -121,7 +129,7 @@ const BRANCH_LABEL_M = 45;
 const BRANCH_LABEL_GAP_PX = 10;
 
 /** Camera distances (metres) beyond which small route marks are hidden. */
-const NEAR = new DistanceDisplayCondition(0, 1_500);
+const NEAR = new DistanceDisplayCondition(0, 15_000);
 const SITE = new DistanceDisplayCondition(0, 60_000);
 const REGION = new DistanceDisplayCondition(0, 1_500_000);
 
@@ -158,6 +166,9 @@ export class GlobeOverlays {
   private styles: StretchStyle[] = [];
   private hoveredSection: string | null = null;
   private routeHoverLines: string[] = [];
+  private heightOffsetM = 0;
+  private useSurfaceHeights = false;
+  private roverData: { traverse: GeoJSON.LineString | null; sites: PhotoSite[]; state: RoverOverlayState } | null = null;
 
   constructor(host: OverlayHost, options: OverlayOptions = {}) {
     this.entities = host.entities;
@@ -174,6 +185,17 @@ export class GlobeOverlays {
 
   private colour(name: string): Color {
     return Color.fromCssColorString(this.token(name) || '#ffffff');
+  }
+
+  private surfacePosition(lon: number, lat: number): Cartesian3 {
+    const height = this.useSurfaceHeights ? surfaceHeightM(this.grid, lon, lat, this.heightOffsetM) : 0;
+    return lonLatToCartesian(lon, lat, height);
+  }
+
+  /** Use grid elevations on Cesium Mars where the ellipsoid is deliberately disabled. */
+  setHeightOffsetM(heightOffsetM: number): void {
+    this.heightOffsetM = heightOffsetM;
+    this.useSurfaceHeights = true;
   }
 
   private add(group: keyof GlobeOverlays['groups'], options: Entity.ConstructorOptions, meta?: Meta): Entity {
@@ -197,6 +219,7 @@ export class GlobeOverlays {
   setGrid(grid: RouteGrid | null): void {
     if (this.grid === grid) return;
     this.grid = grid;
+    if (this.roverData) this.drawRover();
     this.setPlan(this.plan, this.origin ?? undefined);
   }
 
@@ -224,9 +247,14 @@ export class GlobeOverlays {
     this.sectionList = [];
     this.stats = null;
     this.routeHoverLines = [];
-    if (!plan || !plan.route.legs.length) return;
+    if (!plan) return;
     const frame = origin ?? { lon0: plan.start.lon, lat0: plan.start.lat, lat_c: plan.start.lat };
     this.origin = origin ?? null;
+
+    if (!plan.route.legs.length) {
+      this.drawStops(plan);
+      return;
+    }
 
     const legs = plan.route.legs;
     this.stretches = sharedSegments(legs, frame, SHARED_TOLERANCE_M).map((s) => ({ ...s, shared: s.legs.length > 1 }));
@@ -280,7 +308,7 @@ export class GlobeOverlays {
         material: Entity.ConstructorOptions['polyline'],
       ) => ({
         polyline: {
-          positions: line.map(([lon, lat]) => lonLatToCartesian(lon, lat, 0)),
+          positions: line.map(([lon, lat]) => this.surfacePosition(lon, lat)),
           width,
           zIndex,
           clampToGround: true,
@@ -290,19 +318,19 @@ export class GlobeOverlays {
         },
       });
 
-      this.add('plan', polyline(stretch.line, casingWidth + 2, 0, { material: styleColour(casing, casing) }), meta);
+      this.add('plan', polyline(stretch.line, casingWidth + 2, 10, { material: styleColour(casing, casing) }), meta);
       const grade = this.gradient && this.stats ? this.stretchGrades(stretch) : null;
       if (grade) {
         for (const run of grade) {
           const c = grades[run.bin - 1];
-          this.add('plan', polyline(run.line, coreWidth + 2, 1, { material: styleColour(c, c) }), meta);
+          this.add('plan', polyline(run.line, coreWidth + 2, 20, { material: styleColour(c, c) }), meta);
         }
       } else {
-        this.add('plan', polyline(stretch.line, coreWidth + 2, 1, { material: styleColour(base, highlight) }), meta);
+        this.add('plan', polyline(stretch.line, coreWidth + 2, 20, { material: styleColour(base, highlight) }), meta);
         this.cores[index].push(
           this.add(
             'plan',
-            polyline(stretch.line, 2, 2, {
+            polyline(stretch.line, 2, 30, {
               material: new PolylineDashMaterialProperty({ color: dash, gapColor: Color.TRANSPARENT, dashLength: 12 }),
             }),
             meta,
@@ -311,7 +339,7 @@ export class GlobeOverlays {
       }
 
       for (const c of chevronsFor(stretch.line, stretch.directions, frame)) {
-        const position = lonLatToCartesian(c.lon, c.lat, 0);
+        const position = this.surfacePosition(c.lon, c.lat);
         this.add(
           'plan',
           {
@@ -339,7 +367,7 @@ export class GlobeOverlays {
       image: image.image,
       width: image.width,
       height: image.height,
-      heightReference: HeightReference.CLAMP_TO_GROUND,
+      heightReference: this.useSurfaceHeights ? HeightReference.NONE : HeightReference.CLAMP_TO_GROUND,
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
       distanceDisplayCondition: show,
     };
@@ -362,7 +390,7 @@ export class GlobeOverlays {
       horizontalOrigin: left ? HorizontalOrigin.RIGHT : HorizontalOrigin.LEFT,
       verticalOrigin: vertical,
       pixelOffset: new Cartesian2(offset[0], offset[1]),
-      heightReference: HeightReference.CLAMP_TO_GROUND,
+      heightReference: this.useSurfaceHeights ? HeightReference.NONE : HeightReference.CLAMP_TO_GROUND,
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
       distanceDisplayCondition: show,
     };
@@ -374,7 +402,7 @@ export class GlobeOverlays {
       const lines = fork.branches.map((b) => branchLabel(b.toLabel, plan));
       this.add(
         'plan',
-        { position: lonLatToCartesian(fork.lon, fork.lat, 0), billboard: this.billboard(this.markers().fork(), SITE) },
+        { position: this.surfacePosition(fork.lon, fork.lat), billboard: this.billboard(this.markers().fork(), SITE) },
         { kind: 'text', lines: ['Fork', ...lines] },
       );
       const at: [number, number] = [fork.lon, fork.lat];
@@ -385,7 +413,7 @@ export class GlobeOverlays {
         const dx = Math.sin(side) * BRANCH_LABEL_GAP_PX;
         const dy = -Math.cos(side) * BRANCH_LABEL_GAP_PX;
         this.add('plan', {
-          position: lonLatToCartesian(lon, lat, 0),
+          position: this.surfacePosition(lon, lat),
           label: this.label(lines[i], NEAR, [dx, dy], dx < 0),
         });
       });
@@ -398,7 +426,7 @@ export class GlobeOverlays {
     this.add(
       'plan',
       {
-        position: lonLatToCartesian(start.lon, start.lat, 0),
+        position: this.surfacePosition(start.lon, start.lat),
         billboard: this.billboard(images.dropOff(), REGION),
         label: this.label('Rover drop-off', SITE, [-20, 0], true),
       },
@@ -409,17 +437,17 @@ export class GlobeOverlays {
       this.add(
         'plan',
         {
-          position: lonLatToCartesian(stop.lon, stop.lat, 0),
+          position: this.surfacePosition(stop.lon, stop.lat),
           billboard: this.billboard(images.stop(number, false), REGION),
         },
         { kind: 'text', lines: [`Stop ${number} · ${stop.name}`, formatLatLon(stop.lon, stop.lat)] },
       );
     });
-    if (needsFinish(plan)) {
+    if (needsFinish(plan) && plan.route.legs.at(-1)?.line.length) {
       const end = plan.route.legs.at(-1)!.line.at(-1)!;
       this.add(
         'plan',
-        { position: lonLatToCartesian(end[0], end[1], 0), billboard: this.billboard(images.finish(), REGION) },
+        { position: this.surfacePosition(end[0], end[1]), billboard: this.billboard(images.finish(), REGION) },
         { kind: 'text', lines: ['Finish', formatLatLon(end[0], end[1])] },
       );
     }
@@ -441,7 +469,7 @@ export class GlobeOverlays {
       this.add(
         'plan',
         {
-          position: lonLatToCartesian(lon, lat, 0),
+          position: this.surfacePosition(lon, lat),
           billboard: this.billboard(image, SITE),
           // Above and right of the glyph, clear of the route line through it.
           label: this.label(text, SITE, [8, -8], false, VerticalOrigin.BOTTOM),
@@ -453,17 +481,27 @@ export class GlobeOverlays {
 
   /** Rover traverse and photo sites. */
   setRover(traverse: GeoJSON.LineString | null, sites: PhotoSite[], state: RoverOverlayState): void {
+    this.roverData = { traverse, sites, state };
+    this.drawRover();
+    // MapLibre kept the planned route above rover overlays; preserve that draw order in Cesium.
+    this.setPlan(this.plan, this.origin ?? undefined);
+  }
+
+  private drawRover(): void {
     this.removeGroup('rover');
+    const data = this.roverData;
+    if (!data) return;
+    const { traverse, sites, state } = data;
     if (traverse && state.traverse) {
-      const positions = traverse.coordinates.map(([lon, lat]) => lonLatToCartesian(lon, lat, 0));
+      const positions = traverse.coordinates.map(([lon, lat]) => this.surfacePosition(lon, lat));
       for (const [name, width] of [['--map-label-halo', 3.5], ['--map-label-text', 1.5]] as const) {
         this.add('rover', {
           polyline: {
             positions,
             width,
             clampToGround: true,
-            classificationType: this.classification,
             material: this.colour(name),
+            classificationType: this.classification,
           },
         });
       }
@@ -473,8 +511,8 @@ export class GlobeOverlays {
         this.add(
           'rover',
           {
-            position: lonLatToCartesian(site.lon, site.lat, 0),
-            billboard: this.billboard(this.markers().photo(site.count), SITE),
+            position: this.surfacePosition(site.lon, site.lat),
+            billboard: { ...this.billboard(this.markers().photo(site.count), SITE), scale: 1.5 },
           },
           { kind: 'text', lines: [photoSiteLabel(site)] },
         );

@@ -1,5 +1,8 @@
 // Written with AI assistance, directed and reviewed by the team.
 
+import type { Plan, PlanStart, PlanStop } from './lib/plan';
+import type { RouteGrid } from './lib/grid';
+
 export type SiteKind =
   | 'optical'
   | 'topographic'
@@ -82,6 +85,24 @@ export interface SiteData {
 export interface LayerState {
   enabled: boolean;
   opacity: number;
+}
+
+export interface RoverOverlayState {
+  traverse: boolean;
+  photos: boolean;
+}
+
+export interface MapProps {
+  siteData: SiteData;
+  layerStates: Record<string, LayerState>;
+  roverOverlayState: RoverOverlayState;
+  plan?: Plan;
+  onMapPoint?: (point: { lon: number; lat: number }) => void;
+  onStartChange?: (start: PlanStart) => void;
+  onStopChange?: (stop: PlanStop) => void;
+  onRoutePointHover?: (point: { lon: number; lat: number } | null) => void;
+  grid?: RouteGrid | null;
+  activePoint?: { lon: number; lat: number } | null;
 }
 
 export type AppMode = 'plan' | 'walk' | 'visor';

@@ -21,7 +21,7 @@ export function initCesium(token: string | undefined, online = true): 'ion' | 'o
 
 export async function createMarsViewer(
   container: HTMLElement,
-  opts: { interactive: boolean },
+  opts: { interactive: boolean; globe?: Globe | false },
 ): Promise<{ viewer: Viewer; tileset: Cesium3DTileset | null; mode: 'ion' | 'offline' }> {
   const viewer = new Viewer(container, {
     timeline: false,
@@ -37,7 +37,7 @@ export async function createMarsViewer(
     selectionIndicator: false,
     // Offline draws our tiles on a plain ellipsoid; online, Cesium Mars is the surface
     // (an ellipsoid at datum height would hide terrain below it, such as Gale).
-    globe: mode === 'offline' ? new Globe(Ellipsoid.MARS) : false,
+    globe: opts.globe ?? (mode === 'offline' ? new Globe(Ellipsoid.MARS) : false),
     ellipsoid: Ellipsoid.MARS,
   });
   const setOfflineGlobeColour = () => {

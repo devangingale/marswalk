@@ -1,7 +1,7 @@
 // Written with AI assistance, directed and reviewed by the team.
 
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { SiteData, LayerState, AppMode } from './types';
+import { SiteData, LayerState, AppMode, RoverOverlayState } from './types';
 import {
   TILES_BASE,
   AVAILABLE_SITES,
@@ -10,7 +10,6 @@ import {
   resolveSiteAssetUrl,
 } from './config';
 import stubSiteSample from './fixtures/site.sample.json';
-import samplePlan from './fixtures/plan.sample.json';
 import { Plan } from './lib/plan';
 import { buildTrack } from './walk/track';
 import { usePlayback } from './walk/usePlayback';
@@ -18,8 +17,7 @@ import { NoticeBanner } from './components/NoticeBanner';
 import { ModeSwitch } from './components/ModeSwitch';
 import { SiteSwitcher } from './components/SiteSwitcher';
 import { LayerPanel } from './components/LayerPanel';
-import { Map } from './components/Map';
-import type { RoverOverlayState } from './components/roverOverlays';
+import { GlobePlanMap } from './globe/GlobePlanMap';
 import { WalkView } from './components/WalkView';
 import { VisorView } from './components/VisorView';
 import { PlanRail } from './plan/PlanRail';
@@ -27,6 +25,7 @@ import { findWalkableCentre, makeInitialPlan, nextStopName } from './plan/planLo
 import { loadGrid, type RouteGrid } from './lib/grid';
 import type { PlanStop } from './lib/plan';
 import { DEFAULT_SURFACE_DOSE_MGY_PER_DAY, DEFAULT_SOLAR_EVENT_MGY_PER_DAY } from './lib/energy';
+import { type Mover } from './globe/plan/MoverPicker';
 import './plan/plan.css';
 import './styles/visualReview.css';
 
@@ -41,14 +40,15 @@ export const App: React.FC = () => {
   const [photosAvailable, setPhotosAvailable] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(() => window.innerWidth >= 1200);
   // The plan Walk and Visor replay (contracts section 7). The Plan view sets it; until then, the sample plan.
-  const [plan, setPlan] = useState<Plan>(samplePlan as unknown as Plan);
+  const [plan, setPlan] = useState<Plan>(() => makeInitialPlan(DEFAULT_SITE, stubSiteSample.default_start));
+  const [mover, setMover] = useState<Mover>('walker');
+  const [profileHover, setProfileHover] = useState<{ lon: number; lat: number } | null>(null);
   const [routeGrid, setRouteGrid] = useState<RouteGrid | null>(null);
   const [routeGridSite, setRouteGridSite] = useState<string | null>(null);
   const [computing, setComputing] = useState(false);
   const [doseRates, setDoseRates] = useState({ surface: DEFAULT_SURFACE_DOSE_MGY_PER_DAY, solar: DEFAULT_SOLAR_EVENT_MGY_PER_DAY });
   const planWorker = useRef<Worker | null>(null);
   const requestId = useRef(0);
-  const userBuiltPlan = useRef(false);
   const initializedPlanSite = useRef<string | null>(null);
   const siteLoadId = useRef(0);
   const track = useMemo(() => buildTrack(plan, siteData.origin), [plan, siteData.origin]);
@@ -149,8 +149,7 @@ export const App: React.FC = () => {
     if (!routeGrid || routeGridSite !== currentSiteId) return;
     if (plan.site !== currentSiteId || initializedPlanSite.current !== currentSiteId) {
       const start = findWalkableCentre(routeGrid);
-      const initial = currentSiteId === 'gale' && !userBuiltPlan.current ? samplePlan as unknown as Plan : makeInitialPlan(currentSiteId, start);
-      setPlan({ ...initial, site: currentSiteId, start });
+      setPlan(makeInitialPlan(currentSiteId, start));
       initializedPlanSite.current = currentSiteId;
     }
   }, [routeGrid, routeGridSite, currentSiteId, plan.site]);
@@ -179,15 +178,14 @@ export const App: React.FC = () => {
   };
 
   const addStop = useCallback((point: { lon: number; lat: number }) => {
-    userBuiltPlan.current = true;
     setPlan((current) => {
       const stop: PlanStop = { id: `s-${Date.now()}`, name: nextStopName(current.stops), ...point, dwell_s: current.params.stop_time_s };
       return { ...current, stops: [...current.stops, stop] };
     });
   }, []);
-  const updateStart = useCallback((start: Plan['start']) => { userBuiltPlan.current = true; setPlan((current) => ({ ...current, start })); }, []);
-  const updateStop = useCallback((changed: PlanStop) => { userBuiltPlan.current = true; setPlan((current) => ({ ...current, stops: current.stops.map((stop) => stop.id === changed.id ? changed : stop) })); }, []);
-  const changePlan = useCallback((next: Plan) => { userBuiltPlan.current = true; setPlan(next); }, []);
+  const updateStart = useCallback((start: Plan['start']) => { setPlan((current) => ({ ...current, start })); }, []);
+  const updateStop = useCallback((changed: PlanStop) => { setPlan((current) => ({ ...current, stops: current.stops.map((stop) => stop.id === changed.id ? changed : stop) })); }, []);
+  const changePlan = useCallback((next: Plan) => { setPlan(next); }, []);
 
   const handleToggleLayer = (layerId: string) => {
     setLayerStates((prev) => {
@@ -286,8 +284,8 @@ export const App: React.FC = () => {
               isOpen={isPanelOpen}
               onTogglePanel={() => setIsPanelOpen(!isPanelOpen)}
             />
-            <Map siteData={siteData} layerStates={layerStates} roverOverlayState={roverOverlayState} plan={plan} onMapPoint={addStop} onStartChange={updateStart} onStopChange={updateStop} />
-            <PlanRail plan={plan} grid={routeGrid} computing={computing} onChange={changePlan} onImport={(imported) => { userBuiltPlan.current = true; setPlan(imported); }} />
+            <GlobePlanMap siteData={siteData} layerStates={layerStates} roverOverlayState={roverOverlayState} plan={plan} grid={routeGrid} activePoint={profileHover} onMapPoint={addStop} onStartChange={updateStart} onStopChange={updateStop} onRoutePointHover={setProfileHover} />
+            <PlanRail plan={plan} grid={routeGrid} computing={computing} onChange={changePlan} onImport={setPlan} mover={mover} onMoverChange={setMover} activePoint={profileHover} onProfileHover={setProfileHover} />
           </div>
         ) : mode === 'walk' ? (
           <WalkView siteData={siteData} plan={plan} track={track} playback={playback} onPlan={() => setMode('plan')} />
