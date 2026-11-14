@@ -1,0 +1,242 @@
+/*
+ * Sol-48 design tokens.
+ * Spec and usage: docs/design/README.md. Visual check: docs/design/preview.html.
+ *
+ * Theming
+ *   - No attribute: follows prefers-color-scheme (light by default, dark when the OS asks).
+ *   - data-theme="dark" or data-theme="light" on any element forces that theme for its subtree.
+ *   - The visor is always dark: wrap it in data-theme="dark" and use the --visor-* tokens.
+ *   - Map styling (--map-*) is the same in both themes: the imagery does not change with the theme.
+ *
+ * The dark values appear twice (attribute block and media-query block). Keep them identical;
+ * docs/design/check-contrast.mjs fails if they drift.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap");
+
+/* ------------------------------------------------------------------ */
+/* Theme-independent tokens                                            */
+/* ------------------------------------------------------------------ */
+:root {
+  /* Type families. Bahnschrift ships with Windows and is DIN 1451, also a road-sign face. */
+  --font-ui: "Barlow", "Bahnschrift", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+  --font-data: "Barlow Semi Condensed", "Bahnschrift SemiCondensed", "Bahnschrift", "Roboto Condensed", "Arial Narrow", sans-serif;
+  --font-readout: "Barlow Condensed", "Bahnschrift Condensed", "Roboto Condensed", "Arial Narrow", sans-serif;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* Numbers in data and readouts never jiggle: always tabular, lining. */
+  --numeric: tabular-nums lining-nums;
+
+  /* Type scale: font-size / line-height pairs. Plan UI. */
+  --text-xs: 12px;   --leading-xs: 16px;   /* credits, map attribution, scale bar only */
+  --text-sm: 13px;   --leading-sm: 18px;   /* secondary labels, layer resolution note */
+  --text-md: 14px;   --leading-md: 20px;   /* Plan body and controls */
+  --text-lg: 16px;   --leading-lg: 22px;   /* panel headings, stop names */
+  --text-xl: 20px;   --leading-xl: 26px;   /* budget totals */
+  --text-2xl: 24px;  --leading-2xl: 30px;  /* surface titles, Walk headings */
+
+  /* Walk (arm's length, about 60 cm). */
+  --text-walk-body: 18px;     --leading-walk-body: 24px;
+  --text-walk-label: 16px;    --leading-walk-label: 20px;
+  --text-readout-md: 36px;    --leading-readout-md: 40px;
+  --text-readout-lg: 56px;    --leading-readout-lg: 56px;
+
+  /* Visor (glance while walking). */
+  --text-visor-label: 20px;   --leading-visor-label: 24px;
+  --text-visor-value: 48px;   --leading-visor-value: 48px;
+  --text-visor-unit: 24px;
+
+  --tracking-readout: 0.01em;
+
+  /* Spacing, 4 px base. */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Radius. Instruments, not bubbles. Circles are reserved for stops and the scrubber thumb. */
+  --radius-0: 0;
+  --radius-1: 2px;    /* chips, inputs, layer rows */
+  --radius-2: 4px;    /* buttons, photo card, visor plates */
+  --radius-round: 999px;
+
+  /* Hit sizes. */
+  --hit-plan: 32px;          /* default Plan control height */
+  --hit-plan-min: 24px;      /* inline icon buttons in dense rows (WCAG 2.5.8 minimum) */
+  --hit-walk: 64px;          /* any Walk control: about 12 mm on a 10-11 in tablet */
+  --hit-walk-primary: 80px;  /* play / pause */
+  --hit-walk-gap: 12px;      /* minimum gap between Walk targets */
+
+  /* Lines. */
+  --border-width: 1px;
+  --focus-width: 2px;
+  --focus-offset: 2px;
+
+  /* Layout. */
+  --topbar-height: 48px;
+  --panel-left-width: 320px;
+  --panel-right-width: 360px;
+  --walk-side-width: 400px;
+  --sheet-peek-height: 96px;
+
+  /* Motion. Reduced-motion block below sets every duration to 0. */
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Map styling. Hex literals so MapLibre can read them with getComputedStyle. */
+  --map-route-core: #8ec1f5;            /* sunset blue, planned route ahead */
+  --map-route-casing: #0a1828;          /* dark edge: keeps the line readable on bright dust */
+  --map-route-walked: #98a2ac;          /* part already walked in Walk/Visor */
+  --map-route-core-width: 4px;
+  --map-route-casing-width: 8px;        /* total width; 2 px of casing each side */
+  --map-stop-fill: #0a1828;
+  --map-stop-ring: #f2f5f7;
+  --map-stop-text: #f2f5f7;
+  --map-stop-selected-fill: #8ec1f5;
+  --map-stop-selected-text: #0a1828;
+  --map-stop-size: 28px;
+  --map-start-fill: #f2f5f7;            /* Rover drop-off: square */
+  --map-start-ring: #0a1828;
+  --map-turnback: #ffc152;              /* notch: downward triangle */
+  --map-turnback-ring: #0a1828;
+  --map-impassable: #eb517c;            /* hatch stripe */
+  --map-impassable-gap: rgba(20, 6, 12, 0.8);
+  --map-impassable-hatch: 6px;          /* stripe period, 45 degrees */
+  --map-position: #f2f5f7;              /* "you" marker in Walk */
+  --map-position-ring: #8ec1f5;
+  --map-label-text: #f2f5f7;
+  --map-label-halo: #0a1828;
+  --map-overlay-opacity: 0.7;           /* default opacity for a data layer over imagery */
+
+  /* Recommended sequential ramp for overlays (cividis, colour-blind safe, no red or green). */
+  --ramp-seq-0: #00224e;
+  --ramp-seq-1: #2a3f6d;
+  --ramp-seq-2: #575c6d;
+  --ramp-seq-3: #7d7c78;
+  --ramp-seq-4: #a69d75;
+  --ramp-seq-5: #d3c164;
+  --ramp-seq-6: #fee838;
+
+  /* Visor. Always dark, never themed. Plates are solid tints, not blurred glass. */
+  --visor-plate: rgba(8, 11, 14, 0.8);
+  --visor-text: #f2f5f7;
+  --visor-text-muted: #b9c2cb;
+  --visor-accent: #8ec1f5;
+  --visor-caution: #ffc152;
+  --visor-hazard: #eb517c;
+  --visor-hazard-text: #14060c;
+  --visor-tick: rgba(242, 245, 247, 0.6);
+}
+
+/* ------------------------------------------------------------------ */
+/* Light (daylight) theme: the default when nothing else applies       */
+/* ------------------------------------------------------------------ */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  --color-bg: #e9edf1;
+  --color-surface: #f6f8fa;
+  --color-surface-raised: #ffffff;
+  --color-surface-sunken: #dde3e9;
+  --color-rule: #c9d1d9;              /* dividers only; not a control boundary */
+  --color-control-border: #6e7b88;    /* >= 3:1 on every surface */
+  --color-text: #121820;
+  --color-text-muted: #47525e;
+  --color-text-disabled: #8a949e;     /* disabled controls only (exempt from 4.5:1) */
+
+  --color-accent: #1e5c9e;            /* route and selected state only */
+  --color-accent-text: #ffffff;       /* text on an accent fill */
+  --color-accent-subtle: #dce8f5;     /* selected row background */
+
+  --color-ok: #125f34;
+  --color-ok-subtle: #e1f0e7;
+  --color-caution: #9a5c00;
+  --color-caution-subtle: #fcf3e4;
+  --color-danger: #6b082f;
+  --color-danger-subtle: #f8e1e9;
+
+  --color-focus-inner: #121820;
+  --color-focus-outer: #ffffff;
+}
+
+/* ------------------------------------------------------------------ */
+/* Dark (habitat) theme                                                */
+/* ------------------------------------------------------------------ */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-bg: #0d1115;
+  --color-surface: #141a20;
+  --color-surface-raised: #1b232b;
+  --color-surface-sunken: #090c0f;
+  --color-rule: #27313b;
+  --color-control-border: #6b7885;
+  --color-text: #e4e9ee;
+  --color-text-muted: #a0aab5;
+  --color-text-disabled: #5d6772;
+
+  --color-accent: #8db7e6;
+  --color-accent-text: #0a1520;
+  --color-accent-subtle: #1c2e42;
+
+  --color-ok: #4ab986;
+  --color-ok-subtle: #14281f;
+  --color-caution: #ffc152;
+  --color-caution-subtle: #2c2413;
+  --color-danger: #eb517c;
+  --color-danger-subtle: #2e1520;
+
+  --color-focus-inner: #e4e9ee;
+  --color-focus-outer: #0d1115;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --color-bg: #0d1115;
+    --color-surface: #141a20;
+    --color-surface-raised: #1b232b;
+    --color-surface-sunken: #090c0f;
+    --color-rule: #27313b;
+    --color-control-border: #6b7885;
+    --color-text: #e4e9ee;
+    --color-text-muted: #a0aab5;
+    --color-text-disabled: #5d6772;
+
+    --color-accent: #8db7e6;
+    --color-accent-text: #0a1520;
+    --color-accent-subtle: #1c2e42;
+
+    --color-ok: #4ab986;
+    --color-ok-subtle: #14281f;
+    --color-caution: #ffc152;
+    --color-caution-subtle: #2c2413;
+    --color-danger: #eb517c;
+    --color-danger-subtle: #2e1520;
+
+    --color-focus-inner: #e4e9ee;
+    --color-focus-outer: #0d1115;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Reduced motion                                                      */
+/* ------------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+  }
+}

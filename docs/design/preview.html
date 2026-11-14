@@ -1,0 +1,1315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sol-48 design system</title>
+<link rel="stylesheet" href="../../app/src/styles/tokens.css">
+<style>
+/* =================================================================== */
+/* Base                                                                 */
+/* =================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+}
+h1, h2, h3, h4 { font-weight: var(--weight-semibold); margin: 0; }
+p { margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+.num { font-family: var(--font-data); font-variant-numeric: var(--numeric); }
+.muted { color: var(--color-text-muted); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+svg.i.fill { fill: currentColor; stroke: none; }
+
+/* Focus: two-tone ring that reads on panels and imagery alike. */
+:focus-visible, .is-focus {
+  outline: var(--focus-width) solid var(--color-focus-inner);
+  outline-offset: var(--focus-offset);
+  box-shadow: 0 0 0 var(--focus-offset) var(--color-focus-outer);
+}
+:focus:not(:focus-visible) { outline: none; }
+
+/* =================================================================== */
+/* Preview page chrome (not part of the system)                         */
+/* =================================================================== */
+.page-head {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border-bottom: var(--border-width) solid var(--color-rule);
+  position: sticky; top: 0; z-index: 10;
+}
+.wordmark { font-family: var(--font-readout); font-weight: var(--weight-semibold); font-size: 22px; letter-spacing: var(--tracking-readout); }
+.page-head .grow { flex: 1; }
+@media (max-width: 640px) { .page-head { position: static; } }
+.page-head nav { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); font-size: var(--text-sm); }
+.page-head nav a { color: var(--color-text-muted); }
+.page-head nav a:hover { color: var(--color-text); }
+main { max-width: 1320px; margin: 0 auto; padding: var(--space-6) var(--space-4) var(--space-16); }
+section.part { padding-top: var(--space-12); }
+section.part > h2 { font-size: var(--text-2xl); line-height: var(--leading-2xl); }
+section.part > p.lede { color: var(--color-text-muted); max-width: 70ch; margin-top: var(--space-2); }
+.sub { margin-top: var(--space-8); }
+.sub > h3 { font-size: var(--text-lg); line-height: var(--leading-lg); margin-bottom: var(--space-3); }
+.sub > p.note { color: var(--color-text-muted); font-size: var(--text-sm); line-height: var(--leading-sm); margin: calc(-1 * var(--space-2)) 0 var(--space-3); max-width: 70ch; }
+.intro { max-width: 72ch; }
+.intro h1 { font-size: var(--text-2xl); line-height: var(--leading-2xl); }
+.intro p { margin-top: var(--space-2); color: var(--color-text-muted); }
+a { color: inherit; text-underline-offset: 3px; }
+
+.specimens { display: flex; flex-wrap: wrap; gap: var(--space-6); align-items: flex-start; }
+.state { display: grid; gap: var(--space-2); justify-items: start; }
+.state > .cap { font-size: var(--text-sm); color: var(--color-text-muted); }
+.board { background: var(--color-surface); border: var(--border-width) solid var(--color-rule); border-radius: var(--radius-1); padding: var(--space-4); max-width: 100%; overflow-x: auto; }
+.board.raised { background: var(--color-surface-raised); }
+.frame-scroll { overflow-x: auto; border: var(--border-width) solid var(--color-rule); border-radius: var(--radius-1); width: max-content; max-width: 100%; }
+.frame-label { font-size: var(--text-sm); color: var(--color-text-muted); margin-bottom: var(--space-2); }
+
+/* Swatches */
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: var(--space-2) var(--space-4); }
+.sw { display: grid; grid-template-columns: 40px 1fr; gap: var(--space-3); align-items: center; padding: var(--space-2) 0; border-bottom: var(--border-width) solid var(--color-rule); }
+.sw i { width: 40px; height: 40px; border-radius: var(--radius-1); border: var(--border-width) solid var(--color-rule); }
+.sw b { display: block; font-weight: var(--weight-medium); font-size: var(--text-sm); }
+.tok, .sw b, .type-row .meta, .space-row { font-family: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace; font-size: 12px; font-variant-ligatures: none; }
+.sw span { display: block; font-family: var(--font-data); font-variant-numeric: var(--numeric); font-size: var(--text-sm); color: var(--color-text-muted); }
+
+/* Type specimens */
+.type-row { display: grid; grid-template-columns: 200px 1fr; gap: var(--space-4); align-items: baseline; padding: var(--space-3) 0; border-bottom: var(--border-width) solid var(--color-rule); }
+.type-row .meta { font-size: var(--text-sm); color: var(--color-text-muted); font-family: var(--font-data); font-variant-numeric: var(--numeric); }
+@media (max-width: 640px) { .type-row { grid-template-columns: 1fr; gap: var(--space-1); } }
+
+/* Spacing and hit specimens */
+.space-row { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-data); font-size: var(--text-sm); color: var(--color-text-muted); }
+.space-row i { display: block; height: 12px; background: var(--color-text); }
+.hit-row { display: flex; flex-wrap: wrap; gap: var(--space-6); align-items: flex-end; }
+.hit-box { border: var(--border-width) dashed var(--color-control-border); display: grid; place-items: center; font-family: var(--font-data); font-size: var(--text-sm); color: var(--color-text-muted); }
+.radius-box { width: 72px; height: 48px; border: 2px solid var(--color-control-border); display: grid; place-items: center; font-size: var(--text-sm); font-family: var(--font-data); }
+
+/* =================================================================== */
+/* Components (reference implementation; lift into the app)             */
+/* =================================================================== */
+
+/* Buttons */
+.s48-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  min-height: var(--hit-plan); padding: 0 var(--space-3);
+  border-radius: var(--radius-2); border: var(--border-width) solid transparent;
+  font-weight: var(--weight-medium); cursor: pointer; white-space: nowrap;
+  transition: background-color var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease);
+}
+.s48-btn--primary { background: var(--color-text); color: var(--color-bg); }
+.s48-btn--primary:hover, .s48-btn--primary.is-hover { background: color-mix(in srgb, var(--color-text) 88%, var(--color-bg)); }
+.s48-btn--primary:active, .s48-btn--primary.is-active { background: color-mix(in srgb, var(--color-text) 76%, var(--color-bg)); }
+.s48-btn--secondary { background: var(--color-surface); border-color: var(--color-control-border); }
+.s48-btn--secondary:hover, .s48-btn--secondary.is-hover { background: var(--color-surface-raised); }
+.s48-btn--secondary:active, .s48-btn--secondary.is-active { background: var(--color-surface-sunken); }
+.s48-btn--quiet { background: transparent; padding: 0 var(--space-1); text-decoration: none; }
+.s48-btn--quiet:hover, .s48-btn--quiet.is-hover { text-decoration: underline; text-underline-offset: 3px; }
+.s48-btn--danger { background: var(--color-surface); border-color: var(--color-danger); color: var(--color-danger); }
+.s48-btn--danger:hover, .s48-btn--danger.is-hover { background: var(--color-danger-subtle); }
+.s48-btn:disabled { background: transparent; color: var(--color-text-disabled); border-color: var(--color-rule); cursor: not-allowed; text-decoration: none; }
+.s48-btn--icon { width: var(--hit-plan-min); min-height: var(--hit-plan-min); padding: 0; border-radius: var(--radius-1); color: var(--color-text-muted); background: transparent; }
+.s48-btn--icon:hover, .s48-btn--icon.is-hover { color: var(--color-text); background: var(--color-surface-raised); }
+.walk .s48-btn, .s48-btn.walk { min-height: var(--hit-walk); padding: 0 var(--space-6); font-size: var(--text-walk-body); }
+.s48-btn--play { width: var(--hit-walk-primary); min-height: var(--hit-walk-primary) !important; padding: 0 !important; }
+.s48-btn--play svg.i, .walk .s48-btn svg.i { width: 28px; height: 28px; }
+.s48-btn--step { width: var(--hit-walk); padding: 0 !important; }
+.reason { font-size: var(--text-sm); color: var(--color-text-muted); }
+
+/* Segmented control (mode switch, theme switch) */
+.s48-seg { display: inline-flex; border: var(--border-width) solid var(--color-control-border); border-radius: var(--radius-2); padding: 2px; gap: 2px; background: var(--color-surface); }
+.s48-seg button {
+  min-height: calc(var(--hit-plan) - 6px); padding: 0 var(--space-3); border: 0; border-radius: var(--radius-1);
+  background: transparent; cursor: pointer; font-weight: var(--weight-medium);
+}
+.s48-seg button:hover, .s48-seg button.is-hover { background: var(--color-surface-raised); }
+.s48-seg button[aria-pressed="true"] { background: var(--color-accent); color: var(--color-accent-text); }
+.s48-seg button:disabled { color: var(--color-text-disabled); background: transparent; cursor: not-allowed; }
+.walk .s48-seg button { min-height: calc(var(--hit-walk) - 6px); padding: 0 var(--space-6); font-size: var(--text-walk-body); }
+
+/* Site switcher */
+.s48-site { position: relative; display: inline-block; }
+.s48-site__btn {
+  display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--hit-plan); padding: 0 var(--space-3);
+  border: var(--border-width) solid var(--color-control-border); border-radius: var(--radius-2); background: var(--color-surface); cursor: pointer;
+}
+.s48-site__btn .rover { color: var(--color-text-muted); }
+.s48-site__list { list-style: none; margin: var(--space-1) 0 0; padding: var(--space-1); min-width: 280px; background: var(--color-surface-raised); border: var(--border-width) solid var(--color-control-border); border-radius: var(--radius-2); }
+.s48-site__list li { display: flex; align-items: center; gap: var(--space-2); min-height: var(--hit-plan); padding: 0 var(--space-2); border-radius: var(--radius-1); }
+.s48-site__list li[aria-selected="true"] { background: var(--color-accent-subtle); }
+.s48-site__list li[aria-selected="true"] .i { color: var(--color-accent); }
+.s48-site__list li .i.blank { visibility: hidden; }
+.s48-site__list li .rover { color: var(--color-text-muted); margin-left: auto; font-size: var(--text-sm); }
+
+/* Chips */
+.s48-chip {
+  display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 var(--space-2);
+  border: var(--border-width) solid currentColor; border-radius: var(--radius-1);
+  font-family: var(--font-data); font-size: var(--text-sm); font-weight: var(--weight-medium); white-space: nowrap;
+  color: var(--color-text-muted);
+}
+.s48-chip svg.i { width: 14px; height: 14px; }
+.s48-chip--ok { color: var(--color-ok); }
+.s48-chip--caution { color: var(--color-caution); }
+.s48-chip--danger { color: var(--color-danger); background: var(--color-danger-subtle); }
+.s48-chip--dashed { border-style: dashed; }
+.s48-chip .approx { font-size: 15px; line-height: 1; }
+
+/* Glyph markers shared by list and map */
+.s48-disc {
+  display: inline-grid; place-items: center; width: 24px; height: 24px; flex: none; border-radius: var(--radius-round);
+  background: var(--map-stop-fill); color: var(--map-stop-text); box-shadow: inset 0 0 0 2px var(--map-stop-ring);
+  font-family: var(--font-data); font-weight: var(--weight-semibold); font-size: 13px; font-variant-numeric: var(--numeric);
+}
+.is-selected .s48-disc, .s48-disc.is-selected { background: var(--map-stop-selected-fill); color: var(--map-stop-selected-text); }
+.s48-square { display: inline-block; width: 20px; height: 20px; margin: 2px; flex: none; background: var(--map-start-fill); box-shadow: inset 0 0 0 2px var(--map-start-ring), 0 0 0 1px var(--color-control-border); }
+.s48-xsq { display: inline-grid; place-items: center; width: 24px; height: 24px; flex: none; border-radius: 3px; background: var(--color-danger); color: var(--color-surface); }
+.s48-xsq svg.i { width: 14px; height: 14px; stroke-width: 2.5; }
+
+/* Layer panel */
+.s48-layers { display: grid; gap: var(--space-4); }
+.s48-layers h4 { font-size: var(--text-sm); color: var(--color-text-muted); font-weight: var(--weight-medium); margin-bottom: var(--space-1); }
+.s48-layer { display: grid; gap: var(--space-2); padding: var(--space-2) 0; }
+.s48-layer + .s48-layer { border-top: var(--border-width) solid var(--color-rule); }
+.s48-layer__head { display: flex; align-items: center; gap: var(--space-2); min-height: var(--hit-plan-min); }
+.s48-layer__head label { display: flex; align-items: center; gap: var(--space-2); cursor: pointer; flex: 1; }
+.s48-layer__note { font-family: var(--font-data); font-variant-numeric: var(--numeric); font-size: var(--text-sm); line-height: var(--leading-sm); color: var(--color-text-muted); padding-left: 28px; }
+.s48-layer__body { display: grid; gap: var(--space-2); padding-left: 28px; }
+.s48-layer.is-failed .s48-layer__note { color: var(--color-danger); }
+.s48-check { appearance: none; width: 18px; height: 18px; margin: 3px; border: 1.5px solid var(--color-control-border); border-radius: var(--radius-1); background: var(--color-surface-raised); display: grid; place-items: center; cursor: pointer; flex: none; }
+.s48-check:checked { background: var(--color-text); border-color: var(--color-text); }
+.s48-check:checked::after { content: ""; width: 9px; height: 5px; border: 2px solid var(--color-bg); border-top: 0; border-right: 0; transform: translateY(-1px) rotate(-45deg); }
+.s48-check:disabled { border-color: var(--color-text-disabled); background: transparent; cursor: not-allowed; }
+.s48-opacity { display: grid; grid-template-columns: auto 1fr 40px; gap: var(--space-2); align-items: center; font-size: var(--text-sm); color: var(--color-text-muted); }
+.s48-opacity output { font-family: var(--font-data); font-variant-numeric: var(--numeric); text-align: right; color: var(--color-text); }
+.s48-range { -webkit-appearance: none; appearance: none; width: 100%; height: 24px; background: transparent; cursor: pointer; }
+.s48-range::-webkit-slider-runnable-track { height: 4px; background: var(--color-control-border); border-radius: 2px; }
+.s48-range::-moz-range-track { height: 4px; background: var(--color-control-border); border-radius: 2px; }
+.s48-range::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 20px; margin-top: -8px; border-radius: var(--radius-1); background: var(--color-text); border: 2px solid var(--color-surface); }
+.s48-range::-moz-range-thumb { width: 10px; height: 16px; border-radius: var(--radius-1); background: var(--color-text); border: 2px solid var(--color-surface); }
+.s48-legend { display: grid; gap: 2px; font-family: var(--font-data); font-variant-numeric: var(--numeric); font-size: var(--text-sm); }
+.s48-legend__ramp { height: 10px; border-radius: 1px; border: var(--border-width) solid var(--color-rule);
+  background: linear-gradient(to right, var(--ramp-seq-0), var(--ramp-seq-1), var(--ramp-seq-2), var(--ramp-seq-3), var(--ramp-seq-4), var(--ramp-seq-5), var(--ramp-seq-6)); }
+.s48-legend__ends { display: flex; justify-content: space-between; color: var(--color-text-muted); }
+.s48-legend__ends b { color: var(--color-text); font-weight: var(--weight-medium); }
+.s48-legend--points { display: flex; align-items: center; gap: var(--space-2); color: var(--color-text-muted); }
+.pt { width: 12px; height: 12px; transform: rotate(45deg); background: var(--color-text); border: 2px solid var(--color-surface); box-shadow: 0 0 0 1px var(--color-text); flex: none; }
+
+/* Stop list */
+.s48-stops { list-style: none; margin: 0; padding: 0; display: grid; }
+.s48-stop { display: grid; grid-template-columns: 24px 24px 1fr 24px; gap: var(--space-2); align-items: start; padding: var(--space-2) var(--space-1); border-radius: var(--radius-1); }
+.s48-stop + .s48-stop { border-top: var(--border-width) solid var(--color-rule); }
+.s48-stop__handle { width: 24px; height: 24px; display: grid; place-items: center; color: var(--color-text-muted); cursor: grab; }
+.s48-stop__name { font-size: var(--text-md); font-weight: var(--weight-medium); line-height: 24px; }
+.s48-stop__leg { font-family: var(--font-data); font-variant-numeric: var(--numeric); font-size: var(--text-sm); line-height: var(--leading-sm); color: var(--color-text-muted); }
+.s48-stop.is-selected { background: var(--color-accent-subtle); border-top-color: transparent; }
+.s48-stop.is-selected + .s48-stop { border-top-color: transparent; }
+.s48-stop.is-unreachable .s48-stop__leg { color: var(--color-danger); }
+.s48-stop.is-dragging { background: var(--color-surface-raised); box-shadow: inset 0 0 0 1px var(--color-control-border); }
+.s48-stop.is-fixed { grid-template-columns: 24px 24px 1fr; }
+.s48-drop-slot { height: 2px; background: var(--color-accent); margin: 2px 0; }
+.s48-suggest { display: grid; gap: var(--space-1); padding: var(--space-2) var(--space-1); }
+.s48-suggest__row { display: flex; gap: var(--space-2); align-items: baseline; justify-content: space-between; }
+.s48-suggest p { font-size: var(--text-sm); line-height: var(--leading-sm); color: var(--color-text-muted); }
+.s48-empty { padding: var(--space-4); border: var(--border-width) dashed var(--color-control-border); border-radius: var(--radius-1); color: var(--color-text-muted); }
+
+/* Budget rail: the signature component */
+.s48-rail { --limit: 1; --reserve-from: calc(var(--limit) * 0.85); display: grid; gap: 6px; }
+.s48-rail__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+.s48-rail__label { font-weight: var(--weight-medium); display: inline-flex; gap: var(--space-2); align-items: baseline; }
+.s48-rail__label small { font-size: var(--text-sm); color: var(--color-text-muted); font-weight: var(--weight-regular); }
+.s48-rail__value { font-family: var(--font-data); font-variant-numeric: var(--numeric); font-size: var(--text-xl); line-height: var(--leading-xl); font-weight: var(--weight-medium); }
+.s48-rail__value .of { font-size: var(--text-md); color: var(--color-text-muted); font-weight: var(--weight-regular); }
+.s48-rail__track { position: relative; height: 10px; margin-top: 8px; background: var(--color-surface-sunken); border-radius: 1px; box-shadow: 0 0 0 1px var(--color-control-border); }
+.s48-rail__reserve {
+  position: absolute; top: 0; bottom: 0; left: calc(var(--reserve-from) * 100%); width: calc(var(--limit) * 15%);
+  background: repeating-linear-gradient(-45deg, var(--color-caution) 0 1.5px, transparent 1.5px 5px);
+  box-shadow: inset 0 0 0 1px var(--color-caution);
+}
+.s48-rail__plan {
+  position: absolute; top: 2px; bottom: 2px; left: 0; width: calc(var(--plan) * 100%);
+  background: linear-gradient(to right,
+    var(--color-text) 0 calc(var(--reserve-from) / var(--plan) * 100%),
+    var(--color-caution) 0 calc(var(--limit) / var(--plan) * 100%),
+    var(--color-danger) 0);
+}
+.s48-rail__limit { position: absolute; top: -4px; bottom: -4px; left: calc(var(--limit) * 100% - 1px); width: 2px; background: var(--color-text); }
+.s48-rail__notch { position: absolute; top: -10px; left: calc(var(--notch) * 100% - 6px); width: 12px; height: 8px; background: var(--color-caution); clip-path: polygon(0 0, 100% 0, 50% 100%); }
+.s48-rail__now { position: absolute; top: -6px; bottom: -6px; left: calc(var(--now) * 100% - 1.5px); width: 3px; background: var(--color-accent); box-shadow: 0 0 0 1.5px var(--color-surface); }
+.s48-rail__foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-1) var(--space-3); font-size: var(--text-sm); line-height: var(--leading-sm); color: var(--color-text-muted); }
+.s48-rail__foot .num { color: var(--color-text); }
+.s48-rail__foot .binds { color: var(--color-caution); display: inline-flex; gap: 4px; align-items: center; }
+.s48-rail__foot .binds::before { content: ""; width: 10px; height: 7px; background: currentColor; clip-path: polygon(0 0, 100% 0, 50% 100%); }
+
+.s48-figs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3) var(--space-4); }
+.s48-fig { display: grid; gap: 0; }
+.s48-fig dt { font-size: var(--text-sm); color: var(--color-text-muted); }
+.s48-fig dd { margin: 0; font-family: var(--font-data); font-variant-numeric: var(--numeric); font-size: var(--text-lg); line-height: var(--leading-lg); font-weight: var(--weight-medium); }
+.s48-fig dd small { font-size: var(--text-sm); color: var(--color-text-muted); font-weight: var(--weight-regular); }
+.s48-budgets { display: grid; gap: var(--space-6); }
+.s48-budgets__caption { font-size: var(--text-sm); color: var(--color-text-muted); }
+
+/* Conditions */
+.s48-cond { display: grid; gap: var(--space-4); }
+.s48-select { min-height: var(--hit-plan); padding: 0 var(--space-8) 0 var(--space-3); border: var(--border-width) solid var(--color-control-border); border-radius: var(--radius-2); background: var(--color-surface-raised); appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23808a94' stroke-width='1.75'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+.s48-cond__block { display: grid; gap: var(--space-2); padding-top: var(--space-3); border-top: var(--border-width) solid var(--color-rule); }
+.s48-cond__block h5 { font-size: var(--text-md); font-weight: var(--weight-semibold); margin: 0; display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); }
+.s48-cond__src { font-size: var(--text-sm); line-height: var(--leading-sm); color: var(--color-text-muted); }
+.s48-toggle { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-md); cursor: pointer; }
+
+/* Photo card */
+.s48-photo { display: grid; gap: var(--space-2); padding: var(--space-2); background: var(--color-surface-raised); border: var(--border-width) solid var(--color-rule); border-radius: var(--radius-2); width: 100%; max-width: 360px; }
+.s48-photo__img { aspect-ratio: 4 / 3; background: var(--color-surface-sunken); border-radius: var(--radius-1); display: grid; place-items: center; text-align: center; padding: var(--space-4); color: var(--color-text-muted); font-size: var(--text-sm); line-height: var(--leading-sm); overflow: hidden; position: relative; }
+.s48-photo__img .id { font-family: var(--font-data); font-size: var(--text-xs); word-break: break-all; }
+.s48-photo__img.stand-in { padding: 0; }
+.s48-photo__img.stand-in svg { width: 100%; height: 100%; display: block; }
+.s48-photo__img.stand-in .tag { position: absolute; left: 6px; bottom: 6px; padding: 1px 6px; background: var(--color-surface-sunken); color: var(--color-text-muted); font-size: var(--text-xs); border-radius: var(--radius-1); }
+.s48-photo__cap { font-family: var(--font-data); font-variant-numeric: var(--numeric); font-size: var(--text-sm); line-height: var(--leading-sm); }
+.s48-photo__credit { font-size: var(--text-xs); line-height: var(--leading-xs); color: var(--color-text-muted); }
+.s48-photo__pager { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-data); font-size: var(--text-sm); color: var(--color-text-muted); }
+.s48-photo.is-none .s48-photo__img { place-items: center; gap: var(--space-2); align-content: center; }
+.s48-photo.is-none .s48-photo__img .s48-xsq { background: transparent; color: var(--color-text-muted); box-shadow: inset 0 0 0 1.5px var(--color-text-muted); }
+.s48-photo.is-failed .s48-photo__img { color: var(--color-danger); }
+
+/* Scale bar */
+.s48-scale { display: inline-grid; gap: 2px; }
+.s48-scale__bar { display: flex; height: 6px; box-shadow: 0 0 0 1px #0a1828; }
+.s48-scale__bar i { flex: 1; background: #f2f5f7; }
+.s48-scale__bar i:nth-child(2n) { background: #0a1828; }
+.s48-scale__label { font-family: var(--font-data); font-size: var(--text-xs); line-height: var(--leading-xs); font-variant-numeric: var(--numeric); color: var(--map-label-text); text-shadow: 0 0 2px var(--map-label-halo), 0 0 2px var(--map-label-halo), 0 0 3px var(--map-label-halo); }
+
+/* Walk scrubber */
+.s48-scrub { display: flex; align-items: center; gap: var(--hit-walk-gap); }
+.s48-scrub__track { position: relative; flex: 1; height: var(--hit-walk); min-width: 200px; }
+.s48-scrub__rail { position: absolute; left: 0; right: 0; top: 50%; height: 8px; margin-top: -4px; border-radius: 4px; background: var(--map-route-core); box-shadow: inset 0 0 0 1px var(--map-route-casing); }
+.s48-scrub__done { position: absolute; left: 0; top: 50%; height: 8px; margin-top: -4px; width: calc(var(--at) * 100%); border-radius: 4px 0 0 4px; background: var(--map-route-walked); box-shadow: inset 0 0 0 1px var(--map-route-casing); }
+.s48-scrub__tick { position: absolute; top: 50%; left: calc(var(--x) * 100%); transform: translate(-50%, -50%); width: 22px; height: 22px; font-size: 12px; }
+.s48-scrub__tick.home { width: 16px; height: 16px; margin: 0; }
+.s48-scrub__notch { position: absolute; top: calc(50% - 20px); left: calc(var(--x) * 100% - 7px); width: 14px; height: 10px; background: var(--map-turnback); clip-path: polygon(0 0, 100% 0, 50% 100%); }
+.s48-scrub input[type="range"] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.s48-scrub__thumb { position: absolute; top: 50%; left: calc(var(--at) * 100%); width: 32px; height: 32px; transform: translate(-50%, -50%); border-radius: var(--radius-round); background: var(--map-position); box-shadow: 0 0 0 4px var(--map-position-ring), 0 0 0 6px var(--map-route-casing); pointer-events: none; }
+.s48-scrub__track:focus-within .s48-scrub__thumb { outline: var(--focus-width) solid var(--color-focus-inner); outline-offset: 8px; }
+.s48-scrub__time { font-family: var(--font-readout); font-variant-numeric: var(--numeric); font-size: var(--text-2xl); line-height: 1; white-space: nowrap; font-weight: var(--weight-medium); }
+.s48-scrub__time small { display: block; font-family: var(--font-ui); font-size: var(--text-sm); color: var(--color-text-muted); font-weight: var(--weight-regular); margin-top: 4px; }
+
+/* Walk readouts */
+.s48-readout { display: grid; gap: 2px; }
+.s48-readout__label { font-size: var(--text-walk-label); line-height: var(--leading-walk-label); color: var(--color-text-muted); }
+.s48-readout__value { font-family: var(--font-readout); font-variant-numeric: var(--numeric); font-weight: var(--weight-semibold); font-size: var(--text-readout-lg); line-height: var(--leading-readout-lg); letter-spacing: var(--tracking-readout); }
+.s48-readout__value small { font-size: 0.5em; font-weight: var(--weight-medium); color: var(--color-text-muted); margin-left: 4px; }
+.s48-readout__value.md { font-size: var(--text-readout-md); line-height: var(--leading-readout-md); }
+.walk .s48-rail__value { font-family: var(--font-readout); font-size: var(--text-readout-md); line-height: var(--leading-readout-md); font-weight: var(--weight-semibold); }
+.walk .s48-rail__label { font-size: var(--text-walk-label); }
+.walk .s48-rail__track { height: 14px; }
+.walk .s48-rail__foot { font-size: var(--text-walk-label); line-height: var(--leading-walk-label); }
+.walk .s48-chip { height: 32px; font-size: var(--text-walk-label); padding: 0 var(--space-3); }
+.walk .s48-chip svg.i { width: 18px; height: 18px; }
+
+/* Visor */
+.s48-plate { background: var(--visor-plate); color: var(--visor-text); border-radius: var(--radius-2); padding: var(--space-3) var(--space-4); }
+.s48-plate__label { font-family: var(--font-readout); font-size: var(--text-visor-label); line-height: var(--leading-visor-label); color: var(--visor-text-muted); font-weight: var(--weight-medium); display: flex; align-items: center; gap: var(--space-2); }
+.s48-plate__value { font-family: var(--font-readout); font-variant-numeric: var(--numeric); font-size: var(--text-visor-value); line-height: var(--leading-visor-value); font-weight: var(--weight-semibold); letter-spacing: var(--tracking-readout); }
+.s48-plate__value small { font-size: var(--text-visor-unit); color: var(--visor-text-muted); font-weight: var(--weight-medium); margin-left: 4px; }
+.s48-plate .vrail { position: relative; height: 6px; margin-top: var(--space-2); background: rgba(242,245,247,0.18); }
+.s48-plate .vrail b { position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--left) * 100%); background: var(--visor-text); }
+.s48-plate .vrail i { position: absolute; top: 0; bottom: 0; left: 0; width: 15%; background: repeating-linear-gradient(-45deg, var(--visor-caution) 0 1.5px, transparent 1.5px 5px); }
+.s48-plate.is-caution .s48-plate__value { color: var(--visor-caution); }
+.s48-plate .vdisc { width: 28px; height: 28px; font-size: 15px; }
+.s48-tape { display: grid; justify-items: center; gap: 2px; padding: var(--space-2) var(--space-4) var(--space-3); }
+.s48-tape__ticks { position: relative; width: min(360px, 70vw); height: 18px; overflow: hidden; }
+.s48-tape__ticks span { position: absolute; bottom: 0; width: 2px; background: var(--visor-tick); transform: translateX(-1px); }
+.s48-tape__ticks em { position: absolute; top: -2px; font-style: normal; font-family: var(--font-readout); font-variant-numeric: var(--numeric); font-size: 15px; line-height: 1; color: var(--visor-text-muted); transform: translateX(-50%); }
+.s48-tape__now { font-family: var(--font-readout); font-variant-numeric: var(--numeric); font-size: var(--text-visor-value); line-height: var(--leading-visor-value); font-weight: var(--weight-semibold); padding: 0 var(--space-3); border: 2px solid var(--visor-text); border-radius: var(--radius-1); }
+.s48-tape__now small { font-size: var(--text-visor-unit); color: var(--visor-text-muted); margin-left: 6px; }
+.s48-hazard { display: flex; align-items: center; gap: var(--space-3); background: var(--visor-hazard); color: var(--visor-hazard-text); border-radius: var(--radius-2); padding: var(--space-2) var(--space-4) var(--space-2) 0; font-family: var(--font-readout); font-weight: var(--weight-semibold); font-size: 28px; line-height: 32px; overflow: hidden; }
+.s48-hazard::before { content: ""; align-self: stretch; width: 28px; margin: calc(-1 * var(--space-2)) 0; background: repeating-linear-gradient(-45deg, var(--visor-hazard-text) 0 4px, transparent 4px 9px); }
+.s48-hazard.is-close { justify-content: center; }
+
+/* =================================================================== */
+/* Surface mocks                                                        */
+/* =================================================================== */
+.mock { position: relative; overflow: hidden; background: var(--color-bg); color: var(--color-text); font-family: var(--font-ui); }
+.mock-top { display: flex; align-items: center; gap: var(--space-4); height: var(--topbar-height); padding: 0 var(--space-4); background: var(--color-surface); border-bottom: var(--border-width) solid var(--color-rule); }
+.mock-top .wordmark { font-size: 22px; margin-right: var(--space-2); }
+.mock-top .grow { flex: 1; }
+.mock-top .meta { font-family: var(--font-data); font-size: var(--text-sm); color: var(--color-text-muted); font-variant-numeric: var(--numeric); }
+.panel { background: var(--color-surface); overflow: hidden; }
+.panel-sec { padding: var(--space-4); border-bottom: var(--border-width) solid var(--color-rule); }
+.panel-sec > h3 { font-size: var(--text-lg); line-height: var(--leading-lg); margin-bottom: var(--space-3); display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-2); }
+.panel-sec > h3 small { font-size: var(--text-sm); color: var(--color-text-muted); font-weight: var(--weight-regular); }
+.mapbox { position: relative; overflow: hidden; background: #3b2e26; }
+.mapbox > svg.map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.map-ui { position: absolute; }
+.map-label { font-family: var(--font-data); font-weight: 600; font-size: 13px; fill: var(--map-label-text); paint-order: stroke; stroke: var(--map-label-halo); stroke-width: 2.25px; stroke-linejoin: round; }
+.map-label.sm { font-size: 12px; font-weight: 500; }
+.map-num { font-family: var(--font-data); font-weight: 600; font-size: 14px; fill: var(--map-stop-text); text-anchor: middle; dominant-baseline: central; }
+.attrib { font-size: var(--text-xs); color: var(--map-label-text); text-shadow: 0 0 2px var(--map-label-halo), 0 0 2px var(--map-label-halo); }
+.standin-tag { font-size: var(--text-xs); color: var(--map-label-text); background: rgba(10,24,40,0.85); padding: 1px 6px; border-radius: var(--radius-1); }
+
+.plan-mock { width: 1280px; height: 800px; display: grid; grid-template-rows: var(--topbar-height) 1fr; }
+.plan-body { display: grid; grid-template-columns: 300px 1fr 340px; min-height: 0; }
+.plan-body > .panel:first-child { border-right: var(--border-width) solid var(--color-rule); overflow: auto; }
+.plan-body > .panel:last-child { border-left: var(--border-width) solid var(--color-rule); display: grid; grid-template-rows: auto 1fr auto; min-height: 0; }
+.plan-right-scroll { overflow: auto; min-height: 0; }
+.route-sum { padding: var(--space-3) var(--space-4); border-bottom: var(--border-width) solid var(--color-rule); display: grid; gap: var(--space-2); }
+.route-sum__row { display: flex; gap: var(--space-4); align-items: baseline; font-family: var(--font-data); font-variant-numeric: var(--numeric); font-size: var(--text-xl); line-height: var(--leading-xl); font-weight: var(--weight-medium); }
+.route-sum__note { font-size: var(--text-sm); color: var(--color-text-muted); }
+.plan-foot { padding: var(--space-3) var(--space-4); border-top: var(--border-width) solid var(--color-rule); display: grid; }
+.plan-foot .s48-btn { width: 100%; }
+
+.walk-mock { width: 1180px; height: 820px; display: grid; grid-template-rows: 80px 1fr 112px; }
+.walk-mock .mock-top { height: 80px; }
+.walk-body { display: grid; grid-template-columns: 1fr var(--walk-side-width); min-height: 0; }
+.walk-side { border-left: var(--border-width) solid var(--color-rule); display: grid; align-content: start; gap: var(--space-6); padding: var(--space-6); overflow: hidden; }
+.walk-next { display: grid; gap: var(--space-2); }
+.walk-next__title { display: flex; align-items: center; gap: var(--space-3); font-size: var(--text-2xl); line-height: var(--leading-2xl); font-weight: var(--weight-semibold); }
+.walk-next__title .s48-disc { width: 36px; height: 36px; font-size: 18px; }
+.walk-next__pair { display: flex; gap: var(--space-8); }
+.walk-bar { display: flex; align-items: center; padding: 0 var(--space-6); background: var(--color-surface); border-top: var(--border-width) solid var(--color-rule); }
+.walk-bar .s48-scrub { flex: 1; }
+.walk-photo { display: grid; gap: var(--space-2); }
+.walk-photo h4 { font-size: var(--text-walk-label); color: var(--color-text-muted); font-weight: var(--weight-medium); }
+
+.visor-mock { width: 1180px; height: 664px; background: #0b0d10; }
+.visor-mock { --horizon: 44%; }
+.visor-sky { position: absolute; inset: 0 0 auto 0; height: var(--horizon); background: #b89a7a; }
+.visor-ridge { position: absolute; left: 0; width: 100%; top: calc(var(--horizon) - 14%); height: 14.2%; display: block; }
+/* Pitched ground: a flat plane hinged at the horizon and tilted towards the viewer. */
+.visor-ground { position: absolute; left: 0; right: 0; top: var(--horizon); bottom: 0; perspective: 300px; perspective-origin: 50% 0; overflow: hidden; background: #6b5240; }
+.visor-plane { position: absolute; left: -100%; width: 300%; top: 0; height: 270px; transform-origin: 50% 0; transform: rotateX(75deg); }
+.visor-plane svg { width: 100%; height: 100%; display: block; }
+.visor-ui { position: absolute; inset: 0; padding: var(--space-6); display: grid; grid-template-rows: auto auto 1fr auto; justify-items: center; gap: var(--space-3); pointer-events: none; }
+.visor-ui .bottom { width: 100%; display: flex; justify-content: space-between; align-items: end; }
+.visor-ui .bottom .s48-plate { min-width: 260px; }
+.visor-portrait { width: 420px; height: 746px; }
+.visor-portrait { --horizon: 40%; }
+.visor-portrait .visor-ui { padding: var(--space-4); }
+.visor-portrait .s48-tape__ticks { width: 260px; }
+.visor-portrait .bottom { gap: var(--space-3); }
+.visor-portrait .bottom .s48-plate { min-width: 0; flex: 1; }
+.visor-portrait .s48-hazard { font-size: 22px; line-height: 26px; }
+.visor-pair { display: flex; gap: var(--space-6); flex-wrap: wrap; align-items: flex-start; }
+</style>
+</head>
+<body>
+
+<!-- Shared SVG definitions: terrain stand-in, hatch, glyphs -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <!-- Stand-in for HiRISE colour imagery: fractal noise mapped onto an ochre range from dark sand to pale dust. -->
+    <filter id="terrain" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.006 0.009" numOctaves="6" seed="48" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1"/>
+      <feComponentTransfer>
+        <feFuncR type="linear" slope="2.4" intercept="-0.7"/>
+        <feFuncG type="linear" slope="2.4" intercept="-0.7"/>
+        <feFuncB type="linear" slope="2.4" intercept="-0.7"/>
+      </feComponentTransfer>
+      <feComponentTransfer>
+        <feFuncR type="table" tableValues="0.22 0.42 0.62 0.74 0.86 0.92"/>
+        <feFuncG type="table" tableValues="0.17 0.30 0.45 0.56 0.70 0.80"/>
+        <feFuncB type="table" tableValues="0.14 0.21 0.31 0.39 0.52 0.64"/>
+      </feComponentTransfer>
+    </filter>
+    <filter id="grain" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.16 0"/>
+      <feComposite in2="SourceGraphic" operator="in"/>
+    </filter>
+    <!-- Impassable ground: pink-red stripe over a dark gap, 45 degrees, 6 px period. -->
+    <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="6" height="6" fill="rgba(20,6,12,0.8)"/>
+      <rect width="2.5" height="6" fill="#eb517c"/>
+    </pattern>
+
+    <symbol id="i-check" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5"/><path d="M5 8.2l2 2 4-4.2"/></symbol>
+    <symbol id="i-notch" viewBox="0 0 16 16"><path d="M2.5 4h11L8 12.5z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-cross" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12"/><path d="M6 2v12M10 2v12M2 6h12M2 10h12"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M2 8h11M9.5 4.5L13 8l-3.5 3.5"/></symbol>
+    <symbol id="i-drag" viewBox="0 0 16 16"><g fill="currentColor" stroke="none"><circle cx="6" cy="4" r="1.2"/><circle cx="10" cy="4" r="1.2"/><circle cx="6" cy="8" r="1.2"/><circle cx="10" cy="8" r="1.2"/><circle cx="6" cy="12" r="1.2"/><circle cx="10" cy="12" r="1.2"/></g></symbol>
+    <symbol id="i-play" viewBox="0 0 16 16"><path d="M5 3l8 5-8 5z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 16 16"><path d="M4.5 3h2.5v10H4.5zM9 3h2.5v10H9z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 16 16"><path d="M4 3v10" /><path d="M13 3L6 8l7 5z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-next" viewBox="0 0 16 16"><path d="M12 3v10" /><path d="M3 3l7 5-7 5z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-down" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></symbol>
+    <symbol id="i-tick" viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 16 16"><path d="M8 2l6 3.2-6 3.2-6-3.2z"/><path d="M2 8.4l6 3.2 6-3.2"/><path d="M2 11.4l6 3.2 6-3.2"/></symbol>
+  </defs>
+</svg>
+
+<header class="page-head">
+  <span class="wordmark">Sol-48</span>
+  <span class="muted">Design system preview</span>
+  <nav aria-label="Sections">
+    <a href="#colour">Colour</a><a href="#type">Type</a><a href="#space">Space and touch</a><a href="#map">Map</a><a href="#components">Components</a><a href="#plan">Plan</a><a href="#walk">Walk</a><a href="#visor">Visor</a>
+  </nav>
+  <span class="grow"></span>
+  <div class="s48-seg" role="group" aria-label="Theme" id="theme-switch">
+    <button type="button" data-set="system" aria-pressed="true">System</button>
+    <button type="button" data-set="dark" aria-pressed="false">Habitat (dark)</button>
+    <button type="button" data-set="light" aria-pressed="false">Daylight</button>
+  </div>
+</header>
+
+<main>
+  <div class="intro">
+    <h1>Sol-48 design system</h1>
+    <p>Tokens come from <code>app/src/styles/tokens.css</code>, and the rules are in <code>docs/design/README.md</code>. The numbers are sample values for Mount Sharp, Gale crater, shaped like the contracts. The terrain in the mocks is a drawn stand-in for HiRISE imagery, not a real image.</p>
+  </div>
+
+  <!-- =============================================================== -->
+  <section class="part" id="colour">
+    <h2>Colour</h2>
+    <p class="lede">Basalt slate neutrals, cool so they separate from the ochre ground. Sunset blue means the route and the current selection, and nothing else. Each swatch shows its contrast against the panel surface, measured live in this theme.</p>
+
+    <div class="sub"><h3>Neutrals</h3>
+      <div class="swatches" data-swatches="--color-bg --color-surface --color-surface-raised --color-surface-sunken --color-rule --color-control-border --color-text --color-text-muted --color-text-disabled"></div>
+    </div>
+    <div class="sub"><h3>Accent and&nbsp;status</h3>
+      <div class="swatches" data-swatches="--color-accent --color-accent-text --color-accent-subtle --color-ok --color-ok-subtle --color-caution --color-caution-subtle --color-danger --color-danger-subtle --color-focus-inner --color-focus-outer"></div>
+    </div>
+    <div class="sub"><h3>Map and visor (same in both themes)</h3>
+      <div class="swatches" data-swatches="--map-route-core --map-route-casing --map-route-walked --map-stop-fill --map-start-fill --map-turnback --map-impassable --map-position-ring --visor-text --visor-text-muted --visor-caution --visor-hazard"></div>
+    </div>
+    <div class="sub"><h3>Recommended overlay ramp</h3>
+      <p class="note">Cividis, a sequential ramp that stays readable with colour blindness and contains no red or green, so it never reads as a status. Proposed for slope, thermal inertia and&nbsp;mineral indices.</p>
+      <div class="s48-legend" style="max-width:420px">
+        <div class="s48-legend__ramp" style="height:16px"></div>
+        <div class="s48-legend__ends"><span><b>0°</b> flat</span><span>Slope, degrees</span><span><b>20°</b> limit</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================================== -->
+  <section class="part" id="type">
+    <h2>Type</h2>
+    <p class="lede">Barlow in three widths. Its design draws on California's highway signs and licence plates, so it holds up at a distance and at a glance. Figures are always tabular, so readouts don't shift as they count down.</p>
+    <div class="sub">
+      <div class="type-row"><div class="meta">--text-2xl · 24/30 · UI 600</div><div style="font-size:var(--text-2xl);line-height:var(--leading-2xl);font-weight:600">Boxwork ridge</div></div>
+      <div class="type-row"><div class="meta">--text-lg · 16/22 · UI 600</div><div style="font-size:var(--text-lg);line-height:var(--leading-lg);font-weight:600">Stops</div></div>
+      <div class="type-row"><div class="meta">--text-md · 14/20 · UI 400</div><div>Mineral veins standing as ridges where the surrounding rock has worn away.</div></div>
+      <div class="type-row"><div class="meta">--text-sm · 13/18 · data 400</div><div class="num" style="font-size:var(--text-sm);color:var(--color-text-muted)">100 m · THEMIS, Mars Odyssey · NASA</div></div>
+      <div class="type-row"><div class="meta">--text-xs · 12/16 · credits only</div><div style="font-size:var(--text-xs);color:var(--color-text-muted)">NASA/JPL-Caltech</div></div>
+      <div class="type-row"><div class="meta">--text-xl · 20/26 · data 500</div><div class="num" style="font-size:var(--text-xl);font-weight:500">8.6 km · ≈&nbsp;4 h 25 min · +212 m · ≈&nbsp;0.038 mGy</div></div>
+      <div class="type-row"><div class="meta">--text-readout-lg · 56 · condensed 600</div><div class="s48-readout__value">640<small>m</small></div></div>
+      <div class="type-row"><div class="meta">--text-visor-value · 48 · condensed 600</div><div class="s48-readout__value" style="font-size:var(--text-visor-value);line-height:1">214°<small>SW</small></div></div>
+      <div class="type-row"><div class="meta">Tabular figures check</div><div class="num" style="font-size:var(--text-xl)"><span id="tnum-a">1111.1</span><br><span id="tnum-b">8080.8</span> <span class="muted" id="tnum-result" style="font-size:var(--text-sm)"></span></div></div>
+    </div>
+  </section>
+
+  <!-- =============================================================== -->
+  <section class="part" id="space">
+    <h2>Space, shape and touch</h2>
+    <div class="sub"><h3>Spacing (4 px base)</h3>
+      <div style="display:grid;gap:6px">
+        <div class="space-row"><i style="width:4px"></i>--space-1 · 4</div>
+        <div class="space-row"><i style="width:8px"></i>--space-2 · 8</div>
+        <div class="space-row"><i style="width:12px"></i>--space-3 · 12</div>
+        <div class="space-row"><i style="width:16px"></i>--space-4 · 16</div>
+        <div class="space-row"><i style="width:24px"></i>--space-6 · 24</div>
+        <div class="space-row"><i style="width:32px"></i>--space-8 · 32</div>
+        <div class="space-row"><i style="width:48px"></i>--space-12 · 48</div>
+        <div class="space-row"><i style="width:64px"></i>--space-16 · 64</div>
+      </div>
+    </div>
+    <div class="sub"><h3>Radius</h3>
+      <div class="specimens">
+        <div class="radius-box" style="border-radius:var(--radius-1)">2 px</div>
+        <div class="radius-box" style="border-radius:var(--radius-2)">4 px</div>
+        <div class="state"><span class="s48-disc" style="width:48px;height:48px;font-size:18px">1</span><span class="cap">Circles: stops only</span></div>
+      </div>
+    </div>
+    <div class="sub"><h3>Hit sizes</h3>
+      <p class="note">Plan is used with a pointer; Walk is used with a gloved thumb, so it never relies on hover, long-press or precise dragging.</p>
+      <div class="hit-row">
+        <div class="state"><div class="hit-box" style="width:24px;height:24px"></div><span class="cap">Plan inline · 24</span></div>
+        <div class="state"><div class="hit-box" style="width:32px;height:32px"></div><span class="cap">Plan · 32</span></div>
+        <div class="state"><div class="hit-box" style="width:64px;height:64px">64</div><span class="cap">Walk · 64</span></div>
+        <div class="state"><div class="hit-box" style="width:80px;height:80px">80</div><span class="cap">Play · 80</span></div>
+        <div class="state"><div style="display:flex;gap:var(--hit-walk-gap)"><div class="hit-box" style="width:64px;height:64px"></div><div class="hit-box" style="width:64px;height:64px"></div></div><span class="cap">Walk gap · 12</span></div>
+      </div>
+    </div>
+    <div class="sub"><h3>Focus</h3>
+      <p class="note">A two-tone ring: the inner colour is the text colour and the outer fills the gap with the background colour, so it reads on panels and on imagery.</p>
+      <div class="specimens">
+        <button class="s48-btn s48-btn--secondary is-focus" type="button">Add&nbsp;stop</button>
+        <div class="mapbox" style="width:220px;height:64px;border-radius:var(--radius-1);display:grid;place-items:center">
+          <svg class="map" viewBox="0 0 220 64" preserveAspectRatio="none" aria-hidden="true"><rect width="220" height="64" filter="url(#terrain)"/></svg>
+          <button class="s48-btn s48-btn--secondary is-focus" type="button" style="position:relative">Layers (3 on)</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================================== -->
+  <section class="part" id="map">
+    <h2>Map marks</h2>
+    <p class="lede">The same in both themes. Every mark has a two-tone edge, so it holds 3:1 against pale dust and dark sand alike. Hatching always means "don't go there".</p>
+    <div class="sub">
+      <div class="frame-scroll">
+        <div class="mapbox" style="width:960px;height:420px">
+          <svg class="map" viewBox="0 0 960 420" aria-label="Map marks on a terrain stand-in">
+            <rect width="960" height="420" filter="url(#terrain)"/>
+            <path d="M0 0H330C300 120 250 200 180 420H0Z" fill="#e6c9a3" opacity="0.9"/>
+            <path d="M640 0H960V420H560C600 300 690 160 640 0Z" fill="#3b2e26" opacity="0.92"/>
+            <text class="map-label sm" x="16" y="24">Bright dust</text>
+            <text class="map-label sm" x="944" y="24" text-anchor="end">Dark sand</text>
+            <!-- impassable -->
+            <path d="M420 250 C460 220 540 230 560 280 C570 320 500 350 450 330 C410 315 400 275 420 250Z" fill="url(#hatch)" stroke="#eb517c" stroke-width="1"/>
+            <text class="map-label sm" x="490" y="372" text-anchor="middle">Impassable ground</text>
+            <!-- route -->
+            <path id="mm-route" d="M80 330 C160 300 220 200 300 170 S 420 120 470 150 S 560 210 620 190 S 760 120 880 150" fill="none" stroke="#0a1828" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M80 330 C160 300 220 200 300 170 S 420 120 470 150 S 560 210 620 190 S 760 120 880 150" fill="none" stroke="#98a2ac" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" pathLength="1000" stroke-dasharray="1000 1000"/>
+            <path d="M80 330 C160 300 220 200 300 170 S 420 120 470 150 S 560 210 620 190 S 760 120 880 150" fill="none" stroke="#8ec1f5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" pathLength="1000" stroke-dasharray="0 300 700 1000"/>
+            <!-- start -->
+            <rect x="68" y="318" width="24" height="24" fill="#f2f5f7" stroke="#0a1828" stroke-width="3"/>
+            <text class="map-label" x="100" y="356">Rover drop-off</text>
+            <!-- position -->
+            <g transform="translate(258 196)">
+              <path d="M0 -22 L8 -8 L-8 -8Z" fill="#f2f5f7" stroke="#0a1828" stroke-width="1.5" transform="rotate(62)"/>
+              <circle r="10" fill="#f2f5f7" stroke="#8ec1f5" stroke-width="3"/>
+              <circle r="13" fill="none" stroke="#0a1828" stroke-width="1.5"/>
+            </g>
+            <text class="map-label sm" x="236" y="232">You (Walk)</text>
+            <!-- stops -->
+            <g transform="translate(300 170)"><circle r="14" fill="#0a1828" stroke="#f2f5f7" stroke-width="2"/><text class="map-num">1</text></g>
+            <text class="map-label" x="320" y="164">Boxwork ridge</text>
+            <g transform="translate(470 150)"><circle r="14" fill="#8ec1f5" stroke="#f2f5f7" stroke-width="2"/><text class="map-num" style="fill:#0a1828">2</text></g>
+            <text class="map-label" x="452" y="122" text-anchor="middle">Sulfate bench (selected)</text>
+            <!-- turn-back -->
+            <g transform="translate(620 190)"><path d="M-11 -9 H11 L0 9Z" fill="#ffc152" stroke="#0a1828" stroke-width="2" stroke-linejoin="round"/></g>
+            <text class="map-label" x="620" y="222" text-anchor="middle">Turn back by ≈&nbsp;2 h 50 min</text>
+            <g transform="translate(880 150)"><circle r="14" fill="#0a1828" stroke="#f2f5f7" stroke-width="2"/><text class="map-num">3</text></g>
+            <text class="map-label" x="866" y="124" text-anchor="end">Dark sand&nbsp;margin</text>
+            <!-- suggested -->
+            <g transform="translate(210 80)"><circle r="14" fill="#0a1828" stroke="#f2f5f7" stroke-width="2" stroke-dasharray="4 3"/></g>
+            <text class="map-label" x="232" y="85">Suggested: Fracture halo</text>
+            <!-- unreachable on a hatched butte -->
+            <path d="M720 300 C760 270 840 280 860 320 C870 360 800 390 750 370 C715 355 700 325 720 300Z" fill="url(#hatch)" stroke="#eb517c" stroke-width="1"/>
+            <g transform="translate(790 328)"><rect x="-13" y="-13" width="26" height="26" rx="3" fill="#eb517c" stroke="#0a1828" stroke-width="2"/><path d="M-6 -6L6 6M6 -6L-6 6" stroke="#14060c" stroke-width="2.5" stroke-linecap="round"/></g>
+            <text class="map-label" x="790" y="406" text-anchor="middle">Stop 4 · can't reach</text>
+          </svg>
+          <div class="map-ui" style="left:16px;bottom:16px">
+            <div class="s48-scale" style="width:120px"><div class="s48-scale__label">500 m</div><div class="s48-scale__bar"><i></i><i></i><i></i><i></i></div></div>
+          </div>
+          <div class="map-ui" style="left:50%;top:10px;transform:translateX(-50%)"><span class="standin-tag">Terrain stand-in, not HiRISE</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================================== -->
+  <section class="part" id="components">
+    <h2>Components</h2>
+    <p class="lede">Each component is shown in its states. Hover, pressed and focus are forced&nbsp;here so you can see them side by side.</p>
+
+    <div class="sub"><h3>Buttons</h3>
+      <div class="specimens">
+        <div class="state"><button class="s48-btn s48-btn--primary" type="button">Walk this route</button><span class="cap">Primary</span></div>
+        <div class="state"><button class="s48-btn s48-btn--primary is-hover" type="button">Walk this route</button><span class="cap">Primary, hover</span></div>
+        <div class="state"><button class="s48-btn s48-btn--secondary" type="button">Add&nbsp;stop</button><span class="cap">Secondary</span></div>
+        <div class="state"><button class="s48-btn s48-btn--secondary is-hover" type="button">Add&nbsp;stop</button><span class="cap">Hover</span></div>
+        <div class="state"><button class="s48-btn s48-btn--secondary is-active" type="button">Add&nbsp;stop</button><span class="cap">Pressed</span></div>
+        <div class="state"><button class="s48-btn s48-btn--secondary is-focus" type="button">Add&nbsp;stop</button><span class="cap">Focus</span></div>
+        <div class="state"><button class="s48-btn s48-btn--quiet" type="button">Show nearest photo</button><span class="cap">Quiet</span></div>
+        <div class="state"><button class="s48-btn s48-btn--danger" type="button">Remove stop</button><span class="cap">Danger</span></div>
+        <div class="state"><div style="display:flex;gap:var(--space-2);align-items:center"><button class="s48-btn s48-btn--primary" type="button" disabled>Walk this route</button><span class="reason">Plan a reachable route first.</span></div><span class="cap">Disabled, with its reason</span></div>
+      </div>
+      <div class="specimens walk" style="margin-top:var(--space-6)">
+        <div class="state"><button class="s48-btn s48-btn--primary" type="button">Continue</button><span class="cap">Walk primary · 64</span></div>
+        <div class="state"><button class="s48-btn s48-btn--secondary s48-btn--step" type="button" aria-label="Previous stop"><svg class="i"><use href="#i-prev"/></svg></button><span class="cap">Step · 64</span></div>
+        <div class="state"><button class="s48-btn s48-btn--primary s48-btn--play" type="button" aria-label="Play"><svg class="i"><use href="#i-play"/></svg></button><span class="cap">Play · 80</span></div>
+        <div class="state"><button class="s48-btn s48-btn--secondary s48-btn--play is-focus" type="button" aria-label="Pause"><svg class="i"><use href="#i-pause"/></svg></button><span class="cap">Pause, focus</span></div>
+      </div>
+    </div>
+
+    <div class="sub"><h3>Mode switch</h3>
+      <div class="specimens">
+        <div class="state"><div class="s48-seg" role="group" aria-label="Mode"><button type="button" aria-pressed="true">Plan</button><button type="button" aria-pressed="false">Walk</button><button type="button" aria-pressed="false">Visor</button></div><span class="cap">Plan selected</span></div>
+        <div class="state"><div class="s48-seg" role="group" aria-label="Mode"><button type="button" aria-pressed="false">Plan</button><button type="button" aria-pressed="false" class="is-hover">Walk</button><button type="button" aria-pressed="false">Visor</button></div><span class="cap">Hover on Walk</span></div>
+        <div class="state"><div style="display:flex;gap:var(--space-3);align-items:center"><div class="s48-seg" role="group" aria-label="Mode"><button type="button" aria-pressed="true">Plan</button><button type="button" disabled>Walk</button><button type="button" disabled>Visor</button></div><span class="reason">Plan a reachable route first.</span></div><span class="cap">No reachable route</span></div>
+      </div>
+      <div class="specimens walk" style="margin-top:var(--space-4)">
+        <div class="state"><div class="s48-seg" role="group" aria-label="Mode"><button type="button" aria-pressed="false">Plan</button><button type="button" aria-pressed="true">Walk</button><button type="button" aria-pressed="false">Visor</button></div><span class="cap">Walk size · 64</span></div>
+      </div>
+    </div>
+
+    <div class="sub"><h3>Site switcher</h3>
+      <div class="specimens">
+        <div class="state"><div class="s48-site"><button class="s48-site__btn" type="button" aria-haspopup="listbox">Mount Sharp, Gale <span class="rover">· Curiosity</span><svg class="i"><use href="#i-down"/></svg></button></div><span class="cap">Closed</span></div>
+        <div class="state"><div class="s48-site"><button class="s48-site__btn" type="button" aria-expanded="true">Mount Sharp, Gale <span class="rover">· Curiosity</span><svg class="i"><use href="#i-down"/></svg></button>
+          <ul class="s48-site__list" role="listbox" aria-label="Site">
+            <li role="option" aria-selected="true"><svg class="i"><use href="#i-tick"/></svg>Mount Sharp, Gale<span class="rover">Curiosity</span></li>
+            <li role="option" aria-selected="false"><svg class="i blank"><use href="#i-tick"/></svg>Jezero crater<span class="rover">Perseverance</span></li>
+          </ul></div><span class="cap">Open</span></div>
+        <div class="state"><div class="s48-site"><button class="s48-site__btn" type="button" disabled style="color:var(--color-text-muted)">Loading Jezero…</button></div><span class="cap">Loading (map dims, controls wait)</span></div>
+        <div class="state"><div style="display:grid;gap:var(--space-2)"><div class="s48-site"><button class="s48-site__btn" type="button">Mount Sharp, Gale <span class="rover">· Curiosity</span><svg class="i"><use href="#i-down"/></svg></button></div><span style="color:var(--color-danger);font-size:var(--text-sm)">Jezero didn't load. Still showing Gale. <button class="s48-btn s48-btn--quiet" type="button" style="min-height:24px;color:var(--color-text)">Try again</button></span></div><span class="cap">Failed</span></div>
+      </div>
+    </div>
+
+    <div class="sub"><h3>Status chips</h3>
+      <div class="specimens">
+        <span class="s48-chip s48-chip--ok"><svg class="i"><use href="#i-check"/></svg>Feasible</span>
+        <span class="s48-chip s48-chip--caution"><svg class="i"><use href="#i-notch"/></svg>Inside reserve</span>
+        <span class="s48-chip s48-chip--caution"><svg class="i"><use href="#i-notch"/></svg>Before turn-back</span>
+        <span class="s48-chip s48-chip--caution"><svg class="i"><use href="#i-notch"/></svg>Past turn-back</span>
+        <span class="s48-chip s48-chip--danger"><svg class="i"><use href="#i-cross"/></svg>Unreachable</span>
+        <span class="s48-chip s48-chip--danger"><svg class="i"><use href="#i-cross"/></svg>Over limit</span>
+        <span class="s48-chip"><span class="approx">≈</span>Estimate</span>
+        <span class="s48-chip"><svg class="i"><use href="#i-grid"/></svg>Coarse · 100 m</span>
+        <span class="s48-chip s48-chip--dashed">Experimental</span>
+        <span class="s48-chip"><svg class="i"><use href="#i-arrow"/></svg>Carried over</span>
+        <span class="s48-chip">Scenario: solar event</span>
+      </div>
+    </div>
+
+    <div class="sub"><h3>Layer rows</h3>
+      <div class="specimens">
+        <div class="board" style="width:320px">
+          <div class="s48-layers">
+            <div>
+              <h4>Optical</h4>
+              <div class="s48-layer">
+                <div class="s48-layer__head"><label><input class="s48-check" type="checkbox" checked>Orbital image</label></div>
+                <div class="s48-layer__note">0.25 m · HiRISE colour, MRO · NASA</div>
+              </div>
+            </div>
+            <div>
+              <h4>Topographic</h4>
+              <div class="s48-layer">
+                <div class="s48-layer__head"><label><input class="s48-check" type="checkbox" checked>Slope</label></div>
+                <div class="s48-layer__note">1 m · HiRISE stereo elevation · NASA</div>
+                <div class="s48-layer__body">
+                  <div class="s48-opacity"><span>Opacity</span><input class="s48-range" type="range" min="0" max="100" value="70" aria-label="Slope opacity"><output>70 %</output></div>
+                  <div class="s48-legend"><div class="s48-legend__ramp"></div><div class="s48-legend__ends"><span><b>0°</b></span><span>degrees · above 20° hatched</span><span><b>20°</b></span></div></div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4>Thermal</h4>
+              <div class="s48-layer">
+                <div class="s48-layer__head"><label><input class="s48-check" type="checkbox">Thermal inertia</label><span class="s48-chip"><svg class="i"><use href="#i-grid"/></svg>Coarse · 100 m</span></div>
+                <div class="s48-layer__note">100 m · THEMIS, Mars Odyssey · NASA</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="board" style="width:320px">
+          <div class="s48-layers">
+            <div>
+              <h4>Chemical</h4>
+              <div class="s48-layer">
+                <div class="s48-layer__head"><label><input class="s48-check" type="checkbox" checked>Rock chemistry</label></div>
+                <div class="s48-layer__note">Points · APXS, Curiosity · Canada (CSA)</div>
+                <div class="s48-layer__body"><div class="s48-legend--points"><span class="pt"></span>Measured target · click for oxides, wt %</div></div>
+              </div>
+            </div>
+            <div>
+              <h4>Experimental</h4>
+              <div class="s48-layer">
+                <div class="s48-layer__head"><label><input class="s48-check" type="checkbox">Walkability</label><span class="s48-chip s48-chip--dashed">Experimental</span></div>
+                <div class="s48-layer__note">2 m · learned from Curiosity's path. Not yet validated on Jezero.</div>
+              </div>
+            </div>
+            <div>
+              <h4>Spectral</h4>
+              <div class="s48-layer">
+                <div class="s48-layer__head"><label><input class="s48-check" type="checkbox" checked>Hydrated&nbsp;minerals</label></div>
+                <div class="s48-layer__note">Loading tiles…</div>
+              </div>
+              <div class="s48-layer is-failed">
+                <div class="s48-layer__head"><label><input class="s48-check" type="checkbox" disabled><span style="color:var(--color-text-disabled)">Sulfate index</span></label></div>
+                <div class="s48-layer__note">Tiles didn't load from the tile host.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub"><h3>Stop list</h3>
+      <div class="specimens">
+        <div class="board" style="width:340px">
+          <ol class="s48-stops" aria-label="Stops">
+            <li class="s48-stop is-fixed"><span></span><span class="s48-square" aria-hidden="true"></span><div><div class="s48-stop__name">Rover drop-off</div><div class="s48-stop__leg">Start · 4.7800° S, 137.3900° E</div></div></li>
+            <li class="s48-stop"><span class="s48-stop__handle"><svg class="i"><use href="#i-drag"/></svg></span><span class="s48-disc">1</span><div><div class="s48-stop__name">Boxwork ridge</div><div class="s48-stop__leg">2.4 km · ≈&nbsp;58 min · +64 m</div></div><button class="s48-btn s48-btn--icon" type="button" aria-label="Remove Boxwork ridge"><svg class="i"><use href="#i-x"/></svg></button></li>
+            <li class="s48-stop is-selected"><span class="s48-stop__handle"><svg class="i"><use href="#i-drag"/></svg></span><span class="s48-disc">2</span><div><div class="s48-stop__name">Sulfate bench</div><div class="s48-stop__leg">1.9 km · ≈&nbsp;52 min · +118 m</div></div><button class="s48-btn s48-btn--icon" type="button" aria-label="Remove Sulfate bench"><svg class="i"><use href="#i-x"/></svg></button></li>
+            <li class="s48-stop"><span class="s48-stop__handle"><svg class="i"><use href="#i-drag"/></svg></span><span class="s48-disc">3</span><div><div class="s48-stop__name">Dark sand&nbsp;margin</div><div class="s48-stop__leg">2.1 km · ≈&nbsp;44 min · +30 m</div></div><button class="s48-btn s48-btn--icon" type="button" aria-label="Remove Dark sand margin"><svg class="i"><use href="#i-x"/></svg></button></li>
+            <li class="s48-stop is-unreachable"><span class="s48-stop__handle"><svg class="i"><use href="#i-drag"/></svg></span><span class="s48-xsq" aria-hidden="true"><svg class="i"><use href="#i-x"/></svg></span><div><div class="s48-stop__name">Butte north face</div><div class="s48-stop__leg">Can't reach. Every path crosses ground&nbsp;steeper than 20°. Move the stop or remove it.</div></div><button class="s48-btn s48-btn--icon" type="button" aria-label="Remove Butte north face"><svg class="i"><use href="#i-x"/></svg></button></li>
+            <li class="s48-stop is-fixed"><span></span><span class="s48-square" aria-hidden="true"></span><div><div class="s48-stop__name">Back to Rover drop-off</div><div class="s48-stop__leg">2.2 km · ≈&nbsp;51 min · −212 m</div></div></li>
+          </ol>
+        </div>
+        <div style="display:grid;gap:var(--space-4);width:340px">
+          <div class="board">
+            <div class="frame-label">Dragging Stop 3 above Stop 2</div>
+            <ol class="s48-stops">
+              <li class="s48-stop"><span class="s48-stop__handle"><svg class="i"><use href="#i-drag"/></svg></span><span class="s48-disc">1</span><div><div class="s48-stop__name">Boxwork ridge</div><div class="s48-stop__leg">2.4 km · ≈&nbsp;58 min · +64 m</div></div><span></span></li>
+            </ol>
+            <div class="s48-drop-slot"></div>
+            <ol class="s48-stops">
+              <li class="s48-stop is-dragging"><span class="s48-stop__handle"><svg class="i"><use href="#i-drag"/></svg></span><span class="s48-disc">3</span><div><div class="s48-stop__name">Dark sand&nbsp;margin</div><div class="s48-stop__leg">Route updates on drop</div></div><span></span></li>
+            </ol>
+          </div>
+          <div class="board">
+            <div class="frame-label">Suggested&nbsp;stops</div>
+            <div class="s48-suggest">
+              <div class="s48-suggest__row"><span style="font-weight:500">Fracture halo</span><button class="s48-btn s48-btn--quiet" type="button">Add&nbsp;stop</button></div>
+              <p>Pale alteration along fractures, a likely sign of past groundwater. Source: Sol-48 suggested&nbsp;stops.</p>
+            </div>
+          </div>
+          <div class="s48-empty">No stops yet. Click the map to drop one, or add a suggested&nbsp;stop.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub"><h3>Budget display</h3>
+      <p class="note">A rail only for budgets that have a limit. Each rail shows the planned use, the 15 % reserve (hatched) and the turn-back notch on one line; in Walk, a "now" tick moves along it. Distance, climb and dose have no limit in the plan, so they're plain figures.</p>
+      <div class="specimens">
+        <div class="board" style="width:340px">
+          <div class="s48-budgets">
+            <div class="s48-budgets__caption">Planning estimates from the walking model, not measurements.</div>
+            <div class="s48-rail" style="--plan:0.552;--notch:0.354">
+              <div class="s48-rail__head"><span class="s48-rail__label">Time</span><span class="s48-rail__value">≈&nbsp;4 h 25 min <span class="of">of 8 h</span></span></div>
+              <div class="s48-rail__track"><div class="s48-rail__reserve"></div><div class="s48-rail__plan"></div><div class="s48-rail__notch"></div></div>
+              <div class="s48-rail__foot"><span>Turn back by <span class="num">≈&nbsp;2 h 50 min</span></span><span>Reserve <span class="num">1 h 10 min</span></span></div>
+            </div>
+            <div class="s48-rail" style="--plan:0.662;--notch:0.4375">
+              <div class="s48-rail__head"><span class="s48-rail__label">Energy</span><span class="s48-rail__value">≈&nbsp;5300 kJ <span class="of">of 8000 kJ</span></span></div>
+              <div class="s48-rail__track"><div class="s48-rail__reserve"></div><div class="s48-rail__plan"></div><div class="s48-rail__notch"></div></div>
+              <div class="s48-rail__foot"><span>Turn back by <span class="num">≈&nbsp;3500 kJ</span> used</span><span class="binds">Binds turn-back</span></div>
+            </div>
+            <dl class="s48-figs">
+              <div class="s48-fig"><dt>Distance</dt><dd>8.6 km</dd></div>
+              <div class="s48-fig"><dt>Climb / descent</dt><dd>+212 m <small>/ −212 m</small></dd></div>
+              <div class="s48-fig"><dt>Radiation dose</dt><dd>≈&nbsp;0.038 mGy</dd></div>
+              <div class="s48-fig"><dt>Steepest leg</dt><dd>14°</dd></div>
+            </dl>
+          </div>
+        </div>
+        <div style="display:grid;gap:var(--space-4);width:340px">
+          <div class="board">
+            <div class="s48-rail" style="--plan:0.885;--notch:0.52">
+              <div class="s48-rail__head"><span class="s48-rail__label">Time <span class="s48-chip s48-chip--caution"><svg class="i"><use href="#i-notch"/></svg>Inside reserve</span></span><span class="s48-rail__value">≈&nbsp;7 h 05 min <span class="of">of 8 h</span></span></div>
+              <div class="s48-rail__track"><div class="s48-rail__reserve"></div><div class="s48-rail__plan"></div><div class="s48-rail__notch"></div></div>
+              <div class="s48-rail__foot"><span>This plan dips into the reserve. Remove a stop or shorten a dwell time.</span></div>
+            </div>
+          </div>
+          <div class="board">
+            <div class="s48-rail" style="--plan:1;--limit:0.87;--notch:0.48">
+              <div class="s48-rail__head"><span class="s48-rail__label">Energy <span class="s48-chip s48-chip--danger"><svg class="i"><use href="#i-cross"/></svg>Over limit</span></span><span class="s48-rail__value">≈&nbsp;9200 kJ <span class="of">of 8000 kJ</span></span></div>
+              <div class="s48-rail__track"><div class="s48-rail__reserve"></div><div class="s48-rail__plan"></div><div class="s48-rail__limit"></div><div class="s48-rail__notch"></div></div>
+              <div class="s48-rail__foot"><span>This plan needs ≈&nbsp;9200 kJ; the energy budget is 8000 kJ. Remove a stop to fit it.</span></div>
+            </div>
+          </div>
+          <div class="board">
+            <dl class="s48-figs">
+              <div class="s48-fig"><dt>Radiation dose</dt><dd>≈&nbsp;0.18 mGy</dd></div>
+              <div class="s48-fig" style="align-content:end"><dd><span class="s48-chip">Scenario: solar event</span></dd></div>
+            </dl>
+            <p class="muted" style="font-size:var(--text-sm);margin-top:var(--space-2)">Solar-event rate, 1.0 mGy per sol, for the length of this walk. Neutral styling: no dose limit is set.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub"><h3>Conditions panel</h3>
+      <div class="specimens">
+        <div class="board" style="width:340px">
+          <div class="s48-cond">
+            <label style="display:grid;gap:var(--space-1)"><span class="muted" style="font-size:var(--text-sm)">Season</span>
+              <select class="s48-select"><option>Ls 150–180° · late northern summer</option><option>Ls 180–210° · early northern autumn</option></select></label>
+            <div class="s48-cond__block">
+              <h5>Weather <span class="muted num" style="font-weight:400;font-size:var(--text-sm)">typical for this season</span></h5>
+              <dl class="s48-figs">
+                <div class="s48-fig"><dt>Air temperature</dt><dd>−79 to −8 °C</dd></div>
+                <div class="s48-fig"><dt>Pressure</dt><dd>760 Pa</dd></div>
+              </dl>
+              <p class="s48-cond__src">Source: REMS, Curiosity · Spain (CAB/INTA). Mean of 296 sols.</p>
+            </div>
+            <div class="s48-cond__block">
+              <h5>Dust</h5>
+              <dl class="s48-figs">
+                <div class="s48-fig"><dt>Dust opacity</dt><dd>τ 0.5</dd></div>
+                <div class="s48-fig"><dt>Sols with storms</dt><dd>2 %</dd></div>
+              </dl>
+              <p class="s48-cond__src">Source: Mars Climate Database dust climatology (Montabone et al.).</p>
+            </div>
+            <div class="s48-cond__block">
+              <h5>Radiation</h5>
+              <dl class="s48-figs">
+                <div class="s48-fig"><dt>Surface dose rate</dt><dd>0.21 mGy <small>per sol</small></dd></div>
+                <div class="s48-fig" style="align-content:center"><label class="s48-toggle"><input class="s48-check" type="checkbox">Solar event</label></div>
+              </dl>
+              <p class="s48-cond__src">Source: RAD, Curiosity · NASA / SwRI. Measured at Gale.</p>
+            </div>
+          </div>
+        </div>
+        <div class="board" style="width:340px">
+          <div class="s48-cond">
+            <div class="frame-label">At Jezero</div>
+            <div class="s48-cond__block" style="border-top:0;padding-top:0">
+              <h5>Radiation <span class="s48-chip"><svg class="i"><use href="#i-arrow"/></svg>Carried over</span></h5>
+              <dl class="s48-figs"><div class="s48-fig"><dt>Surface dose rate</dt><dd>0.21 mGy <small>per sol</small></dd></div></dl>
+              <p class="s48-cond__src">Carried over from Gale; not measured at Jezero. Source: RAD, Curiosity · NASA / SwRI.</p>
+            </div>
+            <div class="s48-cond__block">
+              <h5>Weather</h5>
+              <p class="muted">No REMS data for Ls 150–180° at this site.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub"><h3>Photo card</h3>
+      <p class="note">The credit is always visible as text. Real photos load from NASA's raw-image server at run time; this preview uses a drawn frame instead.</p>
+      <div class="specimens">
+        <figure class="s48-photo" style="margin:0">
+          <div class="s48-photo__img stand-in">
+            <svg viewBox="0 0 400 300" preserveAspectRatio="none" aria-hidden="true"><rect width="400" height="120" fill="#b89a7a"/><rect y="110" width="400" height="190" filter="url(#terrain)"/><rect width="400" height="300" fill="#808080" filter="url(#grain)"/></svg>
+            <span class="tag">Stand-in frame</span>
+          </div>
+          <figcaption class="s48-photo__cap">Sol 4790 · Navcam Left · 14 m south-west of the stop, facing 212°</figcaption>
+          <div class="s48-photo__credit">Credit: NASA/JPL-Caltech</div>
+          <div class="s48-photo__pager"><span>1 of 3</span><span><button class="s48-btn s48-btn--icon" type="button" aria-label="Previous photo" style="transform:scaleX(-1)"><svg class="i"><use href="#i-arrow"/></svg></button> <button class="s48-btn s48-btn--icon" type="button" aria-label="Next photo"><svg class="i"><use href="#i-arrow"/></svg></button></span></div>
+        </figure>
+        <figure class="s48-photo" style="margin:0">
+          <div class="s48-photo__img">Loading photo…<br><span class="id">NLB_847851928EDR_F1252490NCAM00302M_</span></div>
+          <figcaption class="s48-photo__cap">Sol 5073 · Navcam Left · 6 m north of the stop</figcaption>
+          <div class="s48-photo__credit">Credit: NASA/JPL-Caltech</div>
+        </figure>
+        <figure class="s48-photo is-none" style="margin:0">
+          <div class="s48-photo__img"><span class="s48-xsq" aria-hidden="true"><svg class="i"><use href="#i-x"/></svg></span><span><b style="color:var(--color-text);font-weight:600">No photo here</b><br>No rover photo within 50 m of this stop. Nearest: 180 m north-east, Sol 4790, Navcam.</span></div>
+          <div class="s48-photo__pager"><button class="s48-btn s48-btn--quiet" type="button">Show nearest photo</button></div>
+        </figure>
+        <figure class="s48-photo is-failed" style="margin:0">
+          <div class="s48-photo__img">This photo didn't load from NASA's image server.</div>
+          <figcaption class="s48-photo__cap">Sol 4802 · Mastcam Right · 22 m east of the stop</figcaption>
+          <div class="s48-photo__credit">Credit: NASA/JPL-Caltech/MSSS</div>
+        </figure>
+      </div>
+    </div>
+
+    <div class="sub"><h3>Walk scrubber</h3>
+      <div class="board walk" style="display:grid;gap:var(--space-6);grid-template-columns:minmax(640px,1fr)">
+        <div class="s48-scrub">
+          <button class="s48-btn s48-btn--secondary s48-btn--step" type="button" aria-label="Previous stop"><svg class="i"><use href="#i-prev"/></svg></button>
+          <button class="s48-btn s48-btn--primary s48-btn--play" type="button" aria-label="Pause"><svg class="i"><use href="#i-pause"/></svg></button>
+          <button class="s48-btn s48-btn--secondary s48-btn--step" type="button" aria-label="Next stop"><svg class="i"><use href="#i-next"/></svg></button>
+          <div class="s48-scrub__track" style="--at:0.36">
+            <div class="s48-scrub__rail"></div><div class="s48-scrub__done"></div>
+            <span class="s48-scrub__notch" style="--x:0.64"></span>
+            <span class="s48-scrub__tick s48-disc" style="--x:0.28">1</span>
+            <span class="s48-scrub__tick s48-disc" style="--x:0.5">2</span>
+            <span class="s48-scrub__tick s48-disc" style="--x:0.74">3</span>
+            <span class="s48-scrub__tick s48-square home" style="--x:0"></span>
+            <span class="s48-scrub__tick s48-square home" style="--x:1"></span>
+            <div class="s48-scrub__thumb"></div>
+            <input type="range" min="0" max="1000" value="360" aria-label="Position along route" aria-valuetext="1 h 35 min elapsed, 640 m to Stop 2" data-scrub>
+          </div>
+          <div class="s48-scrub__time">1 h 35 min<small>of ≈&nbsp;4 h 25 min · playing</small></div>
+        </div>
+        <div class="s48-scrub">
+          <button class="s48-btn s48-btn--secondary s48-btn--step" type="button" aria-label="Previous stop"><svg class="i"><use href="#i-prev"/></svg></button>
+          <button class="s48-btn s48-btn--primary s48-btn--play" type="button" aria-label="Play"><svg class="i"><use href="#i-play"/></svg></button>
+          <button class="s48-btn s48-btn--secondary s48-btn--step" type="button" aria-label="Next stop"><svg class="i"><use href="#i-next"/></svg></button>
+          <div class="s48-scrub__track" style="--at:0.5">
+            <div class="s48-scrub__rail"></div><div class="s48-scrub__done"></div>
+            <span class="s48-scrub__notch" style="--x:0.64"></span>
+            <span class="s48-scrub__tick s48-disc" style="--x:0.28">1</span>
+            <span class="s48-scrub__tick s48-disc is-selected" style="--x:0.5">2</span>
+            <span class="s48-scrub__tick s48-disc" style="--x:0.74">3</span>
+            <span class="s48-scrub__tick s48-square home" style="--x:0"></span>
+            <span class="s48-scrub__tick s48-square home" style="--x:1"></span>
+            <div class="s48-scrub__thumb"></div>
+            <input type="range" min="0" max="1000" value="500" aria-label="Position along route" data-scrub>
+          </div>
+          <div class="s48-scrub__time">2 h 02 min<small>At Stop 2 · paused</small></div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:var(--space-4);align-items:center">
+          <span class="s48-chip s48-chip--caution"><svg class="i"><use href="#i-notch"/></svg>Past turn-back</span>
+          <span style="font-size:var(--text-walk-body)">Past the turn-back point. The rest of the route is the way home.</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:var(--space-4);align-items:center">
+          <span class="s48-square" aria-hidden="true"></span>
+          <span style="font-size:var(--text-walk-body)">Back at Rover drop-off. Walk complete.</span>
+          <button class="s48-btn s48-btn--secondary" type="button">Walk it again</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub"><h3>Visor readouts and&nbsp;hazard cue</h3>
+      <div class="board" data-theme="dark" style="background:#3b2e26;position:relative">
+        <svg style="position:absolute;inset:0;width:100%;height:100%" preserveAspectRatio="none" aria-hidden="true"><rect width="100%" height="100%" filter="url(#terrain)"/><rect width="45%" height="100%" fill="#ffffff"/></svg>
+        <div style="position:relative;display:flex;flex-wrap:wrap;gap:var(--space-4);align-items:flex-start">
+          <div class="s48-plate s48-tape">
+            <div class="s48-tape__ticks" data-tape="214"></div>
+            <div class="s48-tape__now">214°<small>SW</small></div>
+          </div>
+          <div class="s48-plate"><div class="s48-plate__label"><span class="s48-disc vdisc">2</span>Next stop</div><div class="s48-plate__value">640<small>m</small></div></div>
+          <div class="s48-plate" style="--left:0.74"><div class="s48-plate__label">Energy left</div><div class="s48-plate__value">≈&nbsp;5900<small>kJ</small></div><div class="vrail"><b></b><i></i></div></div>
+          <div class="s48-plate is-caution" style="--left:0.3"><div class="s48-plate__label">Energy left · past turn-back</div><div class="s48-plate__value">≈&nbsp;2400<small>kJ</small></div><div class="vrail"><b></b><i></i></div></div>
+          <div class="s48-hazard">Steep ground 40 m ahead, left</div>
+          <div class="s48-hazard is-close" style="min-width:min(420px,100%)">Steep ground 15 m ahead</div>
+        </div>
+      </div>
+      <p class="note" style="margin-top:var(--space-2)">The left part of this board is pure white, the worst case for a visor. Plate text measures at least 10:1 over white.</p>
+    </div>
+
+    <div class="sub"><h3>Scale bar</h3>
+      <div class="specimens">
+        <div class="mapbox" style="width:300px;height:80px;border-radius:var(--radius-1)">
+          <svg class="map" viewBox="0 0 300 80" preserveAspectRatio="none" aria-hidden="true"><rect width="300" height="80" filter="url(#terrain)"/><rect width="150" height="80" fill="#e6c9a3"/></svg>
+          <div class="map-ui" style="left:16px;bottom:16px"><div class="s48-scale" style="width:120px"><div class="s48-scale__label">200 m</div><div class="s48-scale__bar"><i></i><i></i><i></i><i></i></div></div></div>
+          <div class="map-ui" style="left:166px;bottom:16px"><div class="s48-scale" style="width:96px"><div class="s48-scale__label">1 km</div><div class="s48-scale__bar"><i></i><i></i></div></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================================== -->
+  <section class="part" id="plan">
+    <h2>Plan · laptop</h2>
+    <p class="lede">The habitat console at 1280 × 800. Layers on the left, the map in the middle, and the route, budgets, stops and conditions on the right. Scroll the frame sideways on a narrow screen.</p>
+    <div class="sub frame-scroll">
+      <div class="mock plan-mock">
+        <div class="mock-top">
+          <span class="wordmark">Sol-48</span>
+          <div class="s48-seg" role="group" aria-label="Mode"><button type="button" aria-pressed="true">Plan</button><button type="button" aria-pressed="false">Walk</button><button type="button" aria-pressed="false">Visor</button></div>
+          <div class="s48-site"><button class="s48-site__btn" type="button">Mount Sharp, Gale <span class="rover">· Curiosity</span><svg class="i"><use href="#i-down"/></svg></button></div>
+          <span class="grow"></span>
+          <span class="meta">Route cost: slope-roughness-rule-v1</span>
+        </div>
+        <div class="plan-body">
+          <div class="panel">
+            <div class="panel-sec" style="border-bottom:0">
+              <h3>Layers <small>2 on</small></h3>
+              <div class="s48-layers">
+                <div><h4>Optical</h4>
+                  <div class="s48-layer"><div class="s48-layer__head"><label><input class="s48-check" type="checkbox" checked>Orbital image</label></div><div class="s48-layer__note">0.25 m · HiRISE colour, MRO · NASA</div></div>
+                  <div class="s48-layer"><div class="s48-layer__head"><label><input class="s48-check" type="checkbox">Regional context</label><span class="s48-chip"><svg class="i"><use href="#i-grid"/></svg>Coarse · 6 m</span></div><div class="s48-layer__note">6 m · CTX mosaic, MRO · NASA</div></div>
+                </div>
+                <div><h4>Topographic</h4>
+                  <div class="s48-layer"><div class="s48-layer__head"><label><input class="s48-check" type="checkbox">Slope</label></div><div class="s48-layer__note">1 m · HiRISE stereo elevation · NASA</div></div>
+                  <div class="s48-layer"><div class="s48-layer__head"><label><input class="s48-check" type="checkbox">Regional elevation</label><span class="s48-chip"><svg class="i"><use href="#i-grid"/></svg>Coarse · 200 m</span></div><div class="s48-layer__note">200 m · HRSC–MOLA blend · ESA / NASA</div></div>
+                </div>
+                <div><h4>Thermal</h4>
+                  <div class="s48-layer"><div class="s48-layer__head"><label><input class="s48-check" type="checkbox">Thermal inertia</label><span class="s48-chip"><svg class="i"><use href="#i-grid"/></svg>Coarse · 100 m</span></div><div class="s48-layer__note">100 m · THEMIS, Mars Odyssey · NASA</div></div>
+                </div>
+                <div><h4>Chemical</h4>
+                  <div class="s48-layer"><div class="s48-layer__head"><label><input class="s48-check" type="checkbox" checked>Rock chemistry</label></div><div class="s48-layer__note">Points · APXS, Curiosity · Canada (CSA)</div></div>
+                </div>
+                <div><h4>Experimental</h4>
+                  <div class="s48-layer"><div class="s48-layer__head"><label><input class="s48-check" type="checkbox">Walkability</label><span class="s48-chip s48-chip--dashed">Experimental</span></div><div class="s48-layer__note">2 m · learned from Curiosity's path. Not yet validated on Jezero.</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mapbox">
+            <svg class="map" viewBox="0 0 640 752" preserveAspectRatio="xMidYMid slice" aria-label="Map of the planned route">
+              <rect width="640" height="752" filter="url(#terrain)"/>
+              <path d="M310 450 C350 420 430 430 450 475 C460 515 395 545 345 530 C310 518 295 480 310 450Z" fill="url(#hatch)" stroke="#eb517c"/>
+              <path d="M120 120 C170 90 240 100 250 150 C255 190 190 210 150 195 C110 180 95 145 120 120Z" fill="url(#hatch)" stroke="#eb517c"/>
+              <!-- chemistry points -->
+              <g fill="#f2f5f7" stroke="#0a1828" stroke-width="2">
+                <rect x="296" y="236" width="10" height="10" transform="rotate(45 301 241)"/>
+                <rect x="452" y="232" width="10" height="10" transform="rotate(45 457 237)"/>
+                <rect x="238" y="430" width="10" height="10" transform="rotate(45 243 435)"/>
+              </g>
+              <!-- route -->
+              <path d="M150 600 C140 520 190 440 250 380 S 330 270 380 240 S 470 200 500 250 S 560 360 580 430 S 540 600 470 620 S 300 640 150 600" fill="none" stroke="#0a1828" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M150 600 C140 520 190 440 250 380 S 330 270 380 240 S 470 200 500 250 S 560 360 580 430 S 540 600 470 620 S 300 640 150 600" fill="none" stroke="#8ec1f5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="138" y="588" width="24" height="24" fill="#f2f5f7" stroke="#0a1828" stroke-width="3"/>
+              <text class="map-label" x="170" y="628">Rover drop-off</text>
+              <g transform="translate(250 380)"><circle r="14" fill="#0a1828" stroke="#f2f5f7" stroke-width="2"/><text class="map-num">1</text></g>
+              <text class="map-label" x="270" y="396">Boxwork ridge</text>
+              <g transform="translate(500 250)"><circle r="14" fill="#8ec1f5" stroke="#f2f5f7" stroke-width="2"/><text class="map-num" style="fill:#0a1828">2</text></g>
+              <text class="map-label" x="520" y="232">Sulfate bench</text>
+              <g transform="translate(556 340)"><path d="M-11 -9 H11 L0 9Z" fill="#ffc152" stroke="#0a1828" stroke-width="2" stroke-linejoin="round"/></g>
+              <text class="map-label" x="545" y="320" text-anchor="end">Turn back by ≈&nbsp;2 h 50 min</text>
+              <g transform="translate(580 430)"><circle r="14" fill="#0a1828" stroke="#f2f5f7" stroke-width="2"/><text class="map-num">3</text></g>
+              <text class="map-label" x="566" y="466" text-anchor="end">Dark sand&nbsp;margin</text>
+              <g transform="translate(185 150)"><rect x="-13" y="-13" width="26" height="26" rx="3" fill="#eb517c" stroke="#0a1828" stroke-width="2"/><path d="M-6 -6L6 6M6 -6L-6 6" stroke="#14060c" stroke-width="2.5" stroke-linecap="round"/></g>
+              <text class="map-label" x="185" y="230" text-anchor="middle">Stop 4 · can't reach</text>
+              <g transform="translate(400 360)"><circle r="14" fill="#0a1828" stroke="#f2f5f7" stroke-width="2" stroke-dasharray="4 3"/></g>
+              <text class="map-label sm" x="420" y="365">Suggested: Fracture halo</text>
+            </svg>
+            <div class="map-ui" style="left:16px;bottom:16px"><div class="s48-scale" style="width:110px"><div class="s48-scale__label">500 m</div><div class="s48-scale__bar"><i></i><i></i><i></i><i></i></div></div></div>
+            <div class="map-ui attrib" style="right:12px;bottom:10px">HiRISE: NASA/JPL/University of Arizona · <span class="standin-tag">terrain stand-in</span></div>
+          </div>
+          <div class="panel">
+            <div class="route-sum">
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:600;font-size:var(--text-lg)">Route</span><span class="s48-chip s48-chip--danger"><svg class="i"><use href="#i-cross"/></svg>1 stop unreachable</span></div>
+              <div class="route-sum__row"><span>8.6 km</span><span>≈&nbsp;4 h 25 min</span><span>+212 m</span></div>
+              <div class="route-sum__note">Through stops 1–3 and back. Stop 4 is left out until it's moved.</div>
+            </div>
+            <div class="plan-right-scroll">
+              <div class="panel-sec">
+                <h3>Budgets <small>estimates</small></h3>
+                <div class="s48-budgets">
+                  <div class="s48-rail" style="--plan:0.552;--notch:0.354">
+                    <div class="s48-rail__head"><span class="s48-rail__label">Time</span><span class="s48-rail__value">≈&nbsp;4 h 25 min <span class="of">of 8 h</span></span></div>
+                    <div class="s48-rail__track"><div class="s48-rail__reserve"></div><div class="s48-rail__plan"></div><div class="s48-rail__notch"></div></div>
+                    <div class="s48-rail__foot"><span>Turn back by <span class="num">≈&nbsp;2 h 50 min</span></span><span>Reserve <span class="num">1 h 10 min</span></span></div>
+                  </div>
+                  <div class="s48-rail" style="--plan:0.662;--notch:0.4375">
+                    <div class="s48-rail__head"><span class="s48-rail__label">Energy</span><span class="s48-rail__value">≈&nbsp;5300 kJ <span class="of">of 8000 kJ</span></span></div>
+                    <div class="s48-rail__track"><div class="s48-rail__reserve"></div><div class="s48-rail__plan"></div><div class="s48-rail__notch"></div></div>
+                    <div class="s48-rail__foot"><span>Turn back by <span class="num">≈&nbsp;3500 kJ</span> used</span><span class="binds">Binds turn-back</span></div>
+                  </div>
+                  <dl class="s48-figs">
+                    <div class="s48-fig"><dt>Climb / descent</dt><dd>+212 m <small>/ −212 m</small></dd></div>
+                    <div class="s48-fig"><dt>Radiation dose</dt><dd>≈&nbsp;0.038 mGy</dd></div>
+                  </dl>
+                </div>
+              </div>
+              <div class="panel-sec">
+                <h3>Stops <small>4 · crew of 2</small></h3>
+                <ol class="s48-stops">
+                  <li class="s48-stop is-fixed"><span></span><span class="s48-square" aria-hidden="true"></span><div><div class="s48-stop__name">Rover drop-off</div><div class="s48-stop__leg">Start and end</div></div></li>
+                  <li class="s48-stop"><span class="s48-stop__handle"><svg class="i"><use href="#i-drag"/></svg></span><span class="s48-disc">1</span><div><div class="s48-stop__name">Boxwork ridge</div><div class="s48-stop__leg">2.4 km · ≈&nbsp;58 min · +64 m</div></div><button class="s48-btn s48-btn--icon" type="button" aria-label="Remove"><svg class="i"><use href="#i-x"/></svg></button></li>
+                  <li class="s48-stop is-selected"><span class="s48-stop__handle"><svg class="i"><use href="#i-drag"/></svg></span><span class="s48-disc">2</span><div><div class="s48-stop__name">Sulfate bench</div><div class="s48-stop__leg">1.9 km · ≈&nbsp;52 min · +118 m</div></div><button class="s48-btn s48-btn--icon" type="button" aria-label="Remove"><svg class="i"><use href="#i-x"/></svg></button></li>
+                  <li class="s48-stop"><span class="s48-stop__handle"><svg class="i"><use href="#i-drag"/></svg></span><span class="s48-disc">3</span><div><div class="s48-stop__name">Dark sand&nbsp;margin</div><div class="s48-stop__leg">2.1 km · ≈&nbsp;44 min · +30 m</div></div><button class="s48-btn s48-btn--icon" type="button" aria-label="Remove"><svg class="i"><use href="#i-x"/></svg></button></li>
+                  <li class="s48-stop is-unreachable"><span class="s48-stop__handle"><svg class="i"><use href="#i-drag"/></svg></span><span class="s48-xsq" aria-hidden="true"><svg class="i"><use href="#i-x"/></svg></span><div><div class="s48-stop__name">Butte north face</div><div class="s48-stop__leg">Can't reach. Every path crosses ground&nbsp;steeper than 20°.</div></div><button class="s48-btn s48-btn--icon" type="button" aria-label="Remove"><svg class="i"><use href="#i-x"/></svg></button></li>
+                  <li class="s48-stop is-fixed"><span></span><span class="s48-square" aria-hidden="true"></span><div><div class="s48-stop__name">Back to Rover drop-off</div><div class="s48-stop__leg">2.2 km · ≈&nbsp;51 min · −212 m</div></div></li>
+                </ol>
+              </div>
+              <div class="panel-sec" style="border-bottom:0">
+                <h3>Conditions <small>Ls 150–180°</small></h3>
+                <dl class="s48-figs">
+                  <div class="s48-fig"><dt>Air temperature</dt><dd>−79 to −8 °C</dd></div>
+                  <div class="s48-fig"><dt>Dust opacity</dt><dd>τ 0.5</dd></div>
+                </dl>
+                <p class="s48-cond__src" style="margin-top:var(--space-2)">Source: REMS, Curiosity · Spain (CAB/INTA); Mars Climate Database.</p>
+              </div>
+            </div>
+            <div class="plan-foot"><button class="s48-btn s48-btn--primary" type="button">Walk this route</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================================== -->
+  <section class="part" id="walk">
+    <h2>Walk · tablet landscape</h2>
+    <p class="lede">At 1180 × 820, read at arm's length with gloved&nbsp;hands. The marker is between Stop 1 and Stop 2; the side column shows what's next and what's left, and a photo of where you're heading.</p>
+    <div class="sub frame-scroll">
+      <div class="mock walk-mock walk">
+        <div class="mock-top">
+          <span class="wordmark">Sol-48</span>
+          <div class="s48-seg" role="group" aria-label="Mode"><button type="button" aria-pressed="false">Plan</button><button type="button" aria-pressed="true">Walk</button><button type="button" aria-pressed="false">Visor</button></div>
+          <span class="grow"></span>
+          <span class="meta">Mount Sharp, Gale · replaying plan · Sol 5073</span>
+        </div>
+        <div class="walk-body">
+          <div class="mapbox">
+            <svg class="map" viewBox="0 0 780 660" preserveAspectRatio="xMidYMid slice" aria-label="Map following the walk marker">
+              <rect width="780" height="660" filter="url(#terrain)"/>
+              <path d="M520 520 C560 480 640 490 650 540 C660 580 590 610 540 590 C505 575 500 545 520 520Z" fill="url(#hatch)" stroke="#eb517c"/>
+              <path id="walk-route" d="M90 600 C120 500 200 420 280 380 S 420 300 460 240 S 560 120 640 150 S 720 300 700 400" fill="none" stroke="#0a1828" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M90 600 C120 500 200 420 280 380 S 420 300 460 240 S 560 120 640 150 S 720 300 700 400" fill="none" stroke="#8ec1f5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M90 600 C120 500 200 420 280 380 S 420 300 460 240 S 560 120 640 150 S 720 300 700 400" fill="none" stroke="#98a2ac" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" pathLength="1000" stroke-dasharray="380 2000"/>
+              <rect x="78" y="588" width="24" height="24" fill="#f2f5f7" stroke="#0a1828" stroke-width="3"/>
+              <text class="map-label" x="110" y="628">Rover drop-off</text>
+              <g transform="translate(280 380)"><circle r="14" fill="#0a1828" stroke="#f2f5f7" stroke-width="2"/><text class="map-num">1</text></g>
+              <text class="map-label" x="262" y="412" text-anchor="end">Boxwork ridge</text>
+              <g transform="translate(460 240)"><circle r="14" fill="#0a1828" stroke="#f2f5f7" stroke-width="2"/><text class="map-num">2</text></g>
+              <text class="map-label" x="480" y="256">Sulfate bench</text>
+              <g transform="translate(686 230)"><path d="M-11 -9 H11 L0 9Z" fill="#ffc152" stroke="#0a1828" stroke-width="2" stroke-linejoin="round"/></g>
+              <text class="map-label" x="672" y="214" text-anchor="end">Turn back</text>
+              <g id="walk-you"><path d="M0 -24 L9 -9 L-9 -9Z" fill="#f2f5f7" stroke="#0a1828" stroke-width="1.5"/><circle r="11" fill="#f2f5f7" stroke="#8ec1f5" stroke-width="3.5"/><circle r="14" fill="none" stroke="#0a1828" stroke-width="1.5"/></g>
+            </svg>
+            <div class="map-ui" style="left:16px;bottom:16px"><div class="s48-scale" style="width:110px"><div class="s48-scale__label">200 m</div><div class="s48-scale__bar"><i></i><i></i><i></i><i></i></div></div></div>
+            <div class="map-ui" style="right:12px;bottom:10px"><span class="standin-tag">Terrain stand-in</span></div>
+          </div>
+          <div class="panel walk-side">
+            <div class="walk-next">
+              <div class="s48-readout__label">Next stop</div>
+              <div class="walk-next__title"><span class="s48-disc">2</span>Sulfate bench</div>
+              <div class="walk-next__pair">
+                <div class="s48-readout"><div class="s48-readout__value">640<small>m</small></div></div>
+                <div class="s48-readout"><div class="s48-readout__value">≈&nbsp;17<small>min</small></div></div>
+              </div>
+            </div>
+            <div class="s48-rail" style="--plan:0.662;--notch:0.4375;--now:0.26">
+              <div class="s48-rail__head"><span class="s48-rail__label">Energy left</span><span class="s48-rail__value">≈&nbsp;5900 kJ</span></div>
+              <div class="s48-rail__track"><div class="s48-rail__reserve"></div><div class="s48-rail__plan"></div><div class="s48-rail__notch"></div><div class="s48-rail__now"></div></div>
+            </div>
+            <div class="s48-rail" style="--plan:0.552;--notch:0.354;--now:0.198">
+              <div class="s48-rail__head"><span class="s48-rail__label">Time left</span><span class="s48-rail__value">≈&nbsp;6 h 25 min</span></div>
+              <div class="s48-rail__track"><div class="s48-rail__reserve"></div><div class="s48-rail__plan"></div><div class="s48-rail__notch"></div><div class="s48-rail__now"></div></div>
+            </div>
+            <div style="display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap"><span class="s48-chip s48-chip--caution"><svg class="i"><use href="#i-notch"/></svg>Before turn-back</span><span class="num" style="font-size:var(--text-walk-body)">1.3 km ahead</span></div>
+            <div class="walk-photo">
+              <h4>What you'll see at Stop 2</h4>
+              <figure class="s48-photo" style="margin:0;max-width:none;grid-template-columns:150px 1fr;align-items:start">
+                <div class="s48-photo__img stand-in" style="grid-row:span 2"><svg viewBox="0 0 400 300" preserveAspectRatio="none" aria-hidden="true"><rect width="400" height="120" fill="#b89a7a"/><rect y="110" width="400" height="190" filter="url(#terrain)"/></svg></div>
+                <figcaption class="s48-photo__cap" style="font-size:var(--text-walk-label);line-height:var(--leading-walk-label)">Sol 4790 · Navcam Left<br>14 m south-west, facing 212°</figcaption>
+                <div class="s48-photo__credit" style="align-self:end">Credit: NASA/JPL-Caltech</div>
+              </figure>
+            </div>
+          </div>
+        </div>
+        <div class="walk-bar">
+          <div class="s48-scrub">
+            <button class="s48-btn s48-btn--secondary s48-btn--step" type="button" aria-label="Previous stop"><svg class="i"><use href="#i-prev"/></svg></button>
+            <button class="s48-btn s48-btn--primary s48-btn--play" type="button" aria-label="Pause"><svg class="i"><use href="#i-pause"/></svg></button>
+            <button class="s48-btn s48-btn--secondary s48-btn--step" type="button" aria-label="Next stop"><svg class="i"><use href="#i-next"/></svg></button>
+            <div class="s48-scrub__track" style="--at:0.38">
+              <div class="s48-scrub__rail"></div><div class="s48-scrub__done"></div>
+              <span class="s48-scrub__notch" style="--x:0.64"></span>
+              <span class="s48-scrub__tick s48-disc" style="--x:0.28">1</span>
+              <span class="s48-scrub__tick s48-disc" style="--x:0.5">2</span>
+              <span class="s48-scrub__tick s48-disc" style="--x:0.74">3</span>
+              <span class="s48-scrub__tick s48-square home" style="--x:0"></span>
+              <span class="s48-scrub__tick s48-square home" style="--x:1"></span>
+              <div class="s48-scrub__thumb"></div>
+              <input type="range" min="0" max="1000" value="380" aria-label="Position along route" data-scrub>
+            </div>
+            <div class="s48-scrub__time">1 h 35 min<small>of ≈&nbsp;4 h 25 min</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================================== -->
+  <section class="part" id="visor">
+    <h2>Visor</h2>
+    <p class="lede">Always dark, and only four things on screen: heading, distance to the next stop, the budget that binds, and a hazard cue when the route ahead nears impassable ground. Shown at 16:9 and in portrait.</p>
+    <div class="sub frame-scroll" data-theme="dark" style="border:0">
+      <div class="visor-pair">
+        <div class="mock visor-mock">
+          <div class="visor-sky"></div>
+          <svg class="visor-ridge" viewBox="0 0 1180 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0 120 L0 80 C120 70 220 40 330 52 C460 66 520 18 640 10 C760 4 850 50 960 58 C1060 66 1120 60 1180 70 L1180 120Z" fill="#8c6c52"/></svg>
+          <div class="visor-ground"><div class="visor-plane">
+            <svg viewBox="0 0 3540 270" preserveAspectRatio="none" aria-hidden="true">
+              <rect width="3540" height="270" filter="url(#terrain)"/>
+              <path d="M1610 120 C1640 100 1700 104 1712 128 C1722 150 1670 162 1640 156 C1606 150 1596 134 1610 120Z" fill="url(#hatch)" stroke="#eb517c" stroke-width="1"/>
+              <path d="M1770 270 C1770 236 1790 210 1806 184 S 1830 120 1796 84 S 1760 30 1786 0" fill="none" stroke="#0a1828" stroke-width="7" stroke-linecap="round"/>
+              <path d="M1770 270 C1770 236 1790 210 1806 184 S 1830 120 1796 84 S 1760 30 1786 0" fill="none" stroke="#8ec1f5" stroke-width="3.5" stroke-linecap="round"/>
+            </svg></div>
+          </div>
+          <div class="visor-ui">
+            <div class="s48-plate s48-tape"><div class="s48-tape__ticks" data-tape="214"></div><div class="s48-tape__now">214°<small>SW</small></div></div>
+            <div class="s48-hazard">Steep ground 40 m ahead, left</div>
+            <div></div>
+            <div class="bottom">
+              <div class="s48-plate"><div class="s48-plate__label"><span class="s48-disc vdisc">2</span>Next stop</div><div class="s48-plate__value">640<small>m</small></div></div>
+              <div class="s48-plate" style="--left:0.74"><div class="s48-plate__label">Energy left</div><div class="s48-plate__value">≈&nbsp;5900<small>kJ</small></div><div class="vrail"><b></b><i></i></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="mock visor-mock visor-portrait">
+          <div class="visor-sky"></div>
+          <svg class="visor-ridge" viewBox="0 0 420 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0 120 L0 70 C60 60 120 30 190 26 C260 22 320 52 420 60 L420 120Z" fill="#8c6c52"/></svg>
+          <div class="visor-ground"><div class="visor-plane">
+            <svg viewBox="0 0 1260 270" preserveAspectRatio="none" aria-hidden="true">
+              <rect width="1260" height="270" filter="url(#terrain)"/>
+              <path d="M630 270 C630 236 650 210 666 184 S 690 120 656 84 S 620 30 646 0" fill="none" stroke="#0a1828" stroke-width="7" stroke-linecap="round"/>
+              <path d="M630 270 C630 236 650 210 666 184 S 690 120 656 84 S 620 30 646 0" fill="none" stroke="#8ec1f5" stroke-width="3.5" stroke-linecap="round"/>
+            </svg></div>
+          </div>
+          <div class="visor-ui">
+            <div class="s48-plate s48-tape"><div class="s48-tape__ticks" data-tape="214"></div><div class="s48-tape__now">214°<small>SW</small></div></div>
+            <div></div>
+            <div></div>
+            <div class="bottom">
+              <div class="s48-plate"><div class="s48-plate__label"><span class="s48-disc vdisc">2</span>Next</div><div class="s48-plate__value">640<small>m</small></div></div>
+              <div class="s48-plate" style="--left:0.74"><div class="s48-plate__label">Energy left</div><div class="s48-plate__value">≈&nbsp;5900<small>kJ</small></div><div class="vrail"><b></b><i></i></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  // Theme switch: System removes the attribute so prefers-color-scheme applies.
+  var root = document.documentElement;
+  var sw = document.getElementById("theme-switch");
+  function apply(v) {
+    if (v === "system") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", v);
+    sw.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.set === v)); });
+    try { localStorage.setItem("s48-theme", v); } catch (e) {}
+    requestAnimationFrame(paintSwatches);
+  }
+  sw.addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) apply(b.dataset.set); });
+  var saved = null; try { saved = localStorage.getItem("s48-theme"); } catch (e) {}
+  var q = new URLSearchParams(location.search).get("theme");
+  apply(q || saved || "system");
+
+  // Swatches with live contrast against the panel surface.
+  function parseRgb(s) { var m = s.match(/[\d.]+/g); return m ? m.map(Number) : [0, 0, 0, 1]; }
+  function lum(c) { return [0, 1, 2].reduce(function (a, i) { var v = c[i] / 255; v = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); return a + v * [0.2126, 0.7152, 0.0722][i]; }, 0); }
+  function ratio(a, b) { var x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+  var probe = document.createElement("i"); probe.style.display = "none"; document.body.appendChild(probe);
+  function resolve(name) { probe.style.color = "var(" + name + ")"; return getComputedStyle(probe).color; }
+  function paintSwatches() {
+    var surface = parseRgb(resolve("--color-surface"));
+    document.querySelectorAll("[data-swatches]").forEach(function (box) {
+      box.innerHTML = "";
+      box.dataset.swatches.split(" ").forEach(function (name) {
+        var raw = getComputedStyle(root).getPropertyValue(name).trim();
+        var c = parseRgb(resolve(name));
+        var r = c.length > 3 && c[3] < 1 ? "translucent" : ratio(c, surface).toFixed(2) + ":1 on surface";
+        var el = document.createElement("div"); el.className = "sw";
+        el.innerHTML = '<i style="background:var(' + name + ')"></i><div><b>' + name + "</b><span>" + raw + " · " + r + "</span></div>";
+        box.appendChild(el);
+      });
+    });
+  }
+
+  // Heading tapes: ticks every 5 degrees, labels every 10, plus or minus 20 around the heading.
+  document.querySelectorAll("[data-tape]").forEach(function (t) {
+    var h = Number(t.dataset.tape), w = t.clientWidth || 360, html = "";
+    for (var d = h - 25; d <= h + 25; d++) {
+      if (d % 5) continue;
+      var x = ((d - (h - 20)) / 40) * w;
+      if (x < 0 || x > w) continue;
+      html += '<span style="left:' + x + 'px;height:' + (d % 10 ? 6 : 10) + 'px"></span>';
+      if (!(d % 10) && Math.abs(d - h) > 4) html += '<em style="left:' + x + 'px">' + String((d + 360) % 360).padStart(3, "0") + "</em>";
+    }
+    t.innerHTML = html;
+  });
+
+  // Walk marker sits at the same fraction of the route as the scrubber.
+  var path = document.getElementById("walk-route"), you = document.getElementById("walk-you");
+  if (path && you) {
+    var L = path.getTotalLength(), p = path.getPointAtLength(L * 0.38), q2 = path.getPointAtLength(L * 0.38 + 2);
+    var a = Math.atan2(q2.y - p.y, q2.x - p.x) * 180 / Math.PI + 90;
+    you.setAttribute("transform", "translate(" + p.x + " " + p.y + ") rotate(" + a + ")");
+  }
+
+  // Scrubbers move their thumb; opacity sliders update their readout.
+  document.querySelectorAll("[data-scrub]").forEach(function (r) {
+    r.addEventListener("input", function () { r.parentElement.style.setProperty("--at", r.value / 1000); });
+  });
+  document.querySelectorAll(".s48-opacity input").forEach(function (r) {
+    r.addEventListener("input", function () { r.nextElementSibling.textContent = r.value + " %"; });
+  });
+
+  // Tabular figures check: both strings must be the same width.
+  function tnum() {
+    var a = document.getElementById("tnum-a").getBoundingClientRect().width;
+    var b = document.getElementById("tnum-b").getBoundingClientRect().width;
+    document.getElementById("tnum-result").textContent = Math.abs(a - b) < 0.5 ? "same width: tabular figures active" : "widths differ: tabular figures missing in this font";
+  }
+  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(tnum);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+// Written with AI assistance, directed and reviewed by the team.
+
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './styles/tokens.css';
+import './styles/components.css';
+import './index.css';
+import App from './App';
+
+const rootElement = document.getElementById('root');
+
+if (rootElement) {
+  ReactDOM.createRoot(rootElement).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+}
