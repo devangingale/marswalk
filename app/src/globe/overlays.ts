@@ -224,9 +224,14 @@ export class GlobeOverlays {
     this.sectionList = [];
     this.stats = null;
     this.routeHoverLines = [];
-    if (!plan || !plan.route.legs.length) return;
+    if (!plan) return;
     const frame = origin ?? { lon0: plan.start.lon, lat0: plan.start.lat, lat_c: plan.start.lat };
     this.origin = origin ?? null;
+
+    if (!plan.route.legs.length) {
+      this.drawStops(plan);
+      return;
+    }
 
     const legs = plan.route.legs;
     this.stretches = sharedSegments(legs, frame, SHARED_TOLERANCE_M).map((s) => ({ ...s, shared: s.legs.length > 1 }));
@@ -415,7 +420,7 @@ export class GlobeOverlays {
         { kind: 'text', lines: [`Stop ${number} · ${stop.name}`, formatLatLon(stop.lon, stop.lat)] },
       );
     });
-    if (needsFinish(plan)) {
+    if (needsFinish(plan) && plan.route.legs.at(-1)?.line.length) {
       const end = plan.route.legs.at(-1)!.line.at(-1)!;
       this.add(
         'plan',
