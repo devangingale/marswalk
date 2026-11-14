@@ -54,7 +54,12 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 
 | Name | Used for | Licence |
 |---|---|---|
-| vitest | Unit testing framework for route planner, energy model, grid, and plan libraries | MIT |
+| React | UI rendering and component architecture | MIT |
+| MapLibre GL JS | Mars surface map rendering and 3D terrain relief | BSD-3-Clause |
+| PMTiles | Cloud-native single-file tile archive reader | BSD-3-Clause |
+| Vite | Frontend build tooling and static compilation | MIT |
+| Vitest | Unit test execution and contract verification | MIT |
+| TypeScript | Static type safety and data contract typing | Apache-2.0 |
 | LightGBM (`lightgbm`) | Gradient-boosted tree walkability classifier | MIT |
 | scikit-learn (`scikit-learn`) | ROC AUC metrics and model interfaces | BSD-3-Clause |
 
@@ -62,7 +67,7 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 
 | Item | Source | Licence / credit |
 |---|---|---|
-| _add as introduced_ | | |
+| Barlow, Barlow Semi Condensed, Barlow Condensed | Google Fonts (Jeremy Tribby) | SIL Open Font License 1.1 |
 
 ## AI tools
 

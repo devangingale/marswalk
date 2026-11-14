@@ -1,0 +1,86 @@
+{
+  "id": "gale",
+  "title": "Mount Sharp, Gale crater (Stub Specification)",
+  "rover": "Curiosity",
+  "origin": { "lon0": 137.3628, "lat0": -4.8250, "lat_c": -4.7913 },
+  "size_m": { "width": 3986, "height": 4000 },
+  "bounds_lonlat": [137.3628, -4.8250, 137.4303, -4.7575],
+  "default_start": { "lon": 137.3900, "lat": -4.7800, "label": "Rover drop-off" },
+  "terrain": { "url": "terrain.pmtiles", "encoding": "mapbox", "min_m": -4082, "max_m": -3277 },
+  "layers": [
+    {
+      "id": "image",
+      "title": "Orbital image",
+      "kind": "optical",
+      "type": "raster",
+      "url": "image.pmtiles",
+      "resolution_m": 0.25,
+      "source": "MRO HiRISE colour mosaic",
+      "agency": "NASA",
+      "units": null,
+      "legend": null,
+      "default_on": true
+    },
+    {
+      "id": "slope",
+      "title": "Slope",
+      "kind": "topographic",
+      "type": "raster",
+      "url": "slope.pmtiles",
+      "resolution_m": 1.0,
+      "source": "MRO HiRISE stereo elevation",
+      "agency": "NASA",
+      "units": "degrees",
+      "legend": { "stops": [[0, "#1a9850"], [10, "#fee08b"], [20, "#d73027"], [30, "#4d004b"]] },
+      "default_on": false
+    },
+    {
+      "id": "thermal_inertia",
+      "title": "Thermal inertia",
+      "kind": "thermal",
+      "type": "raster",
+      "url": "thermal.pmtiles",
+      "resolution_m": 100.0,
+      "source": "Mars Odyssey THEMIS / TES",
+      "agency": "NASA/ASU",
+      "units": "J m⁻² K⁻¹ s⁻¹/²",
+      "legend": { "stops": [[150, "#2b83ba"], [250, "#abdda4"], [350, "#ffffbf"], [450, "#fdae61"], [550, "#d7191c"]] },
+      "default_on": false
+    },
+    {
+      "id": "crism_minerals",
+      "title": "Clay / Sulfate minerals",
+      "kind": "spectral",
+      "type": "raster",
+      "url": "crism.pmtiles",
+      "resolution_m": 18.0,
+      "source": "MRO CRISM MRDR spectral indices",
+      "agency": "NASA/JHUAPL",
+      "units": "index",
+      "legend": { "stops": [[0, "#2c7bb6"], [0.2, "#abd9e9"], [0.5, "#ffffbf"], [0.8, "#fdae61"], [1.0, "#d7191c"]] },
+      "default_on": false
+    },
+    {
+      "id": "chemistry_apxs",
+      "title": "APXS Target Chemistry",
+      "kind": "chemical",
+      "type": "points",
+      "url": "/data/gale/chemistry.geojson",
+      "resolution_m": 0.05,
+      "source": "Curiosity APXS elemental abundances",
+      "agency": "CSA / NASA",
+      "units": "wt%",
+      "legend": null,
+      "default_on": true
+    }
+  ],
+  "conditions_url": "/data/gale/conditions.json",
+  "photos_url": "/data/gale/photos.json",
+  "chemistry_url": "/data/gale/chemistry.geojson",
+  "stops_url": "/data/gale/stops.json",
+  "validation": {
+    "text": "Stub specification: validation metrics will be recorded from pipeline evaluation.",
+    "model_auc": null,
+    "baseline_auc": null
+  }
+}
