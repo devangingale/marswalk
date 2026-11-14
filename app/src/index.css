@@ -64,3 +64,115 @@ button, input, select {
 :focus:not(:focus-visible) {
   outline: none;
 }
+
+/* Walk: map above, bottom sheet below */
+.s48-walk {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.s48-walk-map {
+  flex: 1;
+  min-height: 200px;
+}
+
+.s48-walk-sheet {
+  max-height: 55%;
+  overflow-y: auto;
+  padding: 12px;
+  box-sizing: border-box;
+  border-top: 1px solid #ccc;
+  background-color: #ffffff;
+}
+
+.s48-walk-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.s48-walk-play {
+  min-width: 56px;
+  min-height: 56px;
+}
+
+.s48-walk-scrubber {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 200px;
+}
+
+.s48-walk-scrubber input {
+  flex: 1;
+  height: 56px;
+}
+
+.s48-photo-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.s48-photo-thumb {
+  display: block;
+  max-width: 100%;
+  min-width: 56px;
+  min-height: 56px;
+}
+
+.s48-chem-table-wrap {
+  overflow-x: auto;
+}
+
+/* Visor: full-bleed terrain with a four-item overlay */
+.s48-visor {
+  flex: 1;
+  position: relative;
+}
+
+.s48-visor-map {
+  position: absolute;
+  inset: 0;
+}
+
+.s48-visor-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.s48-visor-overlay p {
+  position: absolute;
+  margin: 0;
+  padding: 4px 8px;
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.s48-visor-heading {
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.s48-visor-next {
+  top: 16px;
+  left: 16px;
+}
+
+.s48-visor-budget {
+  bottom: 16px;
+  left: 16px;
+}
+
+.s48-visor-hazard {
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+}

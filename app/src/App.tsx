@@ -1,6 +1,6 @@
 // Written with AI assistance, directed and reviewed by the team.
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { SiteData, LayerState, AppMode } from './types';
 import {
   TILES_BASE,
@@ -9,13 +9,17 @@ import {
   getSiteJsonUrl,
 } from './config';
 import stubSiteSample from './fixtures/site.sample.json';
+import samplePlan from './fixtures/plan.sample.json';
+import { Plan } from './lib/plan';
+import { buildTrack } from './walk/track';
+import { usePlayback } from './walk/usePlayback';
 import { NoticeBanner } from './components/NoticeBanner';
 import { ModeSwitch } from './components/ModeSwitch';
 import { SiteSwitcher } from './components/SiteSwitcher';
 import { LayerPanel } from './components/LayerPanel';
 import { Map } from './components/Map';
-import { WalkPlaceholder } from './components/WalkPlaceholder';
-import { VisorPlaceholder } from './components/VisorPlaceholder';
+import { WalkView } from './components/WalkView';
+import { VisorView } from './components/VisorView';
 
 export const App: React.FC = () => {
   const [currentSiteId, setCurrentSiteId] = useState<string>(DEFAULT_SITE);
@@ -25,6 +29,10 @@ export const App: React.FC = () => {
   const [mode, setMode] = useState<AppMode>('plan');
   const [layerStates, setLayerStates] = useState<Record<string, LayerState>>({});
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(true);
+  // The plan Walk and Visor replay (contracts section 7). The Plan view sets it; until then, the sample plan.
+  const [plan] = useState<Plan>(samplePlan as unknown as Plan);
+  const track = useMemo(() => buildTrack(plan, siteData.origin), [plan, siteData.origin]);
+  const playback = usePlayback(track.durationS);
 
   const loadSite = useCallback(async (siteId: string) => {
     setIsLoading(true);
@@ -171,9 +179,9 @@ export const App: React.FC = () => {
             <Map siteData={siteData} layerStates={layerStates} />
           </div>
         ) : mode === 'walk' ? (
-          <WalkPlaceholder onReturnToPlan={() => setMode('plan')} />
+          <WalkView siteData={siteData} plan={plan} track={track} playback={playback} />
         ) : (
-          <VisorPlaceholder onReturnToPlan={() => setMode('plan')} />
+          <VisorView siteData={siteData} plan={plan} track={track} elapsedS={playback.elapsedS} />
         )}
       </div>
     </div>
