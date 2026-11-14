@@ -48,7 +48,7 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
     map.addControl(new AttributionControl({ compact: true }), 'bottom-right');
 
     map.on('error', (e: { error?: { message?: string } }) => {
-      // 404s when PMTiles or Mars Trek tiles are missing are expected during local scaffold
+      // Missing PMTiles or external Trek tile 404s are handled gracefully
       if (e?.error?.message?.includes('404')) {
         return;
       }
@@ -83,7 +83,7 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
             exaggeration: 1.35,
           });
         } catch {
-          // Terrain will bind when file is present
+          // Terrain binds when file lands
         }
       }
 
@@ -130,34 +130,26 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
               },
               paint: {
                 'circle-radius': 5,
-                'circle-color': '#f59e0b',
-                'circle-stroke-width': 1,
-                'circle-stroke-color': '#ffffff',
+                'circle-color': '#f2f5f7',
+                'circle-stroke-width': 2,
+                'circle-stroke-color': '#0a1828',
                 'circle-opacity': state.opacity,
               },
             });
           }
         } catch {
-          // Layer will bind when file is present
+          // Layer binds when file lands
         }
       });
 
-      // Rover drop-off marker
+      // Start / Habitat marker: 20x20 square with dark casing (contracts section 5, design section 6)
       if (siteData.default_start) {
         const el = document.createElement('div');
-        el.className = 's48-rover-marker';
-        el.textContent = 'R';
-        el.style.width = '20px';
-        el.style.height = '20px';
-        el.style.borderRadius = '50%';
-        el.style.backgroundColor = '#2563eb';
-        el.style.color = '#ffffff';
-        el.style.textAlign = 'center';
-        el.style.lineHeight = '20px';
-        el.style.fontWeight = 'bold';
-        el.style.fontSize = '12px';
+        el.className = 's48-square';
+        el.setAttribute('title', siteData.default_start.label);
+        el.setAttribute('aria-label', siteData.default_start.label);
 
-        const popup = new Popup({ offset: 12 }).setText(
+        const popup = new Popup({ offset: 12, closeButton: false }).setText(
           `${siteData.default_start.label} (${siteData.default_start.lon.toFixed(4)}°, ${siteData.default_start.lat.toFixed(4)}°)`
         );
 
@@ -212,12 +204,17 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
   };
 
   return (
-    <div className="s48-map-container">
-      <div ref={mapContainerRef} className="s48-map-viewport" />
+    <div className="mapbox" style={{ flex: 1, position: 'relative', width: '100%', height: '100%' }}>
+      <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
-      <div className="s48-terrain-toggle" style={{ position: 'absolute', top: 12, right: 50, zIndex: 10 }}>
-        <button type="button" onClick={toggle3D}>
-          {is3D ? '2D View' : '3D Relief'}
+      <div className="map-ui" style={{ right: '54px', top: '12px' }}>
+        <button
+          type="button"
+          className="s48-btn s48-btn--secondary"
+          onClick={toggle3D}
+          style={{ minHeight: '28px', padding: '0 8px', fontSize: '13px' }}
+        >
+          {is3D ? '2D view' : '3D relief'}
         </button>
       </div>
 

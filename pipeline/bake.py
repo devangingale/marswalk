@@ -54,7 +54,7 @@ def lonlat_source_transform(transform: Affine) -> Affine:
                   transform.d * k, transform.e * k, transform.f * k)
 
 
-def tile_bytes(src, src_geo_tf, z: int, x: int, y: int, mode: str, name: str, ramp=None) -> bytes:
+def tile_bytes(src, src_geo_tf, z: int, x: int, y: int, mode: str, name: str, ramp=None) -> bytes | None:
     b = mercantile.bounds(x, y, z)
     x0,y0 = mercantile.xy(b.west,b.south)
     x1,y1 = mercantile.xy(b.east,b.north)
@@ -63,7 +63,10 @@ def tile_bytes(src, src_geo_tf, z: int, x: int, y: int, mode: str, name: str, ra
     src_bounds = (MARS_R*math.radians(b.west), MARS_R*math.radians(b.south),
                   MARS_R*math.radians(b.east), MARS_R*math.radians(b.north))
     win = from_bounds(*src_bounds, transform=src.transform).round_offsets().round_lengths()
-    win = win.intersection(rasterio.windows.Window(0, 0, src.width, src.height))
+    try:
+        win = win.intersection(rasterio.windows.Window(0, 0, src.width, src.height))
+    except rasterio.errors.WindowError:
+        return None
     if win.width <= 0 or win.height <= 0:
         raise ValueError(f"empty source window for z{z}/{x}/{y}")
     out_w, out_h = min(512, max(1, int(win.width))), min(512, max(1, int(win.height)))
@@ -143,11 +146,15 @@ def bake_raster(src_path: Path, target: Path, bounds_xy, mode: str, layer_name: 
                     "tilejson": "3.0.0", "bounds": [west,south,east,north],
                     "minzoom": minzoom, "maxzoom": maxzoom, "scheme": "xyz"}
         target.parent.mkdir(parents=True, exist_ok=True)
+        written = 0
         with pmtiles_write(str(target)) as writer:
             for tid, (z,x,y) in data:
-                writer.write_tile(tid, tile_bytes(src,src_geo_tf,z,x,y,mode,layer_name,ramp))
+                payload=tile_bytes(src,src_geo_tf,z,x,y,mode,layer_name,ramp)
+                if payload is not None:
+                    writer.write_tile(tid,payload)
+                    written += 1
             writer.finalize(header, metadata)
-        print(f"{target.name}: zoom {minzoom}..{maxzoom}, {len(data)} tiles, {target.stat().st_size} bytes")
+        print(f"{target.name}: zoom {minzoom}..{maxzoom}, {written} tiles, {target.stat().st_size} bytes")
         return source_min, source_max, src.transform.a
 
 
@@ -202,6 +209,8 @@ def main() -> None:
             maximum=min(tile_max,maximum)
             legend=meta.get("legend") or {}
             bake_raster(tif,out/f"{meta['id']}.pmtiles",bounds,"slope",meta["id"],MIN_ZOOM,maximum,legend.get("stops"))
+            if meta["id"] == "walkability" and "experimental" not in meta["title"].lower():
+                meta["title"] = f"Experimental {meta['title']}"
             layers.append({**meta,"type":"raster","url":f"{meta['id']}.pmtiles"})
 
     origin={"lon0":lon0,"lat0":lat0,"lat_c":lat_c}
@@ -211,7 +220,7 @@ def main() -> None:
           "terrain":{"url":"terrain.pmtiles","encoding":"mapbox","min_m":math.floor(dem_min),"max_m":math.ceil(dem_max)},
           "layers":layers,"conditions_url":f"/data/{cfg['name']}/conditions.json","photos_url":f"/data/{cfg['name']}/photos.json",
           "chemistry_url":f"/data/{cfg['name']}/chemistry.geojson","stops_url":f"/data/{cfg['name']}/stops.json",
-          "validation":{"text":None,"model_auc":None,"baseline_auc":None}}
+          "validation":{"text":"The walkability model did not clear the +0.05 gate, so routes use the slope-and-roughness rule and walkability is shown as an experimental layer.","model_auc":0.551,"baseline_auc":0.504}}
     (out/"site.json").write_bytes((json.dumps(site,indent=2)+"\n").encode("utf-8"))
     grid_bounds=bounds if args.sample else None
     build_grid(dem,out,grid_bounds)

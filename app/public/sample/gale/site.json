@@ -204,8 +204,8 @@
   "chemistry_url": "/data/gale/chemistry.geojson",
   "stops_url": "/data/gale/stops.json",
   "validation": {
-    "text": null,
-    "model_auc": null,
-    "baseline_auc": null
+    "text": "The walkability model did not clear the +0.05 gate, so routes use the slope-and-roughness rule and walkability is shown as an experimental layer.",
+    "model_auc": 0.551,
+    "baseline_auc": 0.504
   }
 }
