@@ -6,7 +6,7 @@ import { loadGrid, MARS_R } from '../lib/grid';
 import { Plan } from '../lib/plan';
 import { shiftedDemDecoding } from '../lib/terrain';
 import { SiteData } from '../types';
-import { formatDistance, formatDuration, formatEnergy, formatHeading } from '../walk/format';
+import { formatDistance, formatDose, formatDuration, formatEnergy, formatHeading } from '../walk/format';
 import { hazardAhead, hazardFlags } from '../walk/hazard';
 import { budgetRemaining, RouteTrack, walkStateAt, waypointById } from '../walk/track';
 import { useSharedPlayback } from '../walk/usePlayback';
@@ -34,6 +34,16 @@ export const VisorView: React.FC<VisorViewProps> = ({ siteData, plan, track, ela
   useEffect(() => {
     setupPMTilesProtocol(); if (!containerRef.current) return;
     const style = marsBaseStyle();
+    const css = getComputedStyle(document.documentElement);
+    const skyToken = (name: string) => css.getPropertyValue(name).trim();
+    style.sky = {
+      'sky-color': skyToken('--visor-sky'),
+      'horizon-color': skyToken('--visor-horizon'),
+      'fog-color': skyToken('--visor-fog'),
+      'sky-horizon-blend': 0.35,
+      'horizon-fog-blend': 0.8,
+      'atmosphere-blend': 0.7,
+    };
     const decoding = shiftedDemDecoding(siteData.terrain);
     style.sources[TERRAIN] = { type:'raster-dem', url:`pmtiles://${resolveSiteAssetUrl(siteData.id, siteData.terrain.url)}`, tileSize:256, encoding:'custom', ...decoding };
     style.terrain = { source:TERRAIN, exaggeration:EXAGGERATION };
@@ -46,14 +56,23 @@ export const VisorView: React.FC<VisorViewProps> = ({ siteData, plan, track, ela
   }, [siteData]);
   useEffect(() => { if (mapRef.current) placeEyeCamera(mapRef.current, pose); }, [pose]);
   const hazardM = hazardData.status === 'ready' ? hazardAhead(track.vertices, hazardData.flags, state.alongM) : null;
+  const [visibleHazardM, setVisibleHazardM] = useState<number | null>(hazardM);
+  useEffect(() => {
+    if (hazardM !== null) { setVisibleHazardM(hazardM); return; }
+    const timeout = window.setTimeout(() => setVisibleHazardM(null), 160);
+    return () => window.clearTimeout(timeout);
+  }, [hazardM]);
   const next = state.next ? waypointById(plan, state.next.id) : null;
   return <div className="s48-visor" data-theme="dark">
     <div ref={containerRef} className="s48-visor-map" />
     <div className="s48-visor-overlay">
-      <div className="s48-visor-heading"><span>Heading</span><div className="s48-heading-tape" aria-hidden="true">{Array.from({ length: 9 }, (_, index) => <span key={index}><i className={index === 4 ? 'is-current' : ''} /></span>)}</div><strong>{formatHeading(state.headingDeg)}</strong></div>
+      <div className="s48-visor-heading"><span>Heading</span><div className="s48-heading-tape" aria-hidden="true">{Array.from({ length: 5 }, (_, index) => {
+        const bearing = ((Math.round(state.headingDeg / 10) * 10 + (index - 2) * 10) % 360 + 360) % 360;
+        return <span key={index}><i className={index === 2 ? 'is-current' : ''} /><small>{String(bearing).padStart(3, '0')}</small></span>;
+      })}</div><strong>{formatHeading(state.headingDeg)}</strong></div>
       <div className="s48-visor-next"><span>Next stop</span><strong>{next && state.next ? formatDistance(state.next.distanceM) : 'Home'}</strong><small>{next?.name}</small></div>
-      <div className="s48-visor-budget"><span>Remaining</span><strong>{formatDuration(budget.time.remaining)}</strong><small>{formatEnergy(budget.energy.remaining)}</small></div>
-      {hazardM !== null && <div role="alert" className={`s48-visor-hazard${hazardM < 20 ? ' is-near' : ''}`}>Impassable ground {formatDistance(hazardM)} ahead</div>}
+      <div className="s48-visor-budget"><span>Remaining</span><strong>{formatDuration(budget.time.remaining)}</strong><small>{formatEnergy(budget.energy.remaining)}</small><small>{formatDose(budget.dose.remaining)}</small></div>
+      <div role="alert" aria-hidden={hazardM === null} className={`s48-visor-hazard${hazardM === null ? ' is-hidden' : ''}`}>{visibleHazardM !== null && `Impassable ${formatDistance(visibleHazardM)} ahead`}</div>
     </div>
     <div className="s48-visor-controls"><PlaybackBar playback={playback} durationS={track.durationS} elapsedS={elapsedS} /></div>
   </div>;

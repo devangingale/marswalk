@@ -14,6 +14,7 @@ export const WalkMap: React.FC<WalkMapProps> = ({ siteData, plan, track, lon, la
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
+  const stopMarkersRef = useRef<Marker[]>([]);
   const positionRef = useRef<[number, number]>([lon, lat]);
   positionRef.current = [lon, lat];
 
@@ -43,15 +44,15 @@ export const WalkMap: React.FC<WalkMapProps> = ({ siteData, plan, track, lon, la
           paint: { 'line-color': segment === 'ahead' ? token('--map-route-core') : token('--map-route-walked'), 'line-width': 4 },
         });
       }
-      map.addSource('walk-waypoints', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [plan.start, ...plan.stops].map((point) => ({
-          type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [point.lon, point.lat] },
-        })) },
-      });
-      map.addLayer({
-        id: 'walk-waypoints', type: 'circle', source: 'walk-waypoints',
-        paint: { 'circle-radius': 10, 'circle-color': token('--map-stop-fill'), 'circle-stroke-width': 2, 'circle-stroke-color': token('--map-stop-ring') },
+      stopMarkersRef.current = [
+        { point: plan.start, label: 'R', className: 'is-start' },
+        ...plan.stops.map((point, index) => ({ point, label: String(index + 1), className: '' })),
+      ].map(({ point, label, className }) => {
+        const element = document.createElement('div');
+        element.className = `s48-walk-stop-marker ${className}`;
+        element.textContent = label;
+        element.setAttribute('aria-label', className ? 'Rover drop-off' : `Stop ${label}`);
+        return new Marker({ element, anchor: 'center' }).setLngLat([point.lon, point.lat]).addTo(map);
       });
       mapRef.current = map;
       if (track.vertices.length > 1) {
@@ -60,7 +61,7 @@ export const WalkMap: React.FC<WalkMapProps> = ({ siteData, plan, track, lon, la
         map.fitBounds(bounds, { padding: 40, duration: 0 });
       }
     });
-    return () => { marker.remove(); markerRef.current = null; mapRef.current = null; map.remove(); };
+    return () => { marker.remove(); stopMarkersRef.current.forEach((stopMarker) => stopMarker.remove()); stopMarkersRef.current = []; markerRef.current = null; mapRef.current = null; map.remove(); };
   }, [siteData, plan, track]);
 
   useEffect(() => {
