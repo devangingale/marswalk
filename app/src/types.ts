@@ -48,6 +48,11 @@ export interface SiteTerrain {
   max_m: number;
 }
 
+export interface SiteBasemap {
+  url: string;
+  source: string;
+}
+
 export interface SiteData {
   id: string;
   title: string;
@@ -60,6 +65,7 @@ export interface SiteData {
     lat: number;
     label: string;
   };
+  basemap?: SiteBasemap;
   terrain: SiteTerrain;
   layers: SiteLayer[];
   conditions_url?: string;

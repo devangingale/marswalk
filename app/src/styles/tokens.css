@@ -124,6 +124,7 @@
   --map-scale-dark: #0a1828;
   --map-tag-bg: rgba(10, 24, 40, 0.85);
   --map-overlay-opacity: 0.7;           /* default opacity for a data layer over imagery */
+  --map-background: #3b2e26;            /* stable beyond regional raster coverage */
 
   /* Recommended sequential ramp for overlays (cividis, colour-blind safe, no red or green). */
   --ramp-seq-0: #00224e;
