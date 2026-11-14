@@ -1,0 +1,77 @@
+// Written with AI assistance, directed and reviewed by the team.
+
+import { describe, expect, it } from 'vitest';
+import { computeEyeHeight, groundHeightAt, headingFromTrack } from './cameraMath';
+import type { TrackVertex } from '../../walk/track';
+
+describe('computeEyeHeight', () => {
+  it('adds bundle elevation, measured site offset, and standard 1.7 m eye height', () => {
+    // Gale: bundle elevation -4501.04 m, spike height offset 73.76 m, eye 1.7 m
+    expect(computeEyeHeight(-4501.04, 73.76)).toBeCloseTo(-4425.58, 5);
+  });
+
+  it('computes Jezero eye height with negative height offset', () => {
+    // Jezero: bundle elevation -2500.0 m, spike height offset -70.92 m, eye 1.7 m
+    expect(computeEyeHeight(-2500.0, -70.92)).toBeCloseTo(-2569.22, 5);
+  });
+
+  it('supports custom eye height override', () => {
+    expect(computeEyeHeight(100.0, 10.0, 2.0)).toBeCloseTo(112.0, 5);
+  });
+});
+
+describe('headingFromTrack', () => {
+  const sampleVertices: TrackVertex[] = [
+    { lon: 137.4, lat: -4.7, x_m: 0, y_m: 0, along_m: 0 },
+    { lon: 137.4, lat: -4.69, x_m: 0, y_m: 100, along_m: 100 }, // North (bearing 0°)
+    { lon: 137.41, lat: -4.69, x_m: 100, y_m: 100, along_m: 200 }, // East (bearing 90°)
+    { lon: 137.41, lat: -4.7, x_m: 100, y_m: 0, along_m: 300 }, // South (bearing 180°)
+  ];
+
+  it('returns 0 for empty or single-vertex tracks', () => {
+    expect(headingFromTrack([], 0)).toBe(0);
+    expect(headingFromTrack([sampleVertices[0]], 0)).toBe(0);
+  });
+
+  it('determines exact heading on the first leg (walking North)', () => {
+    expect(headingFromTrack(sampleVertices, 0)).toBeCloseTo(0, 5);
+    expect(headingFromTrack(sampleVertices, 50)).toBeCloseTo(0, 5);
+  });
+
+  it('determines exact heading on the second leg (walking East)', () => {
+    expect(headingFromTrack(sampleVertices, 150)).toBeCloseTo(90, 5);
+  });
+
+  it('determines exact heading on the third leg (walking South)', () => {
+    expect(headingFromTrack(sampleVertices, 250)).toBeCloseTo(180, 5);
+  });
+
+  it('returns final segment heading when at or past the end of the track', () => {
+    expect(headingFromTrack(sampleVertices, 300)).toBeCloseTo(180, 5);
+    expect(headingFromTrack(sampleVertices, 500)).toBeCloseTo(180, 5);
+  });
+});
+
+describe('groundHeightAt', () => {
+  const fakeGrid = {
+    lonlatToRowCol: (lon: number, lat: number) => ({
+      row: Math.round((lat + 5) * 100),
+      col: Math.round((lon - 137) * 100),
+    }),
+    isInside: (r: number, c: number) => r >= 0 && r < 100 && c >= 0 && c < 100,
+    getElevation: (r: number, c: number) => (r === 50 && c === 50 ? -4500 : Number.NaN),
+  };
+
+  it('returns heightOffsetM when grid is null', () => {
+    expect(groundHeightAt(null, 137.5, -4.5, 73.76)).toBe(73.76);
+  });
+
+  it('returns bundle elevation + heightOffsetM for valid inside cell', () => {
+    expect(groundHeightAt(fakeGrid, 137.5, -4.5, 73.76)).toBeCloseTo(-4500 + 73.76, 5);
+  });
+
+  it('falls back to heightOffsetM when position is outside or NaN elevation', () => {
+    expect(groundHeightAt(fakeGrid, 130.0, 0.0, 73.76)).toBe(73.76);
+    expect(groundHeightAt(fakeGrid, 137.1, -4.9, 73.76)).toBe(73.76);
+  });
+});

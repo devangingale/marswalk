@@ -1,0 +1,23 @@
+/* Timeline conditions readouts: compact sunset countdown and temperature */
+.s48-playback-readouts {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+  font: var(--text-sm)/var(--leading-sm) var(--font-data);
+  font-variant-numeric: var(--numeric);
+}
+
+.s48-playback-temp {
+  color: var(--visor-accent);
+}
+
+.s48-playback-sunset {
+  color: var(--visor-text-muted);
+}
+
+@media (max-width: 640px) {
+  .s48-playback-readouts {
+    display: none;
+  }
+}
