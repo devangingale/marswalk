@@ -127,6 +127,13 @@ def stationary_sols(poses, path):
     return out
 
 
+def atomic_write_text(path, value):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(value, encoding="utf-8")
+    tmp.replace(path)
+
+
 def fetch_pages(instrument, sol_min, sol_max, refresh):
     """Yield feed items for one instrument and sol range, page by page (cached)."""
     CACHE.mkdir(parents=True, exist_ok=True)
@@ -146,7 +153,7 @@ def fetch_pages(instrument, sol_min, sol_max, refresh):
                 "condition_4": f"{instrument}:instrument",
             })
             data = get_json(f"{FEED}?{q}")
-            cache.write_text(json.dumps(data), encoding="utf-8")
+            atomic_write_text(cache, json.dumps(data))
         items = data.get("items") or []
         if page == 0:
             print(f"  {instrument}: {data.get('total', 0)} records", file=sys.stderr)
@@ -216,7 +223,7 @@ def fetch_jezero_page(page, sol_min, sol_max, cache_dir):
                 request = urllib.request.Request(url, headers={"User-Agent": UA})
                 with urllib.request.urlopen(request, timeout=45) as response:
                     data = json.loads(response.read().decode("utf-8"))
-            cache.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
+            atomic_write_text(cache, json.dumps(data, separators=(",", ":")))
             return data
         except Exception as error:
             last_error = error
@@ -486,7 +493,7 @@ def main():
     OUT.parent.mkdir(parents=True, exist_ok=True)
     # One photo per line: compact for the app bundle, readable in diffs.
     lines = ",\n".join(json.dumps(p, separators=(",", ":")) for p in photos)
-    OUT.write_text(f"[\n{lines}\n]\n", encoding="utf-8")
+    atomic_write_text(OUT, f"[\n{lines}\n]\n")
     by_cam = defaultdict(int)
     for p in photos:
         by_cam[p["camera"]] += 1

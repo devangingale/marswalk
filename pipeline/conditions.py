@@ -27,8 +27,10 @@ def fetch(url: str, path: Path) -> None:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
     request = urllib.request.Request(url, headers={"User-Agent": "Marswalk/1.0 data pipeline"})
-    with urllib.request.urlopen(request, timeout=90) as response, path.open("wb") as dest:
+    tmp_path = path.with_name(path.name + ".tmp")
+    with urllib.request.urlopen(request, timeout=90) as response, tmp_path.open("wb") as dest:
         dest.write(response.read())
+    tmp_path.replace(path)
 
 
 def rems_weather() -> tuple[list[dict], dict]:

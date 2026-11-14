@@ -11,7 +11,7 @@ import csv
 import io
 import json
 import re
-import subprocess
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -29,8 +29,11 @@ def download(url: str, path: Path) -> None:
     if path.exists() and path.stat().st_size:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
-    subprocess.run(["curl.exe", "--fail", "--location", "--silent", "--show-error",
-                    "--max-time", "90", "--output", str(path), url], check=True)
+    tmp = path.with_name(path.name + ".tmp")
+    request = urllib.request.Request(url, headers={"User-Agent": "Marswalk/1.0 data pipeline"})
+    with urllib.request.urlopen(request, timeout=90) as response, tmp.open("wb") as dest:
+        dest.write(response.read())
+    tmp.replace(path)
     if not path.exists() or not path.stat().st_size:
         raise RuntimeError(f"Download produced no data: {url}")
 
