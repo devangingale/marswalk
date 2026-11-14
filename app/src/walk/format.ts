@@ -12,16 +12,21 @@ export function formatDuration(seconds: number): string {
 }
 
 export function formatDistance(metres: number): string {
-  if (metres >= 1000) return `${(metres / 1000).toFixed(2)} km`;
-  return `${Math.round(metres)} m`;
+  if (metres >= 1000) return `${(metres / 1000).toFixed(1)} km`;
+  const rounded = metres < 100 ? Math.round(metres / 5) * 5 : Math.round(metres);
+  return `${rounded} m`;
 }
 
 export function formatEnergy(kj: number): string {
-  return `${Math.round(kj)} kJ`;
+  const rounded = Math.round(kj / 50) * 50;
+  const grouped = String(rounded).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
+  return `${grouped} kJ`;
 }
 
 export function formatDose(mgy: number): string {
-  return `${mgy.toFixed(3)} mGy`;
+  if (mgy === 0) return '0 mGy';
+  if (mgy < 0.001) return '< 0.001 mGy';
+  return `${Number(mgy.toPrecision(2))} mGy`;
 }
 
 export function formatHeading(deg: number): string {

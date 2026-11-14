@@ -11,10 +11,14 @@ import { PlaybackBar } from '../walk/PlaybackBar';
 import { StopDetails } from './StopDetails';
 import { WalkMap } from './WalkMap';
 
-interface WalkViewProps { siteData: SiteData; plan: Plan; track: RouteTrack; playback: Playback }
+interface WalkViewProps { siteData: SiteData; plan: Plan; track: RouteTrack; playback: Playback; onPlan: () => void }
 
-export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playback }) => {
+export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playback, onPlan }) => {
   usePlaybackKeys(playback, track);
+  if (plan.stops.length === 0) return <div className="s48-walk s48-walk--empty">
+    <div className="s48-walk-map-area"><WalkMap siteData={siteData} plan={plan} track={track} lon={plan.start.lon} lat={plan.start.lat} alongM={0} /></div>
+    <section className="s48-empty-route"><button type="button" onClick={onPlan}>Add stops in Plan</button></section>
+  </div>;
   const feeds = useSiteFeeds(siteData);
   const state = walkStateAt(plan, track, playback.elapsedS);
   const budget = budgetRemaining(plan, state.used);

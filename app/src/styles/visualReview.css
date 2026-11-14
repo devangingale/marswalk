@@ -1,0 +1,111 @@
+.s48-walk--empty {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 24vw);
+}
+
+.s48-empty-route {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: var(--space-4);
+  border-left: var(--border-width) solid var(--color-rule);
+  background: var(--color-surface);
+}
+
+.s48-empty-route button {
+  min-height: var(--hit-plan);
+  padding: 0 var(--space-3);
+  border: var(--border-width) solid var(--color-control-border);
+  border-radius: var(--radius-2);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: var(--weight-medium) var(--text-md) / var(--leading-md) var(--font-ui);
+  cursor: pointer;
+}
+
+.s48-empty-route button:hover {
+  background: var(--color-surface-raised);
+}
+
+.s48-walk-stop-marker.is-start {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.s48-walk-stop-marker.is-start svg {
+  display: block;
+  width: 30px;
+  height: 30px;
+  overflow: visible;
+}
+
+.s48-walk-stop-marker.is-start .start-marker__body {
+  fill: var(--map-start-fill);
+  stroke: var(--map-start-ring);
+  stroke-width: 2px;
+}
+
+.s48-walk-stop-marker.is-start .start-marker__glyph {
+  fill: none;
+  stroke: var(--map-start-ring);
+  stroke-width: 1.6px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.s48-visor--empty .s48-empty-route {
+  position: absolute;
+  z-index: 2;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  left: var(--space-4);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.s48-visor--empty .s48-empty-route button {
+  min-height: var(--hit-walk);
+  border-color: var(--color-rule);
+  background: var(--visor-plate);
+  color: var(--visor-text);
+  pointer-events: auto;
+}
+
+@media (max-width: 1024px) {
+  .s48-walk--empty .s48-empty-route {
+    max-height: none;
+    min-height: 84px;
+    border-top: var(--border-width) solid var(--color-rule);
+    border-left: 0;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .s48-walk {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 36vw);
+  }
+
+  .s48-walk-map-area {
+    flex: initial;
+    min-height: 0;
+  }
+
+  .s48-walk-sheet {
+    max-height: none;
+    border-top: 0;
+    border-left: var(--border-width) solid var(--color-rule);
+  }
+
+  .s48-walk--empty .s48-empty-route {
+    min-height: 0;
+    border-top: 0;
+    border-left: var(--border-width) solid var(--color-rule);
+  }
+}
