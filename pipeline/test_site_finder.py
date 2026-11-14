@@ -1,4 +1,6 @@
 import importlib.util
+import hashlib
+import json
 from pathlib import Path
 from rasterio.transform import Affine
 
@@ -22,6 +24,21 @@ cell_patch = _MODULE._cell_patch
 def test_olympus_mons_summit_is_vetoed_by_elevation():
     reasons = site_veto_reasons(18.65, 20_002.0, [[1.0, 2.0], [2.0, 1.0]])
     assert reasons == ["elevation"]
+
+
+def test_known_sites_manifest_sha256_is_verified(tmp_path):
+    csv_path = tmp_path / "known_sites.csv"
+    csv_path.write_text("name,type,lon_east,lat\nA,landed,10,2\n", encoding="utf-8")
+    digest = hashlib.sha256(csv_path.read_bytes()).hexdigest()
+    (tmp_path / "manifest.json").write_text(json.dumps({"files": [{"path": csv_path.name, "sha256": digest}]}), encoding="utf-8")
+    assert _MODULE._load_known(csv_path)[0]["name"] == "A"
+    (tmp_path / "manifest.json").write_text(json.dumps({"files": [{"path": csv_path.name, "sha256": "0" * 64}]}), encoding="utf-8")
+    try:
+        _MODULE._load_known(csv_path)
+    except ValueError as exc:
+        assert "SHA-256 mismatch" in str(exc)
+    else:
+        raise AssertionError("manifest checksum mismatch was accepted")
 
 
 def test_jezero_landing_point_passes_hard_vetoes():
