@@ -8,15 +8,16 @@
 import { useEffect, useState } from 'react';
 import type { FeatureCollection, Point } from 'geojson';
 import { ChemistryProperties, RoverPhoto, SiteConditions, SiteData } from '../types';
-import photosSample from '../fixtures/photos.sample.json';
 import { ChemistryFeature } from './nearby';
 
 export interface SiteFeeds {
   status: 'loading' | 'ready' | 'error';
   error: string | null;
   photos: RoverPhoto[];
+  photosAvailable: boolean;
   conditions: SiteConditions | null;
   chemistry: ChemistryFeature[];
+  chemistryAvailable: boolean;
 }
 
 /**
@@ -33,11 +34,29 @@ export async function fetchJsonIfPresent<T>(url: string): Promise<T | null> {
   return (await resp.json()) as T;
 }
 
-const EMPTY: SiteFeeds = { status: 'loading', error: null, photos: [], conditions: null, chemistry: [] };
+const EMPTY: SiteFeeds = {
+  status: 'loading', error: null, photos: [], photosAvailable: false,
+  conditions: null, chemistry: [], chemistryAvailable: false,
+};
+
+export function readySiteFeeds(
+  photos: RoverPhoto[] | null,
+  conditions: SiteConditions | null,
+  chemistry: FeatureCollection<Point, ChemistryProperties> | null,
+): SiteFeeds {
+  return {
+    status: 'ready',
+    error: null,
+    photos: photos ?? [],
+    photosAvailable: photos !== null,
+    conditions,
+    chemistry: chemistry?.features ?? [],
+    chemistryAvailable: chemistry !== null,
+  };
+}
 
 /**
- * Site feeds for Walk. Until the site's photos.json is published, the committed
- * `fixtures/photos.sample.json` stands in for it.
+ * Site feeds for Walk. Missing per-site feeds stay unavailable instead of borrowing another site's data.
  */
 export function useSiteFeeds(siteData: SiteData): SiteFeeds {
   const [feeds, setFeeds] = useState<SiteFeeds>(EMPTY);
@@ -56,13 +75,7 @@ export function useSiteFeeds(siteData: SiteData): SiteFeeds {
     ])
       .then(([photos, conditions, chemistry]) => {
         if (cancelled) return;
-        setFeeds({
-          status: 'ready',
-          error: null,
-          photos: photos ?? (photosSample as RoverPhoto[]),
-          conditions,
-          chemistry: chemistry?.features ?? [],
-        });
+        setFeeds(readySiteFeeds(photos, conditions, chemistry));
       })
       .catch((err: unknown) => {
         if (cancelled) return;

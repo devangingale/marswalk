@@ -24,6 +24,10 @@ An astronaut stacks terrain, thermal, mineral and radiation layers over a few sq
 - Anything you pull in from outside (data, code, images, fonts, libraries) gets a line in `docs/references.md` in the same pull request.
 - No NASA logos, mission patches or insignia anywhere in the app, deck or video.
 
+## Deploy
+
+See [docs/deploy.md](docs/deploy.md) for R2 bundle hosting and the Vercel production deploy steps.
+
 ## Use of AI
 
 AI coding assistants (Claude, Gemini) were used to write code and documentation in this repository, directed and reviewed by the team. Commits made with AI assistance carry a `Co-Authored-By` trailer. No AI-generated images, video or audio are used.
