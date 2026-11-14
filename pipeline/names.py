@@ -121,10 +121,12 @@ def download_gazetteer(cache_dir: Path) -> Path:
     cache_dir.mkdir(parents=True, exist_ok=True)
     zip_path = cache_dir / "MARS_nomenclature_center_pts.zip"
     if not zip_path.exists():
+        tmp_path = zip_path.with_name(zip_path.name + ".tmp")
         with urllib.request.urlopen(GAZETTEER_ZIP_URL, timeout=120) as resp:
-            zip_path.write_bytes(resp.read())
+            tmp_path.write_bytes(resp.read())
+        tmp_path.replace(zip_path)
     with zipfile.ZipFile(zip_path) as zf:
-        zf.extractall(cache_dir)
+        zf.extractall(cache_dir, filter="data")
     shp = cache_dir / "MARS_nomenclature_center_pts.shp"
     if not shp.exists():
         raise FileNotFoundError(f"Shapefile not found after extraction: {shp}")
