@@ -21,14 +21,18 @@
  *      eta = terrain factor multiplier
  *
  * 2. Downhill Correction Factor:
- *    Santee, W. R., Allison, W. F., Blanchard, L. A., & Small, M. G. (2001).
- *    "A proposed model for load carriage on sloped terrain."
- *    Aviation, Space, and Environmental Medicine, 72(6), 562-566.
+ *    Santee, W. R., Blanchard, L. A., Speckman, K. L., Gonzalez, J. A., & Wallace, R. F. (2003).
+ *    "Load carriage model development and testing with field data."
+ *    USARIEM Technical Note TN03-3 (DTIC ADA415788); form restated in Potter et al. (2013),
+ *    Journal of Sport and Human Performance, 1(3), 34-42, doi:10.12922/jshp.0009.2013.
+ *    The operator before V^2 in Potter et al.'s review PDF is unverified.
  *
  *    For negative grade (G < 0), downhill metabolic expenditure follows a J-shaped curve
  *    (minimum around -6% to -8%, rising on steeper descents due to muscular braking).
  *    Total power: M_T = M_Pandolf - CF
  *    where CF = eta * [ (G*(W + L)*V)/3.5 - ((W + L)*(G + 6)^2)/W + (25 - V^2) ]
+ *    The implementation uses Mars-scaled masses: its first CF term is scaled by GRAVITY_RATIO;
+ *    that factor cancels from the second term because both its numerator and denominator are scaled.
  *
  * 3. Gravity Scaling Simplification:
  *    Earth standard gravity g_earth = 9.80665 m/s^2; Mars surface gravity g_mars = 3.71 m/s^2.
@@ -80,7 +84,7 @@ export function walkingSpeed(
 
 /**
  * Calculates metabolic power (Watts = Joules/second) using the Pandolf equation
- * with Santee downhill correction and Mars gravity scaling.
+ * with the Santee et al. (2003, USARIEM TN03-3) downhill correction and Mars gravity scaling.
  *
  * @param W Body mass (kg) on Earth
  * @param L Suit mass (kg) on Earth
@@ -119,7 +123,7 @@ export function calculateMetabolicPower(
     return Math.max(standingTerm, basePower);
   }
 
-  // Downhill (G < 0): apply Santee et al. (2001) correction factor
+  // Downhill (G < 0): apply Santee et al. (2003, USARIEM TN03-3) correction factor
   // CF = eta * [ (G*(W + L)*V)/3.5 - ((W + L)*(G + 6)^2)/W + (25 - V^2) ]
   const cfTerm1 = (G * totalMass * V) / 3.5;
   const cfTerm2 = (totalMass * Math.pow(G + 6.0, 2)) / W_mars;
