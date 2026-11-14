@@ -189,3 +189,28 @@
     background: var(--color-surface);
   }
 }
+.rover-overlay-layer__legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.rover-overlay-swatch {
+  display: inline-block;
+  flex: 0 0 14px;
+  height: 8px;
+}
+
+.rover-overlay-swatch--traverse {
+  border-top: 2px solid var(--ramp-seq-3);
+  transform: translateY(3px);
+}
+
+.rover-overlay-swatch--photos {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-round);
+  background: var(--ramp-seq-5);
+  box-shadow: 0 0 0 1px var(--map-label-halo);
+}
