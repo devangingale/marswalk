@@ -394,7 +394,9 @@ interface ShelterSite extends LonLat {
 /** Simulated shelters near the walk (positions are simulated, labelled so on screen). */
 function shelterSites(plan: Plan, track: RouteTrack): ShelterSite[] {
   const start = { lon: plan.start.lon, lat: plan.start.lat };
-  const at = (frac: number) => track.vertices[Math.floor(track.vertices.length * frac)] ?? track.vertices[0];
+  // Before the route is computed the track is empty: the route-sited shelters fall back to the drop-off.
+  const at = (frac: number) =>
+    track.vertices[Math.floor(track.vertices.length * frac)] ?? { ...start, along_m: 0 };
   // A habitat node sited on the planned route, about 70 % along.
   const node = at(0.7);
   // A crater-wall shelter near the route, about 40 % along.
