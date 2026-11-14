@@ -1,0 +1,1975 @@
+{
+  "version": 1,
+  "season_bins": [
+    {
+      "ls_start": 0,
+      "ls_end": 30,
+      "default_resolution_deg": 6.0,
+      "t_min": {
+        "tiles": "temperature/00/t_min/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/00/t_min/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/00/t_min/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.7377777777777778,
+          "observed_cells": 1328,
+          "grid_cells": 1800,
+          "samples": 10451,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2013-08-12",
+            "2013-09-23",
+            "2015-07-10",
+            "2015-08-01",
+            "2017-06-07",
+            "2019-04-03",
+            "2019-04-25",
+            "2019-05-14",
+            "2021-03-01",
+            "2021-03-23",
+            "2023-01-27"
+          ],
+          "local_time_hours": [
+            0.0,
+            4.0
+          ]
+        },
+        "max_level": 3
+      },
+      "t_max": {
+        "tiles": "temperature/00/t_max/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/00/t_max/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/00/t_max/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.7316666666666667,
+          "observed_cells": 1317,
+          "grid_cells": 1800,
+          "samples": 10493,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2013-08-12",
+            "2013-09-23",
+            "2015-07-10",
+            "2015-08-01",
+            "2017-06-07",
+            "2019-04-03",
+            "2019-04-25",
+            "2019-05-14",
+            "2021-03-01",
+            "2021-03-23",
+            "2023-01-27"
+          ],
+          "local_time_hours": [
+            12.0,
+            16.0
+          ]
+        },
+        "max_level": 3
+      },
+      "coverage_fraction": {
+        "t_min": 0.7377777777777778,
+        "t_max": 0.7316666666666667
+      },
+      "days_used": {
+        "t_min": [
+          "2013-08-12",
+          "2013-09-23",
+          "2015-07-10",
+          "2015-08-01",
+          "2017-06-07",
+          "2019-04-03",
+          "2019-04-25",
+          "2019-05-14",
+          "2021-03-01",
+          "2021-03-23",
+          "2023-01-27"
+        ],
+        "t_max": [
+          "2013-08-12",
+          "2013-09-23",
+          "2015-07-10",
+          "2015-08-01",
+          "2017-06-07",
+          "2019-04-03",
+          "2019-04-25",
+          "2019-05-14",
+          "2021-03-01",
+          "2021-03-23",
+          "2023-01-27"
+        ]
+      },
+      "local_time_hours": {
+        "t_min": [
+          0.0,
+          4.0
+        ],
+        "t_max": [
+          12.0,
+          16.0
+        ]
+      }
+    },
+    {
+      "ls_start": 30,
+      "ls_end": 60,
+      "default_resolution_deg": 6.0,
+      "t_min": {
+        "tiles": "temperature/01/t_min/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/01/t_min/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/01/t_min/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.7694444444444445,
+          "observed_cells": 1385,
+          "grid_cells": 1800,
+          "samples": 12089,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2013-10-14",
+            "2013-11-28",
+            "2015-09-11",
+            "2015-10-05",
+            "2017-08-10",
+            "2019-06-05",
+            "2019-06-28",
+            "2019-07-20",
+            "2021-05-04",
+            "2021-05-27",
+            "2023-04-02"
+          ],
+          "local_time_hours": [
+            0.0,
+            4.0
+          ]
+        },
+        "max_level": 3
+      },
+      "t_max": {
+        "tiles": "temperature/01/t_max/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/01/t_max/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/01/t_max/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.7533333333333333,
+          "observed_cells": 1356,
+          "grid_cells": 1800,
+          "samples": 11606,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2013-10-14",
+            "2013-11-28",
+            "2015-09-11",
+            "2015-10-05",
+            "2017-08-10",
+            "2019-06-05",
+            "2019-06-28",
+            "2019-07-20",
+            "2021-05-04",
+            "2021-05-27",
+            "2023-04-02"
+          ],
+          "local_time_hours": [
+            12.0,
+            16.0
+          ]
+        },
+        "max_level": 3
+      },
+      "coverage_fraction": {
+        "t_min": 0.7694444444444445,
+        "t_max": 0.7533333333333333
+      },
+      "days_used": {
+        "t_min": [
+          "2013-10-14",
+          "2013-11-28",
+          "2015-09-11",
+          "2015-10-05",
+          "2017-08-10",
+          "2019-06-05",
+          "2019-06-28",
+          "2019-07-20",
+          "2021-05-04",
+          "2021-05-27",
+          "2023-04-02"
+        ],
+        "t_max": [
+          "2013-10-14",
+          "2013-11-28",
+          "2015-09-11",
+          "2015-10-05",
+          "2017-08-10",
+          "2019-06-05",
+          "2019-06-28",
+          "2019-07-20",
+          "2021-05-04",
+          "2021-05-27",
+          "2023-04-02"
+        ]
+      },
+      "local_time_hours": {
+        "t_min": [
+          0.0,
+          4.0
+        ],
+        "t_max": [
+          12.0,
+          16.0
+        ]
+      }
+    },
+    {
+      "ls_start": 60,
+      "ls_end": 90,
+      "default_resolution_deg": 6.0,
+      "t_min": {
+        "tiles": "temperature/02/t_min/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/02/t_min/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/02/t_min/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.7822222222222223,
+          "observed_cells": 1408,
+          "grid_cells": 1800,
+          "samples": 11764,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2013-12-21",
+            "2014-02-05",
+            "2015-11-20",
+            "2015-12-12",
+            "2017-10-18",
+            "2019-08-12",
+            "2019-09-05",
+            "2019-09-27",
+            "2021-07-12",
+            "2021-08-03",
+            "2023-06-10"
+          ],
+          "local_time_hours": [
+            0.0,
+            4.0
+          ]
+        },
+        "max_level": 3
+      },
+      "t_max": {
+        "tiles": "temperature/02/t_max/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/02/t_max/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/02/t_max/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.6988888888888889,
+          "observed_cells": 1258,
+          "grid_cells": 1800,
+          "samples": 10145,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2013-12-21",
+            "2014-02-05",
+            "2015-11-20",
+            "2015-12-12",
+            "2017-10-18",
+            "2019-08-12",
+            "2019-09-05",
+            "2019-09-27",
+            "2021-07-12",
+            "2021-08-03",
+            "2023-06-10"
+          ],
+          "local_time_hours": [
+            12.0,
+            16.0
+          ]
+        },
+        "max_level": 3
+      },
+      "coverage_fraction": {
+        "t_min": 0.7822222222222223,
+        "t_max": 0.6988888888888889
+      },
+      "days_used": {
+        "t_min": [
+          "2013-12-21",
+          "2014-02-05",
+          "2015-11-20",
+          "2015-12-12",
+          "2017-10-18",
+          "2019-08-12",
+          "2019-09-05",
+          "2019-09-27",
+          "2021-07-12",
+          "2021-08-03",
+          "2023-06-10"
+        ],
+        "t_max": [
+          "2013-12-21",
+          "2014-02-05",
+          "2015-11-20",
+          "2015-12-12",
+          "2017-10-18",
+          "2019-08-12",
+          "2019-09-05",
+          "2019-09-27",
+          "2021-07-12",
+          "2021-08-03",
+          "2023-06-10"
+        ]
+      },
+      "local_time_hours": {
+        "t_min": [
+          0.0,
+          4.0
+        ],
+        "t_max": [
+          12.0,
+          16.0
+        ]
+      }
+    },
+    {
+      "ls_start": 90,
+      "ls_end": 120,
+      "default_resolution_deg": 6.0,
+      "t_min": {
+        "tiles": "temperature/03/t_min/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/03/t_min/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/03/t_min/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.705,
+          "observed_cells": 1269,
+          "grid_cells": 1800,
+          "samples": 9169,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2014-02-27",
+            "2014-03-20",
+            "2016-02-17",
+            "2017-12-23",
+            "2019-10-19",
+            "2019-11-10",
+            "2019-12-03",
+            "2021-09-16",
+            "2021-10-09",
+            "2023-08-15"
+          ],
+          "local_time_hours": [
+            0.0,
+            4.0
+          ]
+        },
+        "max_level": 3
+      },
+      "t_max": {
+        "tiles": "temperature/03/t_max/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/03/t_max/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/03/t_max/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.61,
+          "observed_cells": 1098,
+          "grid_cells": 1800,
+          "samples": 8110,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2014-02-27",
+            "2014-03-20",
+            "2016-02-17",
+            "2017-12-23",
+            "2019-10-19",
+            "2019-11-10",
+            "2019-12-03",
+            "2021-09-16",
+            "2021-10-09",
+            "2023-08-15"
+          ],
+          "local_time_hours": [
+            12.0,
+            16.0
+          ]
+        },
+        "max_level": 3
+      },
+      "coverage_fraction": {
+        "t_min": 0.705,
+        "t_max": 0.61
+      },
+      "days_used": {
+        "t_min": [
+          "2014-02-27",
+          "2014-03-20",
+          "2016-02-17",
+          "2017-12-23",
+          "2019-10-19",
+          "2019-11-10",
+          "2019-12-03",
+          "2021-09-16",
+          "2021-10-09",
+          "2023-08-15"
+        ],
+        "t_max": [
+          "2014-02-27",
+          "2014-03-20",
+          "2016-02-17",
+          "2017-12-23",
+          "2019-10-19",
+          "2019-11-10",
+          "2019-12-03",
+          "2021-09-16",
+          "2021-10-09",
+          "2023-08-15"
+        ]
+      },
+      "local_time_hours": {
+        "t_min": [
+          0.0,
+          4.0
+        ],
+        "t_max": [
+          12.0,
+          16.0
+        ]
+      }
+    },
+    {
+      "ls_start": 120,
+      "ls_end": 150,
+      "default_resolution_deg": 6.0,
+      "t_min": {
+        "tiles": "temperature/04/t_min/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/04/t_min/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/04/t_min/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.8033333333333333,
+          "observed_cells": 1446,
+          "grid_cells": 1800,
+          "samples": 18874,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2016-03-30",
+            "2016-04-20",
+            "2019-12-24",
+            "2020-01-03",
+            "2020-01-13",
+            "2020-02-03",
+            "2021-11-20",
+            "2021-12-11",
+            "2023-09-28",
+            "2023-10-18",
+            "2023-11-08"
+          ],
+          "local_time_hours": [
+            0.0,
+            4.0
+          ]
+        },
+        "max_level": 3
+      },
+      "t_max": {
+        "tiles": "temperature/04/t_max/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/04/t_max/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/04/t_max/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.7411111111111112,
+          "observed_cells": 1334,
+          "grid_cells": 1800,
+          "samples": 16211,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2016-03-30",
+            "2016-04-20",
+            "2019-12-24",
+            "2020-01-03",
+            "2020-01-13",
+            "2020-02-03",
+            "2021-11-20",
+            "2021-12-11",
+            "2023-09-28",
+            "2023-10-18",
+            "2023-11-08"
+          ],
+          "local_time_hours": [
+            12.0,
+            16.0
+          ]
+        },
+        "max_level": 3
+      },
+      "coverage_fraction": {
+        "t_min": 0.8033333333333333,
+        "t_max": 0.7411111111111112
+      },
+      "days_used": {
+        "t_min": [
+          "2016-03-30",
+          "2016-04-20",
+          "2019-12-24",
+          "2020-01-03",
+          "2020-01-13",
+          "2020-02-03",
+          "2021-11-20",
+          "2021-12-11",
+          "2023-09-28",
+          "2023-10-18",
+          "2023-11-08"
+        ],
+        "t_max": [
+          "2016-03-30",
+          "2016-04-20",
+          "2019-12-24",
+          "2020-01-03",
+          "2020-01-13",
+          "2020-02-03",
+          "2021-11-20",
+          "2021-12-11",
+          "2023-09-28",
+          "2023-10-18",
+          "2023-11-08"
+        ]
+      },
+      "local_time_hours": {
+        "t_min": [
+          0.0,
+          4.0
+        ],
+        "t_max": [
+          12.0,
+          16.0
+        ]
+      }
+    },
+    {
+      "ls_start": 150,
+      "ls_end": 180,
+      "default_resolution_deg": 6.0,
+      "t_min": {
+        "tiles": "temperature/05/t_min/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/05/t_min/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/05/t_min/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.68,
+          "observed_cells": 1224,
+          "grid_cells": 1800,
+          "samples": 9590,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2014-07-03",
+            "2014-08-10",
+            "2016-05-30",
+            "2016-06-17",
+            "2018-04-26",
+            "2020-02-17",
+            "2020-03-13",
+            "2020-03-31",
+            "2022-01-20",
+            "2022-02-07",
+            "2023-12-17"
+          ],
+          "local_time_hours": [
+            0.0,
+            4.0
+          ]
+        },
+        "max_level": 3
+      },
+      "t_max": {
+        "tiles": "temperature/05/t_max/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/05/t_max/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/05/t_max/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.6994444444444444,
+          "observed_cells": 1259,
+          "grid_cells": 1800,
+          "samples": 10336,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2014-07-03",
+            "2014-08-10",
+            "2016-05-30",
+            "2016-06-17",
+            "2018-04-26",
+            "2020-02-17",
+            "2020-03-13",
+            "2020-03-31",
+            "2022-01-20",
+            "2022-02-07",
+            "2023-12-17"
+          ],
+          "local_time_hours": [
+            12.0,
+            16.0
+          ]
+        },
+        "max_level": 3
+      },
+      "coverage_fraction": {
+        "t_min": 0.68,
+        "t_max": 0.6994444444444444
+      },
+      "days_used": {
+        "t_min": [
+          "2014-07-03",
+          "2014-08-10",
+          "2016-05-30",
+          "2016-06-17",
+          "2018-04-26",
+          "2020-02-17",
+          "2020-03-13",
+          "2020-03-31",
+          "2022-01-20",
+          "2022-02-07",
+          "2023-12-17"
+        ],
+        "t_max": [
+          "2014-07-03",
+          "2014-08-10",
+          "2016-05-30",
+          "2016-06-17",
+          "2018-04-26",
+          "2020-02-17",
+          "2020-03-13",
+          "2020-03-31",
+          "2022-01-20",
+          "2022-02-07",
+          "2023-12-17"
+        ]
+      },
+      "local_time_hours": {
+        "t_min": [
+          0.0,
+          4.0
+        ],
+        "t_max": [
+          12.0,
+          16.0
+        ]
+      }
+    },
+    {
+      "ls_start": 180,
+      "ls_end": 210,
+      "default_resolution_deg": 6.0,
+      "t_min": {
+        "tiles": "temperature/06/t_min/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/06/t_min/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/06/t_min/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.5911111111111111,
+          "observed_cells": 1064,
+          "grid_cells": 1800,
+          "samples": 11371,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2014-08-26",
+            "2014-09-30",
+            "2016-07-22",
+            "2016-08-08",
+            "2018-06-18",
+            "2020-04-13",
+            "2020-05-05",
+            "2020-05-21",
+            "2022-03-14",
+            "2022-03-31"
+          ],
+          "local_time_hours": [
+            0.0,
+            4.0
+          ]
+        },
+        "max_level": 3
+      },
+      "t_max": {
+        "tiles": "temperature/06/t_max/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/06/t_max/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/06/t_max/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.6044444444444445,
+          "observed_cells": 1088,
+          "grid_cells": 1800,
+          "samples": 11639,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2014-08-26",
+            "2014-09-30",
+            "2016-07-22",
+            "2016-08-08",
+            "2018-06-18",
+            "2020-04-13",
+            "2020-05-05",
+            "2020-05-21",
+            "2022-03-14",
+            "2022-03-31"
+          ],
+          "local_time_hours": [
+            12.0,
+            16.0
+          ]
+        },
+        "max_level": 3
+      },
+      "coverage_fraction": {
+        "t_min": 0.5911111111111111,
+        "t_max": 0.6044444444444445
+      },
+      "days_used": {
+        "t_min": [
+          "2014-08-26",
+          "2014-09-30",
+          "2016-07-22",
+          "2016-08-08",
+          "2018-06-18",
+          "2020-04-13",
+          "2020-05-05",
+          "2020-05-21",
+          "2022-03-14",
+          "2022-03-31"
+        ],
+        "t_max": [
+          "2014-08-26",
+          "2014-09-30",
+          "2016-07-22",
+          "2016-08-08",
+          "2018-06-18",
+          "2020-04-13",
+          "2020-05-05",
+          "2020-05-21",
+          "2022-03-14",
+          "2022-03-31"
+        ]
+      },
+      "local_time_hours": {
+        "t_min": [
+          0.0,
+          4.0
+        ],
+        "t_max": [
+          12.0,
+          16.0
+        ]
+      }
+    },
+    {
+      "ls_start": 210,
+      "ls_end": 240,
+      "default_resolution_deg": 6.0,
+      "t_min": {
+        "tiles": "temperature/07/t_min/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/07/t_min/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/07/t_min/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.6261111111111111,
+          "observed_cells": 1127,
+          "grid_cells": 1800,
+          "samples": 8189,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2014-10-17",
+            "2014-11-18",
+            "2016-09-11",
+            "2016-09-27",
+            "2018-08-07",
+            "2020-06-07",
+            "2020-06-24",
+            "2020-07-09",
+            "2022-05-04",
+            "2022-05-20"
+          ],
+          "local_time_hours": [
+            0.0,
+            4.0
+          ]
+        },
+        "max_level": 3
+      },
+      "t_max": {
+        "tiles": "temperature/07/t_max/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/07/t_max/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/07/t_max/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.6333333333333333,
+          "observed_cells": 1140,
+          "grid_cells": 1800,
+          "samples": 8317,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2014-10-17",
+            "2014-11-18",
+            "2016-09-11",
+            "2016-09-27",
+            "2018-08-07",
+            "2020-06-07",
+            "2020-06-24",
+            "2020-07-09",
+            "2022-05-04",
+            "2022-05-20"
+          ],
+          "local_time_hours": [
+            12.0,
+            16.0
+          ]
+        },
+        "max_level": 3
+      },
+      "coverage_fraction": {
+        "t_min": 0.6261111111111111,
+        "t_max": 0.6333333333333333
+      },
+      "days_used": {
+        "t_min": [
+          "2014-10-17",
+          "2014-11-18",
+          "2016-09-11",
+          "2016-09-27",
+          "2018-08-07",
+          "2020-06-07",
+          "2020-06-24",
+          "2020-07-09",
+          "2022-05-04",
+          "2022-05-20"
+        ],
+        "t_max": [
+          "2014-10-17",
+          "2014-11-18",
+          "2016-09-11",
+          "2016-09-27",
+          "2018-08-07",
+          "2020-06-07",
+          "2020-06-24",
+          "2020-07-09",
+          "2022-05-04",
+          "2022-05-20"
+        ]
+      },
+      "local_time_hours": {
+        "t_min": [
+          0.0,
+          4.0
+        ],
+        "t_max": [
+          12.0,
+          16.0
+        ]
+      }
+    },
+    {
+      "ls_start": 240,
+      "ls_end": 270,
+      "default_resolution_deg": 6.0,
+      "t_min": {
+        "tiles": "temperature/08/t_min/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/08/t_min/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/08/t_min/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.7416666666666667,
+          "observed_cells": 1335,
+          "grid_cells": 1800,
+          "samples": 14512,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2014-12-04",
+            "2015-01-04",
+            "2016-10-29",
+            "2016-11-13",
+            "2018-09-24",
+            "2020-07-25",
+            "2020-08-11",
+            "2020-08-25",
+            "2022-06-21",
+            "2022-06-29",
+            "2022-07-06"
+          ],
+          "local_time_hours": [
+            0.0,
+            4.0
+          ]
+        },
+        "max_level": 3
+      },
+      "t_max": {
+        "tiles": "temperature/08/t_max/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/08/t_max/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/08/t_max/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.7872222222222223,
+          "observed_cells": 1417,
+          "grid_cells": 1800,
+          "samples": 15127,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2014-12-04",
+            "2015-01-04",
+            "2016-10-29",
+            "2016-11-13",
+            "2018-09-24",
+            "2020-07-25",
+            "2020-08-11",
+            "2020-08-25",
+            "2022-06-21",
+            "2022-06-29",
+            "2022-07-06"
+          ],
+          "local_time_hours": [
+            12.0,
+            16.0
+          ]
+        },
+        "max_level": 3
+      },
+      "coverage_fraction": {
+        "t_min": 0.7416666666666667,
+        "t_max": 0.7872222222222223
+      },
+      "days_used": {
+        "t_min": [
+          "2014-12-04",
+          "2015-01-04",
+          "2016-10-29",
+          "2016-11-13",
+          "2018-09-24",
+          "2020-07-25",
+          "2020-08-11",
+          "2020-08-25",
+          "2022-06-21",
+          "2022-06-29",
+          "2022-07-06"
+        ],
+        "t_max": [
+          "2014-12-04",
+          "2015-01-04",
+          "2016-10-29",
+          "2016-11-13",
+          "2018-09-24",
+          "2020-07-25",
+          "2020-08-11",
+          "2020-08-25",
+          "2022-06-21",
+          "2022-06-29",
+          "2022-07-06"
+        ]
+      },
+      "local_time_hours": {
+        "t_min": [
+          0.0,
+          4.0
+        ],
+        "t_max": [
+          12.0,
+          16.0
+        ]
+      }
+    },
+    {
+      "ls_start": 270,
+      "ls_end": 300,
+      "default_resolution_deg": 6.0,
+      "t_min": {
+        "tiles": "temperature/09/t_min/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/09/t_min/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/09/t_min/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.5666666666666667,
+          "observed_cells": 1020,
+          "grid_cells": 1800,
+          "samples": 9130,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2015-01-20",
+            "2015-02-22",
+            "2016-12-15",
+            "2017-01-01",
+            "2020-09-10",
+            "2020-09-27",
+            "2020-10-13",
+            "2022-08-07",
+            "2022-08-24"
+          ],
+          "local_time_hours": [
+            0.0,
+            4.0
+          ]
+        },
+        "max_level": 3
+      },
+      "t_max": {
+        "tiles": "temperature/09/t_max/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/09/t_max/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/09/t_max/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.6155555555555555,
+          "observed_cells": 1108,
+          "grid_cells": 1800,
+          "samples": 10017,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2015-01-20",
+            "2015-02-22",
+            "2016-12-15",
+            "2017-01-01",
+            "2020-09-10",
+            "2020-09-27",
+            "2020-10-13",
+            "2022-08-07",
+            "2022-08-24"
+          ],
+          "local_time_hours": [
+            12.0,
+            16.0
+          ]
+        },
+        "max_level": 3
+      },
+      "coverage_fraction": {
+        "t_min": 0.5666666666666667,
+        "t_max": 0.6155555555555555
+      },
+      "days_used": {
+        "t_min": [
+          "2015-01-20",
+          "2015-02-22",
+          "2016-12-15",
+          "2017-01-01",
+          "2020-09-10",
+          "2020-09-27",
+          "2020-10-13",
+          "2022-08-07",
+          "2022-08-24"
+        ],
+        "t_max": [
+          "2015-01-20",
+          "2015-02-22",
+          "2016-12-15",
+          "2017-01-01",
+          "2020-09-10",
+          "2020-09-27",
+          "2020-10-13",
+          "2022-08-07",
+          "2022-08-24"
+        ]
+      },
+      "local_time_hours": {
+        "t_min": [
+          0.0,
+          4.0
+        ],
+        "t_max": [
+          12.0,
+          16.0
+        ]
+      }
+    },
+    {
+      "ls_start": 300,
+      "ls_end": 330,
+      "default_resolution_deg": 6.0,
+      "t_min": {
+        "tiles": "temperature/10/t_min/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/10/t_min/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/10/t_min/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.7755555555555556,
+          "observed_cells": 1396,
+          "grid_cells": 1800,
+          "samples": 10766,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2015-03-10",
+            "2015-04-14",
+            "2017-02-03",
+            "2017-02-20",
+            "2018-12-31",
+            "2020-10-29",
+            "2020-11-17",
+            "2020-12-03",
+            "2022-09-26",
+            "2022-10-05",
+            "2022-10-13"
+          ],
+          "local_time_hours": [
+            0.0,
+            4.0
+          ]
+        },
+        "max_level": 3
+      },
+      "t_max": {
+        "tiles": "temperature/10/t_max/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/10/t_max/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/10/t_max/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.7905555555555556,
+          "observed_cells": 1423,
+          "grid_cells": 1800,
+          "samples": 11013,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2015-03-10",
+            "2015-04-14",
+            "2017-02-03",
+            "2017-02-20",
+            "2018-12-31",
+            "2020-10-29",
+            "2020-11-17",
+            "2020-12-03",
+            "2022-09-26",
+            "2022-10-05",
+            "2022-10-13"
+          ],
+          "local_time_hours": [
+            12.0,
+            16.0
+          ]
+        },
+        "max_level": 3
+      },
+      "coverage_fraction": {
+        "t_min": 0.7755555555555556,
+        "t_max": 0.7905555555555556
+      },
+      "days_used": {
+        "t_min": [
+          "2015-03-10",
+          "2015-04-14",
+          "2017-02-03",
+          "2017-02-20",
+          "2018-12-31",
+          "2020-10-29",
+          "2020-11-17",
+          "2020-12-03",
+          "2022-09-26",
+          "2022-10-05",
+          "2022-10-13"
+        ],
+        "t_max": [
+          "2015-03-10",
+          "2015-04-14",
+          "2017-02-03",
+          "2017-02-20",
+          "2018-12-31",
+          "2020-10-29",
+          "2020-11-17",
+          "2020-12-03",
+          "2022-09-26",
+          "2022-10-05",
+          "2022-10-13"
+        ]
+      },
+      "local_time_hours": {
+        "t_min": [
+          0.0,
+          4.0
+        ],
+        "t_max": [
+          12.0,
+          16.0
+        ]
+      }
+    },
+    {
+      "ls_start": 330,
+      "ls_end": 360,
+      "default_resolution_deg": 6.0,
+      "t_min": {
+        "tiles": "temperature/11/t_min/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/11/t_min/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/11/t_min/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.8011111111111111,
+          "observed_cells": 1442,
+          "grid_cells": 1800,
+          "samples": 12248,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2015-05-02",
+            "2015-06-10",
+            "2017-03-29",
+            "2017-04-17",
+            "2019-02-24",
+            "2020-12-21",
+            "2021-01-11",
+            "2021-01-29",
+            "2022-11-19",
+            "2022-11-29",
+            "2022-12-08"
+          ],
+          "local_time_hours": [
+            0.0,
+            4.0
+          ]
+        },
+        "max_level": 3
+      },
+      "t_max": {
+        "tiles": "temperature/11/t_max/{z}/{x}/{y}.png",
+        "values": {
+          "url": "temperature/11/t_max/values.bin",
+          "width": 60,
+          "height": 30,
+          "west": -180.0,
+          "north": 90.0,
+          "res_deg": 6.0,
+          "scale": 0.0026613362020949556,
+          "offset": -156.97300720214844,
+          "nodata": 65535,
+          "counts": {
+            "url": "temperature/11/t_max/counts.bin",
+            "width": 60,
+            "height": 30,
+            "res_deg": 6.0,
+            "dtype": "uint32",
+            "byte_order": "little",
+            "units": "observations",
+            "nodata": 0
+          },
+          "min_observations_per_cell": 3
+        },
+        "coverage": {
+          "fraction": 0.8227777777777778,
+          "observed_cells": 1481,
+          "grid_cells": 1800,
+          "samples": 12521,
+          "min_observations_per_cell": 3,
+          "days_used": [
+            "2015-05-02",
+            "2015-06-10",
+            "2017-03-29",
+            "2017-04-17",
+            "2019-02-24",
+            "2020-12-21",
+            "2021-01-11",
+            "2021-01-29",
+            "2022-11-19",
+            "2022-11-29",
+            "2022-12-08"
+          ],
+          "local_time_hours": [
+            12.0,
+            16.0
+          ]
+        },
+        "max_level": 3
+      },
+      "coverage_fraction": {
+        "t_min": 0.8011111111111111,
+        "t_max": 0.8227777777777778
+      },
+      "days_used": {
+        "t_min": [
+          "2015-05-02",
+          "2015-06-10",
+          "2017-03-29",
+          "2017-04-17",
+          "2019-02-24",
+          "2020-12-21",
+          "2021-01-11",
+          "2021-01-29",
+          "2022-11-19",
+          "2022-11-29",
+          "2022-12-08"
+        ],
+        "t_max": [
+          "2015-05-02",
+          "2015-06-10",
+          "2017-03-29",
+          "2017-04-17",
+          "2019-02-24",
+          "2020-12-21",
+          "2021-01-11",
+          "2021-01-29",
+          "2022-11-19",
+          "2022-11-29",
+          "2022-12-08"
+        ]
+      },
+      "local_time_hours": {
+        "t_min": [
+          0.0,
+          4.0
+        ],
+        "t_max": [
+          12.0,
+          16.0
+        ]
+      }
+    }
+  ],
+  "legend": {
+    "min": -156.97300720214844,
+    "max": 17.434999465942383,
+    "units": "deg C",
+    "min_label": "-157",
+    "max_label": "17.4",
+    "palette": "mcs_temperature_cool_warm",
+    "palette_label": "deep blue-grey cold to orange warm; fixed moderate alpha",
+    "stops": [
+      [
+        -156.97300720214844,
+        "#344a6696"
+      ],
+      [
+        -98.8370049794515,
+        "#647c9196"
+      ],
+      [
+        -40.70100275675456,
+        "#c2a07996"
+      ],
+      [
+        17.434999465942383,
+        "#ee873a96"
+      ]
+    ],
+    "alpha": 150
+  },
+  "source": {
+    "dataset": "MRO Mars Climate Sounder (MCS) DDR V6.2",
+    "citation": "McCleese and Schofield, MRO MARS CLIMATE SOUNDER LEVEL 5 DDR V6.2, NASA Planetary Data System, MRO-M-MCS-5-DDR-V6.2, 2006. https://doi.org/10.17189/6khc-s052",
+    "licence": "NASA Planetary Data System archive; public-domain NASA government work. No separate product-specific licence text was found on the PDS archive page.",
+    "landing_page": "https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/MARS/mcs.html",
+    "selection_reason": "MCS DDR profiles provide surface temperature, LTST and surface coordinates for both the near-pre-dawn and afternoon orbit passes, allowing both temperature maps to come from one PDS product.",
+    "sampling": "Expanded sparse sample across multiple Mars Years; per-cell median from MCS observations in each bin's recorded days_used. The 6-degree grid is the default for broader coverage; the optional 3-degree detail grid preserves finer spatial detail. Cells with fewer than 3 selected observations remain nodata.",
+    "grid_variants": {
+      "default_resolution_deg": 6.0,
+      "detail_resolution_deg": 3.0,
+      "minimum_observations_per_cell": 3
+    },
+    "local_time_selection": {
+      "t_min": {
+        "hours": [
+          0.0,
+          4.0
+        ],
+        "label": "night-side, near pre-dawn (MCS orbit local times around 3 am)"
+      },
+      "t_max": {
+        "hours": [
+          12.0,
+          16.0
+        ],
+        "label": "day-side, afternoon (MCS orbit local times around 3 pm)"
+      }
+    },
+    "quality_filter": "T_QUAL in {0, 1}; SURF_QUAL in {0, 1, 2, 3} (surface temperature reported); 100 <= T_SURF <= 400 K.",
+    "profile_samples": {
+      "night": 138153,
+      "afternoon": 135535
+    },
+    "download": {
+      "date": "2026-11-14",
+      "files": 788,
+      "bytes": 6993786348
+    },
+    "licence_note": "Retain the PDS citation and verify any downstream redistribution policy with the PDS Atmospheres Node."
+  },
+  "extremes": [
+    {
+      "ls_start": 0,
+      "coldest": {
+        "t_c": -141.06199645996094,
+        "lat": -81.0,
+        "lon": 3.0
+      },
+      "warmest": {
+        "t_c": 2.6589999198913574,
+        "lat": 9.0,
+        "lon": 39.0
+      }
+    },
+    {
+      "ls_start": 30,
+      "coldest": {
+        "t_c": -139.6544952392578,
+        "lat": -63.0,
+        "lon": -87.0
+      },
+      "warmest": {
+        "t_c": -5.586999893188477,
+        "lat": 33.0,
+        "lon": -75.0
+      }
+    },
+    {
+      "ls_start": 60,
+      "coldest": {
+        "t_c": -151.83700561523438,
+        "lat": -87.0,
+        "lon": -57.0
+      },
+      "warmest": {
+        "t_c": -5.401500225067139,
+        "lat": 33.0,
+        "lon": -87.0
+      }
+    },
+    {
+      "ls_start": 90,
+      "coldest": {
+        "t_c": -146.9340057373047,
+        "lat": -87.0,
+        "lon": -105.0
+      },
+      "warmest": {
+        "t_c": -5.367499828338623,
+        "lat": 39.0,
+        "lon": -27.0
+      }
+    },
+    {
+      "ls_start": 120,
+      "coldest": {
+        "t_c": -155.11700439453125,
+        "lat": -87.0,
+        "lon": -81.0
+      },
+      "warmest": {
+        "t_c": 0.9330000281333923,
+        "lat": 33.0,
+        "lon": -57.0
+      }
+    },
+    {
+      "ls_start": 150,
+      "coldest": {
+        "t_c": -149.13699340820312,
+        "lat": -87.0,
+        "lon": 153.0
+      },
+      "warmest": {
+        "t_c": -6.484499931335449,
+        "lat": 9.0,
+        "lon": -81.0
+      }
+    },
+    {
+      "ls_start": 180,
+      "coldest": {
+        "t_c": -139.15899658203125,
+        "lat": -75.0,
+        "lon": 75.0
+      },
+      "warmest": {
+        "t_c": 0.5989999771118164,
+        "lat": -9.0,
+        "lon": 39.0
+      }
+    },
+    {
+      "ls_start": 210,
+      "coldest": {
+        "t_c": -137.74899291992188,
+        "lat": -69.0,
+        "lon": -141.0
+      },
+      "warmest": {
+        "t_c": 2.5829999446868896,
+        "lat": -33.0,
+        "lon": -123.0
+      }
+    },
+    {
+      "ls_start": 240,
+      "coldest": {
+        "t_c": -148.21800231933594,
+        "lat": 75.0,
+        "lon": -141.0
+      },
+      "warmest": {
+        "t_c": 16.10700035095215,
+        "lat": -39.0,
+        "lon": -105.0
+      }
+    },
+    {
+      "ls_start": 270,
+      "coldest": {
+        "t_c": -148.21800231933594,
+        "lat": 69.0,
+        "lon": -9.0
+      },
+      "warmest": {
+        "t_c": 17.434999465942383,
+        "lat": -39.0,
+        "lon": -3.0
+      }
+    },
+    {
+      "ls_start": 300,
+      "coldest": {
+        "t_c": -148.24099731445312,
+        "lat": 81.0,
+        "lon": 33.0
+      },
+      "warmest": {
+        "t_c": 15.727499961853027,
+        "lat": 3.0,
+        "lon": -147.0
+      }
+    },
+    {
+      "ls_start": 330,
+      "coldest": {
+        "t_c": -138.47549438476562,
+        "lat": 81.0,
+        "lon": -3.0
+      },
+      "warmest": {
+        "t_c": 8.23900032043457,
+        "lat": -3.0,
+        "lon": -123.0
+      }
+    }
+  ]
+}
