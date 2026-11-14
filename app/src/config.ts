@@ -1,11 +1,12 @@
 // Written with AI assistance, directed and reviewed by the team.
 
 /**
- * Base URL for tile bundles and site metadata.
- * Overridable by Vite environment variable VITE_TILES_BASE.
+ * Base URL for tile bundles and site metadata. Set VITE_TILES_BASE to override;
+ * development defaults to the local full bundles and production to the sample.
  */
 export const TILES_BASE: string =
-  (import.meta.env.VITE_TILES_BASE as string) || '/sample';
+  (import.meta.env.VITE_TILES_BASE as string) ||
+  (import.meta.env.MODE === 'development' ? '/local-bundles' : '/sample');
 
 /**
  * Available sites configured for the mission.
