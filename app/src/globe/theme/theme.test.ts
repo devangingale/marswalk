@@ -5,6 +5,8 @@ import {
   DAY_ELEV_DEG,
   DAY_OFF_ELEV_DEG,
   DAY_ON_ELEV_DEG,
+  globePreferencesFromSearch,
+  globeSearchWithPreferences,
   HOLD_MS,
   HYSTERESIS_DEG,
   TWILIGHT_ELEV_DEG,
@@ -163,5 +165,21 @@ describe('themeAttr', () => {
   it('returns the data-theme token-set name', () => {
     expect(themeAttr('day')).toBe('day');
     expect(themeAttr('night')).toBe('night');
+  });
+});
+
+describe('globe URL preferences', () => {
+  it('defaults invalid or missing preferences to Earth and Auto', () => {
+    expect(globePreferencesFromSearch('?globe=1&mode=venus&theme=sepia')).toEqual({ mode: 'earth', override: 'auto' });
+  });
+
+  it('reads Mars and Night preferences exactly', () => {
+    expect(globePreferencesFromSearch('?mode=mars&theme=night')).toEqual({ mode: 'mars', override: 'night' });
+  });
+
+  it('writes preferences and preserves existing globe state', () => {
+    expect(globeSearchWithPreferences('?globe=1&layers=ice&view=1%2C2%2C3', { mode: 'mars', override: 'day' })).toBe(
+      'globe=1&layers=ice&view=1%2C2%2C3&mode=mars&theme=day',
+    );
   });
 });
