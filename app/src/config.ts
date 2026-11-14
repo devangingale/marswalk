@@ -9,6 +9,12 @@ export const TILES_BASE: string =
   (import.meta.env.MODE === 'development' ? '/local-bundles' : '/sample');
 
 /**
+ * Base URL for the globe layer set (layers.json, tiles, value grids, caves).
+ * Set VITE_GLOBE_BASE to serve the full set; defaults to the small sample.
+ */
+export const GLOBE_BASE: string = (import.meta.env.VITE_GLOBE_BASE as string) || '/sample/globe';
+
+/**
  * Available sites configured for the mission.
  * Gale (Mount Sharp) is the primary full site; Jezero is the validation site.
  */
