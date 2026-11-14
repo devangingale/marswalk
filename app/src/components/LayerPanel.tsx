@@ -1,7 +1,15 @@
 // Written with AI assistance, directed and reviewed by the team.
 
-import React from 'react';
+import React, { useState } from 'react';
 import { SiteLayer, LayerState, SiteKind } from '../types';
+import '../shell/shell.css';
+import {
+  formatResolution,
+  getLayerDisplayName,
+  getLayerSourceAgency,
+  formatLegendValue,
+  cleanUnits,
+} from '../shell/layerFormat';
 
 interface LayerPanelProps {
   layers: SiteLayer[];
@@ -23,16 +31,6 @@ const KIND_LABELS: Record<SiteKind, string> = {
   geologic: 'Geologic',
 };
 
-function formatResolution(resM: number): string {
-  if (resM < 1) {
-    return `${resM} m`;
-  }
-  if (resM >= 1000) {
-    return `${resM / 1000} km`;
-  }
-  return `${resM} m`;
-}
-
 export const LayerPanel: React.FC<LayerPanelProps> = ({
   layers,
   layerStates,
@@ -41,6 +39,15 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
   isOpen,
   onTogglePanel,
 }) => {
+  const [expandedInfo, setExpandedInfo] = useState<Record<string, boolean>>({});
+
+  const toggleInfo = (layerId: string) => {
+    setExpandedInfo((prev) => ({
+      ...prev,
+      [layerId]: !prev[layerId],
+    }));
+  };
+
   const groupedLayers = layers.reduce<Record<string, SiteLayer[]>>((acc, layer) => {
     const kind = layer.kind || 'optical';
     if (!acc[kind]) {
@@ -62,7 +69,9 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
     >
       <div className="panel-sec" style={{ borderBottom: 0 }}>
         <h3>
-          <span>Layers <small>{activeCount} on</small></span>
+          <span>
+            Layers <small>{activeCount} on</small>
+          </span>
           <button
             type="button"
             className="s48-btn s48-btn--quiet"
@@ -88,6 +97,11 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
                   };
 
                   const isCoarse = layer.resolution_m >= 5;
+                  const displayName = getLayerDisplayName(layer);
+                  const resText =
+                    layer.type === 'points' ? 'Points' : formatResolution(layer.resolution_m);
+                  const sourceAgency = getLayerSourceAgency(layer);
+                  const isExpanded = !!expandedInfo[layer.id];
 
                   return (
                     <div key={layer.id} className="s48-layer">
@@ -99,21 +113,43 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
                             checked={state.enabled}
                             onChange={() => onToggleLayer(layer.id)}
                           />
-                          <span>{layer.title}</span>
-                        </label>
-                        {isCoarse && (
-                          <span className="s48-chip">
-                            <svg className="i" viewBox="0 0 16 16" aria-hidden="true">
-                              <rect x="2" y="2" width="12" height="12" />
-                              <path d="M6 2v12M10 2v12M2 6h12M2 10h12" />
-                            </svg>
-                            Coarse · {formatResolution(layer.resolution_m)}
+                          <span className="s48-layer__title" title={displayName}>
+                            {displayName}
                           </span>
-                        )}
+                        </label>
+
+                        <button
+                          type="button"
+                          className={`s48-layer__info-btn ${isExpanded ? 'is-active' : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleInfo(layer.id);
+                          }}
+                          aria-expanded={isExpanded}
+                          aria-label={`About ${displayName}`}
+                          title={layer.source || displayName}
+                        >
+                          <svg className="i" viewBox="0 0 16 16" aria-hidden="true">
+                            <circle cx="8" cy="8" r="6.5" />
+                            <path d="M8 7v4M8 5h.01" />
+                          </svg>
+                        </button>
                       </div>
 
+                      {isExpanded && layer.source && (
+                        <div className="s48-layer__desc">
+                          <p>{layer.source}</p>
+                          {layer.agency && (
+                            <div className="s48-layer__desc-meta">Agency: {layer.agency}</div>
+                          )}
+                        </div>
+                      )}
+
                       <div className="s48-layer__note">
-                        {layer.type === 'points' ? 'Points' : formatResolution(layer.resolution_m)} · {layer.source} · {layer.agency}
+                        <span className={isCoarse ? 's48-res s48-res--coarse' : 's48-res'}>
+                          {resText}
+                        </span>{' '}
+                        · {sourceAgency}
                       </div>
 
                       {state.enabled && (
@@ -130,35 +166,49 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
                               onChange={(e) =>
                                 onOpacityChange(layer.id, parseFloat(e.target.value))
                               }
+                              aria-label={`${displayName} opacity`}
                             />
                             <output>{Math.round(state.opacity * 100)} %</output>
                           </div>
 
-                          {layer.legend && layer.legend.stops && layer.legend.stops.length > 0 && (
-                            <div className="s48-legend">
-                              <div
-                                className="s48-legend__ramp"
-                                style={{
-                                  background: `linear-gradient(to right, ${layer.legend.stops
-                                    .map(([, color]) => color)
-                                    .join(', ')})`,
-                                }}
-                              />
-                              <div className="s48-legend__ends">
-                                <span>
-                                  <b>{layer.legend.stops[0][0]}</b> {layer.units || ''}
-                                </span>
-                                <span>
-                                  <b>{layer.legend.stops[layer.legend.stops.length - 1][0]}</b>
-                                </span>
+                          {layer.legend &&
+                            layer.legend.stops &&
+                            layer.legend.stops.length > 0 && (
+                              <div className="s48-legend">
+                                <div
+                                  className="s48-legend__ramp"
+                                  style={{
+                                    background: `linear-gradient(to right, ${layer.legend.stops
+                                      .map(([, color]) => color)
+                                      .join(', ')})`,
+                                  }}
+                                />
+                                <div className="s48-legend__ends">
+                                  <span>
+                                    <b>{formatLegendValue(layer.legend.stops[0][0])}</b>
+                                    {cleanUnits(layer.units) && (
+                                      <span className="s48-legend__unit">
+                                        {cleanUnits(layer.units)}
+                                      </span>
+                                    )}
+                                  </span>
+                                  <span>
+                                    <b>
+                                      {formatLegendValue(
+                                        layer.legend.stops[layer.legend.stops.length - 1][0]
+                                      )}
+                                    </b>
+                                  </span>
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
 
                           {layer.type === 'points' && (
                             <div className="s48-legend s48-legend--points">
                               <span className="pt" />
-                              <span>{layer.title} ({layer.units || 'target point'})</span>
+                              <span>
+                                {displayName} ({cleanUnits(layer.units) || 'target point'})
+                              </span>
                             </div>
                           )}
                         </div>
