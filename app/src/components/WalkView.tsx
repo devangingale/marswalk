@@ -53,6 +53,21 @@ export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playb
   const focus = waypointById(plan, state.atWaypointId ?? state.next?.id ?? START_ID);
   const turnBack = plan.route.turn_back;
 
+  const isEnd = state.next === null || (state.elapsedS >= track.durationS && track.durationS > 0);
+  const timeVal = isEnd
+    ? formatDuration(plan.route.totals.time_s || track.durationS)
+    : formatDuration(budget.time.remaining);
+  const energyVal = isEnd
+    ? formatEnergy(plan.route.totals.energy_kj)
+    : formatEnergy(budget.energy.remaining);
+  const doseVal = isEnd
+    ? formatDose(plan.route.totals.dose_mgy)
+    : formatDose(budget.dose.remaining);
+
+  const timeRemaining = isEnd ? (plan.route.totals.time_s || track.durationS) : budget.time.remaining;
+  const energyRemaining = isEnd ? plan.route.totals.energy_kj : budget.energy.remaining;
+  const doseRemaining = isEnd ? plan.route.totals.dose_mgy : budget.dose.remaining;
+
   return (
     <div className="s48-walk">
       <div className="s48-walk-map-area">
@@ -85,21 +100,21 @@ export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playb
         <dl className="s48-walk-budget">
           <Budget
             label="Time"
-            value={formatDuration(budget.time.remaining)}
+            value={timeVal}
             max={budget.time.total}
-            remaining={budget.time.remaining}
+            remaining={timeRemaining}
           />
           <Budget
             label="Energy"
-            value={formatEnergy(budget.energy.remaining)}
+            value={energyVal}
             max={budget.energy.total}
-            remaining={budget.energy.remaining}
+            remaining={energyRemaining}
           />
           <Budget
             label="Dose"
-            value={formatDose(budget.dose.remaining)}
+            value={doseVal}
             max={budget.dose.total}
-            remaining={budget.dose.remaining}
+            remaining={doseRemaining}
           />
         </dl>
         <p className="s48-walk-turnback">
