@@ -66,7 +66,7 @@ Site-finder precision: global score only (fast, no walk planning at new sites) v
 - Caves raise long-term base potential, never walk safety.
 
 ### Route planning
-- Walker: existing planner. Rover: second cost model from sourced rover limits. Walker/rover picker in the stats bar.
+- Walker: existing planner. Rovers, two profiles on the same grid: the crew's pressurised human rover (default; speed, slope and obstacle limits from published crewed-rover concepts such as NASA's Space Exploration Vehicle and the JAXA-Toyota Lunar Cruiser, labelled where lunar or assumed) and a robotic science rover (Curiosity/Perseverance limits). Never use robotic-rover limits for crew drives. Walker / crew rover / science rover picker in the stats bar.
 - Route look (Strava-like): bold line in the route colour with a light dashed core and arrowheads; one line where legs share ground, arrows each direction walked; a fork marker where the line splits or merges, labelled with each branch's destination; start and finish markers.
 - Hover: small route on screen (under ~400 px) highlights the whole route; larger highlights the section under the cursor (stop to stop plus any out-and-back detour, continuous through the fork), with its label ("Drop-off → 3 via 2 · 2.4 km · 55 min"); linked to the stop list.
 - Slopes: route draped on 3D terrain; optional colour-by-gradient (single hue family, no red/green); high, low and steepest markers; elevation profile shaded by gradient with linked hover; summary row (climb, descent, high, low, steepest).
