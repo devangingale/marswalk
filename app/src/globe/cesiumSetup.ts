@@ -35,7 +35,9 @@ export async function createMarsViewer(
     navigationHelpButton: false,
     fullscreenButton: false,
     selectionIndicator: false,
-    globe: new Globe(Ellipsoid.MARS),
+    // Offline draws our tiles on a plain ellipsoid; online, Cesium Mars is the surface
+    // (an ellipsoid at datum height would hide terrain below it, such as Gale).
+    globe: mode === 'offline' ? new Globe(Ellipsoid.MARS) : false,
     ellipsoid: Ellipsoid.MARS,
   });
   const setOfflineGlobeColour = () => {
