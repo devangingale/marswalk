@@ -135,11 +135,11 @@ export function canvasMarkerImages(token: TokenReader = readToken): MarkerImages
     // Pointing up (north) at rotation 0; the overlay rotates it to the bearing.
     chevron: () =>
       once('chevron', () =>
-        canvas(14, 14, (ctx) => {
+        canvas(18, 18, (ctx) => {
           ctx.lineJoin = 'round';
           ctx.lineCap = 'round';
-          const pts: [number, number][] = [[3, 10], [7, 5], [11, 10]];
-          for (const [colour, width] of [[token('--map-route-casing'), 4.5], [token('--map-chevron'), 2]] as const) {
+          const pts: [number, number][] = [[4, 12], [9, 6], [14, 12]];
+          for (const [colour, width] of [[token('--map-route-casing'), 5], [token('--map-chevron'), 2.4]] as const) {
             ctx.strokeStyle = colour;
             ctx.lineWidth = width;
             ctx.beginPath();

@@ -197,6 +197,29 @@ export function branchAnchor(
   return line[line.length - 1];
 }
 
+/**
+ * Direction (degrees clockwise from north) to offset each branch label from its branch:
+ * perpendicular to the branch, on the side away from the fork's mean branch direction.
+ */
+export function branchLabelSides(bearingsDeg: number[]): number[] {
+  const rad = (d: number) => (d * Math.PI) / 180;
+  const x = bearingsDeg.reduce((sum, b) => sum + Math.sin(rad(b)), 0);
+  const y = bearingsDeg.reduce((sum, b) => sum + Math.cos(rad(b)), 0);
+  const mean = (Math.atan2(x, y) * 180) / Math.PI;
+  return bearingsDeg.map((b) => {
+    const d = ((((b - mean) % 360) + 540) % 360) - 180;
+    const side = d < -1e-9 ? b - 90 : b + 90;
+    return Math.round(((side % 360) + 360) % 360);
+  });
+}
+
+/** Bearing in degrees clockwise from north from one point to another, in the local-metre frame. */
+export function bearingDeg(from: [number, number], to: [number, number], origin: GridOrigin): number {
+  const a = lonlatToLocalMetres(from[0], from[1], origin);
+  const b = lonlatToLocalMetres(to[0], to[1], origin);
+  return ((((Math.atan2(b.x_m - a.x_m, b.y_m - a.y_m) * 180) / Math.PI) % 360) + 360) % 360;
+}
+
 /** Spacing of direction chevrons along the route, in metres. */
 export const CHEVRON_SPACING_M = 150;
 

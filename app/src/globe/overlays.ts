@@ -40,8 +40,10 @@ import {
 import { lonLatToCartesian, type Pose } from './frame';
 import { canvasMarkerImages, readToken, type MarkerImage, type MarkerImages, type TokenReader } from './markerImages';
 import {
+  bearingDeg,
   branchAnchor,
   branchLabel,
+  branchLabelSides,
   chevronsFor,
   distanceAlong,
   formatLatLon,
@@ -112,7 +114,9 @@ const SHARED_TOLERANCE_M = 3;
 /** Forks closer than this are one fork on screen. */
 const FORK_MERGE_M = 15;
 /** Branch labels sit this far along each branch from the fork. */
-const BRANCH_LABEL_M = 35;
+const BRANCH_LABEL_M = 45;
+/** Gap between a branch and its label, in pixels. */
+const BRANCH_LABEL_GAP_PX = 10;
 
 /** Camera distances (metres) beyond which small route marks are hidden. */
 const NEAR = new DistanceDisplayCondition(0, 6_000);
@@ -144,6 +148,8 @@ export class GlobeOverlays {
   private origin: GridOrigin | null = null;
   private grid: RouteGrid | null = null;
   private stretches: Stretch[] = [];
+  /** Dashed core lines by stretch, hidden while their stretch is dimmed. */
+  private cores: Entity[][] = [];
   private sectionList: Section[] = [];
   private stats: SlopeStats | null = null;
   private gradient = false;
@@ -187,6 +193,7 @@ export class GlobeOverlays {
 
   /** Bundle elevation grid for slopes; without it the gradient view and slope markers stay off. */
   setGrid(grid: RouteGrid | null): void {
+    if (this.grid === grid) return;
     this.grid = grid;
     this.setPlan(this.plan, this.origin ?? undefined);
   }
@@ -211,6 +218,7 @@ export class GlobeOverlays {
     this.removeGroup('plan');
     this.plan = plan;
     this.stretches = [];
+    this.cores = [];
     this.sectionList = [];
     this.stats = null;
     this.routeHoverLines = [];
@@ -222,6 +230,7 @@ export class GlobeOverlays {
     this.stretches = sharedSegments(legs, frame, SHARED_TOLERANCE_M).map((s) => ({ ...s, shared: s.legs.length > 1 }));
     this.sectionList = routeSections(plan, frame);
     this.styles = this.stretches.map(() => 'normal');
+    this.cores = this.stretches.map(() => []);
     this.stats = this.routeStats(plan);
 
     this.drawStretches(frame);
@@ -261,10 +270,17 @@ export class GlobeOverlays {
             return style === 'highlight' ? highlighted : colour;
           }, false),
         );
-      const polyline = (line: [number, number][], width: number, material: Entity.ConstructorOptions['polyline']) => ({
+      // zIndex orders ground lines: casing, then the coloured body, then the dashed core.
+      const polyline = (
+        line: [number, number][],
+        width: number,
+        zIndex: number,
+        material: Entity.ConstructorOptions['polyline'],
+      ) => ({
         polyline: {
           positions: line.map(([lon, lat]) => lonLatToCartesian(lon, lat, 0)),
           width,
+          zIndex,
           clampToGround: true,
           arcType: ArcType.GEODESIC,
           classificationType: this.classification,
@@ -272,21 +288,23 @@ export class GlobeOverlays {
         },
       });
 
-      this.add('plan', polyline(stretch.line, casingWidth + 2, { material: styleColour(casing, casing) }), meta);
+      this.add('plan', polyline(stretch.line, casingWidth + 2, 0, { material: styleColour(casing, casing) }), meta);
       const grade = this.gradient && this.stats ? this.stretchGrades(stretch) : null;
       if (grade) {
         for (const run of grade) {
           const c = grades[run.bin - 1];
-          this.add('plan', polyline(run.line, coreWidth + 2, { material: styleColour(c, c) }), meta);
+          this.add('plan', polyline(run.line, coreWidth + 2, 1, { material: styleColour(c, c) }), meta);
         }
       } else {
-        this.add('plan', polyline(stretch.line, coreWidth + 2, { material: styleColour(base, highlight) }), meta);
-        this.add(
-          'plan',
-          polyline(stretch.line, 2, {
-            material: new PolylineDashMaterialProperty({ color: dash, gapColor: Color.TRANSPARENT, dashLength: 12 }),
-          }),
-          meta,
+        this.add('plan', polyline(stretch.line, coreWidth + 2, 1, { material: styleColour(base, highlight) }), meta);
+        this.cores[index].push(
+          this.add(
+            'plan',
+            polyline(stretch.line, 2, 2, {
+              material: new PolylineDashMaterialProperty({ color: dash, gapColor: Color.TRANSPARENT, dashLength: 12 }),
+            }),
+            meta,
+          ),
         );
       }
 
@@ -325,7 +343,13 @@ export class GlobeOverlays {
     };
   }
 
-  private label(text: string, show: DistanceDisplayCondition, offset: [number, number], left = false) {
+  private label(
+    text: string,
+    show: DistanceDisplayCondition,
+    offset: [number, number],
+    left = false,
+    vertical: VerticalOrigin = VerticalOrigin.CENTER,
+  ) {
     return {
       text,
       font: `600 13px ${this.token('--font-data') || 'sans-serif'}`,
@@ -334,7 +358,7 @@ export class GlobeOverlays {
       outlineWidth: 3,
       style: LabelStyle.FILL_AND_OUTLINE,
       horizontalOrigin: left ? HorizontalOrigin.RIGHT : HorizontalOrigin.LEFT,
-      verticalOrigin: VerticalOrigin.CENTER,
+      verticalOrigin: vertical,
       pixelOffset: new Cartesian2(offset[0], offset[1]),
       heightReference: HeightReference.CLAMP_TO_GROUND,
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
@@ -351,11 +375,16 @@ export class GlobeOverlays {
         { position: lonLatToCartesian(fork.lon, fork.lat, 0), billboard: this.billboard(this.markers().fork(), SITE) },
         { kind: 'text', lines: ['Fork', ...lines] },
       );
-      fork.branches.forEach((branch, i) => {
-        const [lon, lat] = branchAnchor(plan.route.legs[branch.legIndex].line, [fork.lon, fork.lat], BRANCH_LABEL_M, frame);
+      const at: [number, number] = [fork.lon, fork.lat];
+      const anchors = fork.branches.map((b) => branchAnchor(plan.route.legs[b.legIndex].line, at, BRANCH_LABEL_M, frame));
+      const sides = branchLabelSides(anchors.map((anchor) => bearingDeg(at, anchor, frame)));
+      anchors.forEach(([lon, lat], i) => {
+        const side = CesiumMath.toRadians(sides[i]);
+        const dx = Math.sin(side) * BRANCH_LABEL_GAP_PX;
+        const dy = -Math.cos(side) * BRANCH_LABEL_GAP_PX;
         this.add('plan', {
           position: lonLatToCartesian(lon, lat, 0),
-          label: this.label(lines[i], NEAR, [8, 0]),
+          label: this.label(lines[i], NEAR, [dx, dy], dx < 0),
         });
       });
     }
@@ -408,7 +437,8 @@ export class GlobeOverlays {
         {
           position: lonLatToCartesian(lon, lat, 0),
           billboard: this.billboard(image, SITE),
-          label: this.label(text, SITE, [12, 0]),
+          // Above and right of the glyph, clear of the route line through it.
+          label: this.label(text, SITE, [8, -8], false, VerticalOrigin.BOTTOM),
         },
         { kind: 'text', lines: [text, formatLatLon(lon, lat)] },
       );
@@ -517,6 +547,7 @@ export class GlobeOverlays {
       this.stretches.map((s) => s.legs),
       next,
     );
+    this.cores.forEach((cores, i) => cores.forEach((core) => (core.show = this.styles[i] !== 'dim')));
     const sectionId = section?.id ?? null;
     if (sectionId !== this.hoveredSection) {
       this.hoveredSection = sectionId;
@@ -526,12 +557,12 @@ export class GlobeOverlays {
     return this.routeHoverLines;
   }
 
-  /** Positions along the route for measuring its size on screen. */
-  routeSamples(count = 48): Cartesian3[] {
+  /** Positions along the route at a ground height, for measuring its size on screen. */
+  routeSamples(heightM: number, count = 48): Cartesian3[] {
     if (!this.plan) return [];
     const line = routeLine(this.plan);
     const step = Math.max(1, Math.floor(line.length / count));
-    return line.filter((_, i) => i % step === 0).map(([lon, lat]) => lonLatToCartesian(lon, lat, 0));
+    return line.filter((_, i) => i % step === 0).map(([lon, lat]) => lonLatToCartesian(lon, lat, heightM));
   }
 
   get sections(): Section[] {
@@ -547,6 +578,7 @@ export class GlobeOverlays {
     for (const group of Object.keys(this.groups) as (keyof GlobeOverlays['groups'])[]) this.removeGroup(group);
     this.plan = undefined;
     this.stretches = [];
+    this.cores = [];
     this.sectionList = [];
     this.stats = null;
     if (this.hoveredSection !== null) {
