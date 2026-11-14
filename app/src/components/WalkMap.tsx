@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { GeoJSONSource, LngLatBounds, Map as MapLibreMap, Marker } from 'maplibre-gl';
+import { AttributionControl, GeoJSONSource, LngLatBounds, Map as MapLibreMap, Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Plan } from '../lib/plan';
 import { SiteData } from '../types';
@@ -25,7 +25,8 @@ export const WalkMap: React.FC<WalkMapProps> = ({ siteData, plan, track, lon, la
     const token = (name: string) => css.getPropertyValue(name).trim();
     const markerElement = document.createElement('div');
     markerElement.className = 's48-walk-position';
-    const map = new MapLibreMap({ container: containerRef.current, style: marsBaseStyle(siteData), center: positionRef.current, zoom: 14 });
+    const map = new MapLibreMap({ container: containerRef.current, style: marsBaseStyle(siteData), center: positionRef.current, zoom: 14, attributionControl: false });
+    map.addControl(new AttributionControl({ compact: true }), 'top-right');
     const marker = new Marker({ element: markerElement, anchor: 'center' }).setLngLat(positionRef.current).addTo(map);
     markerRef.current = marker;
 
@@ -45,17 +46,21 @@ export const WalkMap: React.FC<WalkMapProps> = ({ siteData, plan, track, lon, la
         });
       }
       stopMarkersRef.current = [
-        { point: plan.start, label: 'R', className: 'is-start' },
+        { point: plan.start, label: '', className: 'is-start' },
         ...plan.stops.map((point, index) => ({ point, label: String(index + 1), className: '' })),
       ].map(({ point, label, className }) => {
         const element = document.createElement('div');
         element.className = `s48-walk-stop-marker ${className}`;
-        element.textContent = label;
+        if (className) element.innerHTML = '<svg viewBox="0 0 30 30" aria-hidden="true"><path class="start-marker__body" d="M15 1.8 27.8 9.2 27.8 20.8 15 28.2 2.2 20.8 2.2 9.2Z"/><path class="start-marker__glyph" d="M10 18.5 12.4 12h5.2l2.4 6.5M9.5 19.5h11M12.4 12l2.6-3 2.6 3M15 9v9.5"/></svg>';
+        else element.textContent = label;
         element.setAttribute('aria-label', className ? 'Rover drop-off' : `Stop ${label}`);
         return new Marker({ element, anchor: 'center' }).setLngLat([point.lon, point.lat]).addTo(map);
       });
       mapRef.current = map;
-      if (track.vertices.length > 1) {
+      if (plan.stops.length === 0) {
+        const [west, south, east, north] = siteData.bounds_lonlat;
+        map.fitBounds([[west, south], [east, north]], { padding: 48, duration: 0 });
+      } else if (track.vertices.length > 1) {
         const bounds = new LngLatBounds();
         track.vertices.forEach((vertex) => bounds.extend([vertex.lon, vertex.lat]));
         map.fitBounds(bounds, { padding: 40, duration: 0 });
