@@ -28,6 +28,11 @@
     z-index: 30;
     box-shadow: var(--shadow-drawer);
   }
+
+  .globe-body:has(> aside.panel[style*='display: block']) .globe-view,
+  .globe-body:has(.sites-panel) .globe-view {
+    margin-left: min(var(--panel-left-width), 85vw);
+  }
 }
 
 .globe-view {
@@ -53,8 +58,8 @@
 
 .globe-sites {
   position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
+  top: calc(var(--space-16) * 3 + var(--space-4));
+  left: var(--space-4);
   display: flex;
   gap: var(--space-2);
   z-index: 2;
@@ -180,11 +185,17 @@
 .globe-cursor {
   position: absolute;
   left: var(--space-4);
-  bottom: var(--space-3);
+  bottom: calc(var(--space-12) + var(--space-16));
   z-index: 2;
   pointer-events: none;
   white-space: nowrap;
   font-variant-numeric: var(--numeric);
+}
+
+@media (max-width: 1024px) {
+  .globe-cursor {
+    bottom: calc(var(--space-16) + var(--space-16));
+  }
 }
 
 /* Caves are small triangles on the globe; the layer panel swatch matches. */

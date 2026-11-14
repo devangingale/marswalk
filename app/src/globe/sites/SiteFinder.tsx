@@ -259,7 +259,7 @@ export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, register
         />
       )}
       {selected && (
-        <div className="sites-card-wrap">
+        <div className="sites-card-wrap" data-over-map>
           <SiteCard
             site={selected}
             vetoes={data.vetoes}
