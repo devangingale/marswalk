@@ -23,6 +23,7 @@ from globe_history import (
     DUST_OFFSET,
     DUST_SCALE,
     dequantize_cdod,
+    filter_temperature_spikes,
     frame_byte_offset,
     lonlat_to_grid_indices,
     mars_year_sol_to_earth_date,
@@ -288,3 +289,73 @@ class TestGaleWeatherParsing:
         parsed = parse_gale_weather(raw_sample)
         assert len(parsed) == 2
         assert [d["sol"] for d in parsed] == [1, 9]
+
+
+# ==============================================================================
+# 5. Temperature spike filter tests
+# ==============================================================================
+
+class TestSpikeFilter:
+    """Exact-value tests for temperature sensor spike detection and nulling."""
+
+    def test_synthetic_spike_nulled(self):
+        """A synthetic isolated -100 °C spike in t_min_c surrounded by ~ -70 °C is set to null."""
+        # 11 sols with baseline around -70 °C, sol 6 is an isolated glitch (-100 °C)
+        temps = [-70, -71, -70, -69, -70, -100, -70, -69, -71, -70, -72]
+        days = [
+            {"sol": s, "earth_date": f"2020-01-{s:02d}", "ls": 100, "t_min_c": t, "t_max_c": -15, "pressure_pa": 800}
+            for s, t in enumerate(temps, start=1)
+        ]
+
+        cleaned, dropped = filter_temperature_spikes(days, window_size=5, threshold_deg=15.0)
+
+        assert dropped["t_min_c"] == 1
+        assert dropped["t_max_c"] == 0
+
+        # Sol 6 (index 5) spike must be nulled
+        assert cleaned[5]["sol"] == 6
+        assert cleaned[5]["t_min_c"] is None
+
+        # All other sols must retain their original exact temperatures
+        for i in range(11):
+            if i != 5:
+                assert cleaned[i]["t_min_c"] == temps[i]
+
+    def test_genuine_seasonal_minimum_kept(self):
+        """A genuine gradual seasonal minimum reaching -90 °C is preserved."""
+        # Realistic seasonal gradual cooling and warming
+        temps = [-84, -85, -86, -87, -88, -90, -88, -87, -86, -85, -84]
+        days = [
+            {"sol": s, "earth_date": f"2015-12-{s:02d}", "ls": 70, "t_min_c": t, "t_max_c": -25, "pressure_pa": 850}
+            for s, t in enumerate(temps, start=1)
+        ]
+
+        cleaned, dropped = filter_temperature_spikes(days, window_size=5, threshold_deg=15.0)
+
+        assert dropped["t_min_c"] == 0
+        assert dropped["t_max_c"] == 0
+
+        # Sol 6 minimum (-90 °C) must be kept
+        assert cleaned[5]["sol"] == 6
+        assert cleaned[5]["t_min_c"] == -90
+
+        # All values preserved
+        for i in range(11):
+            assert cleaned[i]["t_min_c"] == temps[i]
+
+    def test_tmax_isolated_spike_nulled(self):
+        """A warm isolated spike in t_max_c exceeding surrounding median by >15 °C is nulled."""
+        temps_max = [-20, -21, -20, -19, -20, 10, -20, -19, -21, -20, -22]
+        days = [
+            {"sol": s, "earth_date": f"2022-03-{s:02d}", "ls": 120, "t_min_c": -75, "t_max_c": t, "pressure_pa": 750}
+            for s, t in enumerate(temps_max, start=1)
+        ]
+
+        cleaned, dropped = filter_temperature_spikes(days, window_size=5, threshold_deg=15.0)
+
+        assert dropped["t_max_c"] == 1
+        assert cleaned[5]["sol"] == 6
+        assert cleaned[5]["t_max_c"] is None
+        for i in range(11):
+            if i != 5:
+                assert cleaned[i]["t_max_c"] == temps_max[i]
