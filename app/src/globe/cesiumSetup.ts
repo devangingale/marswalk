@@ -30,6 +30,7 @@ export async function createMarsViewer(
     infoBox: false,
     sceneModePicker: false,
     navigationHelpButton: false,
+    fullscreenButton: false,
     selectionIndicator: false,
     globe: false,
     ellipsoid: Ellipsoid.MARS,
