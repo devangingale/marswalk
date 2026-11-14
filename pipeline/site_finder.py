@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import argparse
 import json
 import math
 import re
@@ -18,8 +19,9 @@ from matplotlib.colors import LightSource
 
 
 MARS_RADIUS_KM = 3396.19
+ROOT = Path(__file__).resolve().parents[1]
 GRID_DIR = Path("data/processed/global-layers")
-KNOWN_SITES = Path(r"D:\NASA - P11\staging\known_sites.csv")
+KNOWN_SITES = ROOT / "data" / "raw" / "known_sites" / "known_sites.csv"
 DTM_INDEX = Path("data/raw/hez_dem_index/dem_index_v1.xlsx")
 OUTPUT = Path("data/globe/sites.json")
 PREVIEW = Path(".shots/site-finder-candidates.png")
@@ -331,7 +333,7 @@ def _make_preview(arrays: dict, candidates: list[dict]):
     plt.close(fig)
 
 
-def run() -> dict:
+def run(known_sites_path: Path = KNOWN_SITES) -> dict:
     arrays, transform = _load_grid()
     passed = _pass_mask(arrays, transform)
     arrays["habitat_dist_km"] = np.where(passed, 0.0, np.nan).astype(np.float32)
@@ -362,7 +364,7 @@ def run() -> dict:
         if len(candidates) == 200:
             break
     candidate_sites = [_site_record(site, arrays, after_groups, after_score, transform, dtm_lats, dtm_lons) for site in candidates]
-    known_raw = _load_known(KNOWN_SITES)
+    known_raw = _load_known(known_sites_path)
     known_sites = [_site_record(site, arrays, after_groups, after_score, transform, dtm_lats, dtm_lons) for site in known_raw]
 
     before_validation = _metric_summary(before_score, passed, known_raw, transform)
@@ -393,6 +395,9 @@ def run() -> dict:
 
 
 if __name__ == "__main__":
-    result = run()
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--known-sites", type=Path, default=KNOWN_SITES, help="override the known sites CSV")
+    args = ap.parse_args()
+    result = run(args.known_sites)
     print(json.dumps({"counts": result["counts"], "validation": result["validation"],
                       "output_bytes": OUTPUT.stat().st_size, "preview_bytes": PREVIEW.stat().st_size}, indent=2))
