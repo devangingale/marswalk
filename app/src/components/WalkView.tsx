@@ -12,6 +12,8 @@ import { usePlaybackKeys } from '../walk/usePlaybackKeys';
 import { PlaybackBar } from '../walk/PlaybackBar';
 import { StopDetails } from './StopDetails';
 import { WalkGlobe } from '../globe/walk/WalkGlobe';
+import { useSafetyModel } from '../safety/useSafetyModel';
+import { SafetyCompact } from '../safety/SafetyCompact';
 
 interface WalkViewProps {
   siteData: SiteData;
@@ -23,6 +25,15 @@ interface WalkViewProps {
 
 export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playback, onPlan }) => {
   usePlaybackKeys(playback, track);
+  // The safety layer follows the playback: the crew is where the walk is.
+  const safety = useSafetyModel({
+    plan,
+    origin: siteData.origin,
+    siteId: siteData.id,
+    lat: siteData.origin.lat0,
+    lonEast: siteData.origin.lon0,
+    elapsedS: playback.elapsedS,
+  });
 
   if (plan.stops.length === 0) {
     return (
@@ -69,7 +80,7 @@ export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playb
   const doseRemaining = isEnd ? plan.route.totals.dose_mgy : budget.dose.remaining;
 
   return (
-    <div className="s48-walk">
+    <div className="s48-walk" data-theme={safety?.night ? 'night' : undefined}>
       <div className="s48-walk-map-area">
         <WalkGlobe
           siteData={siteData}
@@ -78,7 +89,9 @@ export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playb
           lon={state.lon}
           lat={state.lat}
           alongM={state.alongM}
+          crew={safety?.markers ?? null}
         />
+        {safety && <SafetyCompact model={safety} surface="walk" />}
         <PlaybackBar
           playback={playback}
           durationS={track.durationS}
