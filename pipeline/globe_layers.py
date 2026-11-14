@@ -31,6 +31,22 @@ MARS_EQC = rasterio.crs.CRS.from_proj4(
     "+proj=eqc +lat_ts=0 +lat_0=0 +lon_0=0 +a=3396190 +b=3396190 +units=m +no_defs"
 )
 MARS_LONLAT = rasterio.crs.CRS.from_proj4("+proj=longlat +a=3396190 +b=3396190 +no_defs")
+OKLAB_RAMPS = {
+    "dose_yellow": ("#fff8d6", "#ffe94d"),
+    "insolation_coral": ("#fff5e9", "#e87569"),
+    "pressure_teal": ("#e4f3eb", "#087f7b"),
+    "crustal_olive": ("#f3edcf", "#777735"),
+    "unit_slate_sand": ("#707d87", "#dcc895"),
+}
+PALETTE_LABELS = {
+    "dose_yellow": "OKLab pale yellow to bright yellow (#ffe94d)",
+    "insolation_coral": "OKLab warm white to coral",
+    "pressure_teal": "OKLab pale teal to deep teal",
+    "crustal_olive": "OKLab khaki to olive",
+    "unit_slate_sand": "OKLab slate to sand",
+    "ice_distance": "Blues: near ice is bright; fades to transparent at 500 km",
+    "swim_ice": "Blues: positive consistency is pale blue at 0+ to near-white at +1",
+}
 
 
 def tile_rectangle(level: int, x: int, y: int) -> tuple[float, float, float, float]:
@@ -64,6 +80,38 @@ def dequantise_values(encoded: np.ndarray, scale: float, offset: float) -> np.nd
     return result
 
 
+def _hex_to_oklab(value: str) -> np.ndarray:
+    rgb = np.array([int(value[i:i + 2], 16) / 255 for i in (1, 3, 5)], dtype=np.float64)
+    linear = np.where(rgb <= 0.04045, rgb / 12.92, ((rgb + 0.055) / 1.055) ** 2.4)
+    lms = np.array([
+        [0.4122214708, 0.5363325363, 0.0514459929],
+        [0.2119034982, 0.6806995451, 0.1073969566],
+        [0.0883024619, 0.2817188376, 0.6299787005],
+    ]) @ linear
+    l, m, s = np.cbrt(lms)
+    return np.array([
+        0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+        1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+        0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s,
+    ])
+
+
+def _oklab_colour(values: np.ndarray, palette: str) -> np.ndarray:
+    start, end = ( _hex_to_oklab(colour) for colour in OKLAB_RAMPS[palette])
+    lab = start + values[:, None] * (end - start)
+    l = lab[:, 0] + 0.3963377774 * lab[:, 1] + 0.2158037573 * lab[:, 2]
+    m = lab[:, 0] - 0.1055613458 * lab[:, 1] - 0.0638541728 * lab[:, 2]
+    s = lab[:, 0] - 0.0894841775 * lab[:, 1] - 1.2914855480 * lab[:, 2]
+    l, m, s = l**3, m**3, s**3
+    linear = np.column_stack((
+        4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+        -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+        -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s,
+    ))
+    rgb = np.where(linear <= 0.0031308, linear * 12.92, 1.055 * np.maximum(linear, 0) ** (1 / 2.4) - 0.055)
+    return np.rint(np.clip(rgb, 0, 1) * 255).astype(np.uint8)
+
+
 def colour_ramp(values: np.ndarray, minimum: float, maximum: float, cmap_name: str) -> np.ndarray:
     """Map values to a perceptual matplotlib sequential ramp with a clear low end."""
     if maximum <= minimum:
@@ -72,11 +120,21 @@ def colour_ramp(values: np.ndarray, minimum: float, maximum: float, cmap_name: s
     t = np.clip((values - minimum) / (maximum - minimum), 0, 1)
     rgba = np.zeros((*values.shape, 4), dtype=np.uint8)
     if valid.any():
-        ramp_name = "Blues_r" if cmap_name == "swim_ice" else "Blues" if cmap_name == "ice_distance" else cmap_name
-        cmap = colormaps[ramp_name]
-        colour_t = t[valid]
-        rgb = np.rint(cmap(colour_t)[:, :3] * 255).astype(np.uint8)
-        alpha_t = 1 - t[valid] if cmap_name == "ice_distance" else t[valid]
+        if cmap_name in OKLAB_RAMPS:
+            rgb = _oklab_colour(t[valid], cmap_name)
+        elif cmap_name == "swim_ice":
+            cmap = colormaps["Blues_r"]
+            positive_t = np.clip(values[valid], 0, 1)
+            rgb = np.rint(cmap(0.7 + 0.3 * positive_t)[:, :3] * 255).astype(np.uint8)
+        else:
+            cmap = colormaps["Blues" if cmap_name == "ice_distance" else cmap_name]
+            rgb = np.rint(cmap(t[valid])[:, :3] * 255).astype(np.uint8)
+        if cmap_name == "ice_distance":
+            alpha_t = np.clip((500 - values[valid]) / 500, 0, 1)
+        elif cmap_name == "swim_ice":
+            alpha_t = np.clip(values[valid], 0, 1)
+        else:
+            alpha_t = t[valid]
         alpha = np.rint(np.power(alpha_t, 0.65) * 240).astype(np.uint8)
         rgba[valid, :3] = rgb
         rgba[valid, 3] = alpha
@@ -125,20 +183,20 @@ def metadata() -> dict[str, dict]:
     for layer, title, units, dataset, group, cmap, description, bounds in [
         ("ice_dist_km", "Distance to shallow water ice", "km", "swim_ice", "ice", "ice_distance", "Distance from the nearest SWIM ice consistency value of 0.5 or greater at 0–1 m depth.", None),
         ("ice_dist_km_0_5m", "Distance to water ice at 0–5 m", "km", "swim_ice", "ice", "ice_distance", "Distance from the nearest SWIM ice consistency value of 0.5 or greater at 0–5 m depth.", None),
-        ("dose_ugy_day", "Estimated surface radiation dose", "µGy/day", "msl_rad_dose", "radiation", "Wistia", "Pressure-scaled estimate of daily surface radiation dose.", None),
+        ("dose_ugy_day", "Estimated surface radiation dose", "µGy/day", "msl_rad_dose", "radiation", "dose_yellow", "Pressure-scaled estimate of daily surface radiation dose.", None),
         ("dust_mean", "Mean atmospheric dust opacity", "τIR", "montabone_dust", "dust", "YlOrBr", "Mean total-column infrared dust opacity across the source observations.", None),
         ("dust_p95", "95th-percentile dust opacity", "τIR", "montabone_dust", "dust", "YlOrBr", "95th-percentile total-column infrared dust opacity across the source observations.", None),
-        ("storm_frac", "Dust-storm fraction", "fraction", "montabone_dust", "dust", "YlOrBr", "Fraction of observed sols with dust optical depth above the source threshold.", (0, 1)),
+        ("storm_frac", "Dust-storm fraction", "fraction", "montabone_dust", "dust", "YlOrBr", "Fraction of observed sols with dust optical depth above the source threshold.", None),
         ("tes_ti_night_2007", "Nighttime thermal inertia", "raw TI units", "tes_ti_2007", "thermal", "RdPu", "Global nighttime thermal inertia from TES observations.", None),
         ("expert_likeness", "Expert-likeness site score", "score", "", "habitability", "Greens", "Positive-unlabelled model score indicating resemblance to expert-selected sites.", (0, 1)),
         ("cave_count_zone", "Cave candidates within 100 km", "count", "mgc3_caves", "caves", "Purples", "Count of catalogue cave candidates within a 100 km radius.", None),
-        ("slope_p90_deg", "90th-percentile slope", "degrees", "mola_megdr_128", "terrain", "Greys", "90th-percentile local terrain slope.", None),
+        ("slope_p90_deg", "90th-percentile slope", "deg", "mola_megdr_128", "terrain", "Greys", "90th-percentile local terrain slope.", None),
         ("roughness_m", "Terrain roughness", "m", "mola_megdr_128", "terrain", "Greys", "Local detrended elevation standard deviation.", None),
         ("elevation_m", "Global elevation", "m", "mola_megdr_128", "terrain", "Greys", "MOLA global topographic elevation relative to the areoid.", None),
-        ("insolation_wm2", "Mean daily insolation", "W/m²", "montabone_dust", "other", "cividis", "Modelled mean daily direct and diffuse surface insolation.", None),
-        ("surface_pressure_pa", "Estimated surface pressure", "Pa", "mola_megdr_128", "other", "cividis", "Gale-referenced pressure estimate scaled by elevation.", None),
-        ("crustal_b_nt", "Crustal magnetic field", "nT", "langlais2019", "other", "cividis", "Modelled total crustal magnetic field intensity at the surface.", None),
-        ("unit_diversity_zone", "Geologic unit diversity", "unique units", "tanaka2014_geo", "other", "cividis", "Number of mapped geologic units within a 100 km radius.", None),
+        ("insolation_wm2", "Mean daily insolation", "W/m²", "montabone_dust", "other", "insolation_coral", "Modelled mean daily direct and diffuse surface insolation.", None),
+        ("surface_pressure_pa", "Estimated surface pressure", "Pa", "mola_megdr_128", "other", "pressure_teal", "Gale-referenced pressure estimate scaled by elevation.", None),
+        ("crustal_b_nt", "Crustal magnetic field", "nT", "langlais2019", "other", "crustal_olive", "Modelled total crustal magnetic field intensity at the surface.", None),
+        ("unit_diversity_zone", "Geologic unit diversity", "unique units", "tanaka2014_geo", "other", "unit_slate_sand", "Number of mapped geologic units within a 100 km radius.", None),
     ]:
         if layer in configs:
             configs[layer].update(title=title, units=units, dataset=dataset, group=group, cmap=cmap,
@@ -178,6 +236,16 @@ def layer_limits(arr: np.ndarray, bounds: tuple[float, float] | None) -> tuple[f
     return float(lo), float(hi)
 
 
+def format_legend_number(value: float) -> str:
+    """Format a legend value without scientific notation or noisy decimals."""
+    if not math.isfinite(value):
+        return "—"
+    magnitude = abs(value)
+    decimals = 0 if magnitude >= 100 else 1 if magnitude >= 10 else 2 if magnitude >= 0.1 else 3
+    text = f"{value:,.{decimals}f}"
+    return text.rstrip("0").rstrip(".") if decimals else text
+
+
 def make_layer(layer_id: str, config: dict) -> tuple[dict, np.ndarray, tuple[float, float]]:
     arr, src_transform, src_crs, _ = source_grid(config["path"])
     data_rect = [-180, -60, 180, 60]
@@ -198,7 +266,10 @@ def make_layer(layer_id: str, config: dict) -> tuple[dict, np.ndarray, tuple[flo
         "values": {"url": f"layers/{layer_id}/values.bin", "width": VALUE_WIDTH, "height": VALUE_HEIGHT,
                    "west": -180, "north": 60, "res_deg": WORLD_RES, "scale": scale,
                    "offset": offset, "nodata": NODATA},
-        "legend": {"stops": [[low, "#00000000"], [high, "#ffffffF0"]], "min": low, "max": high, "units": config["units"], "palette": config["cmap"]},
+        "legend": {"stops": [[low, "#00000000"], [high, "#ffffffF0"]], "min": low, "max": high,
+                   "min_label": format_legend_number(low), "max_label": format_legend_number(high),
+                   "units": config["units"], "palette": config["cmap"],
+                   "palette_label": PALETTE_LABELS.get(config["cmap"], config["cmap"])},
         "source": read_source_manifest(config["dataset"]),
     }
     # Correct palette-specific legend endpoints; values are encoded for the legend, alpha is zero at low.
@@ -206,6 +277,10 @@ def make_layer(layer_id: str, config: dict) -> tuple[dict, np.ndarray, tuple[flo
     legend_start = "#%02x%02x%02xF0" % tuple(ramp[0, :3]) if config["cmap"] == "ice_distance" else "#00000000"
     legend_end = "#00000000" if config["cmap"] == "ice_distance" else "#%02x%02x%02xF0" % tuple(ramp[1, :3])
     manifest["legend"]["stops"] = [[low, legend_start], [high, legend_end]]
+    if config["cmap"] == "ice_distance":
+        near = ramp[0]
+        bright = "#%02x%02x%02x%02x" % tuple(near)
+        manifest["legend"]["stops"] = [[low, bright], [min(500.0, high), "#00000000"], [high, "#00000000"]]
     if layer_id.startswith("SWIM4MIM_"):
         positive = colour_ramp(np.array([0.01]), low, high, config["cmap"])[0]
         far = ramp[1]
@@ -287,31 +362,45 @@ def write_contact_sheet(layers: list[dict]) -> None:
         rgba = colour_ramp(np.linspace(lo, hi, thumb_w, dtype=np.float32)[None, :], lo, hi, cmap_name)
         bar = Image.fromarray(rgba, "RGBA").resize((thumb_w - 10, 9))
         sheet.paste(bar, (x0 + 5, y0 + thumb_h + 23), bar)
-        draw.text((x0 + 5, y0 + thumb_h + 33), f"{lo:.3g} — {hi:.3g} {layer['units']}", fill="#b9c2cd", font=font)
+        draw.text((x0 + 5, y0 + thumb_h + 33),
+                  f"{format_legend_number(lo)} — {format_legend_number(hi)} {layer['units']}",
+                  fill="#b9c2cd", font=font)
     shots = ROOT / ".shots"
     shots.mkdir(exist_ok=True)
     sheet.save(shots / "globe-layers-contact-sheet.png", optimize=True)
 
 
-def build(only: str | None = None) -> None:
+def build(only: str | list[str] | None = None) -> None:
     configs = metadata()
-    if only and only not in configs:
-        raise SystemExit(f"unknown layer id: {only}")
-    layer_ids = [only] if only else sorted(configs)
+    selected = [only] if isinstance(only, str) else only
+    if selected:
+        unknown = [layer_id for layer_id in selected if layer_id not in configs]
+        if unknown:
+            raise SystemExit(f"unknown layer id: {', '.join(unknown)}")
+    layer_ids = selected or sorted(configs)
     manifest_layers = []
     for layer_id in layer_ids:
         cfg = configs[layer_id]
         layer_manifest, _, _ = make_layer(layer_id, cfg)
         manifest_layers.append(layer_manifest)
     manifest_path = OUT / "layers.json"
-    if only and manifest_path.exists():
+    if selected and manifest_path.exists():
         current = json.loads(manifest_path.read_text(encoding="utf-8"))
         merged = {entry["id"]: entry for entry in current["layers"]}
-        merged[only] = manifest_layers[0]
+        merged.update({entry["id"]: entry for entry in manifest_layers})
         manifest_layers = [merged[k] for k in sorted(merged)]
+    for entry in manifest_layers:
+        cfg = configs[entry["id"]]
+        entry.update(title=cfg["title"], group=cfg["group"], units=cfg["units"], description=cfg["description"])
+        legend = entry["legend"]
+        legend.update(
+            min_label=format_legend_number(legend["min"]), max_label=format_legend_number(legend["max"]),
+            units=cfg["units"], palette=cfg["cmap"],
+            palette_label=PALETTE_LABELS.get(cfg["cmap"], cfg["cmap"]),
+        )
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(json.dumps({"version": 1, "layers": manifest_layers}, indent=2), encoding="utf-8")
-    if not only:
+    if not selected:
         write_caves()
     sheet_items = []
     for entry in manifest_layers:
@@ -326,7 +415,7 @@ def build(only: str | None = None) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--only", help="rebuild one layer id")
+    parser.add_argument("--only", action="append", help="rebuild one layer id; repeat to select several")
     args = parser.parse_args()
     build(args.only)
 

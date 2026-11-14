@@ -5,6 +5,7 @@ from globe_layers import (
     NODATA,
     colour_ramp,
     dequantise_values,
+    format_legend_number,
     layer_limits,
     quantise_values,
     tile_rectangle,
@@ -47,15 +48,30 @@ def test_colour_ramp_endpoints_and_low_end_transparency():
 
 
 def test_ice_distance_fades_from_near_to_far():
-    rgba = colour_ramp(np.array([0.0, 10.0], dtype=np.float32), 0, 10, "ice_distance")
+    rgba = colour_ramp(np.array([0.0, 1000.0], dtype=np.float32), 0, 500, "ice_distance")
     assert rgba[0, 3] == 240
     assert rgba[1, 3] == 0
 
 
 def test_ice_consistency_ends_transparent_to_near_white():
-    rgba = colour_ramp(np.array([-1.0, 1.0], dtype=np.float32), -1, 1, "swim_ice")
+    rgba = colour_ramp(np.array([-0.5, 0.0, 1.0], dtype=np.float32), -1, 1, "swim_ice")
+    assert rgba[:2, 3].tolist() == [0, 0]
+    assert rgba[2, :3].tolist() == [247, 251, 255]
+    assert rgba[2, 3] == 240
+
+
+def test_radiation_low_end_is_transparent():
+    rgba = colour_ramp(np.array([261.0, 332.0], dtype=np.float32), 261, 332, "dose_yellow")
     assert rgba[0, 3] == 0
-    assert rgba[1].tolist() == [247, 251, 255, 240]
+    assert rgba[1, :3].tolist() == [255, 233, 77]
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [(2750.8, "2,751"), (1540, "1,540"), (336, "336"), (0.278, "0.28"), (0.0, "0")],
+)
+def test_legend_number_format(value, expected):
+    assert format_legend_number(value) == expected
 
 
 def test_layer_limits_use_percentile_clipping_or_natural_bounds():
