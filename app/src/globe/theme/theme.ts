@@ -24,6 +24,30 @@ export type ThemeOverride = 'auto' | 'day' | 'night';
 /** The device's OS light/dark setting, used by Earth mode's Auto. */
 export type DeviceScheme = 'light' | 'dark';
 
+export interface GlobePreferences {
+  mode: GlobeMode;
+  override: ThemeOverride;
+}
+
+/** Read the globe mode and theme override from a URL query string. */
+export function globePreferencesFromSearch(search: string): GlobePreferences {
+  const params = new URLSearchParams(search);
+  const mode = params.get('mode');
+  const override = params.get('theme');
+  return {
+    mode: mode === 'mars' ? 'mars' : 'earth',
+    override: override === 'day' || override === 'night' ? override : 'auto',
+  };
+}
+
+/** Update globe preferences while preserving the rest of the URL query. */
+export function globeSearchWithPreferences(search: string, preferences: GlobePreferences): string {
+  const params = new URLSearchParams(search);
+  params.set('mode', preferences.mode);
+  params.set('theme', preferences.override);
+  return params.toString();
+}
+
 /** Sun elevation above which the site is in full day (degrees). */
 export const DAY_ELEV_DEG = 6;
 

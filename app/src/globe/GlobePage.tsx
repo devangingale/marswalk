@@ -28,6 +28,7 @@ import { GlobeGlobalLayers, GlobeLayer, globeAssetUrl, loadGlobeManifest } from 
 import { GlobeImagery } from './imageryLayers';
 import { GlobeTimeTools } from './Clock';
 import { SiteFinder } from './sites/SiteFinder';
+import { useGlobeTheme } from './theme/useGlobeTheme';
 
 const CAVE_CREDIT = 'Mars Global Cave Candidate Catalog (MGC³), USGS Astrogeology Science Center';
 /** Data overlays start at the --map-overlay-opacity token value. */
@@ -82,6 +83,9 @@ export const GlobePage: React.FC = () => {
   const cavesRef = useRef<CustomDataSource | null>(null);
 
   const [siteData, setSiteData] = useState<SiteData | null>(null);
+  const { mode, setMode, override, setOverride, theme } = useGlobeTheme(
+    siteData ? { lat: siteData.origin.lat0, lon: siteData.origin.lon0 } : null,
+  );
   const [layerStates, setLayerStates] = useState<Record<string, LayerState>>({});
   const [globalLayers, setGlobalLayers] = useState<GlobeLayer[]>([]);
   const [globalStates, setGlobalStates] = useState<Record<string, LayerState>>({});
@@ -238,6 +242,33 @@ export const GlobePage: React.FC = () => {
     if (cavesRef.current) cavesRef.current.show = cavesOn;
   }, [cavesOn]);
 
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer || viewer.isDestroyed()) return;
+    viewer.scene.backgroundColor = cssColour('--map-sky');
+    const labelFill = cssColour('--map-label-text');
+    const labelOutline = cssColour('--map-label-halo');
+    const dataSources = Array.from({ length: viewer.dataSources.length }, (_, index) => viewer.dataSources.get(index));
+    const labelEntities = [
+      ...viewer.entities.values,
+      ...dataSources.flatMap((source) => source.entities.values),
+    ];
+    for (const entity of labelEntities) {
+      if (!entity.label) continue;
+      entity.label.fillColor = labelFill as never;
+      entity.label.outlineColor = labelOutline as never;
+    }
+    if (cavesRef.current) {
+      const fill = cssColour('--map-cave');
+      for (const entity of cavesRef.current.entities.values) {
+        if (!entity.point) continue;
+        entity.point.color = fill as never;
+        entity.point.outlineColor = labelOutline as never;
+      }
+    }
+    viewer.scene.requestRender();
+  }, [theme, viewer]);
+
   const toggle = (set: typeof setLayerStates) => (id: string) =>
     set((prev) => ({ ...prev, [id]: { ...prev[id], enabled: !prev[id]?.enabled } }));
   const setOpacity = (set: typeof setLayerStates) => (id: string, opacity: number) =>
@@ -261,6 +292,32 @@ export const GlobePage: React.FC = () => {
     <div className="mock plan-mock">
       <header className="mock-top">
         <span className="wordmark">Sol-48</span>
+        <div className="s48-seg globe-mode" role="group" aria-label="Globe mode">
+          <button type="button" aria-pressed={mode === 'earth'} onClick={() => setMode('earth')}>
+            Earth
+          </button>
+          <button
+            type="button"
+            aria-pressed={mode === 'mars'}
+            onClick={() => {
+              setMode('mars');
+              setPanelTab('layers');
+            }}
+          >
+            Mars
+          </button>
+        </div>
+        <div className="s48-seg globe-theme" role="group" aria-label="Theme">
+          <button type="button" aria-pressed={override === 'auto'} onClick={() => setOverride('auto')}>
+            Auto
+          </button>
+          <button type="button" aria-pressed={override === 'day'} onClick={() => setOverride('day')}>
+            Day
+          </button>
+          <button type="button" aria-pressed={override === 'night'} onClick={() => setOverride('night')}>
+            Night
+          </button>
+        </div>
         <div className="s48-seg globe-tabs" role="tablist" aria-label="Left panel">
           <button
             type="button"
@@ -273,17 +330,19 @@ export const GlobePage: React.FC = () => {
           >
             Layers
           </button>
-          <button
-            type="button"
-            role="tab"
-            aria-pressed={panelOpen && panelTab === 'sites'}
-            onClick={() => {
-              setPanelTab('sites');
-              setPanelOpen(true);
-            }}
-          >
-            Sites
-          </button>
+          {mode === 'earth' && (
+            <button
+              type="button"
+              role="tab"
+              aria-pressed={panelOpen && panelTab === 'sites'}
+              onClick={() => {
+                setPanelTab('sites');
+                setPanelOpen(true);
+              }}
+            >
+              Sites
+            </button>
+          )}
         </div>
         <span className="grow" />
       </header>
@@ -308,7 +367,7 @@ export const GlobePage: React.FC = () => {
           />
           <SiteFinder
             viewer={viewer}
-            active={panelOpen && panelTab === 'sites'}
+            active={mode === 'earth' && panelOpen && panelTab === 'sites'}
             registerHover={registerSiteHover}
             onHide={() => setPanelOpen(false)}
           />
