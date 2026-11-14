@@ -40,7 +40,7 @@ import {
   type SlopeStats,
 } from '../lib/routeShape';
 import { lonLatToCartesian, type Pose } from './frame';
-import { cullScreenLabels, offsetScreenMarkers, type Box, type ScreenMarker } from './graticule';
+import { cullScreenLabels, type Box } from './graticule';
 import { canvasMarkerImages, readToken, type MarkerImage, type MarkerImages, type TokenReader } from './markerImages';
 import {
   bearingDeg,
@@ -153,7 +153,6 @@ export class GlobeOverlays {
   private readonly onSectionHover?: (sectionId: string | null) => void;
   private readonly scene?: Scene;
   private readonly hiddenLabels = new Set<Entity>();
-  private readonly markerOffsets = new Map<Entity, Cartesian2>();
   private readonly removeScreenUpdate?: () => void;
   private readonly meta = new Map<Entity, Meta>();
   private readonly owned = new Set<Entity>();
@@ -216,9 +215,6 @@ export class GlobeOverlays {
     this.owned.add(entity);
     if (meta) this.meta.set(entity, meta);
     if (entity.label) entity.label.show = new CallbackProperty(() => !this.hiddenLabels.has(entity), false);
-    if (entity.billboard && this.markerPriority(entity) === 0) {
-      entity.billboard.pixelOffset = new CallbackProperty(() => this.markerOffsets.get(entity) ?? Cartesian2.ZERO, false);
-    }
     return entity;
   }
 
@@ -228,7 +224,6 @@ export class GlobeOverlays {
       this.meta.delete(entity);
       this.owned.delete(entity);
       this.hiddenLabels.delete(entity);
-      this.markerOffsets.delete(entity);
     }
     this.groups[group] = [];
   }
@@ -249,26 +244,9 @@ export class GlobeOverlays {
       const height = marker.billboard?.height?.getValue(time) ?? 20;
       markerData.push({ entity: marker, point, width, height, priority: this.markerPriority(marker)! });
     }
-    const markerBoxes: Box[] = markerData.filter((marker) => marker.priority !== 0).map(({ point, width, height }) => [
+    const markerBoxes: Box[] = markerData.map(({ point, width, height }) => [
       point.x - width / 2, point.y - height / 2, point.x + width / 2, point.y + height / 2,
     ]);
-    const markerOffsets = offsetScreenMarkers(
-      markerData.filter((marker) => marker.priority === 0).map(({ entity, point, width, height }): ScreenMarker => ({
-        id: entity.id, x: point.x, y: point.y, width, height,
-      })),
-      markerBoxes,
-    );
-    this.markerOffsets.clear();
-    for (const marker of markerData) {
-      const [dx, dy] = markerOffsets.get(marker.entity.id) ?? [0, 0];
-      if (marker.priority === 0) this.markerOffsets.set(marker.entity, new Cartesian2(dx, dy));
-      markerBoxes.push([
-        marker.point.x + dx - marker.width / 2,
-        marker.point.y + dy - marker.height / 2,
-        marker.point.x + dx + marker.width / 2,
-        marker.point.y + dy + marker.height / 2,
-      ]);
-    }
 
     const routePoints = routeLine(this.plan).flatMap(([lon, lat]) => {
       const point = scene.cartesianToCanvasCoordinates(this.surfacePosition(lon, lat));
@@ -407,7 +385,7 @@ export class GlobeOverlays {
             return style === 'highlight' ? highlighted : colour;
           }, false),
         );
-      // zIndex orders ground lines: casing, then the coloured body, then the dashed core.
+      // Put the A3 route above rover traverses, then order casing, body, and dashed core.
       const polyline = (
         line: [number, number][],
         width: number,
@@ -425,19 +403,19 @@ export class GlobeOverlays {
         },
       });
 
-      this.add('plan', polyline(stretch.line, casingWidth + 2, 10, { material: styleColour(casing, casing) }), meta);
+      this.add('plan', polyline(stretch.line, casingWidth + 2, 400, { material: styleColour(casing, casing) }), meta);
       const grade = this.gradient && this.stats ? this.stretchGrades(stretch) : null;
       if (grade) {
         for (const run of grade) {
           const c = grades[run.bin - 1];
-          this.add('plan', polyline(run.line, coreWidth + 2, 20, { material: styleColour(c, c) }), meta);
+          this.add('plan', polyline(run.line, coreWidth + 2, 410, { material: styleColour(c, c) }), meta);
         }
       } else {
-        this.add('plan', polyline(stretch.line, coreWidth + 2, 20, { material: styleColour(base, highlight) }), meta);
+        this.add('plan', polyline(stretch.line, coreWidth + 2, 410, { material: styleColour(base, highlight) }), meta);
         this.cores[index].push(
           this.add(
             'plan',
-            polyline(stretch.line, 2, 30, {
+            polyline(stretch.line, 2, 420, {
               material: new PolylineDashMaterialProperty({ color: dash, gapColor: Color.TRANSPARENT, dashLength: 12 }),
             }),
             meta,
@@ -452,7 +430,7 @@ export class GlobeOverlays {
           {
             position,
             billboard: {
-              ...this.billboard(this.markers().chevron(), NEAR),
+              ...this.billboard(this.markers().chevron()),
               rotation: -CesiumMath.toRadians(c.bearingDeg),
               alignedAxis: northAt(position),
             },
@@ -469,14 +447,14 @@ export class GlobeOverlays {
     return gradientDeg.every(Number.isFinite) ? gradeRuns(stretch.line, gradientDeg) : null;
   }
 
-  private billboard(image: MarkerImage, show: DistanceDisplayCondition): Entity.ConstructorOptions['billboard'] {
+  private billboard(image: MarkerImage, show?: DistanceDisplayCondition): Entity.ConstructorOptions['billboard'] {
     return {
       image: image.image,
       width: image.width,
       height: image.height,
       heightReference: this.useSurfaceHeights ? HeightReference.NONE : HeightReference.CLAMP_TO_GROUND,
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
-      distanceDisplayCondition: show,
+      ...(show ? { distanceDisplayCondition: show } : {}),
     };
   }
 
@@ -509,7 +487,7 @@ export class GlobeOverlays {
       const lines = fork.branches.map((b) => branchLabel(b.toLabel, plan));
       this.add(
         'plan',
-        { position: this.surfacePosition(fork.lon, fork.lat), billboard: this.billboard(this.markers().fork(), SITE) },
+        { position: this.surfacePosition(fork.lon, fork.lat), billboard: this.billboard(this.markers().fork()) },
         { kind: 'text', lines: ['Fork', ...lines] },
       );
       const at: [number, number] = [fork.lon, fork.lat];
