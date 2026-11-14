@@ -40,7 +40,7 @@ export function marsBaseStyle(): StyleSpecification {
         id: 'mars-background',
         type: 'background',
         paint: {
-          'background-color': '#111726',
+          'background-color': '#3b2e26',
         },
       },
       {
@@ -50,7 +50,7 @@ export function marsBaseStyle(): StyleSpecification {
         minzoom: 0,
         maxzoom: 9,
         paint: {
-          'raster-opacity': 0.7,
+          'raster-opacity': 0.75,
         },
       },
     ],
