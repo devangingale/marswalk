@@ -1,15 +1,21 @@
 // Written with AI assistance, directed and reviewed by the team.
-// Globe page with site and whole-planet layers, reached with ?globe=1.
+// Globe page with site and whole-planet layers and the route overlays, reached with ?globe=1.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   BoundingSphere,
+  Cartesian2,
   Cartographic,
   Color,
   CustomDataSource,
+  Ellipsoid,
+  EllipsoidalOccluder,
   Entity,
   HeadingPitchRange,
   HeightReference,
+  IntersectionTests,
   Math as CesiumMath,
+  Ray,
+  SceneTransforms,
   type Scene,
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
@@ -20,14 +26,22 @@ import '../shell/shell.css';
 import './globe.css';
 import { DEFAULT_SITE, GLOBE_BASE, getSiteBaseUrl, getSiteJsonUrl } from '../config';
 import { LayerPanel } from '../components/LayerPanel';
-import { loadGrid } from '../lib/grid';
+import samplePlanJson from '../fixtures/plan.sample.json';
+import { loadGrid, type RouteGrid } from '../lib/grid';
+import type { Plan } from '../lib/plan';
+import { sections as routeSections } from '../lib/routeShape';
 import type { LayerState, SiteData } from '../types';
 import { createMarsViewer, initCesium } from './cesiumSetup';
+import { buildCornerPlan } from './cornerPlan';
 import { cartesianToLonLat, lonLatToCartesian, siteHeightOffsetM } from './frame';
 import { GlobeGlobalLayers, GlobeLayer, globeAssetUrl, loadGlobeManifest } from './globalLayers';
+import { GlobeGraticule, cullLabels, graticuleLines, type Box, type GraticuleLine, type ViewBounds } from './graticule';
 import { GlobeImagery } from './imageryLayers';
 import { GlobeTimeTools } from './Clock';
 import { SiteFinder } from './sites/SiteFinder';
+import { canvasMarkerImages } from './markerImages';
+import { GlobeOverlays } from './overlays';
+import { formatElevation, formatLatLon, graticuleStep, screenSpan, sectionLabel } from './routeLook';
 import { useGlobeTheme } from './theme/useGlobeTheme';
 
 const CAVE_CREDIT = 'Mars Global Cave Candidate Catalog (MGC³), USGS Astrogeology Science Center';
@@ -37,6 +51,10 @@ const OVERLAY_OPACITY = 0.7;
 /** Opening view: the whole disc, centred on the Gale longitude. */
 const PLANET_VIEW = { lon: 137.4, lat: -4.7, heightM: 9_000_000 };
 const CAVE_HOVER = 'unexplored, from orbit';
+
+const SAMPLE_PLAN = samplePlanJson as unknown as Plan;
+type PlanChoice = 'corner' | 'sample';
+const PLAN_TITLES: Record<PlanChoice, string> = { corner: 'Corner loop', sample: 'Boxwork out and back' };
 
 interface CaveCollection {
   features: { geometry: { coordinates: [number, number] }; properties: { id: string } }[];
@@ -49,11 +67,19 @@ interface Hover {
   lines: string[];
 }
 
+interface EdgeLabel {
+  key: string;
+  text: string;
+  x: number;
+  y: number;
+  axis: 'lat' | 'lon';
+}
+
 function cssColour(name: string): Color {
   return Color.fromCssColorString(getComputedStyle(document.documentElement).getPropertyValue(name).trim());
 }
 
-/** Initial state from the URL, for linking straight to a view: layers=, site=, caves=1, view=lon,lat,range. */
+/** Initial state from the URL, for linking straight to a view: layers=, site=, caves=1, view=lon,lat,range, plan=, slopes=1, grid=1. */
 function urlState() {
   const params = new URLSearchParams(window.location.search);
   const list = (key: string) => params.get(key)?.split(',').filter(Boolean) ?? [];
@@ -63,6 +89,9 @@ function urlState() {
     siteOn: params.has('site') ? list('site') : null,
     caves: params.get('caves') === '1',
     view: view?.length === 3 && view.every(Number.isFinite) ? (view as [number, number, number]) : null,
+    plan: (params.get('plan') === 'sample' ? 'sample' : 'corner') as PlanChoice,
+    slopes: params.get('slopes') === '1',
+    grid: params.get('grid') === '1',
   };
 }
 
@@ -74,6 +103,82 @@ async function flyTo(viewer: Viewer, lon: number, lat: number, rangeM: number, p
   });
 }
 
+/** Height of Cesium Mars below the camera, from the tileset. */
+function groundBelowM(viewer: Viewer): number {
+  return viewer.scene.sampleHeight(Cartographic.clone(viewer.camera.positionCartographic)) ?? 0;
+}
+
+/**
+ * Longitude and latitude bounds of the ground in view: camera rays through a 5 by 5 grid of
+ * screen points meet an ellipsoid raised to the ground height below the camera. Cesium's
+ * computeViewRectangle assumes a camera above the ellipsoid, which fails inside deep craters
+ * such as Gale. Null unless every ray meets the ground (the planet is not filling the view).
+ */
+function viewBounds(viewer: Viewer, groundM: number): ViewBounds | null {
+  const canvas = viewer.scene.canvas;
+  const r = Ellipsoid.MARS.radii;
+  const ground = new Ellipsoid(r.x + groundM, r.y + groundM, r.z + groundM);
+  const points: { lon: number; lat: number }[] = [];
+  for (const fx of [0, 0.25, 0.5, 0.75, 1]) {
+    for (const fy of [0, 0.25, 0.5, 0.75, 1]) {
+      const ray = viewer.camera.getPickRay(new Cartesian2(fx * canvas.clientWidth, fy * canvas.clientHeight));
+      const hit = ray && IntersectionTests.rayEllipsoid(ray, ground);
+      if (!ray || !hit) return null;
+      const p = cartesianToLonLat(Ray.getPoint(ray, hit.start));
+      if (p) points.push(p);
+    }
+  }
+  const lons = points.map((p) => p.lon);
+  const lats = points.map((p) => p.lat);
+  const west = Math.min(...lons);
+  const east = Math.max(...lons);
+  // A view across 180 degrees has longitudes at both ends of the range.
+  if (east - west > 180) {
+    const wrapped = lons.map((lon) => (lon < 0 ? lon + 360 : lon));
+    return { west: Math.min(...wrapped), south: Math.min(...lats), east: Math.max(...wrapped) - 360, north: Math.max(...lats) };
+  }
+  return { west, south: Math.min(...lats), east, north: Math.max(...lats) };
+}
+
+/** Above this camera height the far side of the planet can hide lines, so labels test for it. */
+const OCCLUSION_HEIGHT_M = 100_000;
+
+/**
+ * Edge label anchors: meridians at their topmost visible point, parallels at their leftmost.
+ * Line points are projected at the ground height below the camera.
+ */
+function edgeLabels(viewer: Viewer, lines: GraticuleLine[], groundM: number): EdgeLabel[] {
+  const scene = viewer.scene;
+  const width = scene.canvas.clientWidth;
+  const height = scene.canvas.clientHeight;
+  const occluder =
+    viewer.camera.positionCartographic.height > OCCLUSION_HEIGHT_M
+      ? new EllipsoidalOccluder(Ellipsoid.MARS, viewer.camera.positionWC)
+      : null;
+  const labels: EdgeLabel[] = [];
+  for (const line of lines) {
+    let best: { x: number; y: number } | null = null;
+    for (let i = 0; i < line.points.length; i++) {
+      const [lon, lat] = line.points[i];
+      const world = lonLatToCartesian(lon, lat, groundM);
+      if (occluder && !occluder.isPointVisible(world)) continue;
+      const p = SceneTransforms.worldToWindowCoordinates(scene, world);
+      if (!p || p.x < 0 || p.y < 0 || p.x > width || p.y > height) continue;
+      if (!best || (line.axis === 'lon' ? p.y < best.y : p.x < best.x)) best = { x: p.x, y: p.y };
+    }
+    if (best) {
+      labels.push({
+        key: `${line.axis}${line.value}`,
+        text: line.label,
+        axis: line.axis,
+        x: line.axis === 'lon' ? best.x : Math.max(best.x, 4),
+        y: line.axis === 'lon' ? Math.max(best.y, 4) : best.y,
+      });
+    }
+  }
+  return labels;
+}
+
 export const GlobePage: React.FC = () => {
   const initial = useRef(urlState()).current;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -81,6 +186,12 @@ export const GlobePage: React.FC = () => {
   const siteImageryRef = useRef<GlobeImagery | null>(null);
   const globalRef = useRef<GlobeGlobalLayers | null>(null);
   const cavesRef = useRef<CustomDataSource | null>(null);
+  const overlaysRef = useRef<GlobeOverlays | null>(null);
+  const graticuleRef = useRef<GlobeGraticule | null>(null);
+  const gridRef = useRef<RouteGrid | null>(null);
+  const graticuleLinesRef = useRef<GraticuleLine[]>([]);
+  const groundRef = useRef(0);
+  const viewRef = useRef<HTMLDivElement>(null);
 
   const [siteData, setSiteData] = useState<SiteData | null>(null);
   const { mode, setMode, override, setOverride, theme } = useGlobeTheme(
@@ -103,15 +214,61 @@ export const GlobePage: React.FC = () => {
   const registerSiteHover = useCallback((fn: ((entity: Entity | null) => string[] | null) | null) => {
     siteHoverRef.current = fn;
   }, []);
+  const [grid, setGrid] = useState<RouteGrid | null>(null);
+  const [planChoice, setPlanChoice] = useState<PlanChoice>(initial.plan);
+  const [slopesOn, setSlopesOn] = useState(initial.slopes);
+  const [slopesAvailable, setSlopesAvailable] = useState(false);
+  const [graticuleOn, setGraticuleOn] = useState(initial.grid);
+  const [edges, setEdges] = useState<EdgeLabel[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hoveredSection, setHoveredSection] = useState<string | null>(null);
 
-  const statesRef = useRef({ layerStates, globalStates, cavesOn });
-  statesRef.current = { layerStates, globalStates, cavesOn };
+  const statesRef = useRef({ layerStates, globalStates, cavesOn, graticuleOn });
+  statesRef.current = { layerStates, globalStates, cavesOn, graticuleOn };
+
+  const cornerPlan = React.useMemo(() => {
+    if (!siteData) return null;
+    const g = grid;
+    const elevationAt = g
+      ? (lon: number, lat: number) => {
+          const { row, col } = g.lonlatToRowCol(lon, lat);
+          return g.getElevation(row, col);
+        }
+      : undefined;
+    return buildCornerPlan(siteData.origin, elevationAt);
+  }, [siteData, grid]);
+  const shownPlan = planChoice === 'corner' ? cornerPlan : siteData ? SAMPLE_PLAN : null;
+  const sectionRows = React.useMemo(
+    () => (shownPlan && siteData ? routeSections(shownPlan, siteData.origin) : []),
+    [shownPlan, siteData],
+  );
+
+  const refreshGraticule = useCallback(() => {
+    const viewer = viewerRef.current;
+    const graticule = graticuleRef.current;
+    if (!viewer || !graticule) return;
+    if (!statesRef.current.graticuleOn) {
+      graticule.clear();
+      graticuleLinesRef.current = [];
+      setEdges([]);
+      return;
+    }
+    const groundM = groundBelowM(viewer);
+    groundRef.current = groundM;
+    const lines = graticuleLines(
+      viewBounds(viewer, groundM),
+      graticuleStep(viewer.camera.positionCartographic.height - groundM),
+    );
+    graticuleLinesRef.current = lines;
+    graticule.update(lines);
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     let disposed = false;
     let handler: ScreenSpaceEventHandler | null = null;
+    const removers: (() => void)[] = [];
     initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN);
 
     void (async () => {
@@ -128,11 +285,47 @@ export const GlobePage: React.FC = () => {
         return;
       }
 
+      // Markers clamp to Cesium Mars only when the tileset takes part in height queries.
+      tileset.enableCollision = true;
+
       const caves = new CustomDataSource('caves');
       caves.show = statesRef.current.cavesOn;
       cavesRef.current = caves;
       void viewer.dataSources.add(caves);
 
+      const graticuleSource = new CustomDataSource('graticule');
+      void viewer.dataSources.add(graticuleSource);
+      graticuleRef.current = new GlobeGraticule(graticuleSource, cssColour('--map-graticule'));
+      removers.push(viewer.camera.moveEnd.addEventListener(refreshGraticule));
+      let lastEdges = '';
+      removers.push(
+        viewer.scene.postRender.addEventListener(() => {
+          if (!statesRef.current.graticuleOn) return;
+          // Panels over the map (route card, buttons, cursor readout) keep labels out from under them.
+          const view = viewRef.current?.getBoundingClientRect();
+          const panels: Box[] = view
+            ? [...(viewRef.current?.parentElement?.querySelectorAll('[data-over-map], .s48-cond') ?? [])].map((el) => {
+                const r = el.getBoundingClientRect();
+                return [r.left - view.left, r.top - view.top, r.right - view.left, r.bottom - view.top];
+              })
+            : [];
+          const next = cullLabels(
+            edgeLabels(viewer, graticuleLinesRef.current, groundRef.current).map((l) => ({
+              ...l,
+              x: Math.round(l.x),
+              y: Math.round(l.y),
+            })),
+            panels,
+          );
+          const key = JSON.stringify(next);
+          if (key === lastEdges) return;
+          lastEdges = key;
+          setEdges(next);
+        }),
+      );
+      refreshGraticule();
+
+      overlaysRef.current = new GlobeOverlays(viewer, { onSectionHover: setHoveredSection });
       siteImageryRef.current = new GlobeImagery(tileset.imageryLayers);
       setDustScene(viewer.scene);
 
@@ -153,19 +346,17 @@ export const GlobePage: React.FC = () => {
         .then((r) => (r.ok ? (r.json() as Promise<CaveCollection>) : Promise.reject(new Error(`HTTP ${r.status}`))))
         .then((data) => {
           if (disposed) return;
-          const fill = cssColour('--map-cave');
-          const ring = cssColour('--map-label-halo');
+          const triangle = canvasMarkerImages().cave();
           for (const f of data.features) {
             const [lon, lat] = f.geometry.coordinates;
             caves.entities.add({
               id: `cave:${f.properties.id}`,
               name: f.properties.id,
               position: lonLatToCartesian(lon, lat, 0),
-              point: {
-                pixelSize: 7,
-                color: fill,
-                outlineColor: ring,
-                outlineWidth: 1,
+              billboard: {
+                image: triangle.image,
+                width: triangle.width,
+                height: triangle.height,
                 heightReference: HeightReference.CLAMP_TO_GROUND,
               },
             });
@@ -191,8 +382,11 @@ export const GlobePage: React.FC = () => {
           setLayerStates(states);
           siteImageryRef.current!.apply(states);
           await siteImageryRef.current!.setSite(site);
-          const grid = await loadGrid(getSiteBaseUrl(site.id), site.origin);
-          const offset = await siteHeightOffsetM(viewer, tileset, site, grid);
+          const loaded = await loadGrid(getSiteBaseUrl(site.id), site.origin);
+          if (disposed) return;
+          gridRef.current = loaded;
+          setGrid(loaded);
+          const offset = await siteHeightOffsetM(viewer, tileset, site, loaded);
           console.info(`Height offset at ${site.id}: ${offset.toFixed(2)} m`);
         })
         .catch((error) => console.warn('Site did not load', error));
@@ -207,9 +401,34 @@ export const GlobePage: React.FC = () => {
           const at = event.endPosition;
           const width = viewer.scene.canvas.clientWidth;
           const place = (lines: string[]) =>
-            setHover(lines.length ? { x: at.x, y: at.y, flip: at.x > width - 260, lines } : null);
+            setHover(lines.length ? { x: at.x, y: at.y, flip: at.x > width - 320, lines } : null);
+
+          const position = viewer.scene.pickPositionSupported ? viewer.scene.pickPosition(at) : undefined;
+          const point = cartesianToLonLat(position);
+          if (point) {
+            const g = gridRef.current;
+            const cell = g?.lonlatToRowCol(point.lon, point.lat);
+            const bundle = g && cell && g.isInside(cell.row, cell.col) ? g.getElevation(cell.row, cell.col) : NaN;
+            const elevation = Number.isFinite(bundle) ? bundle : point.heightM;
+            setCursor(`${formatLatLon(point.lon, point.lat)} · ${formatElevation(elevation)}`);
+          } else {
+            setCursor(null);
+          }
 
           const picked = viewer.scene.pick(at) as { id?: unknown } | undefined;
+          const overlays = overlaysRef.current;
+          if (overlays) {
+            // The route is small next to its distance from the camera, so the cursor's ground height serves for all of it.
+            const samples = overlays.routeSamples(point?.heightM ?? 0).flatMap((c) => {
+              const p = SceneTransforms.worldToWindowCoordinates(viewer.scene, c);
+              return p ? [{ x: p.x, y: p.y }] : [];
+            });
+            const lines = overlays.hover(picked, screenSpan(samples));
+            if (lines.length) {
+              place(lines);
+              return;
+            }
+          }
           if (picked?.id instanceof Entity && caves.entities.contains(picked.id)) {
             place([`Cave candidate ${picked.id.name}`, CAVE_HOVER]);
             return;
@@ -219,8 +438,6 @@ export const GlobePage: React.FC = () => {
             place(siteLines);
             return;
           }
-          const position = viewer.scene.pickPositionSupported ? viewer.scene.pickPosition(at) : undefined;
-          const point = cartesianToLonLat(position);
           place(point && globalRef.current ? globalRef.current.readouts(point.lon, point.lat) : []);
         });
       }, ScreenSpaceEventType.MOUSE_MOVE);
@@ -229,18 +446,37 @@ export const GlobePage: React.FC = () => {
     return () => {
       disposed = true;
       handler?.destroy();
+      removers.forEach((remove) => remove());
+      overlaysRef.current?.clear();
+      graticuleRef.current?.clear();
       siteImageryRef.current?.clear();
       globalRef.current?.destroy();
       viewerRef.current?.destroy();
       viewerRef.current = null;
     };
-  }, [initial]);
+  }, [initial, refreshGraticule]);
 
   useEffect(() => siteImageryRef.current?.apply(layerStates), [layerStates]);
   useEffect(() => globalRef.current?.apply(globalStates), [globalStates]);
   useEffect(() => {
     if (cavesRef.current) cavesRef.current.show = cavesOn;
   }, [cavesOn]);
+  useEffect(() => refreshGraticule(), [graticuleOn, refreshGraticule]);
+
+  useEffect(() => {
+    const overlays = overlaysRef.current;
+    if (!overlays || !siteData) return;
+    overlays.setGradient(slopesOn);
+    overlays.setGrid(grid);
+    overlays.setPlan(shownPlan ?? undefined, siteData.origin);
+    setSlopesAvailable(overlays.slopesAvailable);
+  }, [shownPlan, grid, slopesOn, siteData]);
+
+  useEffect(() => {
+    const panel = viewRef.current?.parentElement?.querySelector('aside.panel');
+    panel?.setAttribute('data-over-map', '');
+    return () => panel?.removeAttribute('data-over-map');
+  }, []);
 
   useEffect(() => {
     const viewer = viewerRef.current;
@@ -287,6 +523,15 @@ export const GlobePage: React.FC = () => {
       destination: lonLatToCartesian(PLANET_VIEW.lon, PLANET_VIEW.lat, PLANET_VIEW.heightM),
     });
   }, []);
+
+  const flyToRoute = useCallback(() => {
+    const viewer = viewerRef.current;
+    const route = shownPlan?.route.legs.flatMap((l) => l.line);
+    if (!viewer || !route?.length) return;
+    const sphere = BoundingSphere.fromPoints(route.map(([lon, lat]) => lonLatToCartesian(lon, lat, 0)));
+    const centre = Cartographic.fromCartesian(sphere.center, Ellipsoid.MARS);
+    void flyTo(viewer, CesiumMath.toDegrees(centre.longitude), CesiumMath.toDegrees(centre.latitude), sphere.radius * 3.2, -90);
+  }, [shownPlan]);
 
   return (
     <div className="mock plan-mock">
@@ -371,11 +616,19 @@ export const GlobePage: React.FC = () => {
             registerHover={registerSiteHover}
             onHide={() => setPanelOpen(false)}
           />
-          <div className="globe-view" onMouseLeave={() => setHover(null)}>
+          <div
+            ref={viewRef}
+            className="globe-view"
+            onMouseLeave={() => {
+              setHover(null);
+              setCursor(null);
+              overlaysRef.current?.hover(undefined, 0);
+            }}
+          >
             <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
             {dustScene && <GlobeTimeTools scene={dustScene} />}
             {siteData && (
-              <div className="globe-sites">
+              <div className="globe-sites" data-over-map>
                 <button type="button" className="s48-btn s48-btn--secondary" onClick={flyToPlanet}>
                   Whole planet
                 </button>
@@ -384,7 +637,70 @@ export const GlobePage: React.FC = () => {
                 </button>
               </div>
             )}
+            {siteData && shownPlan && (
+              <section className="globe-route" aria-label="Route" data-over-map>
+                <div className="s48-seg" role="group" aria-label="Plan">
+                  {(Object.keys(PLAN_TITLES) as PlanChoice[]).map((choice) => (
+                    <button
+                      key={choice}
+                      type="button"
+                      aria-pressed={planChoice === choice}
+                      onClick={() => setPlanChoice(choice)}
+                    >
+                      {PLAN_TITLES[choice]}
+                    </button>
+                  ))}
+                </div>
+                <ol className="globe-route__sections">
+                  {sectionRows.map((section) => (
+                    <li key={section.id} className={hoveredSection === section.id ? 'is-hovered' : undefined}>
+                      {sectionLabel(section, shownPlan)}
+                    </li>
+                  ))}
+                </ol>
+                <div className="globe-route__actions">
+                  <button type="button" className="s48-btn s48-btn--secondary" onClick={flyToRoute}>
+                    Show route
+                  </button>
+                  <label>
+                    <input
+                      type="checkbox"
+                      className="s48-check"
+                      checked={slopesOn}
+                      onChange={() => setSlopesOn((v) => !v)}
+                    />
+                    <span>Slopes</span>
+                  </label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      className="s48-check"
+                      checked={graticuleOn}
+                      onChange={() => setGraticuleOn((v) => !v)}
+                    />
+                    <span>Lat/lon grid</span>
+                  </label>
+                </div>
+                {slopesOn && !slopesAvailable && (
+                  <p className="globe-route__note">No elevation grid under this route in the sample bundle.</p>
+                )}
+              </section>
+            )}
             {notice && <div className="globe-notice">{notice}</div>}
+            {edges.map((label) => (
+              <span
+                key={label.key}
+                className={`map-label globe-edge globe-edge--${label.axis}`}
+                style={{ left: label.x, top: label.y }}
+              >
+                {label.text}
+              </span>
+            ))}
+            {cursor && (
+              <div className="map-label globe-cursor" data-over-map>
+                {cursor}
+              </div>
+            )}
             {hover && (
               <div
                 className="globe-hover"
