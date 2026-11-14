@@ -1,12 +1,13 @@
 // Written with AI assistance, directed and reviewed by the team.
 
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { SiteData, LayerState, AppMode } from './types';
 import {
   TILES_BASE,
   AVAILABLE_SITES,
   DEFAULT_SITE,
   getSiteJsonUrl,
+  resolveSiteAssetUrl,
 } from './config';
 import stubSiteSample from './fixtures/site.sample.json';
 import samplePlan from './fixtures/plan.sample.json';
@@ -20,6 +21,12 @@ import { LayerPanel } from './components/LayerPanel';
 import { Map } from './components/Map';
 import { WalkView } from './components/WalkView';
 import { VisorView } from './components/VisorView';
+import { PlanRail } from './plan/PlanRail';
+import { findWalkableCentre, makeInitialPlan, nextStopName } from './plan/planLogic';
+import { loadGrid, type RouteGrid } from './lib/grid';
+import type { PlanStop } from './lib/plan';
+import { DEFAULT_SURFACE_DOSE_MGY_PER_DAY, DEFAULT_SOLAR_EVENT_MGY_PER_DAY } from './lib/energy';
+import './plan/plan.css';
 
 export const App: React.FC = () => {
   const [currentSiteId, setCurrentSiteId] = useState<string>(DEFAULT_SITE);
@@ -30,11 +37,21 @@ export const App: React.FC = () => {
   const [layerStates, setLayerStates] = useState<Record<string, LayerState>>({});
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(true);
   // The plan Walk and Visor replay (contracts section 7). The Plan view sets it; until then, the sample plan.
-  const [plan] = useState<Plan>(samplePlan as unknown as Plan);
+  const [plan, setPlan] = useState<Plan>(samplePlan as unknown as Plan);
+  const [routeGrid, setRouteGrid] = useState<RouteGrid | null>(null);
+  const [routeGridSite, setRouteGridSite] = useState<string | null>(null);
+  const [computing, setComputing] = useState(false);
+  const [doseRates, setDoseRates] = useState({ surface: DEFAULT_SURFACE_DOSE_MGY_PER_DAY, solar: DEFAULT_SOLAR_EVENT_MGY_PER_DAY });
+  const planWorker = useRef<Worker | null>(null);
+  const requestId = useRef(0);
+  const userBuiltPlan = useRef(false);
+  const initializedPlanSite = useRef<string | null>(null);
+  const siteLoadId = useRef(0);
   const track = useMemo(() => buildTrack(plan, siteData.origin), [plan, siteData.origin]);
   const playback = usePlayback(track.durationS);
 
   const loadSite = useCallback(async (siteId: string) => {
+    const loadId = ++siteLoadId.current;
     setIsLoading(true);
     const targetUrl = getSiteJsonUrl(siteId);
 
@@ -44,6 +61,7 @@ export const App: React.FC = () => {
         throw new Error(`HTTP ${resp.status} fetching ${targetUrl}`);
       }
       const data: SiteData = await resp.json();
+      if (loadId !== siteLoadId.current) return;
       setSiteData(data);
       setIsSampleFallback(false);
 
@@ -56,6 +74,7 @@ export const App: React.FC = () => {
       });
       setLayerStates(initialStates);
     } catch {
+      if (loadId !== siteLoadId.current) return;
       const fallbackData = {
         ...(stubSiteSample as unknown as SiteData),
         id: siteId,
@@ -75,7 +94,7 @@ export const App: React.FC = () => {
       });
       setLayerStates(initialStates);
     } finally {
-      setIsLoading(false);
+      if (loadId === siteLoadId.current) setIsLoading(false);
     }
   }, []);
 
@@ -83,11 +102,75 @@ export const App: React.FC = () => {
     loadSite(currentSiteId);
   }, [currentSiteId, loadSite]);
 
+  useEffect(() => {
+    let active = true;
+    setRouteGrid(null);
+    setRouteGridSite(null);
+    if (siteData.id !== currentSiteId) return () => { active = false; };
+    void loadGrid(`${TILES_BASE.replace(/\/+$/, '')}/${currentSiteId}`, siteData.origin).then((grid) => {
+      if (active) { setRouteGrid(grid); setRouteGridSite(currentSiteId); }
+    }).catch(() => {
+      if (currentSiteId === 'gale') void loadGrid('/sample/gale', siteData.origin).then((grid) => { if (active) { setRouteGrid(grid); setRouteGridSite(currentSiteId); } }).catch(() => undefined);
+    });
+    return () => { active = false; };
+  }, [currentSiteId, siteData.id, siteData.origin]);
+
+  useEffect(() => {
+    let active = true;
+    setDoseRates({ surface: DEFAULT_SURFACE_DOSE_MGY_PER_DAY, solar: DEFAULT_SOLAR_EVENT_MGY_PER_DAY });
+    if (!siteData.conditions_url) return () => { active = false; };
+    void fetch(resolveSiteAssetUrl(siteData.id, siteData.conditions_url))
+      .then((response) => response.ok ? response.json() : null)
+      .then((conditions: { radiation?: { surface_dose_mgy_per_day?: number; solar_event_mgy_per_day?: number } } | null) => {
+        if (!active || !conditions?.radiation) return;
+        setDoseRates({ surface: conditions.radiation.surface_dose_mgy_per_day ?? DEFAULT_SURFACE_DOSE_MGY_PER_DAY, solar: conditions.radiation.solar_event_mgy_per_day ?? DEFAULT_SOLAR_EVENT_MGY_PER_DAY });
+      }).catch(() => undefined);
+    return () => { active = false; };
+  }, [siteData.id, siteData.conditions_url]);
+
+  useEffect(() => {
+    if (!routeGrid || routeGridSite !== currentSiteId) return;
+    if (plan.site !== currentSiteId || initializedPlanSite.current !== currentSiteId) {
+      const start = findWalkableCentre(routeGrid);
+      const initial = currentSiteId === 'gale' && !userBuiltPlan.current ? samplePlan as unknown as Plan : makeInitialPlan(currentSiteId, start);
+      setPlan({ ...initial, site: currentSiteId, start });
+      initializedPlanSite.current = currentSiteId;
+    }
+  }, [routeGrid, routeGridSite, currentSiteId, plan.site]);
+
+  const routeInputKey = useMemo(() => JSON.stringify({ site: plan.site, start: plan.start, stops: plan.stops, params: plan.params }), [plan.site, plan.start, plan.stops, plan.params]);
+  useEffect(() => {
+    if (!routeGrid || routeGridSite !== currentSiteId || plan.site !== currentSiteId) return;
+    const worker = new Worker(new URL('./plan/route.worker.ts', import.meta.url), { type: 'module' });
+    planWorker.current?.terminate();
+    planWorker.current = worker;
+    const id = ++requestId.current;
+    setComputing(true);
+    worker.onmessage = (event: MessageEvent<{ id: number; plan?: Plan; error?: string }>) => {
+      if (event.data.id !== requestId.current) return;
+      setComputing(false);
+      if (event.data.plan) setPlan(event.data.plan);
+    };
+    worker.postMessage({ id, header: routeGrid.header, origin: routeGrid.origin, elev: routeGrid.elevData.slice(), cost: routeGrid.costData.slice(), site: plan.site, params: plan.params, start: plan.start, stops: plan.stops, dose: doseRates.surface, solarDose: doseRates.solar });
+    return () => worker.terminate();
+  }, [routeInputKey, routeGrid, routeGridSite, currentSiteId, doseRates]);
+
   const handleSiteChange = (newSiteId: string) => {
     if (newSiteId !== currentSiteId) {
       setCurrentSiteId(newSiteId);
     }
   };
+
+  const addStop = useCallback((point: { lon: number; lat: number }) => {
+    userBuiltPlan.current = true;
+    setPlan((current) => {
+      const stop: PlanStop = { id: `s-${Date.now()}`, name: nextStopName(current.stops), ...point, dwell_s: current.params.stop_time_s };
+      return { ...current, stops: [...current.stops, stop] };
+    });
+  }, []);
+  const updateStart = useCallback((start: Plan['start']) => { userBuiltPlan.current = true; setPlan((current) => ({ ...current, start })); }, []);
+  const updateStop = useCallback((changed: PlanStop) => { userBuiltPlan.current = true; setPlan((current) => ({ ...current, stops: current.stops.map((stop) => stop.id === changed.id ? changed : stop) })); }, []);
+  const changePlan = useCallback((next: Plan) => { userBuiltPlan.current = true; setPlan(next); }, []);
 
   const handleToggleLayer = (layerId: string) => {
     setLayerStates((prev) => {
@@ -118,7 +201,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="mock plan-mock" style={{ width: '100vw', height: '100vh' }}>
+    <div className="mock plan-mock" style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <header className="mock-top">
         <span className="wordmark">Sol-48</span>
 
@@ -179,7 +262,8 @@ export const App: React.FC = () => {
               isOpen={isPanelOpen}
               onTogglePanel={() => setIsPanelOpen(!isPanelOpen)}
             />
-            <Map siteData={siteData} layerStates={layerStates} />
+            <Map siteData={siteData} layerStates={layerStates} plan={plan} onMapPoint={addStop} onStartChange={updateStart} onStopChange={updateStop} />
+            <PlanRail plan={plan} grid={routeGrid} computing={computing} onChange={changePlan} onImport={(imported) => { userBuiltPlan.current = true; setPlan(imported); }} />
           </div>
         ) : mode === 'walk' ? (
           <WalkView siteData={siteData} plan={plan} track={track} playback={playback} />
