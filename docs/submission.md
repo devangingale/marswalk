@@ -4,7 +4,7 @@ One section per field on the Space Apps project form. Keep this current as the b
 
 ## Project name
 
-_TBD_
+Sol-48
 
 ## High-level project summary
 

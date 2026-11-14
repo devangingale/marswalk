@@ -1,0 +1,295 @@
+{
+  "weather": {
+    "source": "CAB/INTA-supplied REMS daily weather reports served by NASA/JPL; scientific archive: PDS Atmospheres",
+    "by_season": [
+      {
+        "ls_from": 0,
+        "ls_to": 30,
+        "air_temp_min_c": -82.0,
+        "air_temp_min_c_method": "Minimum of daily REMS air-temperature minima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "air_temp_max_c": -6.0,
+        "air_temp_max_c_method": "Maximum of daily REMS air-temperature maxima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "pressure_pa": 841.77,
+        "pressure_pa_method": "Arithmetic mean of daily mean REMS pressure values (Pa) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "uv": "Moderate",
+        "uv_method": "Most frequent reported daily local UV irradiance category in this 30° Ls bin; unknown when none is available.",
+        "n_sols": 403,
+        "n_sols_method": "Count of distinct mission sols with numeric Ls, temperature extrema and pressure in the CAB/INTA-supplied NASA feed."
+      },
+      {
+        "ls_from": 30,
+        "ls_to": 60,
+        "air_temp_min_c": -98.0,
+        "air_temp_min_c_method": "Minimum of daily REMS air-temperature minima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "air_temp_max_c": -12.0,
+        "air_temp_max_c_method": "Maximum of daily REMS air-temperature maxima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "pressure_pa": 869.04,
+        "pressure_pa_method": "Arithmetic mean of daily mean REMS pressure values (Pa) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "uv": "Moderate",
+        "uv_method": "Most frequent reported daily local UV irradiance category in this 30° Ls bin; unknown when none is available.",
+        "n_sols": 428,
+        "n_sols_method": "Count of distinct mission sols with numeric Ls, temperature extrema and pressure in the CAB/INTA-supplied NASA feed."
+      },
+      {
+        "ls_from": 60,
+        "ls_to": 90,
+        "air_temp_min_c": -90.0,
+        "air_temp_min_c_method": "Minimum of daily REMS air-temperature minima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "air_temp_max_c": -19.0,
+        "air_temp_max_c_method": "Maximum of daily REMS air-temperature maxima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "pressure_pa": 857.21,
+        "pressure_pa_method": "Arithmetic mean of daily mean REMS pressure values (Pa) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "uv": "Moderate",
+        "uv_method": "Most frequent reported daily local UV irradiance category in this 30° Ls bin; unknown when none is available.",
+        "n_sols": 458,
+        "n_sols_method": "Count of distinct mission sols with numeric Ls, temperature extrema and pressure in the CAB/INTA-supplied NASA feed."
+      },
+      {
+        "ls_from": 90,
+        "ls_to": 120,
+        "air_temp_min_c": -89.0,
+        "air_temp_min_c_method": "Minimum of daily REMS air-temperature minima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "air_temp_max_c": -14.0,
+        "air_temp_max_c_method": "Maximum of daily REMS air-temperature maxima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "pressure_pa": 787.63,
+        "pressure_pa_method": "Arithmetic mean of daily mean REMS pressure values (Pa) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "uv": "Moderate",
+        "uv_method": "Most frequent reported daily local UV irradiance category in this 30° Ls bin; unknown when none is available.",
+        "n_sols": 442,
+        "n_sols_method": "Count of distinct mission sols with numeric Ls, temperature extrema and pressure in the CAB/INTA-supplied NASA feed."
+      },
+      {
+        "ls_from": 120,
+        "ls_to": 150,
+        "air_temp_min_c": -98.0,
+        "air_temp_min_c_method": "Minimum of daily REMS air-temperature minima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "air_temp_max_c": -3.0,
+        "air_temp_max_c_method": "Maximum of daily REMS air-temperature maxima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "pressure_pa": 727.03,
+        "pressure_pa_method": "Arithmetic mean of daily mean REMS pressure values (Pa) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "uv": "Moderate",
+        "uv_method": "Most frequent reported daily local UV irradiance category in this 30° Ls bin; unknown when none is available.",
+        "n_sols": 388,
+        "n_sols_method": "Count of distinct mission sols with numeric Ls, temperature extrema and pressure in the CAB/INTA-supplied NASA feed."
+      },
+      {
+        "ls_from": 150,
+        "ls_to": 180,
+        "air_temp_min_c": -84.0,
+        "air_temp_min_c_method": "Minimum of daily REMS air-temperature minima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "air_temp_max_c": 5.0,
+        "air_temp_max_c_method": "Maximum of daily REMS air-temperature maxima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "pressure_pa": 722.67,
+        "pressure_pa_method": "Arithmetic mean of daily mean REMS pressure values (Pa) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "uv": "Moderate",
+        "uv_method": "Most frequent reported daily local UV irradiance category in this 30° Ls bin; unknown when none is available.",
+        "n_sols": 405,
+        "n_sols_method": "Count of distinct mission sols with numeric Ls, temperature extrema and pressure in the CAB/INTA-supplied NASA feed."
+      },
+      {
+        "ls_from": 180,
+        "ls_to": 210,
+        "air_temp_min_c": -100.0,
+        "air_temp_min_c_method": "Minimum of daily REMS air-temperature minima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "air_temp_max_c": 11.0,
+        "air_temp_max_c_method": "Maximum of daily REMS air-temperature maxima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "pressure_pa": 771.27,
+        "pressure_pa_method": "Arithmetic mean of daily mean REMS pressure values (Pa) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "uv": "High",
+        "uv_method": "Most frequent reported daily local UV irradiance category in this 30° Ls bin; unknown when none is available.",
+        "n_sols": 380,
+        "n_sols_method": "Count of distinct mission sols with numeric Ls, temperature extrema and pressure in the CAB/INTA-supplied NASA feed."
+      },
+      {
+        "ls_from": 210,
+        "ls_to": 240,
+        "air_temp_min_c": -100.0,
+        "air_temp_min_c_method": "Minimum of daily REMS air-temperature minima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "air_temp_max_c": 10.0,
+        "air_temp_max_c_method": "Maximum of daily REMS air-temperature maxima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "pressure_pa": 847.9,
+        "pressure_pa_method": "Arithmetic mean of daily mean REMS pressure values (Pa) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "uv": "Moderate",
+        "uv_method": "Most frequent reported daily local UV irradiance category in this 30° Ls bin; unknown when none is available.",
+        "n_sols": 373,
+        "n_sols_method": "Count of distinct mission sols with numeric Ls, temperature extrema and pressure in the CAB/INTA-supplied NASA feed."
+      },
+      {
+        "ls_from": 240,
+        "ls_to": 270,
+        "air_temp_min_c": -100.0,
+        "air_temp_min_c_method": "Minimum of daily REMS air-temperature minima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "air_temp_max_c": 5.0,
+        "air_temp_max_c_method": "Maximum of daily REMS air-temperature maxima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "pressure_pa": 886.4,
+        "pressure_pa_method": "Arithmetic mean of daily mean REMS pressure values (Pa) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "uv": "Moderate",
+        "uv_method": "Most frequent reported daily local UV irradiance category in this 30° Ls bin; unknown when none is available.",
+        "n_sols": 330,
+        "n_sols_method": "Count of distinct mission sols with numeric Ls, temperature extrema and pressure in the CAB/INTA-supplied NASA feed."
+      },
+      {
+        "ls_from": 270,
+        "ls_to": 300,
+        "air_temp_min_c": -100.0,
+        "air_temp_min_c_method": "Minimum of daily REMS air-temperature minima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "air_temp_max_c": 5.0,
+        "air_temp_max_c_method": "Maximum of daily REMS air-temperature maxima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "pressure_pa": 860.63,
+        "pressure_pa_method": "Arithmetic mean of daily mean REMS pressure values (Pa) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "uv": "Moderate",
+        "uv_method": "Most frequent reported daily local UV irradiance category in this 30° Ls bin; unknown when none is available.",
+        "n_sols": 342,
+        "n_sols_method": "Count of distinct mission sols with numeric Ls, temperature extrema and pressure in the CAB/INTA-supplied NASA feed."
+      },
+      {
+        "ls_from": 300,
+        "ls_to": 330,
+        "air_temp_min_c": -100.0,
+        "air_temp_min_c_method": "Minimum of daily REMS air-temperature minima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "air_temp_max_c": 3.0,
+        "air_temp_max_c_method": "Maximum of daily REMS air-temperature maxima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "pressure_pa": 828.81,
+        "pressure_pa_method": "Arithmetic mean of daily mean REMS pressure values (Pa) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "uv": "High",
+        "uv_method": "Most frequent reported daily local UV irradiance category in this 30° Ls bin; unknown when none is available.",
+        "n_sols": 386,
+        "n_sols_method": "Count of distinct mission sols with numeric Ls, temperature extrema and pressure in the CAB/INTA-supplied NASA feed."
+      },
+      {
+        "ls_from": 330,
+        "ls_to": 360,
+        "air_temp_min_c": -100.0,
+        "air_temp_min_c_method": "Minimum of daily REMS air-temperature minima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "air_temp_max_c": 1.0,
+        "air_temp_max_c_method": "Maximum of daily REMS air-temperature maxima (degrees C) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "pressure_pa": 819.3,
+        "pressure_pa_method": "Arithmetic mean of daily mean REMS pressure values (Pa) in this 30-degree Ls bin; NASA feed supplied by CAB/INTA.",
+        "uv": "Moderate",
+        "uv_method": "Most frequent reported daily local UV irradiance category in this 30° Ls bin; unknown when none is available.",
+        "n_sols": 382,
+        "n_sols_method": "Count of distinct mission sols with numeric Ls, temperature extrema and pressure in the CAB/INTA-supplied NASA feed."
+      }
+    ],
+    "latest": {
+      "sol": 4995,
+      "terrestrial_date": "2026-08-25",
+      "sol_method": "Mission sol number as reported by the CAB/INTA-supplied NASA weather feed.",
+      "air_temp_min_c": -71.0,
+      "air_temp_min_c_method": "Latest available daily REMS minimum air temperature (degrees C) from the CAB/INTA-supplied NASA feed.",
+      "air_temp_max_c": -5.0,
+      "air_temp_max_c_method": "Latest available daily REMS maximum air temperature (degrees C) from the CAB/INTA-supplied NASA feed.",
+      "pressure_pa": 777.0,
+      "pressure_pa_method": "Latest available daily REMS mean pressure (Pa) from the CAB/INTA-supplied NASA feed."
+    }
+  },
+  "radiation": {
+    "source": "RAD, Curiosity (NASA / SwRI)",
+    "surface_dose_mgy_per_day": 0.2877,
+    "surface_dose_mgy_per_day_method": "Median of 2806 per-sol mean filtered RAD E-dose rates; each mean uses the filtered-dose column in µGy/day, converted to mGy/day. Elevated rate is the highest per-sol mean in the same record series.",
+    "solar_event_mgy_per_day": 1.4527,
+    "solar_event_mgy_per_day_method": "Maximum per-sol mean filtered RAD dose rate; data-derived elevated proxy, not an event-specific reconstruction. Median of 2806 per-sol mean filtered RAD E-dose rates; each mean uses the filtered-dose column in µGy/day, converted to mGy/day. Elevated rate is the highest per-sol mean in the same record series.",
+    "note": "Measured at Gale. Both values are derived from filtered RAD dose records."
+  },
+  "dust": {
+    "source": "Mars Climate Database dust climatology (Montabone et al.)",
+    "by_season": [
+      {
+        "ls_from": 0,
+        "ls_to": 30,
+        "opacity": 0.1427,
+        "opacity_method": "Mean local-surface column dust optical depth (cdodtot), nearest 2° Montabone climatology grid cell to Gale, pooled over available Mars years and Ls samples in this bin.",
+        "storm_fraction": 0.0,
+        "storm_fraction_method": "Fraction of available climatology Ls samples in this bin with local-surface CDOD ≥ 1.0; operational threshold stated here as the storm proxy."
+      },
+      {
+        "ls_from": 30,
+        "ls_to": 60,
+        "opacity": 0.0993,
+        "opacity_method": "Mean local-surface column dust optical depth (cdodtot), nearest 2° Montabone climatology grid cell to Gale, pooled over available Mars years and Ls samples in this bin.",
+        "storm_fraction": 0.0,
+        "storm_fraction_method": "Fraction of available climatology Ls samples in this bin with local-surface CDOD ≥ 1.0; operational threshold stated here as the storm proxy."
+      },
+      {
+        "ls_from": 60,
+        "ls_to": 90,
+        "opacity": 0.091,
+        "opacity_method": "Mean local-surface column dust optical depth (cdodtot), nearest 2° Montabone climatology grid cell to Gale, pooled over available Mars years and Ls samples in this bin.",
+        "storm_fraction": 0.0,
+        "storm_fraction_method": "Fraction of available climatology Ls samples in this bin with local-surface CDOD ≥ 1.0; operational threshold stated here as the storm proxy."
+      },
+      {
+        "ls_from": 90,
+        "ls_to": 120,
+        "opacity": 0.0921,
+        "opacity_method": "Mean local-surface column dust optical depth (cdodtot), nearest 2° Montabone climatology grid cell to Gale, pooled over available Mars years and Ls samples in this bin.",
+        "storm_fraction": 0.0,
+        "storm_fraction_method": "Fraction of available climatology Ls samples in this bin with local-surface CDOD ≥ 1.0; operational threshold stated here as the storm proxy."
+      },
+      {
+        "ls_from": 120,
+        "ls_to": 150,
+        "opacity": 0.097,
+        "opacity_method": "Mean local-surface column dust optical depth (cdodtot), nearest 2° Montabone climatology grid cell to Gale, pooled over available Mars years and Ls samples in this bin.",
+        "storm_fraction": 0.0,
+        "storm_fraction_method": "Fraction of available climatology Ls samples in this bin with local-surface CDOD ≥ 1.0; operational threshold stated here as the storm proxy."
+      },
+      {
+        "ls_from": 150,
+        "ls_to": 180,
+        "opacity": 0.1786,
+        "opacity_method": "Mean local-surface column dust optical depth (cdodtot), nearest 2° Montabone climatology grid cell to Gale, pooled over available Mars years and Ls samples in this bin.",
+        "storm_fraction": 0.0,
+        "storm_fraction_method": "Fraction of available climatology Ls samples in this bin with local-surface CDOD ≥ 1.0; operational threshold stated here as the storm proxy."
+      },
+      {
+        "ls_from": 180,
+        "ls_to": 210,
+        "opacity": 0.3323,
+        "opacity_method": "Mean local-surface column dust optical depth (cdodtot), nearest 2° Montabone climatology grid cell to Gale, pooled over available Mars years and Ls samples in this bin.",
+        "storm_fraction": 0.1034,
+        "storm_fraction_method": "Fraction of available climatology Ls samples in this bin with local-surface CDOD ≥ 1.0; operational threshold stated here as the storm proxy."
+      },
+      {
+        "ls_from": 210,
+        "ls_to": 240,
+        "opacity": 0.4306,
+        "opacity_method": "Mean local-surface column dust optical depth (cdodtot), nearest 2° Montabone climatology grid cell to Gale, pooled over available Mars years and Ls samples in this bin.",
+        "storm_fraction": 0.0773,
+        "storm_fraction_method": "Fraction of available climatology Ls samples in this bin with local-surface CDOD ≥ 1.0; operational threshold stated here as the storm proxy."
+      },
+      {
+        "ls_from": 240,
+        "ls_to": 270,
+        "opacity": 0.356,
+        "opacity_method": "Mean local-surface column dust optical depth (cdodtot), nearest 2° Montabone climatology grid cell to Gale, pooled over available Mars years and Ls samples in this bin.",
+        "storm_fraction": 0.0,
+        "storm_fraction_method": "Fraction of available climatology Ls samples in this bin with local-surface CDOD ≥ 1.0; operational threshold stated here as the storm proxy."
+      },
+      {
+        "ls_from": 270,
+        "ls_to": 300,
+        "opacity": 0.3015,
+        "opacity_method": "Mean local-surface column dust optical depth (cdodtot), nearest 2° Montabone climatology grid cell to Gale, pooled over available Mars years and Ls samples in this bin.",
+        "storm_fraction": 0.0471,
+        "storm_fraction_method": "Fraction of available climatology Ls samples in this bin with local-surface CDOD ≥ 1.0; operational threshold stated here as the storm proxy."
+      },
+      {
+        "ls_from": 300,
+        "ls_to": 330,
+        "opacity": 0.2558,
+        "opacity_method": "Mean local-surface column dust optical depth (cdodtot), nearest 2° Montabone climatology grid cell to Gale, pooled over available Mars years and Ls samples in this bin.",
+        "storm_fraction": 0.0,
+        "storm_fraction_method": "Fraction of available climatology Ls samples in this bin with local-surface CDOD ≥ 1.0; operational threshold stated here as the storm proxy."
+      },
+      {
+        "ls_from": 330,
+        "ls_to": 360,
+        "opacity": 0.2355,
+        "opacity_method": "Mean local-surface column dust optical depth (cdodtot), nearest 2° Montabone climatology grid cell to Gale, pooled over available Mars years and Ls samples in this bin.",
+        "storm_fraction": 0.0,
+        "storm_fraction_method": "Fraction of available climatology Ls samples in this bin with local-surface CDOD ≥ 1.0; operational threshold stated here as the storm proxy."
+      }
+    ]
+  }
+}

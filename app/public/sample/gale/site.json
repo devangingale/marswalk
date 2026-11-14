@@ -1,0 +1,211 @@
+{
+  "id": "gale",
+  "title": "Mount Sharp, Gale crater",
+  "rover": "Curiosity",
+  "origin": {
+    "lon0": 137.36045619776752,
+    "lat0": -4.765947140908848,
+    "lat_c": -4.761729489694319
+  },
+  "size_m": {
+    "width": 500.0,
+    "height": 500.0
+  },
+  "bounds_lonlat": [
+    137.36045619776752,
+    -4.765947140908848,
+    137.36892107969243,
+    -4.75751183847979
+  ],
+  "default_start": {
+    "lon": 137.36468863872997,
+    "lat": -4.761729489694319,
+    "label": "Rover drop-off"
+  },
+  "terrain": {
+    "url": "terrain.pmtiles",
+    "encoding": "mapbox",
+    "min_m": -4083,
+    "max_m": -3277
+  },
+  "layers": [
+    {
+      "id": "image",
+      "title": "Orbital image",
+      "kind": "optical",
+      "type": "raster",
+      "url": "image.pmtiles",
+      "resolution_m": 0.2491371323166668,
+      "source": "MRO HiRISE colour mosaic",
+      "agency": "NASA",
+      "units": null,
+      "legend": null,
+      "default_on": true
+    },
+    {
+      "id": "slope",
+      "title": "Slope",
+      "kind": "topographic",
+      "type": "raster",
+      "url": "slope.pmtiles",
+      "resolution_m": 1.0,
+      "source": "MRO HiRISE stereo elevation",
+      "agency": "NASA",
+      "units": "degrees",
+      "legend": {
+        "stops": [
+          [
+            0,
+            "#1a9850"
+          ],
+          [
+            10,
+            "#fee08b"
+          ],
+          [
+            20,
+            "#d73027"
+          ],
+          [
+            30,
+            "#4d004b"
+          ]
+        ]
+      },
+      "default_on": false
+    },
+    {
+      "id": "bd1900_2",
+      "title": "CRISM 1.9 \u00b5m hydration band depth (BD1900_2)",
+      "kind": "spectral",
+      "resolution_m": 181.27,
+      "source": "CRISM MRDR summary parameter BD1900_2; 1.9 \u00b5m H2O absorption depth, a hydration proxy relevant to hydrated sulfates and clays.",
+      "agency": "NASA",
+      "units": "dimensionless band depth",
+      "legend": {
+        "stops": [
+          [
+            -0.023184,
+            "#313695"
+          ],
+          [
+            -0.003862,
+            "#74add1"
+          ],
+          [
+            0.01546,
+            "#ffffbf"
+          ],
+          [
+            0.034782,
+            "#f46d43"
+          ]
+        ]
+      },
+      "default_on": false,
+      "type": "raster",
+      "url": "bd1900_2.pmtiles"
+    },
+    {
+      "id": "d2300",
+      "title": "CRISM 2.3 \u00b5m Mg-OH index (D2300)",
+      "kind": "spectral",
+      "resolution_m": 181.27,
+      "source": "CRISM MRDR summary parameter D2300; 2.3 \u00b5m Mg-OH absorption depth, a phyllosilicate/clay indicator for Mount Sharp.",
+      "agency": "NASA",
+      "units": "dimensionless band depth",
+      "legend": {
+        "stops": [
+          [
+            -0.026766,
+            "#313695"
+          ],
+          [
+            -0.013766,
+            "#74add1"
+          ],
+          [
+            -0.000765,
+            "#ffffbf"
+          ],
+          [
+            0.012235,
+            "#f46d43"
+          ]
+        ]
+      },
+      "default_on": false,
+      "type": "raster",
+      "url": "d2300.pmtiles"
+    },
+    {
+      "id": "thermal",
+      "title": "THEMIS thermal inertia",
+      "kind": "thermal",
+      "resolution_m": 100.0,
+      "source": "THEMIS quantitative thermal inertia mosaic (100 m); values indicate near-surface thermal inertia.",
+      "agency": "NASA",
+      "units": "J m^-2 K^-1 s^-1/2",
+      "legend": {
+        "stops": [
+          [
+            260.492279,
+            "#313695"
+          ],
+          [
+            391.494446,
+            "#74add1"
+          ],
+          [
+            522.496613,
+            "#ffffbf"
+          ],
+          [
+            653.498779,
+            "#a50026"
+          ]
+        ]
+      },
+      "default_on": false,
+      "type": "raster",
+      "url": "thermal.pmtiles"
+    },
+    {
+      "id": "walkability",
+      "title": "Experimental walkability (rover-preference model)",
+      "kind": "topographic",
+      "resolution_m": 1.0,
+      "source": "Gale Curiosity path-trained LightGBM; MRO HiRISE terrain and image texture",
+      "agency": "NASA",
+      "units": "relative rover-preference score (0-1; not a safety probability)",
+      "legend": {
+        "stops": [
+          [
+            0,
+            "#a50026"
+          ],
+          [
+            0.5,
+            "#ffffbf"
+          ],
+          [
+            1,
+            "#006837"
+          ]
+        ]
+      },
+      "default_on": false,
+      "type": "raster",
+      "url": "walkability.pmtiles"
+    }
+  ],
+  "conditions_url": "/data/gale/conditions.json",
+  "photos_url": "/data/gale/photos.json",
+  "chemistry_url": "/data/gale/chemistry.geojson",
+  "stops_url": "/data/gale/stops.json",
+  "validation": {
+    "text": "The walkability model did not clear the +0.05 gate, so routes use the slope-and-roughness rule and walkability is shown as an experimental layer.",
+    "model_auc": 0.551,
+    "baseline_auc": 0.504
+  }
+}
