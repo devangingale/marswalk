@@ -61,7 +61,7 @@ export const ScaleBar: React.FC<ScaleBarProps> = ({ map, defaultLat = -4.7913 })
   return (
     <div
       className="map-ui"
-      style={{ left: '16px', bottom: '16px' }}
+      style={{ left: 'var(--space-4)', bottom: 'var(--space-4)' }}
       title="True Mars ground scale (R = 3396190 m, contracts section 3)"
     >
       <div className="s48-scale" style={{ width: `${scale.pixelWidth}px` }}>

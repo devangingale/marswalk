@@ -51,7 +51,7 @@ export const WalkMap: React.FC<WalkMapProps> = ({ siteData, plan, track, lon, la
         id: 'walk-route',
         type: 'line',
         source: 'walk-route',
-        paint: { 'line-color': '#f59e0b', 'line-width': 3 },
+        paint: { 'line-color': '#8ec1f5', 'line-width': 4 },
       });
 
       map.addSource('walk-waypoints', {
@@ -69,7 +69,7 @@ export const WalkMap: React.FC<WalkMapProps> = ({ siteData, plan, track, lon, la
         id: 'walk-waypoints',
         type: 'circle',
         source: 'walk-waypoints',
-        paint: { 'circle-radius': 6, 'circle-color': '#2563eb', 'circle-stroke-width': 1, 'circle-stroke-color': '#ffffff' },
+        paint: { 'circle-radius': 6, 'circle-color': '#0a1828', 'circle-stroke-width': 2, 'circle-stroke-color': '#f2f5f7' },
       });
 
       if (track.vertices.length > 1) {
