@@ -15,7 +15,7 @@ import {
   DEFAULT_SUIT_MASS_KG,
 } from './energy';
 
-describe('Mars walking energy model (Pandolf-Santee + Mars gravity scaling)', () => {
+describe('Mars walking energy model (Pandolf 1977 + Santee et al. 2003 + Mars gravity scaling)', () => {
   const W = DEFAULT_BODY_MASS_KG; // 80 kg
   const L = DEFAULT_SUIT_MASS_KG; // 120 kg
   const V = 0.8; // m/s
@@ -42,7 +42,7 @@ describe('Mars walking energy model (Pandolf-Santee + Mars gravity scaling)', ()
     expect(uphillPower).toBeGreaterThan(levelPower);
   });
 
-  it('applies Santee downhill correction on descents', () => {
+  it('applies the Santee et al. 2003 (USARIEM TN03-3) downhill correction on descents', () => {
     const levelPower = calculateMetabolicPower(W, L, V, 0.0, 1.0);
     const shallowDownhillPower = calculateMetabolicPower(W, L, V, -6.0, 1.0); // -6% grade (optimum descent)
     const steepDownhillPower = calculateMetabolicPower(W, L, V, -20.0, 1.0); // -20% grade (requires braking)
