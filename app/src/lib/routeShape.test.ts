@@ -374,4 +374,25 @@ describe('routeShape', () => {
     const steepest = lonlatToLocalMetres(stats.steepestAt![0], stats.steepestAt![1], testOrigin);
     expect(steepest.x_m).toBeCloseTo(5, 1);
   });
+
+  it('uses the first baseline reaching 10 m for each start point', () => {
+    const grid = createSyntheticRampGrid(testOrigin);
+    const baselineGrid: RouteGrid = {
+      ...grid,
+      getElevation(_row: number, col: number) {
+        if (col === 10) return 1;
+        if (col === 15) return 10;
+        return 0;
+      },
+      lonlatToRowCol(lon: number, lat: number) {
+        const { x_m } = lonlatToLocalMetres(lon, lat, testOrigin);
+        return { row: 0, col: Math.round(x_m) };
+      },
+    };
+
+    const stats = slopeStats([pt(0, 0), pt(10, 0), pt(15, 0)], baselineGrid);
+    expect(stats.steepestDeg).toBe(radToDeg(Math.atan(1 / 10)));
+    const steepest = lonlatToLocalMetres(stats.steepestAt![0], stats.steepestAt![1], testOrigin);
+    expect(steepest.x_m).toBeCloseTo(5, 1);
+  });
 });

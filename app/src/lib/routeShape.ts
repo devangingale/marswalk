@@ -478,7 +478,7 @@ export function forkPoints(
       const dy = br.nextLocal.y - epM.y_m;
       const angle = Math.atan2(dy, dx);
 
-      const isSameGround = usedAngles.some((a) => Math.abs(Math.atan2(Math.sin(a - angle), Math.cos(a - angle))) < 0.02);
+      const isSameGround = usedAngles.some((a) => Math.abs(Math.atan2(Math.sin(a - angle), Math.cos(a - angle))) < 0.1);
       if (!isSameGround) {
         usedAngles.push(angle);
         distinctDirectionBranches.push({
@@ -745,6 +745,8 @@ export function slopeStats(
       const endM = grid.lonlatToLocalMetres(line[end][0], line[end][1]);
       const runM = Math.hypot(endM.x_m - startM.x_m, endM.y_m - startM.y_m);
       if (runM < minimumRunM) continue;
+      // The intended baseline is the shortest one that reaches the minimum run.
+      // Longer baselines add work without improving the noise floor.
       const grad = radToDeg(Math.atan((elevations[end] - elevations[start]) / runM));
       const absGrad = Math.abs(grad);
       if (steepestDeg === null || absGrad > steepestDeg) {
@@ -767,6 +769,7 @@ export function slopeStats(
         const mid = grid.localMetresToLonLat(midX, midY);
         steepestAt = [mid.lon, mid.lat];
       }
+      break;
     }
   }
 
