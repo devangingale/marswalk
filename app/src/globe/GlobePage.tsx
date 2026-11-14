@@ -10,6 +10,7 @@ import {
   HeadingPitchRange,
   HeightReference,
   Math as CesiumMath,
+  type Scene,
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
   Viewer,
@@ -25,6 +26,7 @@ import { createMarsViewer, initCesium } from './cesiumSetup';
 import { cartesianToLonLat, lonLatToCartesian, siteHeightOffsetM } from './frame';
 import { GlobeGlobalLayers, GlobeLayer, globeAssetUrl, loadGlobeManifest } from './globalLayers';
 import { GlobeImagery } from './imageryLayers';
+import { GlobeTimeTools } from './Clock';
 
 const CAVE_CREDIT = 'Mars Global Cave Candidate Catalog (MGC³), USGS Astrogeology Science Center';
 /** Data overlays start at the --map-overlay-opacity token value. */
@@ -87,6 +89,8 @@ export const GlobePage: React.FC = () => {
   const [panelOpen, setPanelOpen] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
   const [hover, setHover] = useState<Hover | null>(null);
+  // Set once the Mars scene is ready; gates the time tools mount.
+  const [dustScene, setDustScene] = useState<Scene | null>(null);
 
   const statesRef = useRef({ layerStates, globalStates, cavesOn });
   statesRef.current = { layerStates, globalStates, cavesOn };
@@ -117,6 +121,7 @@ export const GlobePage: React.FC = () => {
       void viewer.dataSources.add(caves);
 
       siteImageryRef.current = new GlobeImagery(tileset.imageryLayers);
+      setDustScene(viewer.scene);
 
       loadGlobeManifest(GLOBE_BASE)
         .then((manifest) => {
@@ -275,6 +280,7 @@ export const GlobePage: React.FC = () => {
           />
           <div className="globe-view" onMouseLeave={() => setHover(null)}>
             <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
+            {dustScene && <GlobeTimeTools scene={dustScene} />}
             {siteData && (
               <div className="globe-sites">
                 <button type="button" className="s48-btn s48-btn--secondary" onClick={flyToPlanet}>

@@ -1,0 +1,131 @@
+/* Written with AI assistance, directed and reviewed by the team. */
+
+.s48-clock {
+  position: absolute;
+  left: var(--space-4);
+  right: var(--space-4);
+  bottom: var(--space-6); /* clear of the Cesium ion credit strip at the very bottom */
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-rule);
+  border-radius: var(--radius-2);
+  box-shadow: var(--shadow-popover);
+  font-family: var(--font-ui);
+  color: var(--color-text);
+}
+
+.s48-clock__controls {
+  display: flex;
+  gap: var(--space-1);
+  flex: none;
+}
+
+.s48-clock__btn {
+  min-width: var(--hit-plan);
+  height: var(--hit-plan);
+  padding: 0 var(--space-2);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  border: var(--border-width) solid var(--color-control-border);
+  border-radius: var(--radius-2);
+  font-family: var(--font-data);
+  font-size: var(--text-md);
+  font-variant-numeric: var(--numeric);
+  cursor: pointer;
+}
+
+.s48-clock__btn:hover {
+  background: var(--color-surface-sunken);
+}
+
+.s48-clock__btn[aria-pressed='true'] {
+  background: var(--color-accent-subtle);
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+.s48-clock__btn:focus-visible {
+  outline: var(--focus-width) solid var(--color-focus-inner);
+  outline-offset: var(--focus-offset);
+}
+
+.s48-clock__range {
+  flex: 1;
+  min-width: 120px;
+  height: var(--hit-plan);
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.s48-clock__range:focus-visible {
+  outline: var(--focus-width) solid var(--color-focus-inner);
+  outline-offset: var(--focus-offset);
+}
+
+.s48-clock__readout {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin: 0;
+  flex: none;
+}
+
+.s48-clock__weather {
+  padding-left: var(--space-3);
+  border-left: var(--border-width) solid var(--color-rule);
+}
+
+.s48-clock__field {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+
+.s48-clock__field dt {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.s48-clock__field dd {
+  margin: 0;
+  font-family: var(--font-data);
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+  font-variant-numeric: var(--numeric);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+/* Narrow and short screens: two tidy rows, controls and slider then readouts. */
+@media (max-width: 1024px) {
+  .s48-clock {
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .s48-clock__controls {
+    order: 1;
+  }
+
+  .s48-clock__range {
+    order: 2;
+  }
+
+  .s48-clock__readout {
+    order: 3;
+  }
+
+  .s48-clock__weather {
+    order: 4;
+    border-left: none;
+    padding-left: 0;
+  }
+}
