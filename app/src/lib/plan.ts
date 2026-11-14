@@ -240,6 +240,8 @@ export function computeTurnBack(
       const fromStep = allSteps[r];
       const toStep = allSteps[r - 1];
 
+      if (fromStep.row === toStep.row && fromStep.col === toStep.col) continue;
+
       const fromElev = grid.getElevation(fromStep.row, fromStep.col);
       const toElev = grid.getElevation(toStep.row, toStep.col);
       const dz = toElev - fromElev;
