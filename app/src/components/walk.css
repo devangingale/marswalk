@@ -1,7 +1,10 @@
 .s48-walk, .s48-visor { height:100%; }
+.mock.plan-mock { display:flex; flex-direction:column; }
+.mock.plan-mock > div[style*="position: relative"] { flex:1; min-height:0; }
 .s48-walk { flex:1; min-height:0; min-width:0; display:grid; grid-template-columns:minmax(0,1fr) minmax(340px,var(--walk-side-width)); background:var(--color-bg); color:var(--color-text); }
 .s48-walk-map-area { position:relative; min-width:0; min-height:0; }
 .s48-walk-map-area > .s48-walk-map { position:absolute; inset:0; min-height:0; }
+.s48-walk-position { width:20px; height:20px; border:3px solid var(--map-position-ring); border-radius:var(--radius-round); background:var(--map-position); }
 .s48-walk-sheet { min-height:0; overflow:auto; padding:var(--space-4); border-left:var(--border-width) solid var(--color-rule); background:var(--color-surface); }
 .s48-walk-headline { padding-bottom:var(--space-3); border-bottom:var(--border-width) solid var(--color-rule); }
 .s48-walk-headline h1 { margin:0 0 var(--space-2); font:600 var(--text-2xl)/var(--leading-2xl) var(--font-readout); }
@@ -23,6 +26,7 @@
 .s48-stop { margin-top:var(--space-3); }
 .s48-stop-header { margin-bottom:var(--space-3); }
 .s48-stop-status { display:none; }
+.s48-stop-status.is-arrived { display:block; margin:0 0 var(--space-1); color:var(--color-text-muted); font-size:var(--text-xs); line-height:var(--leading-xs); }
 .s48-stop-name { display:none; }
 .s48-stop-note { margin:0; color:var(--color-text-muted); font-size:var(--text-sm); }
 .s48-stop h3 { margin:var(--space-3) 0 var(--space-2); font:600 var(--text-lg)/var(--leading-lg) var(--font-ui); }
@@ -42,10 +46,15 @@
 .s48-visor-overlay strong { font-size:var(--text-visor-value); line-height:1; font-variant-numeric:var(--numeric); }
 .s48-visor-overlay small { font-size:var(--text-lg); }
 .s48-visor-heading { top:var(--space-4); left:50%; transform:translateX(-50%); text-align:center; }
+.s48-heading-tape { display:flex; justify-content:center; gap:var(--space-2); }
+.s48-heading-tape span { display:flex; width:8px; justify-content:center; align-items:flex-end; height:var(--space-4); }
+.s48-heading-tape i { display:block; height:var(--space-2); width:var(--border-width); background:var(--visor-tick); }
+.s48-heading-tape i.is-current { height:var(--space-4); width:2px; background:var(--visor-accent); }
 .s48-visor-next { top:var(--space-4); left:var(--space-4); }.s48-visor-budget { bottom:88px; left:var(--space-4); }
-.s48-visor-hazard { position:absolute; top:var(--space-16); left:50%; transform:translateX(-50%); padding:var(--space-3) var(--space-4); background:var(--visor-hazard); color:var(--visor-hazard-text); font:600 var(--text-lg)/var(--leading-lg) var(--font-ui); }
+.s48-visor-hazard { position:absolute; top:calc(var(--space-16) + var(--text-visor-value) + var(--space-6)); left:50%; transform:translateX(-50%); padding:var(--space-3) var(--space-4); background:var(--visor-hazard); color:var(--visor-hazard-text); font:600 var(--text-lg)/var(--leading-lg) var(--font-ui); }
+.s48-visor-hazard.is-near { left:0; right:0; transform:none; text-align:center; }
 .s48-visor-controls { position:absolute; left:20%; right:20%; bottom:var(--space-4); }
 .s48-visor-controls .s48-playback { border:var(--border-width) solid var(--color-rule); }
 @media (max-width:1279px) { .s48-walk { grid-template-columns:minmax(0,1fr) minmax(300px,36vw); } }
-@media (max-width:1023px) { .s48-walk { display:flex; flex-direction:column; } .s48-walk-map-area { flex:1; min-height:48vh; } .s48-walk-sheet { max-height:40vh; border-left:0; border-top:var(--border-width) solid var(--color-rule); } .s48-photo-thumb { height:140px; } }
+@media (max-width:1024px) { .s48-walk { display:flex; flex-direction:column; } .s48-walk-map-area { flex:1; min-height:48vh; } .s48-walk-sheet { max-height:40vh; border-left:0; border-top:var(--border-width) solid var(--color-rule); } .s48-photo-thumb { height:140px; } }
 @media (max-width:700px) { .s48-visor-controls { left:var(--space-2); right:var(--space-2); } .s48-playback output { font-size:var(--text-xs); } }

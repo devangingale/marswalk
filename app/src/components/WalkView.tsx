@@ -6,6 +6,7 @@ import { useSiteFeeds } from '../walk/feeds';
 import { formatDistance, formatDose, formatDuration, formatEnergy } from '../walk/format';
 import { budgetRemaining, RouteTrack, walkStateAt, waypointById, START_ID } from '../walk/track';
 import { Playback } from '../walk/usePlayback';
+import { PlaybackBar } from '../walk/PlaybackBar';
 import { StopDetails } from './StopDetails';
 import { WalkMap } from './WalkMap';
 
@@ -19,7 +20,7 @@ export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playb
   const focus = waypointById(plan, state.atWaypointId ?? state.next?.id ?? START_ID);
   const turnBack = plan.route.turn_back;
   return <div className="s48-walk">
-    <div className="s48-walk-map-area"><WalkMap siteData={siteData} plan={plan} track={track} lon={state.lon} lat={state.lat} />
+    <div className="s48-walk-map-area"><WalkMap siteData={siteData} plan={plan} track={track} lon={state.lon} lat={state.lat} alongM={state.alongM} />
       <PlaybackBar playback={playback} durationS={track.durationS} elapsedS={state.elapsedS} />
     </div>
     <section className="s48-walk-sheet" aria-label="Walk">
@@ -31,19 +32,12 @@ export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playb
         <Budget label="Energy" value={formatEnergy(budget.energy.remaining)} max={budget.energy.total} remaining={budget.energy.remaining} />
         <Budget label="Dose" value={formatDose(budget.dose.remaining)} max={budget.dose.total} remaining={budget.dose.remaining} />
       </dl>
-      <p className="s48-walk-turnback">{turnBack ? `${state.turnBackPassed ? 'Past' : 'Before'} turn-back point � ${turnBack.reason} limit` : 'No turn-back point'}</p>
+      <p className="s48-walk-turnback">{turnBack ? `${state.turnBackPassed ? 'Past' : 'Before'} turn-back point - ${turnBack.reason} limit` : 'No turn-back point'}</p>
       <StopDetails waypoint={focus} arrived={state.atWaypointId === focus.id} feeds={feeds} solarEvent={plan.params.solar_event} />
     </section>
   </div>;
 };
 
-export function PlaybackBar({ playback, durationS, elapsedS }: { playback: Playback; durationS: number; elapsedS: number }) {
-  return <div className="s48-playback">
-    <button type="button" className="s48-walk-play" onClick={playback.toggle} aria-label={playback.playing ? 'Pause' : 'Play'}>{playback.playing ? '?' : '?'}</button>
-    <input aria-label="Walk position" type="range" min={0} max={durationS} step={1} value={elapsedS} onChange={(e) => playback.seek(Number(e.target.value))} />
-    <output>{formatDuration(elapsedS)} / {formatDuration(durationS)}</output><span>�60</span>
-  </div>;
-}
 function Budget({ label, value, max, remaining }: { label: string; value: string; max: number; remaining: number }) {
   const ratio = max > 0 ? Math.max(0, Math.min(100, remaining / max * 100)) : 0;
   return <div className="s48-budget-row"><dt>{label}</dt><dd>{value}<span className="s48-budget-rail"><i style={{ width: `${ratio}%` }} /></span></dd></div>;

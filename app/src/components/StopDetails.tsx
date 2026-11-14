@@ -27,7 +27,7 @@ export const StopDetails: React.FC<StopDetailsProps> = ({ waypoint, arrived, fee
   return (
     <article className="s48-stop" aria-labelledby="s48-stop-name">
       <header className="s48-stop-header">
-        <p className="s48-stop-status">{arrived ? 'At this stop' : 'Next stop'}</p>
+        <p className={`s48-stop-status${arrived ? ' is-arrived' : ''}`}>{arrived ? 'At this stop' : 'Next stop'}</p>
         <h2 id="s48-stop-name" className="s48-stop-name">{waypoint.name}</h2>
         {waypoint.note && <p className="s48-stop-note">{waypoint.note}</p>}
       </header>
@@ -51,7 +51,7 @@ export const StopDetails: React.FC<StopDetailsProps> = ({ waypoint, arrived, fee
               </p>
             ) : (
               <ul className="s48-photo-list">
-                {photos.map(({ photo, distanceM }) => (
+                {photos.map(({ photo }) => (
                   <li key={photo.id} className="s48-photo">
                     <figure>
                       <a href={photo.url} target="_blank" rel="noreferrer">
@@ -63,8 +63,7 @@ export const StopDetails: React.FC<StopDetailsProps> = ({ waypoint, arrived, fee
                         />
                       </a>
                       <figcaption className="s48-photo-caption">
-                        Sol {photo.sol} · {photo.camera} · taken {formatDistance(distanceM)} from this stop
-                        <span className="s48-photo-credit"> · {photo.credit}</span>
+                        Sol {photo.sol} · {photo.camera} · {photo.credit}
                       </figcaption>
                     </figure>
                   </li>
