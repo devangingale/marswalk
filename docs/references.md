@@ -36,6 +36,11 @@ Not every dataset below ends up in the final product; trim this list to what is 
 | naif_spice | `data/raw/naif_spice` | NASA PDS / ESA — public domain (US Government work / ESA open access) |
 | rems | `data/raw/rems` | Public domain / NASA content; credit NASA/JPL-Caltech/CAB(CSIC-INTA) |
 
+## Site-finder criteria
+
+- Human landing limits and the exploration-zone resource context: Bussey & Davis, NASA HEOMD/SMD, [First Landing Site/Exploration Zone Workshop – Second Announcement](https://www.nasa.gov/wp-content/uploads/2015/06/hls2-2nd-announcement-7-8.pdf) (2015), pp. 3–4; Bussey & Hoffman, [Human Mars Landing Site and Impacts on Mars Surface Operations](https://ntrs.nasa.gov/citations/20160001040) (2016), pp. 16–17. The site-finder treats water and habitat distances as scored criteria; its hard vetoes are latitude, MOLA elevation, and the approximately 25 km² low-slope area.
+- Input layer credits and licence notes are copied into `data/globe/sites.json` from the source manifests under `data/raw/` for MOLA, SWIM, RAD, dust climatology, cave candidates, geologic diversity, TES thermal inertia, and the HiRISE/CTX DEM index.
+
 Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic (`gale_dem`), Jezero HiRISE DTM and orthoimages, Jezero CTX DEM and mosaic, Curiosity RAD records (`msl_rad_rdr`), rover location tables (`pds_places`), rover raw-image metadata (`rover_images`), OMNI solar wind data, solar-cycle forecasts. Licences and sources to be confirmed and added above.
 
 ## Space Agency Partner data
