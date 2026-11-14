@@ -25,9 +25,9 @@ function block(selectorRe) {
 }
 
 const base = block(/:root\s*\{/);
-const light = block(/:root,\s*\[data-theme="light"\]\s*\{/);
-const dark = block(/\n\[data-theme="dark"\]\s*\{/);
-const darkMedia = block(/:root:not\(\[data-theme="light"\]\)\s*\{/);
+const light = block(/:root,\s*\[data-theme="light"\],\s*\[data-theme="day"\]\s*\{/);
+const dark = block(/\n\[data-theme="dark"\],\s*\[data-theme="night"\]\s*\{/);
+const darkMedia = block(/:root:not\(\[data-theme="light"\]\):not\(\[data-theme="day"\]\)\s*\{/);
 
 let failures = 0;
 for (const k of new Set([...Object.keys(dark), ...Object.keys(darkMedia)])) {
