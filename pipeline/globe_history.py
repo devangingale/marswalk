@@ -237,6 +237,53 @@ def parse_gale_weather(soles: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return days
 
 
+def filter_temperature_spikes(
+    days: list[dict[str, Any]],
+    window_size: int = 5,
+    threshold_deg: float = 15.0,
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    """Filter isolated one-sol temperature spikes (sensor glitches) without gap-filling.
+
+    A value is considered an isolated spike if:
+    - for t_min_c: it is more than threshold_deg below both the median of the window_size
+      valid sols before and the window_size valid sols after.
+    - for t_max_c: it is more than threshold_deg above both the median of the window_size
+      valid sols before and the window_size valid sols after.
+
+    Spike values are set to None. Returns (cleaned_days, dropped_counts).
+    """
+    cleaned_days = [dict(d) for d in days]
+    dropped_counts = {"t_min_c": 0, "t_max_c": 0}
+
+    for key, mode in [("t_min_c", "min"), ("t_max_c", "max")]:
+        valid_indices = [i for i, d in enumerate(cleaned_days) if d.get(key) is not None]
+        spikes_to_null: list[int] = []
+
+        for k, idx in enumerate(valid_indices):
+            before = [cleaned_days[valid_indices[j]][key] for j in range(max(0, k - window_size), k)]
+            after = [cleaned_days[valid_indices[j]][key] for j in range(k + 1, min(len(valid_indices), k + 1 + window_size))]
+
+            if not before or not after:
+                continue
+
+            med_before = float(np.median(before))
+            med_after = float(np.median(after))
+            val = cleaned_days[idx][key]
+
+            if mode == "min":
+                if (val < med_before - threshold_deg) and (val < med_after - threshold_deg):
+                    spikes_to_null.append(idx)
+            elif mode == "max":
+                if (val > med_before + threshold_deg) and (val > med_after + threshold_deg):
+                    spikes_to_null.append(idx)
+
+        for idx in spikes_to_null:
+            cleaned_days[idx][key] = None
+        dropped_counts[key] = len(spikes_to_null)
+
+    return cleaned_days, dropped_counts
+
+
 # ==============================================================================
 # Pipeline builders
 # ==============================================================================
@@ -384,7 +431,8 @@ def build_weather(
         nw = json.load(f)
 
     soles = nw.get("soles", [])
-    days = parse_gale_weather(soles)
+    raw_days = parse_gale_weather(soles)
+    days, dropped = filter_temperature_spikes(raw_days)
 
     # Source metadata
     source_meta: dict[str, str] = {
@@ -397,6 +445,11 @@ def build_weather(
         "citation": (
             "Gómez-Elvira, J., et al. (2012). REMS: the Environmental Sensor Suite for the Mars Science Laboratory rover. "
             "Space Science Reviews, 170, 583–640. Daily reports of the REMS team, NASA/JPL-Caltech/CAB(CSIC-INTA)."
+        ),
+        "notes": (
+            f"Filtered isolated 1-sol sensor glitches (>15 °C below both the 5-sol preceding and succeeding medians "
+            f"for t_min_c, or >15 °C above for t_max_c): dropped {dropped['t_min_c']} t_min_c spikes "
+            f"and {dropped['t_max_c']} t_max_c spikes to null."
         ),
     }
 
@@ -424,7 +477,17 @@ def build_weather(
         json.dump(out_data, f, indent=2)
 
     file_size = output_file.stat().st_size
+    clean_mins = [d for d in days if d["t_min_c"] is not None]
+    clean_maxs = [d for d in days if d["t_max_c"] is not None]
+    lowest_min = min(clean_mins, key=lambda x: x["t_min_c"])
+    highest_min = max(clean_mins, key=lambda x: x["t_min_c"])
+    lowest_max = min(clean_maxs, key=lambda x: x["t_max_c"])
+    highest_max = max(clean_maxs, key=lambda x: x["t_max_c"])
+
     print(f"Wrote {output_file}: {len(days)} sols ({file_size / 1024:.1f} KB, sol {days[0]['sol']}..{days[-1]['sol']})")
+    print(f"Spike filtering dropped {dropped['t_min_c']} t_min_c spikes and {dropped['t_max_c']} t_max_c spikes.")
+    print(f"New t_min_c extrema: lowest {lowest_min['t_min_c']} °C on Sol {lowest_min['sol']} ({lowest_min['earth_date']}), highest {highest_min['t_min_c']} °C on Sol {highest_min['sol']} ({highest_min['earth_date']})")
+    print(f"New t_max_c extrema: lowest {lowest_max['t_max_c']} °C on Sol {lowest_max['sol']} ({lowest_max['earth_date']}), highest {highest_max['t_max_c']} °C on Sol {highest_max['sol']} ({highest_max['earth_date']})")
 
 
 def build_previews(
