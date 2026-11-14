@@ -4,9 +4,53 @@
  * Pure camera and coordinate math for Walk and Visor globe views.
  */
 
-import type { RouteGrid } from '../../lib/grid';
+import { lonlatToLocalMetres, type GridOrigin, type RouteGrid } from '../../lib/grid';
+import type { Plan } from '../../lib/plan';
 import type { TrackVertex } from '../../walk/track';
 import { eyeHeightM } from '../frame';
+
+/**
+ * Sanitizes and thins route leg lines for GlobeOverlays.
+ * Filters out degenerate legs (fewer than 2 points) and thins consecutive
+ * intra-leg vertices closer than 3.5 m so that transitive clustering in
+ * sharedSegments (tolerance = 3 m) preserves distinct stretches.
+ */
+export function sanitizePlanForOverlays(plan: Plan, origin: GridOrigin): Plan {
+  if (!plan.route?.legs) return plan;
+
+  const sanitizedLegs = plan.route.legs
+    .filter((leg) => leg.line && leg.line.length >= 2)
+    .map((leg) => {
+      const line = leg.line;
+      if (line.length <= 2) return leg;
+
+      const thinned: [number, number][] = [line[0]];
+      let prevM = lonlatToLocalMetres(line[0][0], line[0][1], origin);
+
+      for (let i = 1; i < line.length - 1; i++) {
+        const currM = lonlatToLocalMetres(line[i][0], line[i][1], origin);
+        const dist = Math.hypot(currM.x_m - prevM.x_m, currM.y_m - prevM.y_m);
+        if (dist >= 3.5) {
+          thinned.push(line[i]);
+          prevM = currM;
+        }
+      }
+
+      thinned.push(line[line.length - 1]);
+      return {
+        ...leg,
+        line: thinned,
+      };
+    });
+
+  return {
+    ...plan,
+    route: {
+      ...plan.route,
+      legs: sanitizedLegs,
+    },
+  };
+}
 
 /**
  * Computes exact eye camera height on the Cesium surface.

@@ -16,7 +16,7 @@ import { createMarsViewer, initCesium } from '../cesiumSetup';
 import { chaseCamera, siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M, type Pose } from '../frame';
 import { GlobeImagery } from '../imageryLayers';
 import { GlobeOverlays } from '../overlays';
-import { groundHeightAt, headingFromTrack } from './cameraMath';
+import { groundHeightAt, headingFromTrack, sanitizePlanForOverlays } from './cameraMath';
 import './walkGlobe.css';
 
 export interface WalkMapProps {
@@ -123,7 +123,7 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
     if (!viewer || !overlays) return;
 
     updateView(viewer, overlays);
-  }, [plan, siteData]);
+  }, [plan, track, siteData]);
 
   // Walker pose and camera updates on each playback frame
   useEffect(() => {
@@ -157,7 +157,7 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
       });
       viewer.scene.requestRender();
     } else {
-      overlays.setPlan(plan, siteData.origin);
+      overlays.setPlan(sanitizePlanForOverlays(plan, siteData.origin), siteData.origin);
 
       const currentPose = poseRef.current;
       const headingDeg = headingFromTrack(track.vertices, currentPose.alongM);
