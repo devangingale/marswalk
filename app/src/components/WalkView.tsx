@@ -6,6 +6,7 @@ import { useSiteFeeds } from '../walk/feeds';
 import { formatDistance, formatDose, formatDuration, formatEnergy } from '../walk/format';
 import { budgetRemaining, RouteTrack, walkStateAt, waypointById, START_ID } from '../walk/track';
 import { Playback } from '../walk/usePlayback';
+import { usePlaybackKeys } from '../walk/usePlaybackKeys';
 import { PlaybackBar } from '../walk/PlaybackBar';
 import { StopDetails } from './StopDetails';
 import { WalkMap } from './WalkMap';
@@ -13,6 +14,7 @@ import { WalkMap } from './WalkMap';
 interface WalkViewProps { siteData: SiteData; plan: Plan; track: RouteTrack; playback: Playback }
 
 export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playback }) => {
+  usePlaybackKeys(playback, track);
   const feeds = useSiteFeeds(siteData);
   const state = walkStateAt(plan, track, playback.elapsedS);
   const budget = budgetRemaining(plan, state.used);
