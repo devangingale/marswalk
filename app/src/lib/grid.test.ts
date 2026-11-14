@@ -45,6 +45,16 @@ describe('grid coordinate conversions (Contracts Section 3)', () => {
     expect(y_m).toBeCloseTo(expectedY, 3);
   });
 
+  it('normalizes a dateline crossing to the short eastward distance', () => {
+    const d = lonlatToLocalMetres(-179, 0, { lon0: 179, lat0: 0, lat_c: 0 }).x_m;
+    expect(d).toBeCloseTo(118549.4, 1);
+  });
+
+  it('maps exact south and east edges into the last row and column, retaining far outside indices', () => {
+    expect(localMetresToRowCol(200, 0, 200, 2, 2, 200)).toEqual({ row: 99, col: 99 });
+    expect(localMetresToRowCol(500, -500, 200, 2, 2, 200)).toEqual({ row: 350, col: 250 });
+  });
+
   it('correctly maps local metres to row/col for row-major grid with row 0 = north', () => {
     const height = 100;
     const cell_x_m = 2.0;

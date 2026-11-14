@@ -2,7 +2,7 @@
 
 ## Context
 
-We are restarting the hackathon entry from zero in a new folder, `D:\NASA - Marswalk`, keeping only the datasets from `D:\NASA - P11`. The old code, frontend, worktrees and Samruddhi's branch are ignored.
+We are restarting the hackathon entry from zero in a new folder, keeping only the required datasets. The old code, frontend, worktrees and prior branch are ignored.
 
 **Challenge:** a layered, hyperlocal map or tool a Mars astronaut could use to plan and carry out a Marswalk, combining at least three kinds of NASA data, with safety and a route that avoids obstacles.
 
@@ -114,7 +114,7 @@ The deck skeleton and References list are kept current from phase 0 rather than 
 
 Same drive, so the move is instant. Move only:
 
-| From (`D:\NASA - P11\`) | To (`D:\NASA - Marswalk\`) |
+| From (external staging folder) | To (project data folder) |
 |---|---|
 | `raw-data\` (45 GB, 26 datasets, with manifests) | `data\raw\` |
 | `out\layers\` (674 MB, global rasters) | `data\processed\global-layers\` |

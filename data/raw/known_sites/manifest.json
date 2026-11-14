@@ -1,0 +1,12 @@
+{
+    "licence":  "Compiled from public NASA sources",
+    "files":  [
+                  {
+                      "path":  "known_sites.csv",
+                      "sha256":  "2cc0566febd01821e8c049b85bf835a6f8f9f4deef0edb798bb656a19ce6a98b",
+                      "bytes":  9683
+                  }
+              ],
+    "dataset":  "known_sites",
+    "notes":  "Landed missions and 2015 human Exploration Zones with coordinates"
+}

@@ -2,7 +2,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { createGrid, GridHeader, GridOrigin, lonlatToLocalMetres, localMetresToLonLat } from './grid';
-import { buildPlan, densifyLine, validatePlan, PlanParams } from './plan';
+import { buildPlan, computeTurnBack, densifyLine, validatePlan, PlanParams } from './plan';
 import { MARS_R, degToRad } from './grid';
 
 describe('Plan builder and validation (Contracts Section 7 and 10)', () => {
@@ -20,6 +20,24 @@ describe('Plan builder and validation (Contracts Section 7 and 10)', () => {
     stop_time_s: 1200,
     solar_event: false,
   };
+
+  it('does not charge a stationary duplicate at a leg boundary during turn-back walkback', () => {
+    const header: GridHeader = {
+      width: 3, height: 3, cell_x_m: 2, cell_y_m: 2,
+      elev: { file: 'elev.bin', dtype: 'uint16', scale_m: 0, offset_m: 0, nodata: 65535 },
+      cost: { file: 'cost.bin', dtype: 'uint8', impassable: 255 }, origin,
+    };
+    const grid = createGrid(header, new Uint16Array(9), new Uint8Array(9));
+    const detail = (col: number, timeS: number) => {
+      const p = grid.rowColToLonLat(1, col);
+      return { row: 1, col, ...p, distanceM: timeS, timeS, climbM: 0, descentM: 0, energyKj: 1, slopeDeg: 0 };
+    };
+    const leg = (steps: ReturnType<typeof detail>[]) => ({ feasible: true, cells: [], steps, distance_m: 0, time_s: 0, climb_m: 0, descent_m: 0, energy_kj: 0, max_slope_deg: 0 });
+    const plain = [leg([detail(0, 0), detail(1, 10)]), leg([detail(2, 10)])];
+    const duplicated = [leg([detail(0, 0), detail(1, 10)]), leg([detail(1, 0), detail(2, 10)])];
+    expect(computeTurnBack(duplicated, [], { ...params, time_limit_s: 1000 }, grid))
+      .toEqual(computeTurnBack(plain, [], { ...params, time_limit_s: 1000 }, grid));
+  });
 
   it('densifies line so that no two consecutive points are more than 4 m apart', () => {
     // Points far apart: 100 m

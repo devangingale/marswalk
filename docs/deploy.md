@@ -23,3 +23,6 @@ npx vercel --prod
 ```
 
 When prompted for `VITE_TILES_BASE`, paste the public `r2.dev` URL without a trailing slash. Confirm the linked Vercel scope is the personal account before deploying.
+# Deployment artifacts
+
+Vite builds hidden source maps for local debugging (`sourcemap: 'hidden'`). Exclude all `*.map` files from deployment uploads; the JavaScript bundles do not reference them.

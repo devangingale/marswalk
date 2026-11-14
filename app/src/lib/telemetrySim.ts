@@ -60,6 +60,11 @@ function clamp(v: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, v));
 }
 
+function longitudeDelta(delta: number): number {
+  const wrapped = delta % 360;
+  return wrapped >= 180 ? wrapped - 360 : wrapped < -180 ? wrapped + 360 : wrapped;
+}
+
 /**
  * Straight-line distance between two lon/lat points in the local-metre frame,
  * using the Mars sphere (radius MARS_R) and an equirectangular projection about
@@ -71,7 +76,7 @@ export function localMetreDistance(
   b: { lon: number; lat: number }
 ): number {
   const latMid = degToRad((a.lat + b.lat) / 2);
-  const east = MARS_R * Math.cos(latMid) * degToRad(a.lon - b.lon);
+  const east = MARS_R * Math.cos(latMid) * degToRad(longitudeDelta(b.lon - a.lon));
   const north = MARS_R * degToRad(a.lat - b.lat);
   return Math.hypot(east, north);
 }
@@ -79,7 +84,7 @@ export function localMetreDistance(
 /** Bearing from `a` to `b`, degrees clockwise from north. */
 function bearingDeg(a: { lon: number; lat: number }, b: { lon: number; lat: number }): number {
   const latMid = degToRad((a.lat + b.lat) / 2);
-  const east = MARS_R * Math.cos(latMid) * degToRad(b.lon - a.lon);
+  const east = MARS_R * Math.cos(latMid) * degToRad(longitudeDelta(b.lon - a.lon));
   const north = MARS_R * degToRad(b.lat - a.lat);
   if (east === 0 && north === 0) return 0;
   return (radToDeg(Math.atan2(east, north)) + 360) % 360;

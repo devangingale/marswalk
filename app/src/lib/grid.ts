@@ -82,12 +82,17 @@ export function radToDeg(rad: number): number {
   return (rad * 180.0) / Math.PI;
 }
 
+export function normalizeLongitudeDelta(delta: number): number {
+  const wrapped = delta % 360;
+  return wrapped >= 180 ? wrapped - 360 : wrapped < -180 ? wrapped + 360 : wrapped;
+}
+
 export function lonlatToLocalMetres(
   lon: number,
   lat: number,
   origin: GridOrigin
 ): { x_m: number; y_m: number } {
-  const x_m = MARS_R * Math.cos(degToRad(origin.lat_c)) * degToRad(lon - origin.lon0);
+  const x_m = MARS_R * Math.cos(degToRad(origin.lat_c)) * degToRad(normalizeLongitudeDelta(lon - origin.lon0));
   const y_m = MARS_R * degToRad(lat - origin.lat0);
   return { x_m, y_m };
 }
@@ -107,10 +112,13 @@ export function localMetresToRowCol(
   y_m: number,
   height_m: number,
   cell_x_m: number,
-  cell_y_m: number
+  cell_y_m: number,
+  width_m = Infinity
 ): { row: number; col: number } {
-  const col = Math.floor(x_m / cell_x_m);
-  const row = Math.floor((height_m - y_m) / cell_y_m);
+  const col = x_m >= width_m && x_m <= width_m + cell_x_m ? Math.round(width_m / cell_x_m) - 1
+    : x_m < 0 && x_m >= -cell_x_m ? 0 : Math.floor(x_m / cell_x_m);
+  const row = y_m <= 0 && y_m >= -cell_y_m ? Math.round(height_m / cell_y_m) - 1
+    : y_m > height_m && y_m <= height_m + cell_y_m ? 0 : Math.floor((height_m - y_m) / cell_y_m);
   return { row, col };
 }
 
@@ -211,7 +219,7 @@ export function createGrid(
     },
 
     localMetresToRowCol(x_m: number, y_m: number) {
-      return localMetresToRowCol(x_m, y_m, height_m, cell_x_m, cell_y_m);
+      return localMetresToRowCol(x_m, y_m, height_m, cell_x_m, cell_y_m, width_m);
     },
 
     rowColToLocalMetres(row: number, col: number) {
@@ -220,7 +228,7 @@ export function createGrid(
 
     lonlatToRowCol(lon: number, lat: number) {
       const { x_m, y_m } = lonlatToLocalMetres(lon, lat, resolvedOrigin);
-      return localMetresToRowCol(x_m, y_m, height_m, cell_x_m, cell_y_m);
+      return localMetresToRowCol(x_m, y_m, height_m, cell_x_m, cell_y_m, width_m);
     },
 
     rowColToLonLat(row: number, col: number) {

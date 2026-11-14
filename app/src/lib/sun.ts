@@ -356,6 +356,8 @@ export function sunEvents(
   latDeg: number,
   lonEastDeg: number
 ): {
+  polar: 'day' | 'night' | null;
+  solStartUtcMs: number;
   sunriseUtcMs: number | null;
   sunsetUtcMs: number | null;
   sunriseLmst: number | null;
@@ -403,6 +405,10 @@ export function sunEvents(
   const sunsetLmst = sunsetUtcMs !== null ? localMeanSolarTime(sunsetUtcMs, lonEastDeg) : null;
 
   return {
+    polar: sunriseUtcMs === null && sunsetUtcMs === null
+      ? (sunElevationDeg(solStartUtcMs + MARS_SOL_MS / 2, latDeg, lonEastDeg) > 0 ? 'day' : 'night')
+      : null,
+    solStartUtcMs,
     sunriseUtcMs,
     sunsetUtcMs,
     sunriseLmst,

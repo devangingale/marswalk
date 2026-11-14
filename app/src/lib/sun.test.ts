@@ -196,6 +196,7 @@ describe('Mars24 Solar Times and Coordinates', () => {
 
     const summerEvents = sunEvents(summerSolsticeSolStart, latNorthPolar, lonEast);
     expect(summerEvents.sunsetUtcMs).toBeNull();
+    expect(summerEvents.polar).toBe('day');
     expect(summerEvents.sunsetLmst).toBeNull();
 
     // Northern winter solstice (Ls ~ 270): ~2026-04-24
@@ -205,6 +206,7 @@ describe('Mars24 Solar Times and Coordinates', () => {
 
     const winterEvents = sunEvents(winterSolsticeSolStart, latNorthPolar, lonEast);
     expect(winterEvents.sunriseUtcMs).toBeNull();
+    expect(winterEvents.polar).toBe('night');
     expect(winterEvents.sunriseLmst).toBeNull();
   });
 
