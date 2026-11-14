@@ -5,10 +5,9 @@ import { localMeanSolarTime, sunEvents, MARS_SOL_MS } from '../../lib/sun';
 
 interface Props { plan: Plan; moverTimeS: number }
 const formatClock = (hours: number) => `${String(Math.floor(hours)).padStart(2, '0')}:${String(Math.floor((hours % 1) * 60)).padStart(2, '0')}`;
-const paceLabel = (secondsPerKm: number) => {
-  const minutes = Math.floor(secondsPerKm / 60);
-  const seconds = Math.round(secondsPerKm % 60 / 5) * 5;
-  return `${minutes}:${String(seconds).padStart(2, '0')} min/km`;
+export const speedLabel = (secondsPerKm: number) => {
+  if (!Number.isFinite(secondsPerKm) || secondsPerKm <= 0) return '—';
+  return `${(3600 / secondsPerKm).toFixed(1)} km/h`;
 };
 
 export const PlanPace: React.FC<Props> = ({ plan, moverTimeS }) => {
@@ -40,7 +39,7 @@ export const PlanPace: React.FC<Props> = ({ plan, moverTimeS }) => {
       <input type="range" min="0" max="1000" step="1" value={sliderValue} onChange={(event) => setDepart(start + Number(event.target.value) / 1000 * (end - start))} aria-label="Departure time" />
       <span>{daylight ? formatClock(sunsetLmst ?? 0) : 'window'}</span>
     </div>
-    <div className="globe-pace-values"><span>Depart <b>{formatClock(departLmst)}</b></span><span>Needed <b>{pace ? paceLabel(pace.requiredSPerKm) : '—'}</b></span><span>Expected <b>{pace ? paceLabel(pace.expectedSPerKm) : '—'}</b></span></div>
+    <div className="globe-pace-values"><span>Depart <b>{formatClock(departLmst)}</b></span><span>Needed <b>{pace ? speedLabel(pace.requiredSPerKm) : '—'}</b></span><span>Expected <b>{pace ? speedLabel(pace.expectedSPerKm) : '—'}</b></span></div>
     <small>Back by {backBy === null ? '—' : formatClock(localMeanSolarTime(backBy, plan.start.lon))} · 30 min reserve</small>
   </section>;
 };

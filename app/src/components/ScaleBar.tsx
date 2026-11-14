@@ -21,7 +21,7 @@ export const ScaleBar: React.FC<ScaleBarProps> = ({ metresPerPixel }) => {
   return (
     <div
       className="map-ui"
-      style={{ left: 'var(--space-4)', bottom: 'var(--space-4)' }}
+      style={{ left: 'var(--space-4)', bottom: 'calc(var(--space-4) + var(--space-6))' }}
       title="Mars ground scale"
     >
       <div className="s48-scale" style={{ width: `${pixelWidth}px` }}>

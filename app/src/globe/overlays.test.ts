@@ -2,10 +2,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { EntityCollection, type Entity } from 'cesium';
 import samplePlanJson from '../fixtures/plan.sample.json';
+import { createGrid, localMetresToLonLat, type GridHeader } from '../lib/grid';
 import type { Plan } from '../lib/plan';
 import { buildCornerPlan } from './cornerPlan';
 import type { MarkerImages } from './markerImages';
-import { GlobeOverlays, dropBubbles, mergeForks, photoSites } from './overlays';
+import { GlobeOverlays, dropBubbles, mergeForks, photoSites, surfaceHeightM } from './overlays';
 
 const samplePlan = samplePlanJson as unknown as Plan;
 const ORIGIN = { lon0: 137.36045619776752, lat0: -4.765947140908848, lat_c: -4.761729489694319 };
@@ -31,6 +32,19 @@ const images: MarkerImages = {
   photo: () => image,
   walker: () => image,
 };
+
+describe('surfaceHeightM', () => {
+  it('adds the Cesium-to-bundle offset to exact grid elevation', () => {
+    const header: GridHeader = {
+      width: 2, height: 2, cell_x_m: 1, cell_y_m: 1,
+      elev: { file: 'elev.bin', dtype: 'uint16', scale_m: 1, offset_m: 0, nodata: 65535 },
+      cost: { file: 'cost.bin', dtype: 'uint8', impassable: 255 },
+    };
+    const grid = createGrid(header, new Uint16Array([30, 30, 30, 30]), new Uint8Array(4), ORIGIN);
+    const point = grid.localMetresToLonLat(0, 0);
+    expect(surfaceHeightM(grid, point.lon, point.lat, 72.5)).toBe(102.5);
+  });
+});
 
 function setup(onSectionHover?: (id: string | null) => void) {
   const host = { entities: new EntityCollection() };
@@ -64,6 +78,21 @@ describe('GlobeOverlays', () => {
     expect(overlays.hoverLabel(pick(host.entities.values[0]))).toBe('24 photos · sol 3543–3560');
   });
 
+  it('keeps the planned route above rover photo markers', () => {
+    const { host, overlays } = setup();
+    overlays.setPlan(samplePlan, ORIGIN);
+    overlays.setRover(null, [{ lon: 137.1, lat: -4.6, count: 1, solMin: 3543, solMax: 3543 }], {
+      traverse: false,
+      photos: true,
+    });
+    const photoIndex = host.entities.values.findIndex((entity) => overlays.hoverLabel(pick(entity))?.startsWith('1 photo'));
+    const photo = host.entities.values[photoIndex];
+    const routeIndex = host.entities.values.findIndex((entity) => Boolean(entity.polyline));
+    expect(photoIndex).toBeGreaterThanOrEqual(0);
+    expect(photo.billboard?.scale?.getValue(undefined as never)).toBe(1.5);
+    expect(routeIndex).toBeGreaterThan(photoIndex);
+  });
+
   it('removes every entity it added on clear', () => {
     const { host, overlays } = setup();
     overlays.setPlan(samplePlan);
@@ -78,6 +107,29 @@ describe('GlobeOverlays', () => {
     overlays.setPlan(buildCornerPlan(ORIGIN), ORIGIN);
     const casings = host.entities.values.filter((e) => e.polyline?.width?.getValue(undefined as never) === 10);
     expect(casings.length).toBe(6);
+  });
+
+  it('keeps dense route vertices when drawing shared ground', () => {
+    const line = Array.from({ length: 101 }, (_, i) => {
+      const point = localMetresToLonLat(1000, 1000 + i * 2, ORIGIN);
+      return [point.lon, point.lat] as [number, number];
+    });
+    const plan: Plan = {
+      ...samplePlan,
+      start: { ...samplePlan.start, lon: line[0][0], lat: line[0][1] },
+      stops: [{ id: 's1', name: 'Stop 1', lon: line.at(-1)![0], lat: line.at(-1)![1], dwell_s: 1200 }],
+      route: {
+        ...samplePlan.route,
+        legs: [
+          { ...samplePlan.route.legs[0], from: 'start', to: 'Stop 1', line, distance_m: 200 },
+          { ...samplePlan.route.legs[0], from: 'Stop 1', to: 'start', line: [...line].reverse(), distance_m: 200 },
+        ],
+      },
+    };
+    const { host, overlays } = setup();
+    overlays.setPlan(plan, ORIGIN);
+    const casing = host.entities.values.find((entity) => entity.polyline?.width?.getValue(undefined as never) === 10);
+    expect(casing?.polyline?.positions?.getValue(undefined as never)).toHaveLength(101);
   });
 
   it('shows lat and lon in stop and drop-off hover labels', () => {

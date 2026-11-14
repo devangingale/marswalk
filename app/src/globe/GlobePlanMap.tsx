@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  BoundingSphere, Cartesian2, ClassificationType, Color, ConstantPositionProperty, Ellipsoid, Entity, Globe, HeadingPitchRange, ImageryLayer, Math as CesiumMath,
+  BoundingSphere, Cartesian2, Cartographic, ClassificationType, Color, ConstantPositionProperty, Entity, HeadingPitchRange, Math as CesiumMath,
   ScreenSpaceEventHandler, ScreenSpaceEventType, Viewer,
 } from 'cesium';
 import type { MapProps } from '../types';
@@ -8,11 +8,10 @@ import { resolveSiteAssetUrl } from '../config';
 import type { RouteGrid } from '../lib/grid';
 import { lonlatToLocalMetres } from '../lib/grid';
 import { ScaleBar } from '../components/ScaleBar';
-import { GlobeOverlays, photoSites } from './overlays';
+import { GlobeOverlays, photoSites, surfaceHeightM } from './overlays';
 import { createMarsViewer, initCesium } from './cesiumSetup';
-import { cartesianToLonLat, lonLatToCartesian, metresPerPixel as measureMetresPerPixel } from './frame';
+import { cartesianToLonLat, lonLatToCartesian, metresPerPixel as measureMetresPerPixel, siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M } from './frame';
 import { GlobeImagery } from './imageryLayers';
-import { createPMTilesImagery } from './pmtilesImagery';
 import { isInsideSite } from './planPick';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import './plan/plan.css';
@@ -48,6 +47,9 @@ export const GlobePlanMap: React.FC<MapProps> = ({
   const dragRef = useRef<DragTarget | null>(null);
   const dragPointRef = useRef<{ lon: number; lat: number } | null>(null);
   const dragMarkerRef = useRef<Entity | null>(null);
+  const heightOffsetRef = useRef(0);
+  const roverStateRef = useRef(roverOverlayState);
+  const roverDataRef = useRef<{ traverse: GeoJSON.LineString | null; sites: ReturnType<typeof photoSites> } | null>(null);
   const [offline, setOffline] = useState(false);
   const [relief, setRelief] = useState(false);
   const [scale, setScale] = useState(1);
@@ -55,6 +57,7 @@ export const GlobePlanMap: React.FC<MapProps> = ({
 
   planRef.current = plan;
   callbacksRef.current = { onMapPoint, onStartChange, onStopChange, onRoutePointHover };
+  roverStateRef.current = roverOverlayState;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -63,17 +66,14 @@ export const GlobePlanMap: React.FC<MapProps> = ({
     let handler: ScreenSpaceEventHandler | null = null;
     let resizeObserver: ResizeObserver | null = null;
     const startup = async () => {
-      const status = initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN);
-      const { viewer, tileset } = await createMarsViewer(container, { interactive: true, globe: new Globe(Ellipsoid.MARS) });
+      initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, navigator.onLine);
+      const { viewer, tileset, mode } = await createMarsViewer(container, { interactive: true });
       if (disposed) { viewer.destroy(); return; }
       viewerRef.current = viewer;
-      viewer.scene.globe.show = true;
-      viewer.scene.globe.baseColor = Color.fromCssColorString(token('--map-background', '#3b2e26'));
-      viewer.scene.globe.depthTestAgainstTerrain = true;
+      if (viewer.scene.globe) viewer.scene.globe.depthTestAgainstTerrain = true;
       viewer.scene.screenSpaceCameraController.enableCollisionDetection = false;
       viewer.cesiumWidget.creditContainer.setAttribute('aria-label', 'Cesium ion attribution');
-      const noTerrain = !tileset;
-      setOffline(status === 'offline' || noTerrain);
+      setOffline(mode === 'offline' || !tileset);
 
       const [west, south, east, north] = siteData.bounds_lonlat;
       const mid = { lon: (west + east) / 2, lat: (south + north) / 2 };
@@ -84,26 +84,49 @@ export const GlobePlanMap: React.FC<MapProps> = ({
         siteData.size_m.width / (2 * Math.tan(horizontalFov / 2)),
         siteData.size_m.height / (2 * Math.tan(verticalFov / 2)),
       ) * 1.1;
-      viewer.camera.flyToBoundingSphere(new BoundingSphere(lonLatToCartesian(mid.lon, mid.lat, 0), 1), {
+      const flyToSite = (height: number) => viewer.camera.flyToBoundingSphere(new BoundingSphere(lonLatToCartesian(mid.lon, mid.lat, height), 1), {
         offset: new HeadingPitchRange(0, CesiumMath.toRadians(-90), range),
       });
+      flyToSite(0);
+      if (tileset) {
+        try {
+          const [ground] = await viewer.scene.sampleHeightMostDetailed([Cartographic.fromDegrees(mid.lon, mid.lat)]);
+          if (ground?.height !== undefined && !disposed) flyToSite(ground.height);
+        } catch { /* the tileset may not have sampled the site yet */ }
+      }
 
-      const imagery = new GlobeImagery(viewer.scene.globe.imageryLayers);
+      const imageryTarget = tileset?.imageryLayers ?? viewer.imageryLayers;
+      const imagery = new GlobeImagery(imageryTarget);
       imageryRef.current = imagery;
       imagery.apply(layerStates, true);
-      await imagery.setSite(siteData);
+      await imagery.setSite(siteData, mode);
       if (disposed) return;
-      if (siteData.basemap?.url) {
-        try {
-          const provider = await createPMTilesImagery(resolveSiteAssetUrl(siteData.id, siteData.basemap.url), siteData.basemap.source);
-          if (!disposed) viewer.scene.globe.imageryLayers.add(new ImageryLayer(provider, { show: true }));
-        } catch { /* the bare ellipsoid remains usable when the local raster is missing */ }
-      }
+
+      const heightOffset = mode === 'ion' && tileset
+        ? gridRef.current
+          ? await siteHeightOffsetM(viewer, tileset, siteData, gridRef.current)
+          : SPIKE_HEIGHT_OFFSETS_M[siteData.id] ?? 0
+        : 0;
+      heightOffsetRef.current = heightOffset;
+      if (tileset && gridRef.current) flyToSite(surfaceHeightM(gridRef.current, mid.lon, mid.lat, heightOffset));
 
       const overlays = new GlobeOverlays(viewer, { classification: tileset ? ClassificationType.CESIUM_3D_TILE : ClassificationType.TERRAIN });
       overlaysRef.current = overlays;
-      overlays.setGrid(grid ?? null);
+      if (tileset) overlays.setHeightOffsetM(heightOffset);
+      overlays.setGrid(gridRef.current);
       overlays.setPlan(planRef.current, siteData.origin);
+      void Promise.all([
+        fetch(resolveSiteAssetUrl(siteData.id, `/data/${siteData.id}/traverse.geojson`))
+          .then((response) => response.ok ? response.json() as Promise<GeoJSON.FeatureCollection<GeoJSON.LineString>> : null)
+          .then((collection) => collection?.features.find((feature) => feature.geometry.type === 'LineString')?.geometry ?? null),
+        fetch(resolveSiteAssetUrl(siteData.id, siteData.photos_url ?? `/data/${siteData.id}/photos.json`))
+          .then((response) => response.ok && response.headers.get('content-type')?.includes('json') ? response.json() as Promise<{ lon: number; lat: number; sol: number }[]> : []),
+      ]).then(([traverse, photos]) => {
+        if (disposed) return;
+        const data = { traverse, sites: photoSites(photos) };
+        roverDataRef.current = data;
+        overlays.setRover(data.traverse, data.sites, roverStateRef.current);
+      }).catch(() => undefined);
 
       if (disposed) return;
       handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
@@ -113,7 +136,7 @@ export const GlobePlanMap: React.FC<MapProps> = ({
         const activeDrag = dragRef.current;
         if (activeDrag && lonLat && gridRef.current && isInsideSite(gridRef.current, lonLat.lon, lonLat.lat)) {
           dragPointRef.current = lonLat;
-          if (dragMarkerRef.current) dragMarkerRef.current.position = new ConstantPositionProperty(lonLatToCartesian(lonLat.lon, lonLat.lat, 1));
+          if (dragMarkerRef.current) dragMarkerRef.current.position = new ConstantPositionProperty(lonLatToCartesian(lonLat.lon, lonLat.lat, surfaceHeightM(gridRef.current, lonLat.lon, lonLat.lat, heightOffsetRef.current) + 1));
           return;
         }
         const picked = viewer.scene.pick(event.endPosition) as { id?: unknown } | undefined;
@@ -148,7 +171,7 @@ export const GlobePlanMap: React.FC<MapProps> = ({
           const target = dragRef.current;
           const current = target.kind === 'start' ? planRef.current?.start : planRef.current?.stops.find((stop) => stop.id === target.id);
           if (current) {
-            dragMarkerRef.current = viewer.entities.add({ position: new ConstantPositionProperty(lonLatToCartesian(current.lon, current.lat, 1)), point: { pixelSize: 14, color: Color.fromCssColorString(token('--map-route-core', '#8ec1f5')), outlineColor: Color.fromCssColorString(token('--map-route-casing', '#0a1828')), outlineWidth: 2, disableDepthTestDistance: Number.POSITIVE_INFINITY } });
+            dragMarkerRef.current = viewer.entities.add({ position: new ConstantPositionProperty(lonLatToCartesian(current.lon, current.lat, surfaceHeightM(gridRef.current, current.lon, current.lat, heightOffsetRef.current) + 1)), point: { pixelSize: 14, color: Color.fromCssColorString(token('--map-route-core', '#8ec1f5')), outlineColor: Color.fromCssColorString(token('--map-route-casing', '#0a1828')), outlineWidth: 2, disableDepthTestDistance: Number.POSITIVE_INFINITY } });
           }
         }
       };
@@ -226,13 +249,10 @@ export const GlobePlanMap: React.FC<MapProps> = ({
   }, [plan, siteData.origin]);
   useEffect(() => { imageryRef.current?.apply(layerStates); }, [layerStates]);
   useEffect(() => {
-    const overlays = overlaysRef.current;
-    if (!overlays) return;
-    void Promise.all([
-      fetch(resolveSiteAssetUrl(siteData.id, `/data/${siteData.id}/traverse.geojson`)).then((r) => r.ok && r.headers.get('content-type')?.includes('json') ? r.json() as Promise<GeoJSON.LineString> : null),
-      fetch(resolveSiteAssetUrl(siteData.id, `/data/${siteData.id}/photos.json`)).then((r) => r.ok && r.headers.get('content-type')?.includes('json') ? r.json() as Promise<{ lon: number; lat: number; sol: number }[]> : []),
-    ]).then(([traverse, photos]) => { if (traverse) overlays.setRover(traverse, photoSites(photos), roverOverlayState); }).catch(() => undefined);
-  }, [siteData.id, roverOverlayState]);
+    if (overlaysRef.current && roverDataRef.current) {
+      overlaysRef.current.setRover(roverDataRef.current.traverse, roverDataRef.current.sites, roverOverlayState);
+    }
+  }, [roverOverlayState]);
   useEffect(() => {
     const viewer = viewerRef.current;
     if (!viewer) return;
@@ -244,7 +264,7 @@ export const GlobePlanMap: React.FC<MapProps> = ({
       const point = activePoint;
       let marker = viewer.entities.getById('profile-hover-point');
       if (!marker) marker = viewer.entities.add({ id: 'profile-hover-point', point: { pixelSize: 10, color: Color.fromCssColorString(token('--map-route-highlight', '#c4e0fb')), outlineColor: Color.fromCssColorString(token('--map-route-casing', '#0a1828')), outlineWidth: 2, disableDepthTestDistance: Number.POSITIVE_INFINITY } });
-      marker.position = new ConstantPositionProperty(lonLatToCartesian(point.lon, point.lat, 2));
+      marker.position = new ConstantPositionProperty(lonLatToCartesian(point.lon, point.lat, surfaceHeightM(gridRef.current, point.lon, point.lat, heightOffsetRef.current) + 2));
     }
   }, [activePoint]);
 
