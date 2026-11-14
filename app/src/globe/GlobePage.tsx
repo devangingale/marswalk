@@ -95,9 +95,11 @@ function urlState() {
   };
 }
 
-async function flyTo(viewer: Viewer, lon: number, lat: number, rangeM: number, pitchDeg: number) {
-  const [sampled] = await viewer.scene.sampleHeightMostDetailed([Cartographic.fromDegrees(lon, lat)]);
-  const centre = lonLatToCartesian(lon, lat, sampled?.height ?? 0);
+async function flyTo(viewer: Viewer, lon: number, lat: number, rangeM: number, pitchDeg: number, groundM?: number) {
+  const [sampled] = groundM === undefined
+    ? await viewer.scene.sampleHeightMostDetailed([Cartographic.fromDegrees(lon, lat)])
+    : [undefined];
+  const centre = lonLatToCartesian(lon, lat, groundM ?? sampled?.height ?? 0);
   viewer.camera.flyToBoundingSphere(new BoundingSphere(centre, 1), {
     offset: new HeadingPitchRange(0, CesiumMath.toRadians(pitchDeg), rangeM),
   });
@@ -269,10 +271,12 @@ export const GlobePage: React.FC = () => {
     let disposed = false;
     let handler: ScreenSpaceEventHandler | null = null;
     const removers: (() => void)[] = [];
-    initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN);
+    let mode = initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, navigator.onLine);
 
     void (async () => {
-      const { viewer, tileset } = await createMarsViewer(container, { interactive: true });
+      const created = await createMarsViewer(container, { interactive: true });
+      const { viewer, tileset } = created;
+      mode = created.mode;
       if (disposed) {
         viewer.destroy();
         return;
@@ -280,13 +284,10 @@ export const GlobePage: React.FC = () => {
       viewerRef.current = viewer;
       setViewer(viewer);
       viewer.camera.setView({ destination: lonLatToCartesian(PLANET_VIEW.lon, PLANET_VIEW.lat, PLANET_VIEW.heightM) });
-      if (!tileset) {
-        setNotice('Cesium Mars didn’t load, so layers can’t be draped. Check the Cesium ion token and connection.');
-        return;
-      }
+      if (!tileset) setNotice('Offline, local tiles');
 
       // Markers clamp to Cesium Mars only when the tileset takes part in height queries.
-      tileset.enableCollision = true;
+      if (tileset) tileset.enableCollision = true;
 
       const caves = new CustomDataSource('caves');
       caves.show = statesRef.current.cavesOn;
@@ -326,13 +327,14 @@ export const GlobePage: React.FC = () => {
       refreshGraticule();
 
       overlaysRef.current = new GlobeOverlays(viewer, { onSectionHover: setHoveredSection });
-      siteImageryRef.current = new GlobeImagery(tileset.imageryLayers);
+      const imageryTarget = tileset?.imageryLayers ?? viewer.imageryLayers;
+      siteImageryRef.current = new GlobeImagery(imageryTarget);
       setDustScene(viewer.scene);
 
       loadGlobeManifest(GLOBE_BASE)
         .then((manifest) => {
           if (disposed) return;
-          globalRef.current = new GlobeGlobalLayers(tileset.imageryLayers, GLOBE_BASE, manifest.layers);
+          globalRef.current = new GlobeGlobalLayers(imageryTarget, GLOBE_BASE, manifest.layers);
           const states = Object.fromEntries(
             manifest.layers.map((l) => [l.id, { enabled: initial.globalOn.includes(l.id), opacity: OVERLAY_OPACITY }]),
           );
@@ -381,13 +383,19 @@ export const GlobePage: React.FC = () => {
           setSiteData(site);
           setLayerStates(states);
           siteImageryRef.current!.apply(states);
-          await siteImageryRef.current!.setSite(site);
+          await siteImageryRef.current!.setSite(site, mode);
           const loaded = await loadGrid(getSiteBaseUrl(site.id), site.origin);
           if (disposed) return;
           gridRef.current = loaded;
           setGrid(loaded);
           const offset = await siteHeightOffsetM(viewer, tileset, site, loaded);
           console.info(`Height offset at ${site.id}: ${offset.toFixed(2)} m`);
+          if (mode === 'offline' && !initial.view) {
+            const [west, south, east, north] = site.bounds_lonlat;
+            const lon = (west + east) / 2;
+            const lat = (south + north) / 2;
+            void flyTo(viewer, lon, lat, Math.max(site.size_m.width, site.size_m.height) * 2, -60, 0);
+          }
         })
         .catch((error) => console.warn('Site did not load', error));
 
@@ -686,7 +694,7 @@ export const GlobePage: React.FC = () => {
                 )}
               </section>
             )}
-            {notice && <div className="globe-notice">{notice}</div>}
+            {notice && <div className="globe-notice" style={{ top: 'calc(var(--space-16) * 4)' }}>{notice}</div>}
             {edges.map((label) => (
               <span
                 key={label.key}
