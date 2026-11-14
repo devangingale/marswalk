@@ -3,7 +3,7 @@
 // Cesium-free so they can be tested exactly. Distances use the local-metre frame.
 import { GridOrigin, lonlatToLocalMetres, localMetresToLonLat } from '../lib/grid';
 import type { Plan } from '../lib/plan';
-import type { Section, SlopeStats } from '../lib/routeShape';
+import { chevronPositions, type ChevronPosition, type Section, type SlopeStats } from '../lib/routeShape';
 import { formatDistance, formatDuration } from '../walk/format';
 
 const START_ID = 'start';
@@ -195,6 +195,35 @@ export function branchAnchor(
     i++;
   }
   return line[line.length - 1];
+}
+
+/** Spacing of direction chevrons along the route, in metres. */
+export const CHEVRON_SPACING_M = 150;
+
+/**
+ * Chevrons for a stretch in every direction it is walked. One way: chevronPositions along the
+ * walked direction. Both ways: forward chevrons, and backward ones offset by half the spacing
+ * so the two sets interleave instead of stacking.
+ */
+export function chevronsFor(
+  line: [number, number][],
+  directions: ('fwd' | 'back')[],
+  origin: GridOrigin,
+  spacingM = CHEVRON_SPACING_M,
+): ChevronPosition[] {
+  const fwd = directions.includes('fwd');
+  const back = directions.includes('back');
+  if (!fwd) return back ? chevronPositions([...line].reverse(), origin, spacingM) : [];
+  const out = chevronPositions(line, origin, spacingM);
+  if (!back) return out;
+  const offset = branchAnchor(line, line[0], spacingM / 2, origin);
+  const startIndex = nearestVertex(line, offset, origin);
+  const trimmed: [number, number][] = [offset, ...line.slice(startIndex + 1)];
+  const backward = chevronPositions(trimmed, origin, spacingM).map((c) => ({
+    ...c,
+    bearingDeg: (c.bearingDeg + 180) % 360,
+  }));
+  return [...out, ...backward];
 }
 
 /** Graticule spacing in degrees for a camera height above the surface. */

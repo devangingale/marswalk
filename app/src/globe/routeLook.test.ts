@@ -5,6 +5,7 @@ import type { Section, SlopeStats } from '../lib/routeShape';
 import {
   branchAnchor,
   branchLabel,
+  chevronsFor,
   distanceAlong,
   formatElevation,
   formatGraticule,
@@ -212,6 +213,35 @@ describe('route geometry', () => {
     const [lon, lat] = branchAnchor(line, [ORIGIN.lon0 + east, ORIGIN.lat0], 40, ORIGIN);
     expect(lon).toBeCloseTo(ORIGIN.lon0 + 1.4 * east, 10);
     expect(lat).toBeCloseTo(ORIGIN.lat0, 10);
+  });
+});
+
+describe('chevronsFor', () => {
+  const metresEast = (m: number) => (m / (3396190 * Math.cos((ORIGIN.lat_c * Math.PI) / 180))) * (180 / Math.PI);
+  const line: [number, number][] = [
+    [ORIGIN.lon0, ORIGIN.lat0],
+    [ORIGIN.lon0 + metresEast(400), ORIGIN.lat0],
+  ];
+  const along = (c: { lon: number }) => Math.round(((c.lon - ORIGIN.lon0) / metresEast(1)) * 1000) / 1000;
+
+  it('points one way along a stretch walked one way', () => {
+    expect(chevronsFor(line, ['fwd'], ORIGIN).map((c) => [along(c), Math.round(c.bearingDeg)])).toEqual([
+      [75, 90],
+      [225, 90],
+    ]);
+    expect(chevronsFor(line, ['back', 'back'], ORIGIN).map((c) => [along(c), Math.round(c.bearingDeg)])).toEqual([
+      [325, 270],
+      [175, 270],
+    ]);
+  });
+
+  it('interleaves both directions on a stretch walked out and back', () => {
+    expect(chevronsFor(line, ['fwd', 'back'], ORIGIN).map((c) => [along(c), Math.round(c.bearingDeg)])).toEqual([
+      [75, 90],
+      [225, 90],
+      [150, 270],
+      [300, 270],
+    ]);
   });
 });
 
