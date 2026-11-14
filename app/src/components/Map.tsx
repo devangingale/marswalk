@@ -54,6 +54,8 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates, plan, onMapPoin
       maxPitch: 75,
       attributionControl: false,
     });
+    const mapResizeObserver = new ResizeObserver(() => map.resize());
+    mapResizeObserver.observe(mapContainerRef.current);
 
     map.addControl(new NavigationControl({ showCompass: true }), 'top-right');
     map.addControl(new AttributionControl({ compact: true }), 'bottom-right');
@@ -74,7 +76,7 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates, plan, onMapPoin
           [bounds[0], bounds[1]],
           [bounds[2], bounds[3]],
         ],
-        { padding: 20, maxZoom: 14 }
+        { padding: 8, maxZoom: 14 }
       );
 
       map.addSource('planned-route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
@@ -222,6 +224,7 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates, plan, onMapPoin
       }
       chemistryMarkersRef.current.forEach((marker) => marker.remove());
       chemistryMarkersRef.current = [];
+      mapResizeObserver.disconnect();
       map.remove();
       mapRef.current = null;
       setMapInstance(null);
@@ -240,6 +243,7 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates, plan, onMapPoin
     planMarkersRef.current = [];
     const startElement = document.createElement('div');
     startElement.className = 'plan-map-start'; startElement.title = 'Rover drop-off'; startElement.setAttribute('aria-label', 'Rover drop-off');
+    startElement.innerHTML = '<svg viewBox="0 0 30 30" aria-hidden="true"><path class="start-marker__body" d="M15 1.8 27.8 9.2 27.8 20.8 15 28.2 2.2 20.8 2.2 9.2Z"/><path class="start-marker__glyph" d="M10 18.5 12.4 12h5.2l2.4 6.5M9.5 19.5h11M12.4 12l2.6-3 2.6 3M15 9v9.5"/></svg>';
     const startLabel = document.createElement('span'); startLabel.textContent = 'Rover drop-off'; startElement.appendChild(startLabel);
     const startMarker = new Marker({ element: startElement, draggable: true }).setLngLat([plan.start.lon, plan.start.lat]).addTo(map);
     startMarker.on('dragend', () => onStartChange?.({ ...plan.start, lon: startMarker.getLngLat().lng, lat: startMarker.getLngLat().lat }));
@@ -252,8 +256,11 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates, plan, onMapPoin
       stopMarker.on('dragend', () => onStopChange?.({ ...stop, lon: stopMarker.getLngLat().lng, lat: stopMarker.getLngLat().lat }));
       planMarkersRef.current.push(stopMarker);
     });
-    if (plan.stops.length > 0 && plan.route.turn_back) {
+    const turnBackRequired = plan.route.totals.time_s > plan.params.time_limit_s
+      || (plan.params.energy_limit_kj !== undefined && plan.route.totals.energy_kj > plan.params.energy_limit_kj);
+    if (plan.stops.length > 0 && plan.route.turn_back && turnBackRequired) {
       const turn = document.createElement('div'); turn.className = 'plan-map-turn'; turn.title = 'Turn-back point'; turn.setAttribute('aria-label', 'Turn-back point');
+      const turnLabel = document.createElement('span'); turnLabel.textContent = 'Turn-back point'; turn.appendChild(turnLabel);
       planMarkersRef.current.push(new Marker({ element: turn }).setLngLat([plan.route.turn_back.lon, plan.route.turn_back.lat]).addTo(map));
     }
   }, [plan, onStartChange, onStopChange]);
