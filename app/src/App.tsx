@@ -19,6 +19,7 @@ import { ModeSwitch } from './components/ModeSwitch';
 import { SiteSwitcher } from './components/SiteSwitcher';
 import { LayerPanel } from './components/LayerPanel';
 import { Map } from './components/Map';
+import type { RoverOverlayState } from './components/roverOverlays';
 import { WalkView } from './components/WalkView';
 import { VisorView } from './components/VisorView';
 import { PlanRail } from './plan/PlanRail';
@@ -35,6 +36,8 @@ export const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [mode, setMode] = useState<AppMode>('plan');
   const [layerStates, setLayerStates] = useState<Record<string, LayerState>>({});
+  const [roverOverlayState, setRoverOverlayState] = useState<RoverOverlayState>({ traverse: true, photos: true });
+  const [photosAvailable, setPhotosAvailable] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(() => window.innerWidth >= 1200);
   // The plan Walk and Visor replay (contracts section 7). The Plan view sets it; until then, the sample plan.
   const [plan, setPlan] = useState<Plan>(samplePlan as unknown as Plan);
@@ -101,6 +104,19 @@ export const App: React.FC = () => {
   useEffect(() => {
     loadSite(currentSiteId);
   }, [currentSiteId, loadSite]);
+
+  useEffect(() => {
+    let active = true;
+    setPhotosAvailable(false);
+    if (!siteData.photos_url) return () => { active = false; };
+    void fetch(resolveSiteAssetUrl(siteData.id, siteData.photos_url), { method: 'HEAD' })
+      .then((response) => {
+        if (!active) return;
+        setPhotosAvailable(response.ok && (response.headers.get('content-type')?.includes('json') ?? false));
+      })
+      .catch(() => { if (active) setPhotosAvailable(false); });
+    return () => { active = false; };
+  }, [siteData.id, siteData.photos_url]);
 
   useEffect(() => {
     let active = true;
@@ -200,6 +216,10 @@ export const App: React.FC = () => {
     });
   };
 
+  const toggleRoverOverlay = (layer: keyof RoverOverlayState) => {
+    setRoverOverlayState((current) => ({ ...current, [layer]: !current[layer] }));
+  };
+
   return (
     <div className="mock plan-mock" style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <header className="mock-top">
@@ -257,12 +277,15 @@ export const App: React.FC = () => {
             <LayerPanel
               layers={siteData.layers}
               layerStates={layerStates}
+              roverOverlayState={roverOverlayState}
+              photosAvailable={photosAvailable}
+              onToggleRoverOverlay={toggleRoverOverlay}
               onToggleLayer={handleToggleLayer}
               onOpacityChange={handleOpacityChange}
               isOpen={isPanelOpen}
               onTogglePanel={() => setIsPanelOpen(!isPanelOpen)}
             />
-            <Map siteData={siteData} layerStates={layerStates} plan={plan} onMapPoint={addStop} onStartChange={updateStart} onStopChange={updateStop} />
+            <Map siteData={siteData} layerStates={layerStates} roverOverlayState={roverOverlayState} plan={plan} onMapPoint={addStop} onStartChange={updateStart} onStopChange={updateStop} />
             <PlanRail plan={plan} grid={routeGrid} computing={computing} onChange={changePlan} onImport={(imported) => { userBuiltPlan.current = true; setPlan(imported); }} />
           </div>
         ) : mode === 'walk' ? (

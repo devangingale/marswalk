@@ -17,18 +17,21 @@ import type { ChemistryFeature } from '../lib/chemistry';
 import { shiftedDemDecoding } from '../lib/terrain';
 import { ScaleBar } from './ScaleBar';
 import { marsBaseStyle, setupPMTilesProtocol } from './mapSetup';
+import { addRoverOverlays, setRoverOverlayVisibility } from './roverOverlays';
+import type { RoverOverlayState } from './roverOverlays';
 import type { Plan, PlanStart, PlanStop } from '../lib/plan';
 
 interface MapProps {
   siteData: SiteData;
   layerStates: Record<string, LayerState>;
+  roverOverlayState: RoverOverlayState;
   plan?: Plan;
   onMapPoint?: (point: { lon: number; lat: number }) => void;
   onStartChange?: (start: PlanStart) => void;
   onStopChange?: (stop: PlanStop) => void;
 }
 
-export const Map: React.FC<MapProps> = ({ siteData, layerStates, plan, onMapPoint, onStartChange, onStopChange }) => {
+export const Map: React.FC<MapProps> = ({ siteData, layerStates, roverOverlayState, plan, onMapPoint, onStartChange, onStopChange }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
@@ -36,6 +39,8 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates, plan, onMapPoin
   const planMarkersRef = useRef<Marker[]>([]);
   const [mapInstance, setMapInstance] = useState<MapLibreMap | null>(null);
   const [is3D, setIs3D] = useState(false);
+  const roverOverlayStateRef = useRef(roverOverlayState);
+  roverOverlayStateRef.current = roverOverlayState;
 
   useEffect(() => {
     setupPMTilesProtocol();
@@ -200,6 +205,9 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates, plan, onMapPoin
 
       map.moveLayer('planned-route-casing');
       map.moveLayer('planned-route-core');
+      void addRoverOverlays(map, siteData.id, roverOverlayStateRef.current).then(() => {
+        setRoverOverlayVisibility(map, roverOverlayStateRef.current);
+      });
 
       // Start / Habitat marker: 20x20 square with dark casing (contracts section 5, design section 6)
       if (siteData.default_start && !plan) {
@@ -292,6 +300,11 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates, plan, onMapPoin
       }
     });
   }, [layerStates, siteData]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map) setRoverOverlayVisibility(map, roverOverlayState);
+  }, [roverOverlayState]);
 
   const toggle3D = () => {
     const map = mapRef.current;
