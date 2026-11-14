@@ -9,6 +9,8 @@ import {
   formatDistance,
   formatUtcClock,
   formatLocalClock,
+  formatBearing,
+  formatWalkDistance,
 } from './format';
 
 describe('formatDuration', () => {
@@ -59,5 +61,29 @@ describe('clocks', () => {
     // Gale (lon_east 137.44): a well-formed 24 h face, not the exact value here.
     const s = formatLocalClock(Date.UTC(2026, 10, 14, 12, 0), 137.44);
     expect(s).toMatch(/^([01]\d|2[0-3]):[0-5]\d$/);
+  });
+});
+
+describe('formatBearing', () => {
+  it('is three digits plus the cardinal', () => {
+    expect(formatBearing(214)).toBe(`214°${NBSP}SW`);
+    expect(formatBearing(32.4)).toBe(`032°${NBSP}NE`);
+    expect(formatBearing(0)).toBe(`000°${NBSP}N`);
+  });
+  it('wraps 359.6 to north and negative bearings into range', () => {
+    expect(formatBearing(359.6)).toBe(`000°${NBSP}N`);
+    expect(formatBearing(-90)).toBe(`270°${NBSP}W`);
+  });
+});
+
+describe('formatWalkDistance', () => {
+  it('rounds to the nearest 5 m under 100 m', () => {
+    expect(formatWalkDistance(42)).toBe(`40${NBSP}m`);
+    expect(formatWalkDistance(43)).toBe(`45${NBSP}m`);
+    expect(formatWalkDistance(1)).toBe(`0${NBSP}m`);
+  });
+  it('is whole metres from 100 m and one decimal from 1 km', () => {
+    expect(formatWalkDistance(140.4)).toBe(`140${NBSP}m`);
+    expect(formatWalkDistance(2449)).toBe(`2.4${NBSP}km`);
   });
 });

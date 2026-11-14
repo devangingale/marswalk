@@ -38,6 +38,7 @@ import {
   type SlopeStats,
 } from '../lib/routeShape';
 import { lonLatToCartesian, type Pose } from './frame';
+import { circleRing, crewLabel, type CrewMarkerModel } from '../safety/crewMarkers';
 import { canvasMarkerImages, readToken, type MarkerImage, type MarkerImages, type TokenReader } from './markerImages';
 import {
   bearingDeg,
@@ -147,11 +148,12 @@ export class GlobeOverlays {
   private readonly onSectionHover?: (sectionId: string | null) => void;
   private readonly meta = new Map<Entity, Meta>();
   private readonly owned = new Set<Entity>();
-  private readonly groups: Record<'plan' | 'rover' | 'chemistry' | 'walker', Entity[]> = {
+  private readonly groups: Record<'plan' | 'rover' | 'chemistry' | 'walker' | 'crew', Entity[]> = {
     plan: [],
     rover: [],
     chemistry: [],
     walker: [],
+    crew: [],
   };
 
   private plan: Plan | undefined;
@@ -556,6 +558,77 @@ export class GlobeOverlays {
       position: lonLatToCartesian(pose.lon, pose.lat, 0),
       billboard: this.billboard(this.markers().walker(), REGION),
     });
+  }
+
+  /**
+   * Both astronauts with their position uncertainty circles, the pressurised rover with
+   * its arrival time, and the night way back as a corridor (Mars mode and Walk). Null
+   * clears them.
+   */
+  setCrew(model: CrewMarkerModel | null): void {
+    this.removeGroup('crew');
+    if (!model) return;
+    const ring = this.colour('--map-position-ring');
+    if (model.returnLine && model.returnLine.length > 1) {
+      const positions = model.returnLine.map((p) => this.surfacePosition(p.lon, p.lat));
+      for (const [name, width] of [['--map-route-casing', 12], ['--map-route-highlight', 6]] as const) {
+        this.add('crew', {
+          polyline: {
+            positions,
+            width,
+            clampToGround: true,
+            material: this.colour(name),
+            classificationType: this.classification,
+          },
+        });
+      }
+    }
+    model.crew.forEach((member, i) => {
+      if (member.uncertaintyM > 0) {
+        this.add('crew', {
+          position: this.surfacePosition(member.lon, member.lat),
+          ellipse: {
+            semiMajorAxis: member.uncertaintyM,
+            semiMinorAxis: member.uncertaintyM,
+            material: ring.withAlpha(0.18),
+            classificationType: this.classification,
+          },
+        });
+        this.add('crew', {
+          polyline: {
+            positions: circleRing(member, member.uncertaintyM).map((p) => this.surfacePosition(p.lon, p.lat)),
+            width: 2,
+            clampToGround: true,
+            material: ring,
+            classificationType: this.classification,
+          },
+        });
+      }
+      const text = crewLabel(member);
+      // The lead's label sits right of its disc and the second's left, so a close pair stays legible.
+      const left = i % 2 === 1;
+      this.add(
+        'crew',
+        {
+          position: this.surfacePosition(member.lon, member.lat),
+          billboard: this.billboard(this.markers().walker(), REGION),
+          label: this.label(text, REGION, [left ? -14 : 14, 0], left),
+        },
+        { kind: 'text', lines: [text, formatLatLon(member.lon, member.lat)] },
+      );
+    });
+    if (model.rover) {
+      const { lon, lat, label } = model.rover;
+      this.add(
+        'crew',
+        {
+          position: this.surfacePosition(lon, lat),
+          billboard: this.billboard(this.markers().dropOff(), REGION),
+          label: this.label(label, REGION, [20, 0]),
+        },
+        { kind: 'text', lines: [label, formatLatLon(lon, lat)] },
+      );
+    }
   }
 
   /** Hover text for a picked marker (stop, drop-off, fork, slope point, photo site), else null. */
