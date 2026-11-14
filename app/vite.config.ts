@@ -2,9 +2,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
-import { createReadStream, existsSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, realpathSync, statSync } from 'node:fs';
 import { resolve, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseByteRange } from './src/devRange';
 
 const bundleRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'sites');
 const contentTypes: Record<string, string> = {
@@ -18,6 +19,10 @@ function localBundles() {
     name: 'local-site-bundles',
     configureServer(server: import('vite').ViteDevServer) {
       server.middlewares.use('/local-bundles', (req, res, next) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Range');
+        if (req.method === 'OPTIONS') { res.statusCode = 204; res.end(); return; }
         if (req.method !== 'GET' && req.method !== 'HEAD') {
           res.statusCode = 405;
           res.setHeader('Allow', 'GET, HEAD');
@@ -31,47 +36,44 @@ function localBundles() {
         }
 
         const [, site, filename] = match;
-        const filePath = resolve(bundleRoot, site, 'bundle', filename);
-        if (!filePath.startsWith(resolve(bundleRoot, site, 'bundle')) || !existsSync(filePath) || !statSync(filePath).isFile()) {
+        const dir = resolve(bundleRoot, site, 'bundle');
+        const filePath = resolve(dir, filename);
+        if (!existsSync(filePath)) {
           res.statusCode = 404;
           res.end('Bundle file not found');
           return;
         }
+        const realDir = realpathSync(dir);
+        const realFilePath = realpathSync(filePath);
+        if (!realFilePath.startsWith(`${realDir}/`) && !realFilePath.startsWith(`${realDir}\\`)) { res.statusCode = 404; res.end('Bundle file not found'); return; }
+        if (!statSync(realFilePath).isFile()) { res.statusCode = 404; res.end('Bundle file not found'); return; }
 
-        const { size } = statSync(filePath);
+        const { size } = statSync(realFilePath);
         const type = contentTypes[extname(filename)] ?? 'application/octet-stream';
         res.setHeader('Content-Type', type);
         res.setHeader('Accept-Ranges', 'bytes');
-        res.setHeader('Access-Control-Allow-Origin', '*');
 
         const range = req.headers.range;
         if (range) {
-          const parsed = /^bytes=(\d*)-(\d*)$/.exec(range);
-          if (!parsed) {
+          let parsed;
+          try { parsed = parseByteRange(range, size); } catch {
             res.statusCode = 416;
             res.setHeader('Content-Range', `bytes */${size}`);
             res.end();
             return;
           }
-          const start = parsed[1] ? Number(parsed[1]) : Math.max(0, size - Number(parsed[2]));
-          const end = parsed[2] ? Math.min(Number(parsed[2]), size - 1) : size - 1;
-          if (start > end || start >= size) {
-            res.statusCode = 416;
-            res.setHeader('Content-Range', `bytes */${size}`);
-            res.end();
-            return;
-          }
+          const { start, end } = parsed!;
           res.statusCode = 206;
           res.setHeader('Content-Range', `bytes ${start}-${end}/${size}`);
           res.setHeader('Content-Length', String(end - start + 1));
           if (req.method === 'HEAD') res.end();
-          else createReadStream(filePath, { start, end }).pipe(res);
+          else { const stream = createReadStream(realFilePath, { start, end }); stream.on('error', () => { if (!res.headersSent) res.statusCode = 500; res.end(); }); stream.pipe(res); }
           return;
         }
 
         res.setHeader('Content-Length', String(size));
         if (req.method === 'HEAD') res.end();
-        else createReadStream(filePath).pipe(res);
+        else { const stream = createReadStream(realFilePath); stream.on('error', () => { if (!res.headersSent) res.statusCode = 500; res.end(); }); stream.pipe(res); }
       });
     },
   };
@@ -92,7 +94,7 @@ export default defineConfig({
   ],
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: 'hidden',
   },
   test: {
     globals: true,
