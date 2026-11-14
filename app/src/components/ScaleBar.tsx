@@ -65,7 +65,7 @@ export const ScaleBar: React.FC<ScaleBarProps> = ({ map, defaultLat = -4.7913 })
       title="True Mars ground scale (R = 3396190 m, contracts section 3)"
     >
       <div className="s48-scale" style={{ width: `${scale.pixelWidth}px` }}>
-        <div className="s48-scale__label">{scale.label} (Mars)</div>
+        <div className="s48-scale__label">{scale.label}</div>
         <div className="s48-scale__bar" aria-hidden="true">
           <i />
           <i />

@@ -1,0 +1,191 @@
+/* Written with AI assistance, directed and reviewed by the team. */
+
+/* Sol-48 Shell and Layer Panel Styling */
+
+/* App Shell Root Layout */
+.mock {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+}
+
+/* Header Site Identity */
+.s48-site-identity {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.s48-site-extent {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-data);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  font-variant-numeric: var(--numeric);
+  padding: 0 var(--space-2);
+  height: calc(var(--hit-plan) - 6px);
+  border-radius: var(--radius-1);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-rule);
+  white-space: nowrap;
+}
+
+/* Plan body flex layout to cleanly support collapsible panel */
+.plan-body {
+  display: flex !important;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.plan-body > aside.panel {
+  width: 320px;
+  flex-shrink: 0;
+  border-right: var(--border-width) solid var(--color-rule);
+  background: var(--color-surface);
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.plan-body > div:last-child {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  position: relative;
+}
+
+/* Layer row head */
+.s48-layer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: var(--hit-plan-min);
+}
+
+.s48-layer__head label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  flex: 1;
+  font-weight: var(--weight-medium);
+  font-size: var(--text-md);
+  color: var(--color-text);
+  min-width: 0;
+}
+
+.s48-layer__title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Info toggle button */
+.s48-layer__info-btn {
+  color: var(--color-text-muted);
+  width: var(--hit-plan-min);
+  height: var(--hit-plan-min);
+  min-height: var(--hit-plan-min);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-1);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color var(--motion-fast) var(--motion-ease), background-color var(--motion-fast) var(--motion-ease);
+}
+
+.s48-layer__info-btn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+}
+
+.s48-layer__info-btn.is-active {
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+}
+
+/* Expanded technical explanation */
+.s48-layer__desc {
+  margin: var(--space-1) 0 var(--space-1) 28px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-rule);
+  border-radius: var(--radius-1);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text);
+}
+
+.s48-layer__desc p {
+  margin: 0;
+}
+
+.s48-layer__desc-meta {
+  margin-top: var(--space-1);
+  font-family: var(--font-data);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* Resolution number styling */
+.s48-res {
+  font-family: var(--font-data);
+  font-variant-numeric: var(--numeric);
+}
+
+.s48-res--coarse {
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+}
+
+/* Legends */
+.s48-legend__ends {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--font-data);
+  font-variant-numeric: var(--numeric);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.s48-legend__ends b {
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+}
+
+.s48-legend__unit {
+  margin-left: 4px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-weight: var(--weight-regular);
+}
+
+/* Tablet responsiveness at 1024px and below */
+@media (max-width: 1024px) {
+  .plan-body > aside.panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 320px;
+    max-width: 85vw;
+    z-index: 30;
+    border-right: var(--border-width) solid var(--color-rule);
+    box-shadow: var(--shadow-drawer);
+    background: var(--color-surface);
+  }
+}
