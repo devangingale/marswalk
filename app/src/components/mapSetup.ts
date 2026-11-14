@@ -48,7 +48,6 @@ export function marsBaseStyle(): StyleSpecification {
         type: 'raster',
         source: 'mars_mola_trek',
         minzoom: 0,
-        maxzoom: 9,
         paint: {
           'raster-opacity': 0.75,
         },
