@@ -33,6 +33,7 @@ Not every dataset below ends up in the final product; trim this list to what is 
 | pds_places | `data/raw/pds_places` | NASA PDS public domain (US Government work) |
 | localized_rover_poses | `shared/poses/gale_poses.csv`, `shared/poses/jezero_poses.csv` | NASA/JPL PDS Places rover-position records, public domain (US Government work) |
 | rover_images | `data/raw/rover_images` | Raw images from NASA are not copyrighted (#55); retain each feed credit and check third-party assets. |
+| rems | `data/raw/rems` | Public domain / NASA content; credit NASA/JPL-Caltech/CAB(CSIC-INTA) |
 
 Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic (`gale_dem`), Jezero HiRISE DTM and orthoimages, Jezero CTX DEM and mosaic, Curiosity RAD records (`msl_rad_rdr`), rover location tables (`pds_places`), rover raw-image metadata (`rover_images`), OMNI solar wind data, solar-cycle forecasts. Licences and sources to be confirmed and added above.
 
@@ -50,6 +51,7 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 |---|---|---|
 | Pandolf load-carriage equation | Walking metabolic power on level and uphill terrain | Pandolf, K. B., Givoni, B., & Goldman, R. F. (1977). *Predicting energy expenditure with loads while standing or walking very slowly to moderate walking speeds.* Journal of Applied Physiology, 43(4), 577–581. doi:10.1152/jappl.1977.43.4.577. Simplified with uniform Mars gravity scaling (3.71 m/s²). |
 | Santee downhill correction | Downhill metabolic energy expenditure and eccentric braking correction | Santee, W. R., Allison, W. F., Blanchard, L. A., & Small, M. G. (2001). *A proposed model for load carriage on sloped terrain.* Aviation, Space, and Environmental Medicine, 72(6), 562–566. |
+| Martian calendar (Clancy / Piqueux) | Martian year and sol to Earth date calculation | Clancy, R. T., et al. (2000). *An intercomparison of ground-based millimeter, MGS TES, and Viking atmospheric temperature measurements: Seasonal and interannual variability of temperatures and dust loading in the global Mars atmosphere.* Journal of Geophysical Research: Planets, 105(E4), 9553–9571. doi:10.1029/1999JE001089. Piqueux, S., et al. (2015). *Calculation of Mars solar longitude (Ls) and Martian calendar.* Icarus, 251, 332–339. doi:10.1016/j.icarus.2014.12.014. |
 
 ## Software and libraries
 
