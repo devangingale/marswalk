@@ -21,3 +21,6 @@ Thumbs.db
 
 # Local session notes
 HANDOFF.md
+.shots/
+.playwright-mcp/
+app/tsconfig.tsbuildinfo
