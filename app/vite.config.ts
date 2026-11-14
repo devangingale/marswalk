@@ -1,6 +1,7 @@
 // Written with AI assistance, directed and reviewed by the team.
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { resolve, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -78,7 +79,17 @@ function localBundles() {
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), localBundles()],
+  plugins: [
+    react(),
+    localBundles(),
+    viteStaticCopy({
+      targets: ['Workers', 'Assets', 'ThirdParty', 'Widgets'].map((dir) => ({
+        src: `node_modules/cesium/Build/Cesium/${dir}`,
+        dest: 'cesium',
+        rename: { stripBase: 4 },
+      })),
+    }),
+  ],
   build: {
     outDir: 'dist',
     sourcemap: true,

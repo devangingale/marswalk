@@ -9,7 +9,9 @@ import App from './App';
 
 const rootElement = document.getElementById('root');
 
-if (rootElement) {
+if (rootElement && new URLSearchParams(window.location.search).get('spike') === '1') {
+  void import('./globe/spike').then(({ mountSpike }) => mountSpike(rootElement));
+} else if (rootElement) {
   ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
       <App />
