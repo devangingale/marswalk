@@ -61,6 +61,13 @@ export interface SlopeStats {
   gradientDeg: number[];
 }
 
+/** Nearby shared-path vertices represent the same ground within this lateral offset. */
+const SHARED_MATCH_TOLERANCE_M = 15;
+/** Fork candidates within this distance are one junction; branches are combined. */
+const FORK_MERGE_TOLERANCE_M = 10;
+/** Ignore shorter baselines when reporting the steepest grade, to damp grid noise. */
+const STEEPEST_MIN_RUN_M = 10;
+
 interface LocalPoint {
   lon: number;
   lat: number;
@@ -100,15 +107,18 @@ function getToLabel(to: string): string {
 /**
  * Splits the union of all leg lines into stretches; each stretch lists every
  * leg index that walks it and whether that leg walks it in the stretch's own
- * direction ('fwd') or reversed ('back'). Points of different legs within
- * toleranceM (local metres) count as the same ground.
+ * direction ('fwd') or reversed ('back'). `matchToleranceM` (15 m by default,
+ * never below `toleranceM`) lets nearby sampled paths count
+ * as the same ground despite planner/A* lateral wobble.
  */
 export function sharedSegments(
   legs: PlanLeg[],
   origin: GridOrigin,
-  toleranceM = 3
+  toleranceM = 3,
+  matchToleranceM = SHARED_MATCH_TOLERANCE_M
 ): SharedSegment[] {
   if (legs.length === 0) return [];
+  const effectiveMatchToleranceM = Math.max(toleranceM, matchToleranceM);
 
   // Convert all legs to local points
   const rawLegs = legs.map((leg) => toLocalPoints(leg.line, origin));
@@ -133,7 +143,7 @@ export function sharedSegments(
             const projX = a.x_m + t * dx;
             const projY = a.y_m + t * dy;
             const dist = Math.hypot(v.x_m - projX, v.y_m - projY);
-            if (dist <= toleranceM) {
+            if (dist <= effectiveMatchToleranceM) {
               const { lon, lat } = localMetresToLonLat(projX, projY, origin);
               line.splice(s + 1, 0, { lon, lat, x_m: projX, y_m: projY });
               break;
@@ -169,7 +179,7 @@ export function sharedSegments(
 
   for (let i = 0; i < allVertices.length; i++) {
     for (let j = i + 1; j < allVertices.length; j++) {
-      if (distLocal(allVertices[i], allVertices[j]) <= toleranceM) {
+      if (distLocal(allVertices[i], allVertices[j]) <= effectiveMatchToleranceM) {
         union(i, j);
       }
     }
@@ -420,13 +430,14 @@ export function forkPoints(
     candidateEndpoints.push(s.line[s.line.length - 1]);
   }
 
-  // Deduplicate endpoints within toleranceM
+  // Deduplicate endpoint observations within 10 m, independent of the much smaller
+  // vertex tolerance used by callers such as the globe overlay.
   const uniqueEndpoints: [number, number][] = [];
   for (const pt of candidateEndpoints) {
     const ptM = lonlatToLocalMetres(pt[0], pt[1], origin);
     const existing = uniqueEndpoints.find((u) => {
       const uM = lonlatToLocalMetres(u[0], u[1], origin);
-      return Math.hypot(ptM.x_m - uM.x_m, ptM.y_m - uM.y_m) <= toleranceM;
+      return Math.hypot(ptM.x_m - uM.x_m, ptM.y_m - uM.y_m) <= FORK_MERGE_TOLERANCE_M;
     });
     if (!existing) {
       uniqueEndpoints.push(pt);
@@ -467,7 +478,7 @@ export function forkPoints(
       const dy = br.nextLocal.y - epM.y_m;
       const angle = Math.atan2(dy, dx);
 
-      const isSameGround = usedAngles.some((a) => Math.abs(a - angle) < 0.1);
+      const isSameGround = usedAngles.some((a) => Math.abs(Math.atan2(Math.sin(a - angle), Math.cos(a - angle))) < 0.1);
       if (!isSameGround) {
         usedAngles.push(angle);
         distinctDirectionBranches.push({
@@ -487,7 +498,26 @@ export function forkPoints(
     }
   }
 
-  return forks;
+  // Shared stretches can end at slightly different sampled points around one
+  // narrow junction. Merge nearby fork records and preserve all branch labels.
+  const mergedForks: ForkPoint[] = [];
+  for (const fork of forks) {
+    const point = lonlatToLocalMetres(fork.lon, fork.lat, origin);
+    const existing = mergedForks.find((candidate) => {
+      const other = lonlatToLocalMetres(candidate.lon, candidate.lat, origin);
+      return Math.hypot(point.x_m - other.x_m, point.y_m - other.y_m) <= FORK_MERGE_TOLERANCE_M;
+    });
+    if (!existing) {
+      mergedForks.push({ ...fork, branches: [...fork.branches] });
+    } else {
+      for (const branch of fork.branches) {
+        if (!existing.branches.some((item) => item.legIndex === branch.legIndex && item.toLabel === branch.toLabel)) {
+          existing.branches.push(branch);
+        }
+      }
+    }
+  }
+  return mergedForks;
 }
 
 /**
@@ -636,13 +666,13 @@ export function chevronPositions(
 }
 
 /**
- * Elevations from grid.getElevation at each vertex's cell;
- * gradient per segment = atan(dz / horizontal local-metre distance);
- * steepestAt is the midpoint of the steepest segment.
+ * Elevations from grid.getElevation at each vertex's cell. `gradientDeg` remains
+ * per segment; the steepest grade uses a baseline of at least 10 horizontal metres.
  */
 export function slopeStats(
   line: [number, number][],
-  grid: RouteGrid
+  grid: RouteGrid,
+  minimumRunM = STEEPEST_MIN_RUN_M
 ): SlopeStats {
   if (line.length === 0) {
     return {
@@ -705,11 +735,41 @@ export function slopeStats(
     const grad = hDist > 0 ? radToDeg(Math.atan(dz / hDist)) : 0;
     gradientDeg.push(grad);
 
-    const absGrad = Math.abs(grad);
-    if (steepestDeg === null || absGrad > steepestDeg) {
-      steepestDeg = absGrad;
-      const mid = grid.localMetresToLonLat((p1_m.x_m + p2_m.x_m) / 2, (p1_m.y_m + p2_m.y_m) / 2);
-      steepestAt = [mid.lon, mid.lat];
+  }
+
+  for (let start = 0; start < line.length - 1; start++) {
+    if (!Number.isFinite(elevations[start])) continue;
+    const startM = grid.lonlatToLocalMetres(line[start][0], line[start][1]);
+    for (let end = start + 1; end < line.length; end++) {
+      if (!Number.isFinite(elevations[end])) break;
+      const endM = grid.lonlatToLocalMetres(line[end][0], line[end][1]);
+      const runM = Math.hypot(endM.x_m - startM.x_m, endM.y_m - startM.y_m);
+      if (runM < minimumRunM) continue;
+      // The intended baseline is the shortest one that reaches the minimum run.
+      // Longer baselines add work without improving the noise floor.
+      const grad = radToDeg(Math.atan((elevations[end] - elevations[start]) / runM));
+      const absGrad = Math.abs(grad);
+      if (steepestDeg === null || absGrad > steepestDeg) {
+        steepestDeg = absGrad;
+        let halfRun = runM / 2;
+        let midX = startM.x_m;
+        let midY = startM.y_m;
+        for (let segment = start; segment < end; segment++) {
+          const a = grid.lonlatToLocalMetres(line[segment][0], line[segment][1]);
+          const b = grid.lonlatToLocalMetres(line[segment + 1][0], line[segment + 1][1]);
+          const segmentM = Math.hypot(b.x_m - a.x_m, b.y_m - a.y_m);
+          if (halfRun <= segmentM) {
+            const fraction = segmentM > 0 ? halfRun / segmentM : 0;
+            midX = a.x_m + fraction * (b.x_m - a.x_m);
+            midY = a.y_m + fraction * (b.y_m - a.y_m);
+            break;
+          }
+          halfRun -= segmentM;
+        }
+        const mid = grid.localMetresToLonLat(midX, midY);
+        steepestAt = [mid.lon, mid.lat];
+      }
+      break;
     }
   }
 
