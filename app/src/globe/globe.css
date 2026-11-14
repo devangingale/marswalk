@@ -65,6 +65,25 @@
   z-index: 2;
 }
 
+.globe-mode,
+.globe-theme,
+.globe-tabs {
+  flex: none;
+}
+
+@media (max-width: 760px) {
+  .mock-top {
+    gap: var(--space-2);
+    padding-inline: var(--space-2);
+  }
+
+  .globe-mode button,
+  .globe-theme button,
+  .globe-tabs button {
+    padding-inline: var(--space-2);
+  }
+}
+
 .globe-hover {
   position: absolute;
   z-index: 3;
