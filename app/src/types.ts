@@ -101,7 +101,7 @@ export interface LatestWeather {
 }
 
 export interface SiteConditions {
-  weather: {
+  weather?: {
     source: string;
     latest: LatestWeather;
   };
