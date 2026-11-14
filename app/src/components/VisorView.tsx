@@ -35,7 +35,7 @@ export const VisorView: React.FC<VisorViewProps> = ({ siteData, plan, track, ela
   useEffect(() => { let cancelled = false; setHazardData({status:'loading'}); loadGrid(getSiteBaseUrl(siteData.id), siteData.origin).then(grid => { if (!cancelled) setHazardData({status:'ready', flags: hazardFlags(track.vertices, grid)}); }).catch(() => { if (!cancelled) setHazardData({status:'error'}); }); return () => {cancelled = true;}; }, [siteData, track]);
   useEffect(() => {
     setupPMTilesProtocol(); if (!containerRef.current) return;
-    const style = marsBaseStyle();
+    const style = marsBaseStyle(siteData);
     const css = getComputedStyle(document.documentElement);
     const skyToken = (name: string) => css.getPropertyValue(name).trim();
     style.sky = {

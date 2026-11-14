@@ -64,6 +64,9 @@ def tile_bytes(src, src_geo_tf, z: int, x: int, y: int, mode: str, name: str, ra
                   MARS_R*math.radians(b.east), MARS_R*math.radians(b.north))
     win = from_bounds(*src_bounds, transform=src.transform).round_offsets().round_lengths()
     try:
+        # Keep neighbouring source pixels for bilinear warp footprints at tile borders.
+        win = rasterio.windows.Window(win.col_off - 2, win.row_off - 2,
+                                      win.width + 4, win.height + 4)
         win = win.intersection(rasterio.windows.Window(0, 0, src.width, src.height))
     except rasterio.errors.WindowError:
         return None
@@ -73,7 +76,7 @@ def tile_bytes(src, src_geo_tf, z: int, x: int, y: int, mode: str, name: str, ra
     src_tf = lonlat_source_transform(src.window_transform(win) * Affine.scale(win.width/out_w, win.height/out_h))
     if mode == "rgb":
         count = min(src.count, 3)
-        raw = np.zeros((count, TILE_SIZE, TILE_SIZE), dtype=np.uint8)
+        raw = np.zeros((4, TILE_SIZE, TILE_SIZE), dtype=np.uint8)
         source_data = src.read(list(range(1,count+1)), window=win,
                                out_shape=(count,out_h,out_w), resampling=Resampling.average)
         for band in range(count):
@@ -83,12 +86,18 @@ def tile_bytes(src, src_geo_tf, z: int, x: int, y: int, mode: str, name: str, ra
                       dst_transform=tile_tf, dst_crs="EPSG:3857", dst_nodata=0,
                       resampling=Resampling.bilinear)
         if count == 1:
-            raw = np.repeat(raw, 3, axis=0)
-        arr = np.moveaxis(raw[:3], 0, -1).astype(np.uint8)
-        im = Image.fromarray(arr, "RGB")
+            raw[1:3] = raw[0]
+        source_mask = src.read_masks(1, window=win, out_shape=(out_h,out_w), resampling=Resampling.nearest)
+        source_mask[np.all(source_data == 0, axis=0)] = 0
+        reproject(source=source_mask, destination=raw[3],
+                  src_transform=src_tf, src_crs="EPSG:4326", src_nodata=0,
+                  dst_transform=tile_tf, dst_crs="EPSG:3857", dst_nodata=0,
+                  resampling=Resampling.nearest)
+        arr = np.moveaxis(raw, 0, -1).astype(np.uint8)
+        im = Image.fromarray(arr, "RGBA")
         import io
         buf = io.BytesIO()
-        im.save(buf, format="JPEG", quality=78, optimize=True)
+        im.save(buf, format="WEBP", quality=82, method=3)
         return buf.getvalue()
     raw = np.full((TILE_SIZE, TILE_SIZE), np.nan, dtype=np.float32)
     source = src.read(1, window=win, out_shape=(out_h,out_w), resampling=Resampling.average)
@@ -137,12 +146,12 @@ def bake_raster(src_path: Path, target: Path, bounds_xy, mode: str, layer_name: 
             for tile in mercantile.tiles(west, south, east, north, [z]):
                 data.append((zxy_to_tileid(z, tile.x, tile.y), (z,tile.x,tile.y)))
         data.sort(key=lambda x: x[0])
-        header = {"tile_type": TileType.JPEG if mode == "rgb" else TileType.PNG,
+        header = {"tile_type": TileType.WEBP if mode == "rgb" else TileType.PNG,
                   "tile_compression": Compression.NONE, "min_zoom": minzoom,
                   "max_zoom": maxzoom, "min_lon_e7": int(west*1e7), "min_lat_e7": int(south*1e7),
                   "max_lon_e7": int(east*1e7), "max_lat_e7": int(north*1e7),
                   "center_zoom": maxzoom, "center_lon_e7": int((west+east)*5e6), "center_lat_e7": int((south+north)*5e6)}
-        metadata = {"name": target.stem, "format": "jpg" if mode == "rgb" else "png",
+        metadata = {"name": target.stem, "format": "webp" if mode == "rgb" else "png",
                     "tilejson": "3.0.0", "bounds": [west,south,east,north],
                     "minzoom": minzoom, "maxzoom": maxzoom, "scheme": "xyz"}
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -217,6 +226,7 @@ def main() -> None:
     site={"id":cfg["name"],"title":cfg["title"],"rover":cfg["rover"],"origin":origin,
           "size_m":{"width":size_w,"height":size_h},"bounds_lonlat":[float(west),float(south),float(east),float(north)],
           "default_start":{"lon":float((west+east)/2),"lat":float((south+north)/2),"label":"Rover drop-off"},
+          "basemap":{"url":"basemap.pmtiles","source":"MOLA/HRSC BlendDEM, USGS Astrogeology"},
           "terrain":{"url":"terrain.pmtiles","encoding":"mapbox","min_m":math.floor(dem_min),"max_m":math.ceil(dem_max)},
           "layers":layers,"conditions_url":f"/data/{cfg['name']}/conditions.json","photos_url":f"/data/{cfg['name']}/photos.json",
           "chemistry_url":f"/data/{cfg['name']}/chemistry.geojson","stops_url":f"/data/{cfg['name']}/stops.json",

@@ -15,8 +15,8 @@ const fmtTime = (s: number) => {
   if (minutes === 0) return `0\u00a0min`;
   return minutes < 60 ? `${minutes}\u00a0min` : `${Math.floor(minutes / 60)}\u00a0h ${String(minutes % 60).padStart(2, '0')}\u00a0min`;
 };
-const fmtDose = (dose: number) => dose === 0 ? `0\u00a0mGy` : dose < 0.001 ? `< 0.001\u00a0mGy` : `≈ ${Number(dose.toPrecision(2))}\u00a0mGy`;
-const fmtEnergy = (energy: number) => `≈ ${Math.round(energy / 50) * 50}\u00a0kJ`;
+const fmtDose = (dose: number) => dose === 0 ? `0\u00a0mGy` : dose < 0.001 ? `< 0.001\u00a0mGy` : `${Number(dose.toPrecision(2))}\u00a0mGy`;
+const fmtEnergy = (energy: number) => `${Math.round(energy / 50) * 50}\u00a0kJ`;
 const fmtElevation = (metres: number, sign: '+' | '−') => Math.round(metres) === 0 ? `0\u00a0m` : `${sign}${Math.round(metres)}\u00a0m`;
 const clone = (plan: Plan, patch: Partial<Pick<Plan, 'params' | 'start' | 'stops'>>) => ({ ...plan, ...patch });
 
@@ -106,17 +106,17 @@ export const PlanRail: React.FC<Props> = ({ plan, grid, computing, onChange, onI
       {!!plan.route.warnings.length && <p className="plan-rail__warning">{plan.route.warnings[0]}</p>}
     </section>
 
-    <section className="plan-section plan-budget" aria-labelledby="plan-budget-heading">
+    {plan.stops.length > 0 && <section className="plan-section plan-budget" aria-labelledby="plan-budget-heading">
       <div className="plan-rail__head"><h2 id="plan-budget-heading">Budget</h2></div>
       <Budget label="Distance" value={fmtDistance(plan.route.totals.distance_m)} />
-      <Budget label="Time" value={`≈ ${fmtTime(plan.route.totals.time_s)}`} limit={fmtTime(plan.params.time_limit_s)} fraction={fractions.time} />
+      <Budget label="Time" value={fmtTime(plan.route.totals.time_s)} limit={fmtTime(plan.params.time_limit_s)} fraction={fractions.time} />
       <div className="plan-budget__pair"><span>Climb</span><b>{fmtElevation(plan.route.totals.climb_m, '+')}</b><span>Descent</span><b>{fmtElevation(plan.route.totals.descent_m, '−')}</b></div>
       <Budget label="Energy" value={fmtEnergy(plan.route.totals.energy_kj)} limit={plan.params.energy_limit_kj ? `${Math.round(plan.params.energy_limit_kj)}\u00a0kJ` : undefined} fraction={plan.params.energy_limit_kj ? fractions.energy : undefined} />
       <Budget label="Radiation dose" value={fmtDose(plan.route.totals.dose_mgy)} />
       <div className="plan-turnback"><span>Turn-back</span><b>{!plan.route.turn_back || turnbackFits ? 'Not needed' : `Turn back by ${fmtTime(turnbackElapsed)} (${plan.route.turn_back.reason} limit)`}</b></div>
-    </section>
+    </section>}
 
-    <section className="plan-section plan-profile" aria-labelledby="plan-profile-heading">
+    {plan.stops.length > 0 && <section className="plan-section plan-profile" aria-labelledby="plan-profile-heading">
       <div className="plan-rail__head"><h2 id="plan-profile-heading">Elevation profile</h2></div>
       <svg viewBox="0 0 360 88" role="img" aria-label="Elevation along route">
         <line x1={plotLeft} y1={plotTop} x2={plotLeft} y2={plotBottom} className="profile-axis" />
@@ -131,7 +131,7 @@ export const PlanRail: React.FC<Props> = ({ plan, grid, computing, onChange, onI
         <text x={plotLeft} y="82" className="profile-label">0</text><text x={plotRight} y="82" textAnchor="end" className="profile-label">{fmtDistance(maxDistance)}</text>
       </svg>
       {turnbackIndex >= 0 && !turnbackFits && <p className="plan-profile__turnback">T · Turn-back point</p>}
-    </section>
+    </section>}
 
     <details className="plan-params" open={paramsOpen} onToggle={(event) => setParamsOpen((event.currentTarget as HTMLDetailsElement).open)}>
       <summary>Parameters</summary>
