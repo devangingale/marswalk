@@ -257,12 +257,12 @@ export const Map: React.FC<MapProps> = ({ siteData, layerStates }) => {
     <div className="mapbox" style={{ flex: 1, position: 'relative', width: '100%', height: '100%' }}>
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
-      <div className="map-ui" style={{ right: '54px', top: '12px' }}>
+      <div className="map-ui" style={{ right: '54px', top: 'var(--space-3)' }}>
         <button
           type="button"
           className="s48-btn s48-btn--secondary"
           onClick={toggle3D}
-          style={{ minHeight: '28px', padding: '0 8px', fontSize: '13px' }}
+          style={{ minHeight: 'var(--map-stop-size)', padding: '0 var(--space-2)', fontSize: 'var(--text-sm)' }}
         >
           {is3D ? '2D view' : '3D relief'}
         </button>

@@ -81,6 +81,10 @@
   --focus-width: 2px;
   --focus-offset: 2px;
 
+  /* Elevation / shadows */
+  --shadow-popover: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-drawer: 4px 0 16px rgba(0, 0, 0, 0.4);
+
   /* Layout. */
   --topbar-height: 48px;
   --panel-left-width: 320px;
@@ -116,6 +120,9 @@
   --map-position-ring: #8ec1f5;
   --map-label-text: #f2f5f7;
   --map-label-halo: #0a1828;
+  --map-scale-light: #f2f5f7;
+  --map-scale-dark: #0a1828;
+  --map-tag-bg: rgba(10, 24, 40, 0.85);
   --map-overlay-opacity: 0.7;           /* default opacity for a data layer over imagery */
 
   /* Recommended sequential ramp for overlays (cividis, colour-blind safe, no red or green). */
