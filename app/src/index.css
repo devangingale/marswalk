@@ -1,0 +1,66 @@
+/* Written with AI assistance, directed and reviewed by the team. */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  width: 100%;
+  height: 100%;
+}
+
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+}
+
+h1, h2, h3, h4 {
+  font-weight: var(--weight-semibold);
+  margin: 0;
+}
+
+p {
+  margin: 0;
+}
+
+button, input, select {
+  font: inherit;
+  color: inherit;
+}
+
+.num {
+  font-family: var(--font-data);
+  font-variant-numeric: var(--numeric);
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+:focus-visible, .is-focus {
+  outline: var(--focus-width) solid var(--color-focus-inner);
+  outline-offset: var(--focus-offset);
+  box-shadow: 0 0 0 var(--focus-offset) var(--color-focus-outer);
+}
+:focus:not(:focus-visible) {
+  outline: none;
+}

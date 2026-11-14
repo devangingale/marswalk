@@ -38,19 +38,37 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 ## Space Agency Partner data
 
 - ESA Mars Express HRSC, as part of the HRSC–MOLA blended global DEM (`mola_hrsc_blend`). HRSC portion CC BY-SA 3.0 IGO.
+- REMS, Curiosity / Gale: daily weather reports (sol, Ls, air-temperature extrema, pressure, and UV category) downloaded from NASA/JPL's [`weather` feed](https://mars.nasa.gov/rss/api/?feed=weather&category=msl&feedtype=json), which identifies Centro de Astrobiología (CAB/CSIC-INTA, Spain) as the data provider. The certified [PDS Atmospheres REMS archive](https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/MARS/curiosity/rems.html) is the scientific archive; the NASA feed's own disclaimer says its daily report file is for outreach use and points scientific users to PDS. Feed cache: `data/raw/rems/nasa_weather.json`. No separate licence is stated for the feed; credit CAB/CSIC-INTA, NASA/JPL-Caltech, and the PDS Atmospheres Node.
+- Curiosity APXS reduced oxide abundances: [PDS Geosciences Node MSL APXS archive](https://pds-geosciences.wustl.edu/missions/msl/apxs.htm), including its [RDR data inventory](https://pds-geosciences.wustl.edu/msl/msl-m-apxs-4_5-rdr-v1/mslapx_1xxx/data/collection_data_inventory.csv) and CSV products under `https://pds-geosciences.wustl.edu/msl/msl-m-apxs-4_5-rdr-v1/mslapx_1xxx/data/`. PDS/NASA data are public domain; credit the APXS Science Team at the University of Guelph and the Canadian Space Agency (instrument funder).
+- Curiosity RAD absorbed-dose records: [MSL RAD Dose rates, Zenodo](https://doi.org/10.5281/zenodo.20536564), cached in `data/raw/msl_rad_dose/`. CC BY 4.0; cite Heber & Löwe, “MSL/RAD Dose rates”. The radiation layer uses the per-sol median of filtered RAD E-dose rate; its elevated-rate proxy uses the highest per-sol mean from those same data.
+- Gale dust climatology: [Montabone et al. Mars Climate Database column dust optical depth v2](https://www-mars.lmd.jussieu.fr/mars/dust_climatology/index.html), direct archive [`krigedcdod_v2.tar.gz`](https://www-mars.lmd.jussieu.fr/mars/dust_climatology/dataset_v2/krigedcdod_v2.tar.gz), cached in `data/raw/montabone_dust/`. CC BY-SA 3.0; cite Montabone et al. (2015), Icarus, doi:10.1016/j.icarus.2014.12.034, and Montabone et al. (2020), JGR Planets, doi:10.1029/2019JE006111.
+
+## Scientific models and literature
+
+| Model / Paper | Used for | Citation / Licence |
+|---|---|---|
+| Pandolf load-carriage equation | Walking metabolic power on level and uphill terrain | Pandolf, K. B., Givoni, B., & Goldman, R. F. (1977). *Predicting energy expenditure with loads while standing or walking very slowly to moderate walking speeds.* Journal of Applied Physiology, 43(4), 577–581. doi:10.1152/jappl.1977.43.4.577. Simplified with uniform Mars gravity scaling (3.71 m/s²). |
+| Santee downhill correction | Downhill metabolic energy expenditure and eccentric braking correction | Santee, W. R., Allison, W. F., Blanchard, L. A., & Small, M. G. (2001). *A proposed model for load carriage on sloped terrain.* Aviation, Space, and Environmental Medicine, 72(6), 562–566. |
 
 ## Software and libraries
 
 | Name | Used for | Licence |
 |---|---|---|
-| _add as introduced_ | | |
+| React | UI rendering and component architecture | MIT |
+| MapLibre GL JS | Mars surface map rendering and 3D terrain relief | BSD-3-Clause |
+| PMTiles | Cloud-native single-file tile archive reader | BSD-3-Clause |
+| Vite | Frontend build tooling and static compilation | MIT |
+| Vitest | Unit test execution and contract verification | MIT |
+| TypeScript | Static type safety and data contract typing | Apache-2.0 |
+| LightGBM (`lightgbm`) | Gradient-boosted tree walkability classifier | MIT |
+| scikit-learn (`scikit-learn`) | ROC AUC metrics and model interfaces | BSD-3-Clause |
 
 ## Images, fonts, icons, text
 
 | Item | Source | Licence / credit |
 |---|---|---|
 | Curiosity raw images at Gale stops (Navcam, Hazcam, Mastcam), hot-linked, listed in `app/public/data/gale/photos.json` by `pipeline/fetch_photos.py` | mars.nasa.gov/api/v1/raw_image_items (feed behind mars.nasa.gov/msl/multimedia/raw-images) | NASA raw images, not copyrighted; credit shown with each photo: NASA/JPL-Caltech (Navcam, Hazcam), NASA/JPL-Caltech/MSSS (Mastcam) |
-| _add as introduced_ | | |
+| Barlow, Barlow Semi Condensed, Barlow Condensed | Google Fonts (Jeremy Tribby) | SIL Open Font License 1.1 |
 
 ## AI tools
 
