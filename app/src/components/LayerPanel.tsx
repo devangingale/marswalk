@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { SiteLayer, LayerState, SiteKind } from '../types';
 import '../shell/shell.css';
+import type { RoverOverlayState } from './roverOverlays';
 import {
   formatResolution,
   getLayerDisplayName,
@@ -14,6 +15,9 @@ import {
 interface LayerPanelProps {
   layers: SiteLayer[];
   layerStates: Record<string, LayerState>;
+  roverOverlayState: RoverOverlayState;
+  photosAvailable: boolean;
+  onToggleRoverOverlay: (layer: keyof RoverOverlayState) => void;
   onToggleLayer: (layerId: string) => void;
   onOpacityChange: (layerId: string, opacity: number) => void;
   isOpen: boolean;
@@ -34,6 +38,9 @@ const KIND_LABELS: Record<SiteKind, string> = {
 export const LayerPanel: React.FC<LayerPanelProps> = ({
   layers,
   layerStates,
+  roverOverlayState,
+  photosAvailable,
+  onToggleRoverOverlay,
   onToggleLayer,
   onOpacityChange,
   isOpen,
@@ -57,7 +64,8 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
     return acc;
   }, {});
 
-  const activeCount = Object.values(layerStates).filter((s) => s.enabled).length;
+  const activeCount = Object.values(layerStates).filter((s) => s.enabled).length
+    + Number(roverOverlayState.traverse) + Number(photosAvailable && roverOverlayState.photos);
 
   return (
     <aside
@@ -219,6 +227,27 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
               </div>
             );
           })}
+          <div>
+            <h4>Rover</h4>
+            {([
+              ['traverse', 'Rover traverse'],
+              ...(photosAvailable ? [['photos', 'Rover photos'] as const] : []),
+            ] as const).map(([key, title]) => (
+              <div key={key} className="s48-layer rover-overlay-layer">
+                <div className="s48-layer__head">
+                  <label>
+                    <input
+                      type="checkbox"
+                      className="s48-check"
+                      checked={roverOverlayState[key]}
+                      onChange={() => onToggleRoverOverlay(key)}
+                    />
+                    <span className="s48-layer__title">{title}</span>
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </aside>
