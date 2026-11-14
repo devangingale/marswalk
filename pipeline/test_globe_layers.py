@@ -49,15 +49,18 @@ def test_colour_ramp_endpoints_and_low_end_transparency():
 
 def test_ice_distance_fades_from_near_to_far():
     rgba = colour_ramp(np.array([0.0, 1000.0], dtype=np.float32), 0, 500, "ice_distance")
+    assert rgba[0, :3].tolist() == [37, 111, 193]
     assert rgba[0, 3] == 240
     assert rgba[1, 3] == 0
 
 
 def test_ice_consistency_ends_transparent_to_near_white():
-    rgba = colour_ramp(np.array([-0.5, 0.0, 1.0], dtype=np.float32), -1, 1, "swim_ice")
+    rgba = colour_ramp(np.array([-0.5, 0.0, 0.001, 1.0], dtype=np.float32), -1, 1, "swim_ice")
     assert rgba[:2, 3].tolist() == [0, 0]
-    assert rgba[2, :3].tolist() == [247, 251, 255]
-    assert rgba[2, 3] == 240
+    assert rgba[2, :3].tolist() == [58, 127, 208]
+    assert rgba[2, 3] >= 80
+    assert rgba[3, :3].tolist() == [238, 247, 255]
+    assert rgba[3, 3] == 240
 
 
 def test_radiation_low_end_is_transparent():
