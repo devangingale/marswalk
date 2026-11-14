@@ -17,7 +17,9 @@ export const DaylightBeeper: React.FC<{
   nowMs: number;
   lonEastDeg: number;
   player: BeeperPlayer;
-}> = ({ schedule, nowMs, lonEastDeg, player }) => {
+  /** Walk and Visor: the live or next step only, no step list. */
+  compact?: boolean;
+}> = ({ schedule, nowMs, lonEastDeg, player, compact }) => {
   const [audioOn, setAudioOn] = useState(false);
   const [mutedAdvisory, setMutedAdvisory] = useState(false);
   const [acknowledged, setAcknowledged] = useState<Set<string>>(() => new Set());
@@ -61,12 +63,16 @@ export const DaylightBeeper: React.FC<{
     });
 
   return (
-    <section className="s48-beeper" aria-label="Daylight beeper">
+    <section className={`s48-beeper ${compact ? 's48-beeper--compact' : ''}`} aria-label="Daylight beeper">
       <div className="s48-beeper__head">
         <h3 className="s48-panel-head">
-          <DisclosureButton open={open} onToggle={() => setOpen((v) => !v)} controls={stepsId}>
-            Daylight beeper
-          </DisclosureButton>
+          {compact ? (
+            'Daylight beeper'
+          ) : (
+            <DisclosureButton open={open} onToggle={() => setOpen((v) => !v)} controls={stepsId}>
+              Daylight beeper
+            </DisclosureButton>
+          )}
         </h3>
         <button
           type="button"
@@ -79,7 +85,7 @@ export const DaylightBeeper: React.FC<{
       </div>
 
       <ol className="s48-beeper__steps" id={stepsId}>
-        {(open ? schedule : focusStep(schedule, nowMs, current)).map((step) => {
+        {(open && !compact ? schedule : focusStep(schedule, nowMs, current)).map((step) => {
           const live = current?.id === step.id && !silenced;
           const past = step.atMs <= nowMs;
           const acked = acknowledged.has(step.id);
@@ -129,7 +135,7 @@ export const DaylightBeeper: React.FC<{
               Acknowledge
             </button>
           )}
-          {!audioOn && <span className="s48-beeper__note">No sound until you turn it on.</span>}
+          {!audioOn && !compact && <span className="s48-beeper__note">No sound until you turn it on.</span>}
         </div>
       )}
     </section>
