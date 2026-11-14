@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import argparse
+import hashlib
 import json
 import math
 import re
@@ -203,6 +204,14 @@ def _combine_groups(groups: dict[str, np.ndarray]) -> np.ndarray:
 
 
 def _load_known(path: Path) -> list[dict]:
+    manifest_path = path.parent / "manifest.json"
+    if manifest_path.is_file():
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        entry = next((item for item in manifest.get("files", []) if item.get("path") == path.name), None)
+        if entry and entry.get("sha256"):
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            if digest.lower() != entry["sha256"].lower():
+                raise ValueError(f"SHA-256 mismatch for {path}")
     with path.open(encoding="utf-8-sig", newline="") as stream:
         rows = list(csv.DictReader(stream))
     out = []
