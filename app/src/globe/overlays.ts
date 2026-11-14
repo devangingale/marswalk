@@ -18,8 +18,10 @@ import {
   EntityCollection,
   HeightReference,
   HorizontalOrigin,
+  JulianDate,
   LabelStyle,
   Math as CesiumMath,
+  Scene,
   PolylineDashMaterialProperty,
   Matrix4,
   Transforms,
@@ -38,6 +40,7 @@ import {
   type SlopeStats,
 } from '../lib/routeShape';
 import { lonLatToCartesian, type Pose } from './frame';
+import { cullScreenLabels, offsetScreenMarkers, type Box, type ScreenMarker } from './graticule';
 import { canvasMarkerImages, readToken, type MarkerImage, type MarkerImages, type TokenReader } from './markerImages';
 import {
   bearingDeg,
@@ -55,6 +58,8 @@ import {
   sectionForLegs,
   sectionLabel,
   slopeLabels,
+  screenSpan,
+  showSummaryLabels,
   stretchStyles,
   waypointLabel,
   type RouteHover,
@@ -115,6 +120,7 @@ export interface OverlayOptions {
   /** CESIUM_3D_TILE on Cesium Mars; TERRAIN on the bare-ellipsoid fallback. */
   classification?: ClassificationType;
   onSectionHover?: (sectionId: string | null) => void;
+  scene?: Scene;
 }
 
 /** Keep vertex clustering below the bundle grid's 2 m spacing. */
@@ -145,6 +151,10 @@ export class GlobeOverlays {
   private images: MarkerImages | null;
   private readonly classification: ClassificationType;
   private readonly onSectionHover?: (sectionId: string | null) => void;
+  private readonly scene?: Scene;
+  private readonly hiddenLabels = new Set<Entity>();
+  private readonly markerOffsets = new Map<Entity, Cartesian2>();
+  private readonly removeScreenUpdate?: () => void;
   private readonly meta = new Map<Entity, Meta>();
   private readonly owned = new Set<Entity>();
   private readonly groups: Record<'plan' | 'rover' | 'chemistry' | 'walker', Entity[]> = {
@@ -176,6 +186,8 @@ export class GlobeOverlays {
     this.images = options.images ?? null;
     this.classification = options.classification ?? ClassificationType.CESIUM_3D_TILE;
     this.onSectionHover = options.onSectionHover;
+    this.scene = options.scene;
+    this.removeScreenUpdate = this.scene?.preRender.addEventListener((_scene, time) => this.updateScreenLabels(time));
   }
 
   private markers(): MarkerImages {
@@ -203,6 +215,10 @@ export class GlobeOverlays {
     this.groups[group].push(entity);
     this.owned.add(entity);
     if (meta) this.meta.set(entity, meta);
+    if (entity.label) entity.label.show = new CallbackProperty(() => !this.hiddenLabels.has(entity), false);
+    if (entity.billboard && this.markerPriority(entity) === 0) {
+      entity.billboard.pixelOffset = new CallbackProperty(() => this.markerOffsets.get(entity) ?? Cartesian2.ZERO, false);
+    }
     return entity;
   }
 
@@ -211,8 +227,99 @@ export class GlobeOverlays {
       this.entities.remove(entity);
       this.meta.delete(entity);
       this.owned.delete(entity);
+      this.hiddenLabels.delete(entity);
+      this.markerOffsets.delete(entity);
     }
     this.groups[group] = [];
+  }
+
+  private updateScreenLabels(time: JulianDate): void {
+    const scene = this.scene;
+    if (!scene || !this.plan) return;
+    const project = (entity: Entity) => {
+      const position = entity.position?.getValue(time);
+      return position ? scene.cartesianToCanvasCoordinates(position) : undefined;
+    };
+    const markers = this.groups.plan.filter((entity) => entity.billboard && this.markerPriority(entity) !== null);
+    const markerData: { entity: Entity; point: Cartesian2; width: number; height: number; priority: number }[] = [];
+    for (const marker of markers) {
+      const point = project(marker);
+      if (!point) continue;
+      const width = marker.billboard?.width?.getValue(time) ?? 20;
+      const height = marker.billboard?.height?.getValue(time) ?? 20;
+      markerData.push({ entity: marker, point, width, height, priority: this.markerPriority(marker)! });
+    }
+    const markerBoxes: Box[] = markerData.filter((marker) => marker.priority !== 0).map(({ point, width, height }) => [
+      point.x - width / 2, point.y - height / 2, point.x + width / 2, point.y + height / 2,
+    ]);
+    const markerOffsets = offsetScreenMarkers(
+      markerData.filter((marker) => marker.priority === 0).map(({ entity, point, width, height }): ScreenMarker => ({
+        id: entity.id, x: point.x, y: point.y, width, height,
+      })),
+      markerBoxes,
+    );
+    this.markerOffsets.clear();
+    for (const marker of markerData) {
+      const [dx, dy] = markerOffsets.get(marker.entity.id) ?? [0, 0];
+      if (marker.priority === 0) this.markerOffsets.set(marker.entity, new Cartesian2(dx, dy));
+      markerBoxes.push([
+        marker.point.x + dx - marker.width / 2,
+        marker.point.y + dy - marker.height / 2,
+        marker.point.x + dx + marker.width / 2,
+        marker.point.y + dy + marker.height / 2,
+      ]);
+    }
+
+    const routePoints = routeLine(this.plan).flatMap(([lon, lat]) => {
+      const point = scene.cartesianToCanvasCoordinates(this.surfacePosition(lon, lat));
+      return point ? [{ x: point.x, y: point.y }] : [];
+    });
+    const summariesVisible = showSummaryLabels(screenSpan(routePoints));
+    const candidates: { id: string; box: Box; priority: number }[] = [];
+    const entities: Entity[] = [];
+    this.hiddenLabels.clear();
+    for (const entity of this.groups.plan) {
+      if (!entity.label) continue;
+      this.hiddenLabels.add(entity);
+      const priority = this.labelPriority(entity);
+      if (priority === null || (priority === 3 && !summariesVisible)) continue;
+      const point = project(entity);
+      const text = entity.label.text?.getValue(time) ?? '';
+      if (!point || !text) continue;
+      const font = entity.label.font?.getValue(time) ?? '13px sans-serif';
+      const fontSize = Number(font.match(/(\d+(?:\.\d+)?)px/)?.[1] ?? 13);
+      const width = [...text].reduce((sum, char) => sum + fontSize * (char === ' ' ? 0.28 : 0.54), 0) + 4;
+      const height = fontSize + 4;
+      const offset = entity.label.pixelOffset?.getValue(time) ?? Cartesian2.ZERO;
+      const horizontal = entity.label.horizontalOrigin?.getValue(time) ?? HorizontalOrigin.CENTER;
+      const vertical = entity.label.verticalOrigin?.getValue(time) ?? VerticalOrigin.CENTER;
+      const x = point.x + offset.x;
+      const y = point.y + offset.y;
+      const left = horizontal === HorizontalOrigin.RIGHT ? x - width : horizontal === HorizontalOrigin.CENTER ? x - width / 2 : x;
+      const top = vertical === VerticalOrigin.BOTTOM ? y - height : vertical === VerticalOrigin.CENTER ? y - height / 2 : y;
+      candidates.push({ id: entity.id, box: [left, top, left + width, top + height], priority });
+      entities.push(entity);
+    }
+    const visibleIds = new Set(cullScreenLabels(candidates, markerBoxes));
+    for (const entity of entities) if (visibleIds.has(entity.id)) this.hiddenLabels.delete(entity);
+  }
+
+  private markerPriority(entity: Entity): number | null {
+    const lines = this.meta.get(entity);
+    if (lines?.kind !== 'text') return null;
+    if (lines.lines[0].startsWith('Stop ')) return 0;
+    if (lines.lines[0] === 'Rover drop-off') return 1;
+    if (lines.lines[0] === 'Fork') return 2;
+    return null;
+  }
+
+  private labelPriority(entity: Entity): number | null {
+    const lines = this.meta.get(entity);
+    if (lines?.kind !== 'text') return null;
+    if (lines.lines[0] === 'Rover drop-off') return 1;
+    if (lines.lines[0] === 'Fork' || lines.lines[0].startsWith('to Stop ') || lines.lines[0] === 'back to drop-off') return 2;
+    if (/^(High|Low|Steepest)\b/.test(lines.lines[0])) return 3;
+    return null;
   }
 
   /** Bundle elevation grid for slopes; without it the gradient view and slope markers stay off. */
@@ -415,7 +522,7 @@ export class GlobeOverlays {
         this.add('plan', {
           position: this.surfacePosition(lon, lat),
           label: this.label(lines[i], NEAR, [dx, dy], dx < 0),
-        });
+        }, { kind: 'text', lines: [lines[i]] });
       });
     }
   }
@@ -483,7 +590,7 @@ export class GlobeOverlays {
   setRover(traverse: GeoJSON.LineString | null, sites: PhotoSite[], state: RoverOverlayState): void {
     this.roverData = { traverse, sites, state };
     this.drawRover();
-    // MapLibre kept the planned route above rover overlays; preserve that draw order in Cesium.
+    // Keep the planned route above rover overlays in Cesium.
     this.setPlan(this.plan, this.origin ?? undefined);
   }
 
@@ -619,6 +726,7 @@ export class GlobeOverlays {
   }
 
   clear(): void {
+    this.removeScreenUpdate?.();
     for (const group of Object.keys(this.groups) as (keyof GlobeOverlays['groups'])[]) this.removeGroup(group);
     this.plan = undefined;
     this.stretches = [];

@@ -73,6 +73,61 @@ const LABEL_GAP_PX = 4;
 
 export type Box = [left: number, top: number, right: number, bottom: number];
 
+export interface ScreenLabelBox {
+  id: string;
+  box: Box;
+  priority: number;
+}
+
+export interface ScreenMarker {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Offset colliding stop markers into the nearest open screen position. */
+export function offsetScreenMarkers(markers: ScreenMarker[], blocked: Box[] = []): Map<string, [number, number]> {
+  const occupied = [...blocked];
+  const offsets = new Map<string, [number, number]>();
+  const directions: [number, number][] = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [-1, -1], [1, -1]];
+  for (const marker of markers) {
+    const positions: [number, number][] = [[0, 0]];
+    for (let radius = 30; radius <= 180; radius += 10) {
+      for (const [x, y] of directions) {
+        const scale = Math.hypot(x, y);
+        positions.push([Math.round((x * radius) / scale), Math.round((y * radius) / scale)]);
+      }
+    }
+    const offset = positions.find(([dx, dy]) => {
+      const left = marker.x + dx - marker.width / 2;
+      const top = marker.y + dy - marker.height / 2;
+      const box: Box = [left, top, left + marker.width, top + marker.height];
+      return occupied.every((other) => box[0] >= other[2] || other[0] >= box[2] || box[1] >= other[3] || other[1] >= box[3]);
+    }) ?? [0, 0];
+    offsets.set(marker.id, offset);
+    const [dx, dy] = offset;
+    occupied.push([marker.x + dx - marker.width / 2, marker.y + dy - marker.height / 2, marker.x + dx + marker.width / 2, marker.y + dy + marker.height / 2]);
+  }
+  return offsets;
+}
+
+/** Keep the highest priority screen labels whose measured boxes do not collide. */
+export function cullScreenLabels(labels: ScreenLabelBox[], blocked: Box[] = []): string[] {
+  const ordered = labels.map((label, index) => ({ ...label, index })).sort((a, b) => a.priority - b.priority || a.index - b.index);
+  const kept: Box[] = [...blocked];
+  const visible: string[] = [];
+  for (const label of ordered) {
+    const [left, top, right, bottom] = label.box;
+    const overlaps = (box: Box) => left < box[2] && box[0] < right && top < box[3] && box[1] < bottom;
+    if (kept.some(overlaps)) continue;
+    kept.push(label.box);
+    visible.push(label.id);
+  }
+  return visible;
+}
+
 /**
  * Drops labels that would overlap a blocked box (a panel over the map) or a label already kept,
  * in order. Meridian labels are centred on x, parallel labels start at x; both are centred on y.
