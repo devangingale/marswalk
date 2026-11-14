@@ -84,3 +84,13 @@ export function scenarioLadderInput(
       };
   }
 }
+
+/**
+ * Dev-only crew spread for the pair warning, `?pair=<metres>`: the second crew
+ * member is moved that far east of the lead. Null when unset or in production.
+ */
+export function readPairSpread(search: string): number | null {
+  if (!import.meta.env.DEV) return null;
+  const v = Number(new URLSearchParams(search).get('pair'));
+  return Number.isFinite(v) && v > 0 ? v : null;
+}
