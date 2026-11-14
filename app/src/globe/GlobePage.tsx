@@ -38,6 +38,10 @@ import { GlobeGlobalLayers, GlobeLayer, globeAssetUrl, loadGlobeManifest } from 
 import { GlobeGraticule, cullLabels, graticuleLines, type Box, type GraticuleLine, type ViewBounds } from './graticule';
 import { GlobeImagery } from './imageryLayers';
 import { GlobeTimeTools } from './Clock';
+import { marsSolarLongitude } from '../lib/sun';
+import { GlobeTemperatureLayer, loadTemperatureManifest } from './temperature/temperatureLayer';
+import { TemperatureRow } from './temperature/TemperatureRow';
+import { readoutLines, seasonBin, type TemperatureKind, type TemperatureManifest } from './temperature/temperatureManifest';
 import { SiteFinder } from './sites/SiteFinder';
 import { canvasMarkerImages } from './markerImages';
 import { GlobeOverlays } from './overlays';
@@ -187,6 +191,7 @@ export const GlobePage: React.FC = () => {
   const viewerRef = useRef<Viewer | null>(null);
   const siteImageryRef = useRef<GlobeImagery | null>(null);
   const globalRef = useRef<GlobeGlobalLayers | null>(null);
+  const temperatureRef = useRef<GlobeTemperatureLayer | null>(null);
   const cavesRef = useRef<CustomDataSource | null>(null);
   const overlaysRef = useRef<GlobeOverlays | null>(null);
   const graticuleRef = useRef<GlobeGraticule | null>(null);
@@ -202,6 +207,15 @@ export const GlobePage: React.FC = () => {
   const [layerStates, setLayerStates] = useState<Record<string, LayerState>>({});
   const [globalLayers, setGlobalLayers] = useState<GlobeLayer[]>([]);
   const [globalStates, setGlobalStates] = useState<Record<string, LayerState>>({});
+  const [temperatureManifest, setTemperatureManifest] = useState<TemperatureManifest | null>(null);
+  const [temperature, setTemperature] = useState<{ enabled: boolean; opacity: number; kind: TemperatureKind }>({
+    enabled: initial.globalOn.includes('temperature'),
+    opacity: 1,
+    kind: 't_min',
+  });
+  // Solar longitude from the clock once it loads; until then, today's.
+  const [ls, setLs] = useState(() => marsSolarLongitude(Date.now()));
+  const bin = seasonBin(ls);
   const [cavesOn, setCavesOn] = useState(initial.caves);
   const [caveCount, setCaveCount] = useState(0);
   const [panelOpen, setPanelOpen] = useState(true);
@@ -344,6 +358,14 @@ export const GlobePage: React.FC = () => {
         })
         .catch((error) => console.warn('Globe layer manifest did not load', error));
 
+      loadTemperatureManifest(GLOBE_BASE)
+        .then((manifest) => {
+          if (disposed) return;
+          temperatureRef.current = new GlobeTemperatureLayer(imageryTarget, GLOBE_BASE, manifest);
+          setTemperatureManifest(manifest);
+        })
+        .catch((error) => console.warn('Temperature manifest did not load', error));
+
       fetch(globeAssetUrl(GLOBE_BASE, 'caves.geojson'))
         .then((r) => (r.ok ? (r.json() as Promise<CaveCollection>) : Promise.reject(new Error(`HTTP ${r.status}`))))
         .then((data) => {
@@ -446,7 +468,11 @@ export const GlobePage: React.FC = () => {
             place(siteLines);
             return;
           }
-          place(point && globalRef.current ? globalRef.current.readouts(point.lon, point.lat) : []);
+          const reading = point ? temperatureRef.current?.reading(point.lon, point.lat) : null;
+          place([
+            ...(point && globalRef.current ? globalRef.current.readouts(point.lon, point.lat) : []),
+            ...(reading && temperatureRef.current ? readoutLines(temperatureRef.current.kind, reading) : []),
+          ]);
         });
       }, ScreenSpaceEventType.MOUSE_MOVE);
     })();
@@ -459,6 +485,7 @@ export const GlobePage: React.FC = () => {
       graticuleRef.current?.clear();
       siteImageryRef.current?.clear();
       globalRef.current?.destroy();
+      temperatureRef.current?.destroy();
       viewerRef.current?.destroy();
       viewerRef.current = null;
     };
@@ -466,6 +493,7 @@ export const GlobePage: React.FC = () => {
 
   useEffect(() => siteImageryRef.current?.apply(layerStates), [layerStates]);
   useEffect(() => globalRef.current?.apply(globalStates), [globalStates]);
+  useEffect(() => temperatureRef.current?.apply({ ...temperature, bin }), [temperature, bin, temperatureManifest]);
   useEffect(() => {
     if (cavesRef.current) cavesRef.current.show = cavesOn;
   }, [cavesOn]);
@@ -615,6 +643,25 @@ export const GlobePage: React.FC = () => {
                 ? { enabled: cavesOn, count: caveCount, credit: CAVE_CREDIT, onToggle: () => setCavesOn((v) => !v) }
                 : undefined
             }
+            temperature={
+              temperatureManifest
+                ? {
+                    enabled: temperature.enabled,
+                    row: (
+                      <TemperatureRow
+                        manifest={temperatureManifest}
+                        bin={bin}
+                        enabled={temperature.enabled}
+                        opacity={temperature.opacity}
+                        kind={temperature.kind}
+                        onToggle={() => setTemperature((t) => ({ ...t, enabled: !t.enabled }))}
+                        onOpacityChange={(opacity) => setTemperature((t) => ({ ...t, opacity }))}
+                        onKindChange={(kind) => setTemperature((t) => ({ ...t, kind }))}
+                      />
+                    ),
+                  }
+                : undefined
+            }
             isOpen={panelOpen && panelTab === 'layers'}
             onTogglePanel={() => setPanelOpen(!panelOpen)}
           />
@@ -634,7 +681,7 @@ export const GlobePage: React.FC = () => {
             }}
           >
             <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
-            {dustScene && <GlobeTimeTools scene={dustScene} />}
+            {dustScene && <GlobeTimeTools scene={dustScene} onLs={setLs} />}
             {siteData && (
               <div className="globe-sites" data-over-map>
                 <button type="button" className="s48-btn s48-btn--secondary" onClick={flyToPlanet}>

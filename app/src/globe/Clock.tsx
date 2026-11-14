@@ -41,7 +41,7 @@ function fmtC(v: number | null): string {
   return `${v < 0 ? '−' : ''}${Math.abs(Math.round(v))}`;
 }
 
-export const Clock: React.FC<{ scene: Scene }> = ({ scene }) => {
+export const Clock: React.FC<{ scene: Scene; onLs?: (ls: number) => void }> = ({ scene, onLs }) => {
   const [index, setIndex] = useState<DustIndex | null>(null);
   const [bytes, setBytes] = useState<Uint8Array | null>(null);
   const [galeDays, setGaleDays] = useState<GaleDay[]>([]);
@@ -107,6 +107,12 @@ export const Clock: React.FC<{ scene: Scene }> = ({ scene }) => {
     const id = window.setInterval(() => setFrame((f) => (f + 1) % frameCount), STEP_MS);
     return () => window.clearInterval(id);
   }, [playing, frameCount]);
+
+  // Report the shown sol's solar longitude, for layers that follow the season.
+  const shownLs = year && frameCount > 0 ? year.sols[Math.max(0, Math.min(frameCount - 1, frame))]?.ls : undefined;
+  useEffect(() => {
+    if (shownLs !== undefined) onLs?.(shownLs);
+  }, [shownLs, onLs]);
 
   if (!year || frameCount === 0) return null;
 
@@ -198,4 +204,6 @@ export const Clock: React.FC<{ scene: Scene }> = ({ scene }) => {
 };
 
 /** Single mount point for the globe page: the clock bar and the conditions panel. */
-export const GlobeTimeTools: React.FC<{ scene: Scene }> = ({ scene }) => <Clock scene={scene} />;
+export const GlobeTimeTools: React.FC<{ scene: Scene; onLs?: (ls: number) => void }> = ({ scene, onLs }) => (
+  <Clock scene={scene} onLs={onLs} />
+);

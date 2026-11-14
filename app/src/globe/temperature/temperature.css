@@ -1,0 +1,76 @@
+/* Written with AI assistance, directed and reviewed by the team. */
+/* Surface temperature entry in the layer panel. */
+
+.s48-temp__note {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.s48-temp__note > span + span::before {
+  content: "·";
+  margin-right: var(--space-2);
+}
+
+.s48-temp__season {
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+}
+
+.s48-temp__kind {
+  display: flex;
+}
+
+.s48-temp__kind button {
+  flex: 1;
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.s48-temp__facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: var(--space-3);
+  row-gap: 2px;
+  margin: 0;
+  font-family: var(--font-data);
+  font-variant-numeric: var(--numeric);
+}
+
+.s48-temp__facts dt {
+  color: var(--color-text-muted);
+}
+
+.s48-temp__facts dd {
+  margin: 0;
+}
+
+.s48-temp__ticks {
+  position: relative;
+  height: var(--leading-sm);
+  font-family: var(--font-data);
+  font-variant-numeric: var(--numeric);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
+
+.s48-temp__ticks > span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.s48-temp__ticks > span.is-first {
+  transform: none;
+}
+
+.s48-temp__ticks > span.is-last {
+  right: 0;
+  transform: none;
+}
+
+.s48-temp__ticks b {
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+}
