@@ -5,6 +5,7 @@ import type { Section, SlopeStats } from '../lib/routeShape';
 import {
   branchAnchor,
   branchLabel,
+  branchLabelSides,
   chevronsFor,
   distanceAlong,
   formatElevation,
@@ -213,6 +214,19 @@ describe('route geometry', () => {
     const [lon, lat] = branchAnchor(line, [ORIGIN.lon0 + east, ORIGIN.lat0], 40, ORIGIN);
     expect(lon).toBeCloseTo(ORIGIN.lon0 + 1.4 * east, 10);
     expect(lat).toBeCloseTo(ORIGIN.lat0, 10);
+  });
+});
+
+describe('branchLabelSides', () => {
+  it('puts each branch label on the side away from the other branches', () => {
+    // Two branches leaving a spur junction south-east and south-west.
+    expect(branchLabelSides([156, 208])).toEqual([66, 298]);
+    // To a stop north-east and back south to the drop-off.
+    expect(branchLabelSides([36, 180])).toEqual([306, 270]);
+  });
+
+  it('uses the right-hand side for a lone branch', () => {
+    expect(branchLabelSides([10])).toEqual([100]);
   });
 });
 
