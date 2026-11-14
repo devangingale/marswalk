@@ -6,6 +6,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { getSiteBaseUrl, resolveSiteAssetUrl } from '../config';
 import { loadGrid, MARS_R } from '../lib/grid';
 import { Plan } from '../lib/plan';
+import { shiftedDemDecoding } from '../lib/terrain';
 import { SiteData } from '../types';
 import { formatDistance, formatDose, formatDuration, formatEnergy, formatHeading } from '../walk/format';
 import { hazardAhead, hazardFlags } from '../walk/hazard';
@@ -20,12 +21,6 @@ const EYE_HEIGHT_M = 1.7;
 /** Degrees from straight down; 90 is the horizon. */
 const VISOR_PITCH_DEG = 82;
 const TERRAIN_SOURCE = 'visor-terrain';
-/** Each DEM encoding as MapLibre `custom` factors: elevation = r·R + g·G + b·B + baseShift. */
-const DEM_DECODING = {
-  mapbox: { redFactor: 6553.6, greenFactor: 25.6, blueFactor: 0.1, baseShift: -10000 },
-  terrarium: { redFactor: 256, greenFactor: 1, blueFactor: 1 / 256, baseShift: -32768 },
-};
-
 type HazardData =
   | { status: 'loading' }
   | { status: 'ready'; flags: boolean[] }
@@ -74,14 +69,13 @@ export const VisorView: React.FC<VisorViewProps> = ({ siteData, plan, track, ela
     const style = marsBaseStyle();
     // MapLibre draws terrain kilometres below sea level as a blank view, and Mars sites lie that far
     // below datum, so the visor lifts the site's lowest point to 0 m. Only relative heights are seen.
-    const decoding = DEM_DECODING[siteData.terrain.encoding];
+    const decoding = shiftedDemDecoding(siteData.terrain);
     style.sources[TERRAIN_SOURCE] = {
       type: 'raster-dem',
       url: `pmtiles://${resolveSiteAssetUrl(siteData.id, siteData.terrain.url)}`,
       tileSize: 256,
       encoding: 'custom',
       ...decoding,
-      baseShift: decoding.baseShift - siteData.terrain.min_m,
     };
     style.terrain = { source: TERRAIN_SOURCE, exaggeration: TRUE_PROPORTION_EXAGGERATION };
 

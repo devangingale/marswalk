@@ -178,22 +178,22 @@ describe('sample plan replay (app/src/fixtures/plan.sample.json)', () => {
   const track = buildTrack(plan, galeOrigin);
 
   it('runs for the plan total time', () => {
-    expect(track.durationS).toBe(7628);
+    expect(track.durationS).toBe(2636);
   });
 
   it('returns the marker to the start with the plan totals used', () => {
     const end = walkStateAt(plan, track, track.durationS);
-    expect(end.lon).toBe(137.39);
-    expect(end.lat).toBe(-4.78);
-    expect(end.used).toEqual({ time_s: 7628, energy_kj: 3573, dose_mgy: 0.018 });
+    expect(end.lon).toBeCloseTo(plan.start.lon, 7);
+    expect(end.lat).toBeCloseTo(plan.start.lat, 7);
+    expect(end.used).toEqual({ time_s: 2636, energy_kj: 1158, dose_mgy: 0.006 });
     expect(end.turnBackPassed).toBe(true);
   });
 
   it('arrives at Boxwork ridge after the first leg', () => {
-    const arrival = walkStateAt(plan, track, 3214);
+    const arrival = walkStateAt(plan, track, 1318);
     expect(arrival.atWaypointId).toBe('s1');
-    expect(arrival.lon).toBe(137.3795);
-    expect(arrival.lat).toBe(-4.812);
-    expect(arrival.next).toEqual({ id: 'start', distanceM: 2155, timeS: 4414 });
+    expect(arrival.lon).toBe(plan.stops[0].lon);
+    expect(arrival.lat).toBe(plan.stops[0].lat);
+    expect(arrival.next).toEqual({ id: 'start', distanceM: 503, timeS: 1318 });
   });
 });

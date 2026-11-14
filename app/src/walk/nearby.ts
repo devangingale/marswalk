@@ -5,15 +5,15 @@
  * (contracts section 9). Distances are true Mars ground metres.
  */
 
-import type { Feature, Point } from 'geojson';
 import { ChemistryProperties, RoverPhoto } from '../types';
 import { calculateMarsDistanceMeters } from '../utils/scale';
+import { ChemistryFeature, groupChemistryByPosition } from '../lib/chemistry';
 
 export const PHOTO_RADIUS_M = 150;
 export const PHOTOS_PER_STOP = 3;
 export const CHEMISTRY_RADIUS_M = 30;
 
-export type ChemistryFeature = Feature<Point, ChemistryProperties>;
+export type { ChemistryFeature } from '../lib/chemistry';
 
 export interface NearbyPhoto {
   photo: RoverPhoto;
@@ -52,25 +52,13 @@ export function chemistryNear(
   lat: number,
   radiusM: number = CHEMISTRY_RADIUS_M
 ): ChemistryGroup | null {
-  const groups = new Map<string, ChemistryGroup>();
-  for (const feature of features) {
-    const [fLon, fLat] = feature.geometry.coordinates;
-    const key = `${fLon},${fLat}`;
-    const group = groups.get(key);
-    if (group) {
-      group.measurements.push(feature.properties);
-    } else {
-      groups.set(key, {
-        lon: fLon,
-        lat: fLat,
-        distanceM: calculateMarsDistanceMeters(lon, lat, fLon, fLat),
-        measurements: [feature.properties],
-      });
-    }
-  }
+  const groups = groupChemistryByPosition(features).map((group) => ({
+    ...group,
+    distanceM: calculateMarsDistanceMeters(lon, lat, group.lon, group.lat),
+  }));
 
   let nearest: ChemistryGroup | null = null;
-  for (const group of groups.values()) {
+  for (const group of groups) {
     if (group.distanceM <= radiusM && (!nearest || group.distanceM < nearest.distanceM)) {
       nearest = group;
     }
