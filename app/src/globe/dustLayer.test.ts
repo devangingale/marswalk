@@ -1,7 +1,9 @@
 // Written with AI assistance, directed and reviewed by the team.
 import { describe, expect, it } from 'vitest';
+import type { Scene } from 'cesium';
 import {
   decodeFrame,
+  DustLayer,
   type DustGrid,
   type DustPalette,
   type DustYear,
@@ -147,5 +149,17 @@ describe('renderRgba', () => {
     expect(out.length).toBe(8);
     expect(Array.from(out.slice(0, 4))).toEqual([0, 0, 0, 0]);
     expect(Array.from(out.slice(4, 8))).toEqual([255, 255, 255, 255]);
+  });
+});
+
+describe('DustLayer.destroy', () => {
+  it('does nothing once the viewer has already destroyed the scene', () => {
+    // Explore's cleanup destroys the viewer before the clock's cleanup destroys the dust layer.
+    // A destroyed Cesium scene has no primitives collection any more.
+    const destroyedScene = { isDestroyed: () => true, primitives: undefined } as unknown as Scene;
+    const layer = new DustLayer(destroyedScene);
+    (layer as unknown as { primitive: object | null }).primitive = {};
+    expect(() => layer.destroy()).not.toThrow();
+    expect((layer as unknown as { primitive: object | null }).primitive).toBeNull();
   });
 });
