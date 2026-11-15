@@ -38,6 +38,7 @@ Not every dataset below ends up in the final product; trim this list to what is 
 | mcs_ddr_v62 | `data/raw/mcs_ddr_v62` | NASA PDS MRO-M-MCS-5-DDR-V6.2; NASA government data, public domain; no separate product-specific licence text stated |
 | mocaas | `data/raw/mocaas` | Not stated by MOCAAS or PSUP; credit Carter et al. (2023), the MOCAAS team (IAS) and PSUP in full; removed on request |
 | tes_bandfield2002 | `data/raw/tes_bandfield2002` | NASA PDS — public domain |
+| candidate_hirise | `data/raw/candidate_hirise` | MRO HiRISE RDR V1.1 browse images and labels via PDS Geosciences ODE REST (https://oderest.rsl.wustl.edu/); public domain, credit "NASA/JPL/University of Arizona" (https://www.uahirise.org/media/usage.php) |
 
 ## Site-finder criteria
 

@@ -28,6 +28,15 @@ import { nearestPlaceName, PlaceFeature } from './nearestPlace';
 import { SitesPanel } from './SitesPanel';
 import { isInSurfaceView } from '../../surface360/SurfaceView';
 import { SiteCard } from './SiteCard';
+import { HiriseIndex, hiriseFootprint, hiriseView } from './hirise';
+import { footprintOutline } from './hiriseFootprint';
+import { loadGlobeManifest, loadValuesGrid } from '../globalLayers';
+import type { ValuesGrid } from '../layerManifest';
+import {
+  explorationZoneEntities,
+  type ExplorationZoneColours,
+  type HydratedHotspot,
+} from './explorationZone';
 import './sites.css';
 
 interface SiteFinderProps {
@@ -66,6 +75,10 @@ export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, register
   const [weights, setWeights] = useState<Weights | null>(null);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [hirise, setHirise] = useState<HiriseIndex | null>(null);
+  const [swimGrid, setSwimGrid] = useState<ValuesGrid | null>(null);
+  const [radGrid, setRadGrid] = useState<ValuesGrid | null>(null);
+  const [hydratedHotspots, setHydratedHotspots] = useState<HydratedHotspot[]>([]);
 
   const sourceRef = useRef<CustomDataSource | null>(null);
   const entitiesRef = useRef<Map<string, Entity>>(new Map());
@@ -89,6 +102,77 @@ export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, register
         if (!cancelled) setPlaces(geo.features);
       })
       .catch((error) => console.warn('IAU place names did not load', error));
+    fetch(`${GLOBE_BASE}/hirise/index.json`)
+      .then((r) => (r.ok ? (r.json() as Promise<HiriseIndex>) : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((index) => {
+        if (!cancelled) setHirise(index);
+      })
+      .catch((error) => console.warn('HiRISE image index did not load', error));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Load globe manifest, value grids (SWIM ice and radiation) and hydrated mineral hotspots
+  // for the Exploration Zone detail queries.
+  useEffect(() => {
+    let cancelled = false;
+    loadGlobeManifest(GLOBE_BASE)
+      .then((manifest) => {
+        if (cancelled) return;
+        const hs: HydratedHotspot[] = [];
+        for (const layer of manifest.layers) {
+          if (layer.hotspots && (layer.id.startsWith('hydrated_') || layer.group === 'minerals')) {
+            for (const h of layer.hotspots) {
+              hs.push({
+                lon: h.lon,
+                lat: h.lat,
+                value: h.value,
+                title: layer.title,
+                layerTitle: layer.title,
+              });
+            }
+          }
+        }
+        if (!cancelled && hs.length > 0) {
+          setHydratedHotspots(hs);
+        }
+
+        const swimLayer = manifest.layers.find((l) => l.id === 'SWIM4MIM_Ci_0_1');
+        const swimSpec =
+          swimLayer?.values ??
+          (swimLayer
+            ? {
+                url: 'layers/SWIM4MIM_Ci_0_1/values.bin',
+                width: 1440,
+                height: 480,
+                west: -180,
+                north: 60,
+                res_deg: 0.25,
+                scale: 3.051850947599719e-05,
+                offset: -1.0,
+                nodata: 65535,
+              }
+            : undefined);
+        if (swimSpec) {
+          loadValuesGrid(GLOBE_BASE, swimSpec)
+            .then((grid) => {
+              if (!cancelled) setSwimGrid(grid);
+            })
+            .catch((err) => console.warn('Could not load SWIM values grid', err));
+        }
+
+        const radLayer = manifest.layers.find((l) => l.id === 'dose_ugy_day');
+        if (radLayer?.values) {
+          loadValuesGrid(GLOBE_BASE, radLayer.values)
+            .then((grid) => {
+              if (!cancelled) setRadGrid(grid);
+            })
+            .catch((err) => console.warn('Could not load radiation values grid', err));
+        }
+      })
+      .catch((err) => console.warn('Could not load globe manifest for EZ queries', err));
+
     return () => {
       cancelled = true;
     };
@@ -204,6 +288,44 @@ export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, register
     // are built only after the viewer is ready, which is after the data loads).
   }, [viewer, data, ranked, selectedId, filters.showVetoed]);
 
+  // Outline the selected site's HiRISE footprint while it is selected.
+  useEffect(() => {
+    const source = sourceRef.current;
+    const ring = selectedId ? hiriseFootprint(hirise, selectedId) : null;
+    if (!viewer || !source || !ring) return;
+    const outline = source.entities.add(footprintOutline(ring, cssColour('--sites-hirise-footprint')));
+    viewer.scene.requestRender();
+    return () => {
+      source.entities.remove(outline);
+      if (!viewer.isDestroyed()) viewer.scene.requestRender();
+    };
+  }, [viewer, data, hirise, selectedId]);
+
+  // Draw the 100 km Exploration Zone geodesic circle and perimeter label while a site is selected.
+  useEffect(() => {
+    const source = sourceRef.current;
+    if (!viewer || !source || !selected) return;
+
+    const colours: ExplorationZoneColours = {
+      outline: cssColour('--sites-ez-outline'),
+      fill: cssColour('--sites-ez-fill'),
+      labelText: cssColour('--map-label-fill'),
+      labelHalo: cssColour('--map-label-halo'),
+    };
+
+    const ezEntities = explorationZoneEntities(selected.lon, selected.lat, colours).map((opt) =>
+      source.entities.add(opt),
+    );
+    viewer.scene.requestRender();
+
+    return () => {
+      for (const entity of ezEntities) {
+        source.entities.remove(entity);
+      }
+      if (!viewer.isDestroyed()) viewer.scene.requestRender();
+    };
+  }, [viewer, selected]);
+
   // Register the hover-line resolver with the globe page's single tooltip.
   useEffect(() => {
     const fn = (entity: Entity | null): string[] | null => {
@@ -280,6 +402,11 @@ export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, register
             rank={selectedRank}
             onClose={() => setSelectedId(null)}
             action={siteAction?.(selected)}
+            hirise={hiriseView(hirise, selected.id, GLOBE_BASE)}
+            allSites={data.sites}
+            swimGrid={swimGrid}
+            radGrid={radGrid}
+            hydratedHotspots={hydratedHotspots}
           />,
           cardHost,
         )}

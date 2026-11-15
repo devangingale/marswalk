@@ -36,6 +36,12 @@ export interface GlobeCategory {
   color?: string;
 }
 
+export interface LayerHotspot {
+  lon: number;
+  lat: number;
+  value: number;
+}
+
 export interface GlobeLayer {
   id: string;
   title: string;
@@ -51,6 +57,7 @@ export interface GlobeLayer {
   legend: GlobeLegend;
   source: { dataset: string; citation: string; licence: string; licence_note?: string };
   categories?: Record<string | number, GlobeCategory>;
+  hotspots?: LayerHotspot[];
 }
 
 export interface GlobeManifest {
