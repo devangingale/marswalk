@@ -1,11 +1,10 @@
 # Written with AI assistance, directed and reviewed by the team.
-# Builds the app and deploys it to Cloudflare Pages on every push to main.
+# Builds the app and deploys it to Cloudflare Pages when run by hand (Actions > Deploy app > Run).
+# The live site deploys from Vercel on every push to main; this stays manual so the two never compete.
 # Setup (repository settings, environment "production"): see docs/deploy.md.
 name: Deploy app
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
