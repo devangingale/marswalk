@@ -1,6 +1,6 @@
 // Written with AI assistance, directed and reviewed by the team.
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import './walk.css';
 import { Plan } from '../lib/plan';
 import { SiteData } from '../types';
@@ -10,10 +10,12 @@ import { budgetRemaining, RouteTrack, walkStateAt, waypointById, START_ID } from
 import { Playback } from '../walk/usePlayback';
 import { usePlaybackKeys } from '../walk/usePlaybackKeys';
 import { PlaybackBar } from '../walk/PlaybackBar';
+import { declutterCrewLabels } from '../walk/labelDeclutter';
 import { StopDetails } from './StopDetails';
 import { WalkGlobe } from '../globe/walk/WalkGlobe';
 import { useSafetyModel } from '../safety/useSafetyModel';
-import { SafetyCompact } from '../safety/SafetyCompact';
+import { SafetyPanel } from '../safety/SafetyCompact';
+import { Regions } from '../shell/Regions';
 
 interface WalkViewProps {
   siteData: SiteData;
@@ -23,8 +25,14 @@ interface WalkViewProps {
   onPlan: () => void;
 }
 
+/**
+ * Walk on the shared layout: Safety panel on the left, the chase-camera map in the
+ * middle, the next stop on the right, playback in the time bar under the map.
+ */
 export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playback, onPlan }) => {
+  // Every hook runs before the empty-route return, so the hook order never changes.
   usePlaybackKeys(playback, track);
+  const feeds = useSiteFeeds(siteData);
   // The safety layer follows the playback: the crew is where the walk is.
   const safety = useSafetyModel({
     plan,
@@ -34,30 +42,30 @@ export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playb
     lonEast: siteData.origin.lon0,
     elapsedS: playback.elapsedS,
   });
+  const markers = safety?.markers ?? null;
+  const crew = useMemo(() => declutterCrewLabels(markers, plan.start), [markers, plan.start]);
+  const theme = safety?.night ? 'night' : undefined;
 
   if (plan.stops.length === 0) {
     return (
-      <div className="s48-walk s48-walk--empty">
-        <div className="s48-walk-map-area">
-          <WalkGlobe
-            siteData={siteData}
-            plan={plan}
-            track={track}
-            lon={plan.start.lon}
-            lat={plan.start.lat}
-            alongM={0}
-          />
-        </div>
-        <section className="s48-empty-route">
-          <button type="button" onClick={onPlan}>
-            Add stops in Plan
-          </button>
-        </section>
+      <div className="s48-walk s48-walk--empty" data-theme={theme}>
+        <Regions
+          id="walk"
+          main={
+            <>
+              <WalkGlobe siteData={siteData} plan={plan} track={track} lon={plan.start.lon} lat={plan.start.lat} alongM={0} />
+              <section className="s48-empty-route">
+                <button type="button" onClick={onPlan}>
+                  Add stops in Plan
+                </button>
+              </section>
+            </>
+          }
+        />
       </div>
     );
   }
 
-  const feeds = useSiteFeeds(siteData);
   const state = walkStateAt(plan, track, playback.elapsedS);
   const budget = budgetRemaining(plan, state.used);
   const next = state.next ? waypointById(plan, state.next.id) : null;
@@ -65,83 +73,72 @@ export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playb
   const turnBack = plan.route.turn_back;
 
   const isEnd = state.next === null || (state.elapsedS >= track.durationS && track.durationS > 0);
-  const timeVal = isEnd
-    ? formatDuration(plan.route.totals.time_s || track.durationS)
-    : formatDuration(budget.time.remaining);
-  const energyVal = isEnd
-    ? formatEnergy(plan.route.totals.energy_kj)
-    : formatEnergy(budget.energy.remaining);
-  const doseVal = isEnd
-    ? formatDose(plan.route.totals.dose_mgy)
-    : formatDose(budget.dose.remaining);
-
   const timeRemaining = isEnd ? (plan.route.totals.time_s || track.durationS) : budget.time.remaining;
   const energyRemaining = isEnd ? plan.route.totals.energy_kj : budget.energy.remaining;
   const doseRemaining = isEnd ? plan.route.totals.dose_mgy : budget.dose.remaining;
 
-  return (
-    <div className="s48-walk" data-theme={safety?.night ? 'night' : undefined}>
-      <div className="s48-walk-map-area">
-        <WalkGlobe
-          siteData={siteData}
-          plan={plan}
-          track={track}
-          lon={state.lon}
-          lat={state.lat}
-          alongM={state.alongM}
-          crew={safety?.markers ?? null}
-        />
-        {safety && <SafetyCompact model={safety} surface="walk" />}
-        <PlaybackBar
-          playback={playback}
-          durationS={track.durationS}
-          elapsedS={state.elapsedS}
-          siteData={siteData}
-          plan={plan}
-        />
-      </div>
-      <section className="s48-walk-sheet" aria-label="Walk">
-        <header className="s48-walk-headline">
-          <h1>{next?.name ?? `Back at ${plan.start.label}`}</h1>
-          {state.next && (
-            <div className="s48-walk-distance">
-              <strong>{formatDistance(state.next.distanceM)}</strong>
-              <span>{formatDuration(state.next.timeS)} to stop</span>
-            </div>
-          )}
-        </header>
+  const stopPanel = (
+    <div className="s48-walk-sheet">
+      <section className="s48-walk-section s48-walk-headline" aria-label="Next stop">
+        <h2>{next?.name ?? `Back at ${plan.start.label}`}</h2>
+        {state.next && (
+          <div className="s48-walk-distance">
+            <strong>{formatDistance(state.next.distanceM)}</strong>
+            <span>{formatDuration(state.next.timeS)} to stop</span>
+          </div>
+        )}
+      </section>
+      <section className="s48-walk-section" aria-labelledby="s48-walk-budget-title">
+        <h3 id="s48-walk-budget-title">{isEnd ? 'Route totals' : 'Remaining'}</h3>
         <dl className="s48-walk-budget">
-          <Budget
-            label="Time"
-            value={timeVal}
-            max={budget.time.total}
-            remaining={timeRemaining}
-          />
-          <Budget
-            label="Energy"
-            value={energyVal}
-            max={budget.energy.total}
-            remaining={energyRemaining}
-          />
-          <Budget
-            label="Dose"
-            value={doseVal}
-            max={budget.dose.total}
-            remaining={doseRemaining}
-          />
+          <Budget label="Time" value={formatDuration(timeRemaining)} max={budget.time.total} remaining={timeRemaining} />
+          <Budget label="Energy" value={formatEnergy(energyRemaining)} max={budget.energy.total} remaining={energyRemaining} />
+          <Budget label="Dose" value={formatDose(doseRemaining)} max={budget.dose.total} remaining={doseRemaining} />
         </dl>
         <p className="s48-walk-turnback">
           {turnBack
-            ? `${state.turnBackPassed ? 'Past' : 'Before'} turn-back point - ${turnBack.reason} limit`
+            ? `${state.turnBackPassed ? 'Past' : 'Before'} turn-back point, ${turnBack.reason} limit`
             : 'No turn-back point'}
         </p>
-        <StopDetails
-          waypoint={focus}
-          arrived={state.atWaypointId === focus.id}
-          feeds={feeds}
-          solarEvent={plan.params.solar_event}
-        />
       </section>
+      <StopDetails
+        waypoint={focus}
+        arrived={state.atWaypointId === focus.id}
+        feeds={feeds}
+        solarEvent={plan.params.solar_event}
+      />
+    </div>
+  );
+
+  return (
+    <div className="s48-walk" data-theme={theme}>
+      <Regions
+        id="walk"
+        left={safety ? <SafetyPanel model={safety} /> : undefined}
+        leftLabel="Safety"
+        right={stopPanel}
+        rightLabel="Stop"
+        main={
+          <WalkGlobe
+            siteData={siteData}
+            plan={plan}
+            track={track}
+            lon={state.lon}
+            lat={state.lat}
+            alongM={state.alongM}
+            crew={crew}
+          />
+        }
+        time={
+          <PlaybackBar
+            playback={playback}
+            durationS={track.durationS}
+            elapsedS={state.elapsedS}
+            siteData={siteData}
+            plan={plan}
+          />
+        }
+      />
     </div>
   );
 };

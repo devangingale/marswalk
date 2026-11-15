@@ -1,10 +1,12 @@
 // Written with AI assistance, directed and reviewed by the team.
-// Globe page with site and whole-planet layers and the route overlays, reached with ?globe=1.
+// Explore tab: the globe with site and whole-planet layers, the site finder and the sample
+// routes, on the shared Regions layout (?tab=explore, or the older ?globe=1).
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   BoundingSphere,
   Cartesian2,
   Cartographic,
+  type Cesium3DTileset,
   Color,
   CustomDataSource,
   Ellipsoid,
@@ -24,7 +26,7 @@ import {
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import '../shell/shell.css';
 import './globe.css';
-import { AVAILABLE_SITES, DEFAULT_SITE, GLOBE_BASE, getSiteBaseUrl, getSiteJsonUrl } from '../config';
+import { AVAILABLE_SITES, GLOBE_BASE, getSiteBaseUrl, getSiteJsonUrl } from '../config';
 import { LayerPanel } from '../components/LayerPanel';
 import samplePlanJson from '../fixtures/plan.sample.json';
 import { loadGrid, type RouteGrid } from '../lib/grid';
@@ -39,7 +41,9 @@ import { GlobeGlobalLayers, GlobeLayer, globeAssetUrl, loadGlobeManifest } from 
 import { GlobeGraticule, cullLabels, graticuleLines, type Box, type GraticuleLine, type ViewBounds } from './graticule';
 import { GlobeImagery } from './imageryLayers';
 import { attachSiteTerrain, measureEdgeSeam, type SiteTerrainMesh } from './siteTerrain';
-import { GlobeTimeTools } from './Clock';
+import { Clock } from './Clock';
+import { ConditionsPanel } from '../components/ConditionsPanel';
+import { Regions } from '../shell/Regions';
 import { marsSolarLongitude } from '../lib/sun';
 import { GlobeTemperatureLayer, loadTemperatureManifest } from './temperature/temperatureLayer';
 import { TemperatureRow } from './temperature/TemperatureRow';
@@ -48,13 +52,11 @@ import { SiteFinder } from './sites/SiteFinder';
 import { canvasMarkerImages } from './markerImages';
 import { GlobeOverlays } from './overlays';
 import { formatElevation, formatLatLon, graticuleStep, screenSpan, sectionLabel } from './routeLook';
-import { useGlobeTheme } from './theme/useGlobeTheme';
-import { SafetyLayer } from '../safety/SafetyLayer';
-import { offsetLonLat, type CrewMarkerModel } from '../safety/crewMarkers';
+import type { Theme } from './theme/theme';
 import { EnterSurfacePopover, MOSAIC_RADIUS_M, useSurface360, type EnterCandidate } from '../surface360/Surface360';
 import { formatMetres } from '../surface360/geodesic';
-import type { Site } from './sites/types';
 import { isInSurfaceView } from '../surface360/SurfaceView';
+import type { Site } from './sites/types';
 
 const CAVE_CREDIT = 'Mars Global Cave Candidate Catalog (MGC³), USGS Astrogeology Science Center';
 /** Data overlays start at the --map-overlay-opacity token value. */
@@ -63,8 +65,6 @@ const OVERLAY_OPACITY = 0.7;
 /** Opening view: the whole disc, centred on the Gale longitude. */
 const PLANET_VIEW = { lon: 137.4, lat: -4.7, heightM: 9_000_000 };
 const CAVE_HOVER = 'unexplored, from orbit';
-/** Mars mode opens this close to the crew, so the uncertainty circles read. */
-const MARS_FRAME_MIN_M = 500;
 
 const SAMPLE_PLAN = samplePlanJson as unknown as Plan;
 type PlanChoice = 'corner' | 'sample';
@@ -93,15 +93,15 @@ function cssColour(name: string): Color {
   return Color.fromCssColorString(getComputedStyle(document.documentElement).getPropertyValue(name).trim());
 }
 
-/** Initial state from the URL, for linking straight to a view: layers=, site=, caves=1, view=lon,lat,range, plan=, slopes=1, grid=1. */
+/**
+ * Initial state from the URL, for linking straight to a view: layers=, site=, caves=1,
+ * view=lon,lat,range, plan=, slopes=1, grid=1. The site itself comes from the top bar.
+ */
 function urlState() {
   const params = new URLSearchParams(window.location.search);
   const list = (key: string) => params.get(key)?.split(',').filter(Boolean) ?? [];
   const view = params.get('view')?.split(',').map(Number);
-  const siteParam = params.get('siteId') || (params.get('site') && AVAILABLE_SITES.includes(params.get('site')!) ? params.get('site')! : null);
-  const siteId = siteParam && AVAILABLE_SITES.includes(siteParam) ? siteParam : DEFAULT_SITE;
   return {
-    siteId,
     flyToSite: params.get('fly') === '1' || params.has('siteId') || (params.has('site') && AVAILABLE_SITES.includes(params.get('site')!)),
     globalOn: list('layers'),
     siteOn: params.has('site') && !AVAILABLE_SITES.includes(params.get('site')!) ? list('site') : (params.has('siteLayers') ? list('siteLayers') : null),
@@ -203,10 +203,23 @@ function edgeLabels(viewer: Viewer, lines: GraticuleLine[], groundM: number): Ed
   return labels;
 }
 
-export const GlobePage: React.FC = () => {
+export interface GlobePageProps {
+  /** Site from the top bar picker. */
+  siteId: string;
+  /** Applied token set, so map labels repaint when it changes. */
+  theme: Theme;
+}
+
+/** Elements the graticule edge labels keep clear of: map controls, panel handles, sliding panels. */
+const LABEL_BLOCKERS = '[data-over-map], .s48-regions__handle, .s48-regions[data-overlay=\'true\'] .s48-regions__panel:not([hidden])';
+
+export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
   const initial = useRef(urlState()).current;
+  const rootRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
+  const tilesetRef = useRef<Cesium3DTileset | null>(null);
+  const cesiumModeRef = useRef<ReturnType<typeof initCesium>>('ion');
   const siteImageryRef = useRef<GlobeImagery | null>(null);
   const siteTerrainRef = useRef<SiteTerrainMesh | null>(null);
   const globalRef = useRef<GlobeGlobalLayers | null>(null);
@@ -220,9 +233,7 @@ export const GlobePage: React.FC = () => {
   const viewRef = useRef<HTMLDivElement>(null);
 
   const [siteData, setSiteData] = useState<SiteData | null>(null);
-  const { mode, setMode, override, setOverride, theme } = useGlobeTheme(
-    siteData ? { lat: siteData.origin.lat0, lon: siteData.origin.lon0 } : null,
-  );
+  const [siteFailed, setSiteFailed] = useState(false);
   const [layerStates, setLayerStates] = useState<Record<string, LayerState>>({});
   const [globalLayers, setGlobalLayers] = useState<GlobeLayer[]>([]);
   const [globalStates, setGlobalStates] = useState<Record<string, LayerState>>({});
@@ -237,13 +248,15 @@ export const GlobePage: React.FC = () => {
   const bin = seasonBin(ls);
   const [cavesOn, setCavesOn] = useState(initial.caves);
   const [caveCount, setCaveCount] = useState(0);
-  const [panelOpen, setPanelOpen] = useState(true);
-  const [panelTab, setPanelTab] = useState<'layers' | 'sites'>('layers');
+  const [leftView, setLeftView] = useState<'layers' | 'sites'>('layers');
   const [notice, setNotice] = useState<string | null>(null);
   const [hover, setHover] = useState<Hover | null>(null);
-  // Set once the Mars scene is ready; gates the time tools and site-finder mounts.
+  // Set once the Mars scene is ready; gates the clock and site-finder mounts.
   const [dustScene, setDustScene] = useState<Scene | null>(null);
   const [viewer, setViewer] = useState<Viewer | null>(null);
+  // The site finder's card renders into the right panel.
+  const [cardHost, setCardHost] = useState<HTMLElement | null>(null);
+  const [siteSelected, setSiteSelected] = useState(false);
   // The site-finder registers a resolver here so site pins share the one tooltip.
   const siteHoverRef = useRef<((entity: Entity | null) => string[] | null) | null>(null);
   const registerSiteHover = useCallback((fn: ((entity: Entity | null) => string[] | null) | null) => {
@@ -257,16 +270,11 @@ export const GlobePage: React.FC = () => {
   const [edges, setEdges] = useState<EdgeLabel[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
-  // Mars mode: the night contingency switches the page to the night theme.
-  const [nightContingency, setNightContingency] = useState(false);
-  const marsFramedRef = useRef(false);
-  const siteSettledRef = useRef(false);
   // 360° surface view: a clicked waypoint or rover mark offers to enter it.
   const surface = useSurface360(viewer);
   const surfaceActiveRef = useRef(false);
   surfaceActiveRef.current = surface.active;
   const [enterCandidate, setEnterCandidate] = useState<EnterCandidate | null>(null);
-  // The 360° view takes the whole map: the layer panel folds away and comes back on exit.
   // Known sites (known_sites.csv via sites.json): the rover's 360° mosaic when one is within
   // MOSAIC_RADIUS_M, else an eye-level view on the orbital surface. Candidates get neither.
   const siteAction = useCallback(
@@ -301,18 +309,8 @@ export const GlobePage: React.FC = () => {
     },
     [surface],
   );
-  const panelBeforeSurface = useRef<boolean | null>(null);
   useEffect(() => {
-    if (surface.active) {
-      setEnterCandidate(null);
-      setPanelOpen((open) => {
-        panelBeforeSurface.current = open;
-        return false;
-      });
-    } else if (panelBeforeSurface.current !== null) {
-      setPanelOpen(panelBeforeSurface.current);
-      panelBeforeSurface.current = null;
-    }
+    if (surface.active) setEnterCandidate(null);
   }, [surface.active]);
   useEffect(() => {
     if (!enterCandidate) return;
@@ -320,39 +318,6 @@ export const GlobePage: React.FC = () => {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [enterCandidate]);
-
-  // Mars mode shows the globe, the safety column and the markers only: the layer panel
-  // collapses to its header button. Earth mode reopens it.
-  useEffect(() => {
-    setPanelOpen(mode !== 'mars');
-    if (mode !== 'mars') marsFramedRef.current = false;
-  }, [mode]);
-
-  // Crew, rover and night corridor from the safety layer; the first set frames the crew.
-  const onCrewMarkers = useCallback((model: CrewMarkerModel | null) => {
-    const viewer = viewerRef.current;
-    overlaysRef.current?.setCrew(model);
-    if (!viewer || viewer.isDestroyed()) return;
-    if (model && siteSettledRef.current && !marsFramedRef.current && model.crew.length > 0) {
-      marsFramedRef.current = true;
-      const points = [...model.crew, ...(model.rover ? [model.rover] : [])];
-      const sphere = BoundingSphere.fromPoints(points.map((p) => lonLatToCartesian(p.lon, p.lat, 0)));
-      const centre = Cartographic.fromCartesian(sphere.center, Ellipsoid.MARS);
-      const rangeM = Math.max(sphere.radius * 4, MARS_FRAME_MIN_M);
-      // Shift the view east by half the safety column so the crew sits in the open map.
-      const fov = (viewer.camera.frustum as { fov?: number }).fov ?? CesiumMath.PI_OVER_THREE;
-      const metresPerPx = (2 * rangeM * Math.tan(fov / 2)) / Math.max(1, viewer.scene.canvas.clientWidth);
-      const column = viewRef.current?.querySelector('.s48-safety')?.getBoundingClientRect().width ?? 0;
-      const target = offsetLonLat(
-        { lon: CesiumMath.toDegrees(centre.longitude), lat: CesiumMath.toDegrees(centre.latitude) },
-        (column / 2) * metresPerPx,
-        90,
-      );
-      // On the plain ellipsoid (offline) the ground is at 0 m; on Cesium Mars it is sampled.
-      void flyTo(viewer, target.lon, target.lat, rangeM, -90, viewer.scene.globe.show ? 0 : undefined);
-    }
-    viewer.scene.requestRender();
-  }, []);
 
   const statesRef = useRef({ layerStates, globalStates, cavesOn, graticuleOn });
   statesRef.current = { layerStates, globalStates, cavesOn, graticuleOn };
@@ -368,7 +333,10 @@ export const GlobePage: React.FC = () => {
       : undefined;
     return buildCornerPlan(siteData.origin, elevationAt);
   }, [siteData, grid]);
-  const shownPlan = planChoice === 'corner' ? cornerPlan : siteData ? SAMPLE_PLAN : null;
+  // The sample out-and-back is drawn at Gale only; other sites offer the corner loop.
+  const choices: PlanChoice[] = siteData?.id === SAMPLE_PLAN.site ? ['corner', 'sample'] : ['corner'];
+  const activeChoice: PlanChoice = choices.includes(planChoice) ? planChoice : 'corner';
+  const shownPlan = activeChoice === 'corner' ? cornerPlan : siteData ? SAMPLE_PLAN : null;
   const sectionRows = React.useMemo(
     () => (shownPlan && siteData ? routeSections(shownPlan, siteData.origin) : []),
     [shownPlan, siteData],
@@ -400,18 +368,18 @@ export const GlobePage: React.FC = () => {
     let disposed = false;
     let handler: ScreenSpaceEventHandler | null = null;
     const removers: (() => void)[] = [];
-    let mode = initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, navigator.onLine);
+    cesiumModeRef.current = initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, navigator.onLine);
 
     void (async () => {
       const created = await createMarsViewer(container, { interactive: true });
       const { viewer, tileset } = created;
-      mode = created.mode;
       if (disposed) {
         viewer.destroy();
         return;
       }
+      cesiumModeRef.current = created.mode;
+      tilesetRef.current = tileset;
       viewerRef.current = viewer;
-      setViewer(viewer);
       viewer.camera.setView({ destination: lonLatToCartesian(PLANET_VIEW.lon, PLANET_VIEW.lat, PLANET_VIEW.heightM) });
       if (!tileset) setNotice('Offline, local tiles');
 
@@ -431,10 +399,10 @@ export const GlobePage: React.FC = () => {
       removers.push(
         viewer.scene.postRender.addEventListener(() => {
           if (!statesRef.current.graticuleOn) return;
-          // Panels over the map (route card, buttons, cursor readout) keep labels out from under them.
+          // Controls, panel handles and sliding panels keep labels out from under them.
           const view = viewRef.current?.getBoundingClientRect();
           const panels: Box[] = view
-            ? [...(viewRef.current?.parentElement?.querySelectorAll('[data-over-map], .s48-cond') ?? [])].map((el) => {
+            ? [...(rootRef.current?.querySelectorAll(LABEL_BLOCKERS) ?? [])].map((el) => {
                 const r = el.getBoundingClientRect();
                 return [r.left - view.left, r.top - view.top, r.right - view.left, r.bottom - view.top];
               })
@@ -455,13 +423,12 @@ export const GlobePage: React.FC = () => {
       );
       refreshGraticule();
 
-      // Crew and rover marks (Mars mode) in their own source, added last so they draw above the plan.
-      const crewSource = new CustomDataSource('crew');
-      void viewer.dataSources.add(crewSource);
-      overlaysRef.current = new GlobeOverlays(viewer, { onSectionHover: setHoveredSection, crewHost: crewSource });
+      overlaysRef.current = new GlobeOverlays(viewer, { onSectionHover: setHoveredSection });
       const imageryTarget = tileset?.imageryLayers ?? viewer.imageryLayers;
       siteImageryRef.current = new GlobeImagery(imageryTarget);
       setDustScene(viewer.scene);
+      // Last, so the site load (keyed on the viewer) finds the imagery and overlays ready.
+      setViewer(viewer);
 
       loadGlobeManifest(GLOBE_BASE)
         .then((manifest) => {
@@ -506,46 +473,6 @@ export const GlobePage: React.FC = () => {
           setCaveCount(data.features.length);
         })
         .catch((error) => console.warn('Cave candidates did not load', error));
-
-      const siteBaseUrl = initial.sample ? `/sample/${initial.siteId}` : getSiteBaseUrl(initial.siteId);
-      fetch(initial.sample ? `${siteBaseUrl}/site.json` : getSiteJsonUrl(initial.siteId))
-        .then((r) => (r.ok ? (r.json() as Promise<SiteData>) : Promise.reject(new Error(`HTTP ${r.status}`))))
-        .then(async (site) => {
-          if (disposed) return;
-          const states = Object.fromEntries(
-            site.layers.map((l) => [
-              l.id,
-              {
-                enabled: initial.siteOn ? initial.siteOn.includes(l.id) : l.default_on,
-                opacity: l.kind === 'optical' ? 1 : OVERLAY_OPACITY,
-              },
-            ]),
-          );
-          setSiteData(site);
-          setLayerStates(states);
-          siteImageryRef.current!.apply(states);
-          await siteImageryRef.current!.setSite(site, mode);
-          const loaded = await loadGrid(siteBaseUrl, site.origin);
-          if (disposed) return;
-          gridRef.current = loaded;
-          setGrid(loaded);
-          const offset = await siteHeightOffsetM(viewer, tileset, site, loaded);
-          console.info(`Height offset at ${site.id}: ${offset.toFixed(2)} m`);
-          const seam = await measureEdgeSeam(viewer, tileset, site, loaded, offset);
-          if (seam) {
-            console.info(`Site terrain seam at ${site.id}: mean ${seam.meanM.toFixed(2)} m, max ${seam.maxM.toFixed(2)} m (${seam.samples} edge points)`);
-          }
-          siteTerrainRef.current = await attachSiteTerrain(viewer, tileset, site, offset, siteBaseUrl);
-          if (!initial.view && (mode === 'offline' || initial.flyToSite)) {
-            const [west, south, east, north] = site.bounds_lonlat;
-            const lon = (west + east) / 2;
-            const lat = (south + north) / 2;
-            void flyTo(viewer, lon, lat, Math.max(site.size_m.width, site.size_m.height) * 2, -60, mode === 'offline' ? 0 : undefined);
-          }
-          // Mars mode frames the crew only after the site's opening view.
-          siteSettledRef.current = true;
-        })
-        .catch((error) => console.warn('Site did not load', error));
 
       if (initial.view) void flyTo(viewer, initial.view[0], initial.view[1], initial.view[2], -90);
 
@@ -622,12 +549,83 @@ export const GlobePage: React.FC = () => {
       graticuleRef.current?.clear();
       siteImageryRef.current?.clear();
       siteTerrainRef.current?.destroy();
+      siteTerrainRef.current = null;
       globalRef.current?.destroy();
       temperatureRef.current?.destroy();
       viewerRef.current?.destroy();
       viewerRef.current = null;
+      setViewer(null);
     };
   }, [initial, refreshGraticule]);
+
+  // The site from the top bar: imagery, elevation grid and terrain mesh. A change of site
+  // replaces all three and flies there; the first load keeps the whole-planet view online.
+  const firstSiteRef = useRef(true);
+  useEffect(() => {
+    if (!viewer) return;
+    let cancelled = false;
+    const first = firstSiteRef.current;
+    firstSiteRef.current = false;
+    const mode = cesiumModeRef.current;
+    const tileset = tilesetRef.current;
+    const siteBaseUrl = initial.sample ? `/sample/${siteId}` : getSiteBaseUrl(siteId);
+    setSiteFailed(false);
+    siteTerrainRef.current?.destroy();
+    siteTerrainRef.current = null;
+    gridRef.current = null;
+    setGrid(null);
+    fetch(initial.sample ? `${siteBaseUrl}/site.json` : getSiteJsonUrl(siteId))
+      .then((r) => (r.ok ? (r.json() as Promise<SiteData>) : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(async (site) => {
+        if (cancelled) return;
+        const states = Object.fromEntries(
+          site.layers.map((l) => [
+            l.id,
+            {
+              enabled: first && initial.siteOn ? initial.siteOn.includes(l.id) : l.default_on,
+              opacity: l.kind === 'optical' ? 1 : OVERLAY_OPACITY,
+            },
+          ]),
+        );
+        setSiteData(site);
+        setLayerStates(states);
+        siteImageryRef.current?.apply(states);
+        await siteImageryRef.current?.setSite(site, mode);
+        const loaded = await loadGrid(siteBaseUrl, site.origin);
+        if (cancelled) return;
+        gridRef.current = loaded;
+        setGrid(loaded);
+        const offset = await siteHeightOffsetM(viewer, tileset, site, loaded);
+        console.info(`Height offset at ${site.id}: ${offset.toFixed(2)} m`);
+        const seam = await measureEdgeSeam(viewer, tileset, site, loaded, offset);
+        if (seam) {
+          console.info(`Site terrain seam at ${site.id}: mean ${seam.meanM.toFixed(2)} m, max ${seam.maxM.toFixed(2)} m (${seam.samples} edge points)`);
+        }
+        if (cancelled) return;
+        const mesh = await attachSiteTerrain(viewer, tileset, site, offset, siteBaseUrl);
+        if (cancelled) {
+          mesh?.destroy();
+          return;
+        }
+        siteTerrainRef.current = mesh;
+        if (!first || (!initial.view && (mode === 'offline' || initial.flyToSite))) {
+          const [west, south, east, north] = site.bounds_lonlat;
+          void flyTo(viewer, (west + east) / 2, (south + north) / 2, Math.max(site.size_m.width, site.size_m.height) * 2, -60, mode === 'offline' ? 0 : undefined);
+        }
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.warn('Site did not load', error);
+        siteImageryRef.current?.clear();
+        overlaysRef.current?.clear();
+        setSiteData(null);
+        setLayerStates({});
+        setSiteFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [viewer, siteId, initial]);
 
   useEffect(() => siteImageryRef.current?.apply(layerStates), [layerStates]);
   useEffect(() => globalRef.current?.apply(globalStates), [globalStates]);
@@ -647,13 +645,6 @@ export const GlobePage: React.FC = () => {
   }, [shownPlan, grid, slopesOn, siteData]);
 
   useEffect(() => {
-    const panel = viewRef.current?.parentElement?.querySelector('aside.panel');
-    panel?.setAttribute('data-over-map', '');
-    return () => panel?.removeAttribute('data-over-map');
-  }, []);
-
-  useEffect(() => {
-    const viewer = viewerRef.current;
     if (!viewer || viewer.isDestroyed()) return;
     viewer.scene.backgroundColor = cssColour('--map-sky');
     const labelFill = cssColour('--map-label-text');
@@ -678,6 +669,14 @@ export const GlobePage: React.FC = () => {
     }
     viewer.scene.requestRender();
   }, [theme, viewer]);
+
+  // A selected site shows its card in the right panel: open the panel if it is folded away.
+  const onSiteSelected = useCallback((id: string | null) => {
+    setSiteSelected(id !== null);
+    if (id === null) return;
+    rootRef.current?.querySelector<HTMLButtonElement>('.s48-regions__handle--right[aria-expanded=\'false\']')?.click();
+    cardHost?.scrollIntoView({ block: 'nearest' });
+  }, [cardHost]);
 
   const toggle = (set: typeof setLayerStates) => (id: string) =>
     set((prev) => ({ ...prev, [id]: { ...prev[id], enabled: !prev[id]?.enabled } }));
@@ -707,232 +706,191 @@ export const GlobePage: React.FC = () => {
     void flyTo(viewer, CesiumMath.toDegrees(centre.longitude), CesiumMath.toDegrees(centre.latitude), sphere.radius * 3.2, -90);
   }, [shownPlan]);
 
-  return (
-    <div className="mock plan-mock" data-theme={mode === 'mars' && nightContingency ? 'night' : undefined}>
-      <header className="mock-top">
-        <span className="wordmark">Sol-48</span>
-        <div className="s48-seg globe-mode" role="group" aria-label="Globe mode">
-          <button type="button" aria-pressed={mode === 'earth'} onClick={() => setMode('earth')}>
-            Earth
-          </button>
-          <button
-            type="button"
-            aria-pressed={mode === 'mars'}
-            onClick={() => {
-              setMode('mars');
-              setPanelTab('layers');
-            }}
-          >
-            Mars
-          </button>
-        </div>
-        <div className="s48-seg globe-theme" role="group" aria-label="Theme">
-          <button type="button" aria-pressed={override === 'auto'} onClick={() => setOverride('auto')}>
-            Auto
-          </button>
-          <button type="button" aria-pressed={override === 'day'} onClick={() => setOverride('day')}>
-            Day
-          </button>
-          <button type="button" aria-pressed={override === 'night'} onClick={() => setOverride('night')}>
-            Night
-          </button>
-        </div>
-        <div className="s48-seg globe-tabs" role="tablist" aria-label="Left panel">
-          <button
-            type="button"
-            role="tab"
-            aria-pressed={panelOpen && panelTab === 'layers'}
-            onClick={() => {
-              setPanelTab('layers');
-              setPanelOpen(true);
-            }}
-          >
+  const left = (
+    <div className="explore-left">
+      <div className="explore-left__switch">
+        <div className="s48-seg" role="group" aria-label="Left panel">
+          <button type="button" aria-pressed={leftView === 'layers'} onClick={() => setLeftView('layers')}>
             Layers
           </button>
-          {mode === 'earth' && (
-            <button
-              type="button"
-              role="tab"
-              aria-pressed={panelOpen && panelTab === 'sites'}
-              onClick={() => {
-                setPanelTab('sites');
-                setPanelOpen(true);
-              }}
-            >
-              Sites
-            </button>
-          )}
-        </div>
-        <span className="grow" />
-      </header>
-      <div style={{ flex: 1, minHeight: 0, position: 'relative', overflow: 'hidden' }}>
-        <div className="globe-body">
-          <LayerPanel
-            layers={siteData?.layers ?? []}
-            layerStates={layerStates}
-            onToggleLayer={toggle(setLayerStates)}
-            onOpacityChange={setOpacity(setLayerStates)}
-            globalLayers={globalLayers}
-            globalStates={globalStates}
-            onToggleGlobal={toggle(setGlobalStates)}
-            onGlobalOpacityChange={setOpacity(setGlobalStates)}
-            caves={
-              caveCount > 0
-                ? { enabled: cavesOn, count: caveCount, credit: CAVE_CREDIT, onToggle: () => setCavesOn((v) => !v) }
-                : undefined
-            }
-            temperature={
-              temperatureManifest
-                ? {
-                    enabled: temperature.enabled,
-                    row: (
-                      <TemperatureRow
-                        manifest={temperatureManifest}
-                        bin={bin}
-                        enabled={temperature.enabled}
-                        opacity={temperature.opacity}
-                        kind={temperature.kind}
-                        onToggle={() => setTemperature((t) => ({ ...t, enabled: !t.enabled }))}
-                        onOpacityChange={(opacity) => setTemperature((t) => ({ ...t, opacity }))}
-                        onKindChange={(kind) => setTemperature((t) => ({ ...t, kind }))}
-                      />
-                    ),
-                  }
-                : undefined
-            }
-            isOpen={panelOpen && panelTab === 'layers'}
-            onTogglePanel={() => setPanelOpen(!panelOpen)}
-          />
-          <SiteFinder
-            viewer={viewer}
-            active={mode === 'earth' && panelOpen && panelTab === 'sites'}
-            registerHover={registerSiteHover}
-            siteAction={siteAction}
-            onHide={() => setPanelOpen(false)}
-          />
-          <div
-            ref={viewRef}
-            className="globe-view"
-            onMouseLeave={() => {
-              setHover(null);
-              setCursor(null);
-              overlaysRef.current?.hover(undefined, 0);
-            }}
-          >
-            <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
-            {/* Orbital chrome steps aside in the 360° view; display: contents keeps its layout and state. */}
-            <div style={{ display: surface.active ? 'none' : 'contents' }}>
-            {/* The clock, dust history and conditions are Earth-mode planning chrome; Mars mode stays minimal. */}
-            {mode === 'earth' && dustScene && <GlobeTimeTools scene={dustScene} onLs={setLs} />}
-            {siteData && mode !== 'mars' && (
-              <div className="globe-sites" data-over-map>
-                <button type="button" className="s48-btn s48-btn--secondary" onClick={flyToPlanet}>
-                  Whole planet
-                </button>
-                <button type="button" className="s48-btn s48-btn--secondary" onClick={flyToSite}>
-                  {siteData.title}
-                </button>
-              </div>
-            )}
-            {mode === 'earth' && siteData && shownPlan && (
-              <section className="globe-route" aria-label="Route" data-over-map>
-                <div className="s48-seg" role="group" aria-label="Plan">
-                  {(Object.keys(PLAN_TITLES) as PlanChoice[]).map((choice) => (
-                    <button
-                      key={choice}
-                      type="button"
-                      aria-pressed={planChoice === choice}
-                      onClick={() => setPlanChoice(choice)}
-                    >
-                      {PLAN_TITLES[choice]}
-                    </button>
-                  ))}
-                </div>
-                <ol className="globe-route__sections">
-                  {sectionRows.map((section) => (
-                    <li key={section.id} className={hoveredSection === section.id ? 'is-hovered' : undefined}>
-                      {sectionLabel(section, shownPlan)}
-                    </li>
-                  ))}
-                </ol>
-                <div className="globe-route__actions">
-                  <button type="button" className="s48-btn s48-btn--secondary" onClick={flyToRoute}>
-                    Show route
-                  </button>
-                  <label>
-                    <input
-                      type="checkbox"
-                      className="s48-check"
-                      checked={slopesOn}
-                      onChange={() => setSlopesOn((v) => !v)}
-                    />
-                    <span>Slopes</span>
-                  </label>
-                  <label>
-                    <input
-                      type="checkbox"
-                      className="s48-check"
-                      checked={graticuleOn}
-                      onChange={() => setGraticuleOn((v) => !v)}
-                    />
-                    <span>Lat/lon grid</span>
-                  </label>
-                </div>
-                {slopesOn && !slopesAvailable && (
-                  <p className="globe-route__note">No elevation grid under this route in the sample bundle.</p>
-                )}
-              </section>
-            )}
-            {mode === 'mars' && siteData && (
-              <SafetyLayer
-                plan={shownPlan}
-                origin={siteData.origin}
-                siteId={siteData.id}
-                lat={siteData.origin.lat0}
-                lonEast={siteData.origin.lon0}
-                onMarkers={onCrewMarkers}
-                onNight={setNightContingency}
-              />
-            )}
-            {mode === 'earth' && notice && <div className="globe-notice" style={{ top: 'calc(var(--space-16) * 4)' }}>{notice}</div>}
-            {edges.map((label) => (
-              <span
-                key={label.key}
-                className={`map-label globe-edge globe-edge--${label.axis}`}
-                style={{ left: label.x, top: label.y }}
-              >
-                {label.text}
-              </span>
-            ))}
-            {cursor && (
-              <div className="map-label globe-cursor" data-over-map>
-                {cursor}
-              </div>
-            )}
-            {hover && (
-              <div
-                className="globe-hover"
-                style={{
-                  left: hover.x,
-                  top: hover.y,
-                  transform: hover.flip ? 'translate(calc(-100% - 12px), 12px)' : 'translate(12px, 12px)',
-                }}
-              >
-                {hover.lines.map((line) => (
-                  <span key={line} className="map-label">
-                    {line}
-                  </span>
-                ))}
-              </div>
-            )}
-            </div>
-            {enterCandidate && !surface.active && (
-              <EnterSurfacePopover candidate={enterCandidate} surface={surface} onClose={() => setEnterCandidate(null)} />
-            )}
-            {surface.overlay}
-          </div>
+          <button type="button" aria-pressed={leftView === 'sites'} onClick={() => setLeftView('sites')}>
+            Site finder
+          </button>
         </div>
       </div>
+      <div className="explore-left__layers" hidden={leftView !== 'layers'}>
+        <LayerPanel
+          layers={siteData?.layers ?? []}
+          layerStates={layerStates}
+          onToggleLayer={toggle(setLayerStates)}
+          onOpacityChange={setOpacity(setLayerStates)}
+          globalLayers={globalLayers}
+          globalStates={globalStates}
+          onToggleGlobal={toggle(setGlobalStates)}
+          onGlobalOpacityChange={setOpacity(setGlobalStates)}
+          caves={
+            caveCount > 0
+              ? { enabled: cavesOn, count: caveCount, credit: CAVE_CREDIT, onToggle: () => setCavesOn((v) => !v) }
+              : undefined
+          }
+          temperature={
+            temperatureManifest
+              ? {
+                  enabled: temperature.enabled,
+                  row: (
+                    <TemperatureRow
+                      manifest={temperatureManifest}
+                      bin={bin}
+                      enabled={temperature.enabled}
+                      opacity={temperature.opacity}
+                      kind={temperature.kind}
+                      onToggle={() => setTemperature((t) => ({ ...t, enabled: !t.enabled }))}
+                      onOpacityChange={(opacity) => setTemperature((t) => ({ ...t, opacity }))}
+                      onKindChange={(kind) => setTemperature((t) => ({ ...t, kind }))}
+                    />
+                  ),
+                }
+              : undefined
+          }
+          isOpen
+          onTogglePanel={() => undefined}
+        />
+      </div>
+      <div className="explore-left__sites" hidden={leftView !== 'sites'}>
+        <SiteFinder
+          viewer={viewer}
+          active={leftView === 'sites'}
+          registerHover={registerSiteHover}
+          cardHost={cardHost}
+          onSelectedChange={onSiteSelected}
+          siteAction={siteAction}
+        />
+      </div>
+    </div>
+  );
+
+  const right = (
+    <div className="explore-right">
+      {(notice || siteFailed) && (
+        <section className="explore-sec explore-sec--status" aria-label="Status">
+          {notice && <p>{notice}</p>}
+          {siteFailed && <p>No site bundle for {siteId} on this server. Whole-planet layers still work.</p>}
+        </section>
+      )}
+      <section className="explore-sec explore-sec--site" aria-label="Selected site" ref={setCardHost} hidden={!siteSelected} />
+      <section className="explore-sec explore-sec--now">
+        <ConditionsPanel />
+      </section>
+      {siteData && shownPlan && (
+        <section className="explore-sec" aria-label="Sample route">
+          <h2 className="explore-sec__title">Sample route</h2>
+          {choices.length > 1 && (
+            <div className="s48-seg explore-route__choice" role="group" aria-label="Sample route">
+              {choices.map((choice) => (
+                <button key={choice} type="button" aria-pressed={activeChoice === choice} onClick={() => setPlanChoice(choice)}>
+                  {PLAN_TITLES[choice]}
+                </button>
+              ))}
+            </div>
+          )}
+          <ol className="explore-route__legs">
+            {sectionRows.map((section) => (
+              <li key={section.id} className={hoveredSection === section.id ? 'is-hovered' : undefined}>
+                {sectionLabel(section, shownPlan)}
+              </li>
+            ))}
+          </ol>
+          <button type="button" className="s48-btn s48-btn--secondary" onClick={flyToRoute}>
+            Show route
+          </button>
+          {slopesOn && !slopesAvailable && (
+            <p className="explore-sec__note">No elevation grid under this route in the sample bundle.</p>
+          )}
+        </section>
+      )}
+    </div>
+  );
+
+  const controls = (
+    <>
+      <button type="button" className="s48-btn s48-btn--secondary" onClick={flyToPlanet}>
+        Whole planet
+      </button>
+      {siteData && (
+        <button type="button" className="s48-btn s48-btn--secondary explore-site-btn" onClick={flyToSite} title={`Fly to ${siteData.title}`}>
+          {siteData.title}
+        </button>
+      )}
+      {siteData && (
+        <button type="button" className="s48-btn s48-btn--secondary" aria-pressed={slopesOn} onClick={() => setSlopesOn((v) => !v)}>
+          Slopes
+        </button>
+      )}
+      <button type="button" className="s48-btn s48-btn--secondary" aria-pressed={graticuleOn} onClick={() => setGraticuleOn((v) => !v)}>
+        Lat/lon grid
+      </button>
+    </>
+  );
+
+  const main = (
+    <div
+      ref={viewRef}
+      className="globe-view"
+      onMouseLeave={() => {
+        setHover(null);
+        setCursor(null);
+        overlaysRef.current?.hover(undefined, 0);
+      }}
+    >
+      <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
+      {/* Map labels step aside in the 360° view; display: contents keeps their layout and state. */}
+      <div style={{ display: surface.active ? 'none' : 'contents' }}>
+      {edges.map((label) => (
+        <span
+          key={label.key}
+          className={`map-label globe-edge globe-edge--${label.axis}`}
+          style={{ left: label.x, top: label.y }}
+        >
+          {label.text}
+        </span>
+      ))}
+      {cursor && <div className="map-label globe-cursor">{cursor}</div>}
+      {hover && (
+        <div
+          className="globe-hover"
+          style={{
+            left: hover.x,
+            top: hover.y,
+            transform: hover.flip ? 'translate(calc(-100% - 12px), 12px)' : 'translate(12px, 12px)',
+          }}
+        >
+          {hover.lines.map((line) => (
+            <span key={line} className="map-label">
+              {line}
+            </span>
+          ))}
+        </div>
+      )}
+      </div>
+      {enterCandidate && !surface.active && (
+        <EnterSurfacePopover candidate={enterCandidate} surface={surface} onClose={() => setEnterCandidate(null)} />
+      )}
+      {surface.overlay}
+    </div>
+  );
+
+  return (
+    <div className="explore" ref={rootRef}>
+      <Regions
+        id="explore"
+        left={left}
+        leftLabel="Layers"
+        right={right}
+        rightLabel="Details"
+        main={main}
+        controls={controls}
+        time={dustScene ? <Clock scene={dustScene} onLs={setLs} /> : undefined}
+      />
     </div>
   );
 };

@@ -1,0 +1,103 @@
+/* Written with AI assistance, directed and reviewed by the team.
+ * Shared tab layout (Regions.tsx). Tokens only. */
+
+.s48-regions {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.s48-regions__panel {
+  flex: 0 0 auto;
+  height: 100%;
+  overflow-y: auto;
+  background: var(--color-surface);
+  z-index: 20;
+}
+.s48-regions__panel[hidden] { display: none; }
+.s48-regions__panel--left {
+  width: var(--panel-left-width);
+  border-right: var(--border-width) solid var(--color-rule);
+}
+.s48-regions__panel--right {
+  width: var(--panel-right-width);
+  border-left: var(--border-width) solid var(--color-rule);
+}
+
+.s48-regions__centre {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.s48-regions__main {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+}
+.s48-regions__time {
+  flex: 0 0 auto;
+  background: var(--color-surface);
+  border-top: var(--border-width) solid var(--color-rule);
+  padding: var(--space-2) var(--space-4);
+}
+
+/* Map controls: one cluster, top-right, clear of the right handle. */
+.s48-regions__controls {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-8);
+  display: flex;
+  gap: var(--space-2);
+  z-index: 15;
+}
+
+/* Collapse handles sit on the map edge next to their panel. */
+.s48-regions__handle {
+  position: absolute;
+  top: var(--space-3);
+  z-index: 16;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 28px;
+  padding: 0 var(--space-2);
+  font: var(--weight-medium) var(--text-md) / 1 var(--font-ui);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-control-border);
+  border-radius: var(--radius-2);
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--motion-ease);
+}
+.s48-regions__handle:hover { background: var(--color-surface); }
+.s48-regions__handle:focus-visible {
+  outline: 2px solid var(--color-focus-inner);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 4px var(--color-focus-outer);
+}
+.s48-regions__handle--left { left: var(--space-3); }
+.s48-regions__handle--right { right: var(--space-3); }
+/* With map controls present, the right handle sits under them. */
+.s48-regions__main:has(.s48-regions__controls) .s48-regions__handle--right { top: calc(var(--space-3) + 40px); }
+
+/* Narrow screens: an open panel slides over the map instead of narrowing it. */
+.s48-regions[data-overlay='true'] .s48-regions__panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  box-shadow: var(--shadow-drawer);
+}
+.s48-regions[data-overlay='true'] .s48-regions__panel--left { left: 0; }
+.s48-regions[data-overlay='true'] .s48-regions__panel--right { right: 0; box-shadow: var(--shadow-popover); }
+.s48-regions[data-overlay='true'][data-left='open'] .s48-regions__handle--left { left: calc(var(--panel-left-width) + var(--space-3)); }
+.s48-regions[data-overlay='true'][data-right='open'] .s48-regions__handle--right { right: calc(var(--panel-right-width) + var(--space-3)); }
+.s48-regions[data-overlay='true'][data-right='open'] .s48-regions__controls { right: calc(var(--panel-right-width) + var(--space-8)); }
+
+@media (prefers-reduced-motion: reduce) {
+  .s48-regions__handle { transition: none; }
+}

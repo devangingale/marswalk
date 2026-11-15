@@ -1,26 +1,15 @@
 /* Written with AI assistance, directed and reviewed by the team. */
 
+/* The clock fills the Explore time bar under the map (shell/regions.css draws the bar).
+ * A narrow map (both panels open) wraps the readouts onto a second row. */
 .s48-clock {
-  position: absolute;
-  left: var(--space-4);
-  right: var(--space-4);
-  bottom: var(--space-6); /* clear of the Cesium ion credit strip at the very bottom */
-  z-index: 4;
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-surface);
-  border: var(--border-width) solid var(--color-rule);
-  border-radius: var(--radius-2);
-  box-shadow: var(--shadow-popover);
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  min-width: 0;
   font-family: var(--font-ui);
   color: var(--color-text);
-}
-
-.globe-body:has(.sites-card-wrap) .globe-view .s48-clock {
-  right: calc(320px + 2 * var(--space-4));
-  flex-wrap: wrap;
 }
 
 .s48-clock__controls {
@@ -59,7 +48,7 @@
 }
 
 .s48-clock__range {
-  flex: 1;
+  flex: 1 1 200px;
   min-width: 120px;
   height: var(--hit-plan);
   accent-color: var(--color-accent);
@@ -109,33 +98,3 @@
   white-space: nowrap;
 }
 
-/* Narrow and short screens: two tidy rows, controls and slider then readouts. */
-@media (max-width: 1024px) {
-  .s48-clock {
-    flex-wrap: wrap;
-    gap: var(--space-2) var(--space-3);
-  }
-
-  .s48-clock__controls {
-    order: 1;
-  }
-
-  .s48-clock__range {
-    order: 2;
-  }
-
-  .s48-clock__readout {
-    order: 3;
-  }
-
-  .s48-clock__weather {
-    order: 4;
-    border-left: none;
-    padding-left: 0;
-  }
-
-  .globe-body:has(.sites-card-wrap) .globe-view .s48-clock__readout {
-    flex: 1 1 100%;
-    flex-wrap: wrap;
-  }
-}

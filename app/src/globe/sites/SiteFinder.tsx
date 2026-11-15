@@ -1,8 +1,10 @@
 // Written with AI assistance, directed and reviewed by the team.
-// Site-finder: candidate and known-site pins on the globe, a ranked "Sites"
-// tab, adjustable weights, filter chips and a detail card. One mount point.
+// Site-finder: candidate and known-site pins on the globe, a ranked list, adjustable
+// weights, filter chips and a detail card. One mount point: the list renders in place
+// (the Explore left panel) and the card into cardHost (the Explore right panel).
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   BoundingSphere,
   Cartographic,
@@ -34,7 +36,10 @@ interface SiteFinderProps {
   /** Extra action shown on the selected site's card. */
   siteAction?: (site: Site) => React.ReactNode;
   registerHover: (fn: ((entity: Entity | null) => string[] | null) | null) => void;
-  onHide: () => void;
+  /** Where the selected site card renders; without one, no card is shown. */
+  cardHost: HTMLElement | null;
+  /** Reports the selected site id (null when none), so the page can open the panel holding the card. */
+  onSelectedChange?: (id: string | null) => void;
 }
 
 const PIN_ID = (id: string) => `site:${id}`;
@@ -55,7 +60,7 @@ async function flyToSite(viewer: Viewer, lon: number, lat: number): Promise<void
   });
 }
 
-export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, registerHover, onHide, siteAction }) => {
+export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, registerHover, cardHost, onSelectedChange, siteAction }) => {
   const [data, setData] = useState<{ sites: Site[]; vetoes: Veto[]; fileWeights: Weights } | null>(null);
   const [places, setPlaces] = useState<PlaceFeature[] | null>(null);
   const [weights, setWeights] = useState<Weights | null>(null);
@@ -122,6 +127,8 @@ export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, register
   }, [data, ranked, filters]);
 
   const selected = selectedId && data ? data.sites.find((s) => s.id === selectedId) ?? null : null;
+  const shownId = selected?.id ?? null;
+  useEffect(() => onSelectedChange?.(shownId), [onSelectedChange, shownId]);
 
   // Build the pins once the viewer and data are ready.
   useEffect(() => {
@@ -261,11 +268,11 @@ export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, register
           onWeight={(key, value) => setWeights((prev) => ({ ...(prev as Weights), [key]: value }))}
           onResetWeights={() => setWeights(data.fileWeights)}
           weightsAreDefault={weightsAreDefault}
-          onHide={onHide}
         />
       )}
-      {selected && (
-        <div className="sites-card-wrap" data-over-map>
+      {selected &&
+        cardHost &&
+        createPortal(
           <SiteCard
             site={selected}
             vetoes={data.vetoes}
@@ -273,9 +280,9 @@ export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, register
             rank={selectedRank}
             onClose={() => setSelectedId(null)}
             action={siteAction?.(selected)}
-          />
-        </div>
-      )}
+          />,
+          cardHost,
+        )}
     </>
   );
 };

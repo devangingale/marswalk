@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
 import { formatDuration } from './format';
-import { Playback } from './usePlayback';
+import { Playback, PLAYBACK_RATE } from './usePlayback';
 import { SiteData } from '../types';
 import { Plan } from '../lib/plan';
 import { timelineReadoutsAt } from './timelineReadouts';
-import '../components/walk.css';
 import './playbackBar.css';
 
 export interface PlaybackBarProps {
@@ -13,11 +12,16 @@ export interface PlaybackBarProps {
   elapsedS: number;
   siteData?: SiteData;
   plan?: Plan;
+  /** Visor: play, scrubber and time only. */
+  compact?: boolean;
 }
 
-export function PlaybackBar({ playback, durationS, elapsedS, siteData, plan }: PlaybackBarProps) {
+const KEYS_HINT = 'Space: play or pause · Left/Right: step 1 % · Page Up/Down: previous or next stop';
+
+/** The playback bar in the time region under the map, in Walk and Visor. */
+export function PlaybackBar({ playback, durationS, elapsedS, siteData, plan, compact = false }: PlaybackBarProps) {
   const readouts = useMemo(() => {
-    if (!siteData || !plan) return null;
+    if (compact || !siteData || !plan) return null;
     return timelineReadoutsAt({
       elapsedS,
       durationS,
@@ -26,22 +30,24 @@ export function PlaybackBar({ playback, durationS, elapsedS, siteData, plan }: P
       siteId: siteData.id,
       timeLimitS: plan.params?.time_limit_s,
     });
-  }, [siteData, plan, elapsedS, durationS]);
+  }, [compact, siteData, plan, elapsedS, durationS]);
 
   return (
-    <div className="s48-playback">
+    <div className={`s48-playback${compact ? ' s48-playback--compact' : ''}`}>
       <button
         type="button"
-        className="s48-walk-play"
+        className="s48-playback__play"
         onClick={playback.toggle}
-        aria-label={playback.playing ? 'Pause (Space)' : 'Play (Space)'}
-        aria-keyshortcuts="Space ArrowLeft ArrowRight"
-        title="Space: play or pause · Left/Right: previous or next stop"
+        aria-label={playback.playing ? 'Pause' : 'Play'}
+        aria-keyshortcuts="Space ArrowLeft ArrowRight PageUp PageDown"
+        title={KEYS_HINT}
       >
         {playback.playing ? 'Pause' : 'Play'}
       </button>
       <input
+        className="s48-playback__scrub"
         aria-label="Walk position"
+        title={KEYS_HINT}
         type="range"
         min={0}
         max={durationS}
@@ -49,20 +55,16 @@ export function PlaybackBar({ playback, durationS, elapsedS, siteData, plan }: P
         value={elapsedS}
         onChange={(event) => playback.seek(Number(event.target.value))}
       />
-      <output>
+      <output className="s48-playback__time" aria-label="Elapsed and total">
         {formatDuration(elapsedS)} / {formatDuration(durationS)}
       </output>
       {readouts && (
-        <div className="s48-playback-readouts" aria-label="Timeline conditions">
-          <span className="s48-playback-temp" title="Estimated surface temperature">
-            {readouts.tempFormatted}
-          </span>
-          <span className="s48-playback-sunset" title="Time to sunset">
-            {readouts.sunsetFormatted}
-          </span>
-        </div>
+        <span className="s48-playback__readouts" aria-label="Timeline conditions">
+          <span title="Estimated surface temperature">{readouts.tempFormatted}</span>
+          <span title="Time to sunset">{readouts.sunsetFormatted}</span>
+        </span>
       )}
-      <span>x60</span>
+      {!compact && <span className="s48-playback__speed" title="Playback speed">×{PLAYBACK_RATE}</span>}
     </div>
   );
 }
