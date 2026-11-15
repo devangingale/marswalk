@@ -14,6 +14,7 @@ import {
   STORAGE_KEY,
   stepCount,
   tourReducer,
+  WELCOME,
   type AnchorProbe,
   type TourState,
 } from './tourState';
@@ -143,6 +144,51 @@ describe('first visit', () => {
     expect(readFinished(throwingStorage)).toBe('skipped');
     expect(shouldAutoStart('', throwingStorage)).toBe(false);
     expect(shouldAutoStart('', null)).toBe(false);
+  });
+});
+
+describe('welcome', () => {
+  it('first visit shows welcome', () => {
+    const storage = memoryStorage();
+    expect(shouldAutoStart('', storage)).toBe(true);
+    const state = tourReducer(CLOSED, { type: 'welcome' });
+    expect(state).toEqual({ open: 'welcome' });
+    expect(currentStep(state)).toBeNull();
+    expect(stepCount(state)).toBe('');
+  });
+
+  it('Start goes to step 1', () => {
+    const welcome: TourState = WELCOME;
+    const step1 = tourReducer(welcome, { type: 'start' });
+    expect(step1).toEqual({ open: true, scope: 'all', index: 0 });
+    expect(currentStep(step1)?.id).toBe('intro');
+    expect(stepCount(step1)).toBe('1 of 18');
+  });
+
+  it('Skip from welcome remembers skipped and never shows again', () => {
+    const storage = memoryStorage();
+    expect(shouldAutoStart('', storage)).toBe(true);
+    const welcome: TourState = WELCOME;
+    const skipped = tourReducer(welcome, { type: 'skip' });
+    expect(skipped).toEqual({ open: false, finished: 'skipped' });
+    if (!skipped.open && skipped.finished) rememberFinished(storage, skipped.finished);
+    expect(storage.data.get(STORAGE_KEY)).toBe('skipped');
+    expect(shouldAutoStart('', storage)).toBe(false);
+  });
+
+  it('Tour button skips welcome', () => {
+    const welcome: TourState = WELCOME;
+    const started = tourReducer(welcome, { type: 'start', scope: 'all' });
+    expect(started).toEqual({ open: true, scope: 'all', index: 0 });
+    expect(currentStep(started)?.id).toBe('intro');
+
+    const tabStarted = tourReducer(welcome, { type: 'start', scope: 'walk' });
+    expect(tabStarted).toEqual({ open: true, scope: 'walk', index: 0 });
+    expect(currentStep(tabStarted)?.id).toBe('walk-left');
+  });
+
+  it('?tour=0 never shows it', () => {
+    expect(shouldAutoStart('?tour=0', memoryStorage())).toBe(false);
   });
 });
 
