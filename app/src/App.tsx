@@ -32,6 +32,7 @@ import { reachableMask, snapToReachable, snapToPassable } from './lib/snap';
 import { DEFAULT_SURFACE_DOSE_MGY_PER_DAY, DEFAULT_SOLAR_EVENT_MGY_PER_DAY } from './lib/energy';
 import { type Mover } from './globe/plan/MoverPicker';
 import { useGlobeTheme } from './globe/theme/useGlobeTheme';
+import { readNaturalTint, writeNaturalTint } from './globe/naturalTintPreference';
 import type { ThemeOverride } from './globe/theme/theme';
 import { setSurfaceMode, useSurfaceMode, type SurfaceMode } from './globe/surfaceMode';
 import './plan/plan.css';
@@ -98,6 +99,7 @@ export const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [mode, setMode] = useState<Tab>(() => tabFromSearch(window.location.search));
   const [layerStates, setLayerStates] = useState<Record<string, LayerState>>({});
+  const [naturalTint, setNaturalTint] = useState(readNaturalTint);
   const [roverOverlayState, setRoverOverlayState] = useState<RoverOverlayState>({ traverse: true, photos: true });
   const [photosAvailable, setPhotosAvailable] = useState(false);
   const [relief, setRelief] = useState(false);
@@ -417,6 +419,11 @@ export const App: React.FC = () => {
     });
   };
 
+  const handleNaturalTintChange = (enabled: boolean) => {
+    setNaturalTint(enabled);
+    writeNaturalTint(enabled);
+  };
+
   const handleOpacityChange = (layerId: string, opacity: number) => {
     setLayerStates((prev) => {
       const current = prev[layerId];
@@ -493,7 +500,7 @@ export const App: React.FC = () => {
         {mode === 'explore' ? (
           <TabBoundary key="explore">
             <Suspense fallback={<div style={{ padding: 'var(--space-6)', color: 'var(--color-text-muted)' }}>Loading globe...</div>}>
-              <GlobePage siteId={currentSiteId} theme={theme} />
+              <GlobePage siteId={currentSiteId} theme={theme} naturalTint={naturalTint} onNaturalTintChange={handleNaturalTintChange} />
             </Suspense>
           </TabBoundary>
         ) : isLoading ? (
@@ -512,6 +519,8 @@ export const App: React.FC = () => {
                 onToggleRoverOverlay={siteData.rover ? toggleRoverOverlay : undefined}
                 onToggleLayer={handleToggleLayer}
                 onOpacityChange={handleOpacityChange}
+                naturalTint={naturalTint}
+                onNaturalTintChange={handleNaturalTintChange}
                 globalLayers={wholePlanet.layers}
                 globalStates={wholePlanet.states}
                 onToggleGlobal={wholePlanet.toggle}
@@ -542,7 +551,7 @@ export const App: React.FC = () => {
               />
             }
             leftLabel="Layers"
-            main={<GlobePlanMap siteData={siteData} layerStates={layerStates} roverOverlayState={roverOverlayState} plan={plan} grid={routeGrid} activePoint={profileHover} relief={relief} wholePlanet={wholePlanet} onMapPoint={handleMapPoint} placingShelter={shelterMove.active} onStartChange={updateStart} onStopChange={updateStop} onRoutePointHover={setProfileHover} />}
+            main={<GlobePlanMap siteData={siteData} layerStates={layerStates} naturalTint={naturalTint} roverOverlayState={roverOverlayState} plan={plan} grid={routeGrid} activePoint={profileHover} relief={relief} wholePlanet={wholePlanet} onMapPoint={handleMapPoint} placingShelter={shelterMove.active} onStartChange={updateStart} onStopChange={updateStop} onRoutePointHover={setProfileHover} />}
             controls={
               <button type="button" className="s48-btn s48-btn--secondary" aria-pressed={relief} onClick={() => setRelief((on) => !on)}>
                 3D relief

@@ -1,11 +1,12 @@
 // Written with AI assistance, directed and reviewed by the team.
-import { ImageryLayer, ImageryLayerCollection } from 'cesium';
+import { ImageryLayer, ImageryLayerCollection, ImageryProvider } from 'cesium';
 import { resolveSiteAssetUrl } from '../config';
 import type { LayerState, SiteData, SiteLayer } from '../types';
 import { createPMTilesImagery } from './pmtilesImagery';
 import { offlineImagerySet } from './offline/imagerySet';
 import { imageryLayerRank, orderImageryLayer } from './layerOrder';
 import { markMapLoadMilestone } from './loadMilestones';
+import { readNaturalTint } from './naturalTintPreference';
 
 export interface ImageryLayerView {
   show: boolean;
@@ -53,6 +54,8 @@ export class GlobeImagery {
   private states: Record<string, LayerState> = {};
   private generation = 0;
   private basemap: ImageryLayer | null = null;
+  private naturalTint = readNaturalTint();
+  private tintGeneration = 0;
 
   constructor(target: ImageryLayerCollection, onTileReady?: () => void) {
     this.target = target;
@@ -70,6 +73,7 @@ export class GlobeImagery {
         const provider = await createPMTilesImagery(
           resolveSiteAssetUrl(site.id, imagerySet.basemap.url),
           imagerySet.basemap.source,
+          false,
           this.onTileReady,
         );
         if (generation !== this.generation) return;
@@ -84,7 +88,19 @@ export class GlobeImagery {
       add.map(async (id) => {
         const layer = site.layers.find((l) => l.id === id)!;
         try {
-          return await createPMTilesImagery(resolveSiteAssetUrl(site.id, layer.url), layer.source || undefined, this.onTileReady);
+          let tint = id === 'image' && this.naturalTint;
+          let provider: ImageryProvider;
+          do {
+            provider = await createPMTilesImagery(
+              resolveSiteAssetUrl(site.id, layer.url),
+              layer.source || undefined,
+              tint,
+              this.onTileReady,
+            );
+            if (id !== 'image' || tint === this.naturalTint) break;
+            tint = this.naturalTint;
+          } while (true);
+          return provider;
         } catch (error) {
           console.warn(`Site layer ${id} did not load`, error);
           return null;
@@ -121,8 +137,37 @@ export class GlobeImagery {
     }
   }
 
+  /** Rebuild only the HiRISE orbital provider so Cesium requests its tiles again. */
+  async setNaturalTint(enabled: boolean): Promise<void> {
+    if (this.naturalTint === enabled) return;
+    this.naturalTint = enabled;
+    const generation = ++this.tintGeneration;
+    const site = this.site;
+    const current = this.layers.get('image');
+    const source = site?.layers.find((layer) => layer.id === 'image');
+    if (!site || !current || !source) return;
+    const show = current.show;
+    const alpha = current.alpha;
+    try {
+      const provider = await createPMTilesImagery(
+        resolveSiteAssetUrl(site.id, source.url),
+        source.source || undefined,
+        enabled,
+      );
+      if (generation !== this.tintGeneration || this.site !== site) return;
+      const replacement = new ImageryLayer(provider, { show, alpha });
+      this.target.remove(current, true);
+      this.layers.set('image', replacement);
+      this.target.add(replacement);
+      orderImageryLayer(this.target, replacement, imageryLayerRank('site-orbital'));
+    } catch (error) {
+      console.warn('Orbital image layer did not reload', error);
+    }
+  }
+
   clear(): void {
     this.generation++;
+    this.tintGeneration++;
     for (const imagery of this.layers.values()) this.target.remove(imagery, true);
     this.layers.clear();
     if (this.basemap) this.target.remove(this.basemap, true);
