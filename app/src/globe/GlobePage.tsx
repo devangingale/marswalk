@@ -207,6 +207,8 @@ export interface GlobePageProps {
   siteId: string;
   /** Applied token set, so map labels repaint when it changes. */
   theme: Theme;
+  naturalTint: boolean;
+  onNaturalTintChange: (enabled: boolean) => void;
 }
 
 /** Elements the graticule edge labels keep clear of: map controls, panel handles, sliding panels. */
@@ -218,7 +220,7 @@ export const GlobePage: React.FC<GlobePageProps> = (props) => {
   return <GlobePageView key={surfaceMode} {...props} surfaceMode={surfaceMode} />;
 };
 
-const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = ({ siteId, theme, surfaceMode }) => {
+const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = ({ siteId, theme, surfaceMode, naturalTint, onNaturalTintChange }) => {
   const initial = useRef(urlState()).current;
   const rootRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -628,6 +630,7 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
   }, [viewer, siteId, initial]);
 
   useEffect(() => siteImageryRef.current?.apply(layerStates), [layerStates]);
+  useEffect(() => { void siteImageryRef.current?.setNaturalTint(naturalTint); }, [naturalTint]);
   useEffect(() => globalRef.current?.apply(globalStates), [globalStates]);
   useEffect(() => temperatureRef.current?.apply({ ...temperature, bin }), [temperature, bin, temperatureManifest]);
   useEffect(
@@ -717,6 +720,8 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
           layerStates={layerStates}
           onToggleLayer={toggle(setLayerStates)}
           onOpacityChange={setOpacity(setLayerStates)}
+          naturalTint={naturalTint}
+          onNaturalTintChange={onNaturalTintChange}
           globalLayers={globalLayers}
           globalStates={globalStates}
           onToggleGlobal={toggle(setGlobalStates)}

@@ -40,6 +40,7 @@ export interface WholePlanetLayers {
 }
 
 interface GlobePlanMapProps extends MapProps {
+  naturalTint?: boolean;
   /** Tilted view showing relief; off is straight down. */
   relief?: boolean;
   wholePlanet?: WholePlanetLayers;
@@ -73,7 +74,7 @@ function token(value: string, fallback: string): string {
 
 export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
   siteData, layerStates, roverOverlayState, plan, onMapPoint, onStartChange, onStopChange, onRoutePointHover,
-  grid, activePoint, relief = false, wholePlanet, placingShelter = false,
+  grid, activePoint, relief = false, wholePlanet, placingShelter = false, naturalTint = true,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
@@ -317,6 +318,7 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
     overlays.setPlan(plan, siteData.origin);
   }, [plan, siteData.origin]);
   useEffect(() => { imageryRef.current?.apply(layerStates); }, [layerStates]);
+  useEffect(() => { void imageryRef.current?.setNaturalTint(naturalTint); }, [naturalTint]);
 
   const globalList = wholePlanet?.layers;
   const globalStates = wholePlanet?.states;
