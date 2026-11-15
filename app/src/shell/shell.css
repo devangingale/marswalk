@@ -36,30 +36,24 @@
   white-space: nowrap;
 }
 
-/* Plan body flex layout to cleanly support collapsible panel */
-.plan-body {
-  display: flex !important;
-  min-height: 0;
-  width: 100%;
-  height: 100%;
-  position: relative;
-  overflow: hidden;
+/* Value of a whole-planet layer at the site: the grid is one flat colour at site scale. */
+.s48-layer__at-site {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
 }
 
-.plan-body > aside.panel {
-  width: 320px;
-  flex-shrink: 0;
-  border-right: var(--border-width) solid var(--color-rule);
-  background: var(--color-surface);
-  overflow-y: auto;
-  z-index: 10;
+/* Under a self-contained row (temperature): line up with the row body. */
+.s48-layer__at-site--row {
+  padding-left: 28px;
 }
 
-.plan-body > div:last-child {
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-  position: relative;
+.s48-layer__at-site b {
+  font-family: var(--font-data);
+  font-variant-numeric: var(--numeric);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
 }
 
 /* Layer row head */
@@ -172,22 +166,6 @@
   font-size: var(--text-xs);
   color: var(--color-text-muted);
   font-weight: var(--weight-regular);
-}
-
-/* Tablet responsiveness at 1024px and below */
-@media (max-width: 1024px) {
-  .plan-body > aside.panel {
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 320px;
-    max-width: 85vw;
-    z-index: 30;
-    border-right: var(--border-width) solid var(--color-rule);
-    box-shadow: var(--shadow-drawer);
-    background: var(--color-surface);
-  }
 }
 
 /* Stepped legend bar for globe layers: one cell per sampled colour */

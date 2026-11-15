@@ -14,15 +14,13 @@ import { getSiteBaseUrl } from '../../config';
 import { loadGrid, type RouteGrid } from '../../lib/grid';
 import type { Plan } from '../../lib/plan';
 import type { SiteData } from '../../types';
-import { formatDistance, formatDose, formatDuration, formatEnergy, formatHeading } from '../../walk/format';
+import { formatDistance, formatDuration, formatHeading } from '../../walk/format';
 import { hazardAhead, hazardFlags } from '../../walk/hazard';
 import { budgetRemaining, RouteTrack, walkStateAt, waypointById } from '../../walk/track';
-import { useSharedPlayback } from '../../walk/usePlayback';
-import { usePlaybackKeys } from '../../walk/usePlaybackKeys';
-import { PlaybackBar } from '../../walk/PlaybackBar';
 import { createMarsViewer, initCesium } from '../cesiumSetup';
-import { siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M, visorCamera, type Pose } from '../frame';
+import { attachOfflineSurface, siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M, visorCamera, type Pose } from '../frame';
 import { GlobeImagery } from '../imageryLayers';
+import type { SiteTerrainMesh } from '../siteTerrain';
 import { groundHeightAt } from './cameraMath';
 import './walkGlobe.css';
 import '../../components/walk.css';
@@ -33,8 +31,11 @@ export interface VisorViewProps {
   track: RouteTrack;
   elapsedS: number;
   onPlan: () => void;
-  /** Overlays mounted inside the visor, above the HUD readouts (the safety layer). */
-  children?: React.ReactNode;
+  /**
+   * The safety readouts mounted inside the visor (warning ladder state and SOS). Given the
+   * impassable-ground notice, if any, so it can sit with the warning ladder readout.
+   */
+  children?: React.ReactNode | ((hazard: string | null) => React.ReactNode);
 }
 
 type HazardData = { status: 'loading' } | { status: 'ready'; flags: boolean[] } | { status: 'error' };
@@ -51,10 +52,9 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
   const viewerRef = useRef<Viewer | null>(null);
   const imageryRef = useRef<GlobeImagery | null>(null);
   const gridRef = useRef<RouteGrid | null>(null);
-  const heightOffsetRef = useRef<number>(SPIKE_HEIGHT_OFFSETS_M[siteData.id] ?? 0);
-
-  const playback = useSharedPlayback(track.durationS, elapsedS);
-  usePlaybackKeys(playback, track);
+  /** Null offline without a site mesh: the ground is the bare ellipsoid. */
+  const heightOffsetRef = useRef<number | null>(SPIKE_HEIGHT_OFFSETS_M[siteData.id] ?? 0);
+  const meshRef = useRef<SiteTerrainMesh | null>(null);
 
   const [hazardData, setHazardData] = useState<HazardData>({ status: 'loading' });
   const state = walkStateAt(plan, track, elapsedS);
@@ -88,7 +88,8 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
     if (!container) return;
 
     let disposed = false;
-    initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN);
+    heightOffsetRef.current = SPIKE_HEIGHT_OFFSETS_M[siteData.id] ?? 0;
+    initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, navigator.onLine);
 
     void (async () => {
       const { viewer, tileset } = await createMarsViewer(container, { interactive: false });
@@ -134,6 +135,17 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
       await imagery.setSite(siteData);
       if (disposed) return;
 
+      // Offline (or Cesium ion unreachable): stand on our site mesh or the ellipsoid, not Cesium Mars heights.
+      if (!tileset) {
+        const surface = await attachOfflineSurface(viewer, siteData);
+        if (disposed) {
+          surface.mesh?.destroy();
+          return;
+        }
+        meshRef.current = surface.mesh;
+        heightOffsetRef.current = surface.heightOffsetM;
+      }
+
       try {
         const grid = await loadGrid(getSiteBaseUrl(siteData.id), siteData.origin);
         if (disposed) return;
@@ -146,7 +158,7 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
       placeVisorCamera(viewer, poseRef.current);
 
       // Measure height offset asynchronously in background without blocking
-      if (gridRef.current) {
+      if (tileset && gridRef.current) {
         void siteHeightOffsetM(viewer, tileset, siteData, gridRef.current)
           .then((offset) => {
             if (disposed) return;
@@ -163,6 +175,8 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
       disposed = true;
       imageryRef.current?.clear();
       imageryRef.current = null;
+      meshRef.current?.destroy();
+      meshRef.current = null;
       viewerRef.current?.destroy();
       viewerRef.current = null;
     };
@@ -184,16 +198,8 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
   }
 
   const hazardM = hazardData.status === 'ready' ? hazardAhead(track.vertices, hazardData.flags, state.alongM) : null;
+  // Derived each frame, not held in state: playback re-renders this view every frame.
   const hasHazard = hazardM !== null && hazardM > 0;
-  const [visibleHazardM, setVisibleHazardM] = useState<number | null>(hasHazard ? hazardM : null);
-  useEffect(() => {
-    if (hazardM !== null && hazardM > 0) {
-      setVisibleHazardM(hazardM);
-      return;
-    }
-    const timeout = window.setTimeout(() => setVisibleHazardM(null), 160);
-    return () => window.clearTimeout(timeout);
-  }, [hazardM]);
 
   const next = state.next ? waypointById(plan, state.next.id) : null;
 
@@ -210,11 +216,14 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
     );
   }
 
+  const hazardText = !hasHazard ? null : hazardM < 2.5 ? 'Impassable ground ahead' : `Impassable ${formatDistance(hazardM)} ahead`;
+
+  // Four readouts: heading, next stop, time remaining, and the warning ladder state (children).
   return (
     <div className="s48-visor" data-theme="dark">
       <div ref={containerRef} className="s48-visor-globe" />
       <div className="s48-visor-overlay">
-        <div className="s48-visor-heading">
+        <div className="s48-visor-readout s48-visor-heading">
           <span>Heading</span>
           <div className="s48-heading-tape" aria-hidden="true">
             {Array.from({ length: 5 }, (_, index) => {
@@ -229,35 +238,17 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
           </div>
           <strong>{formatHeading(state.headingDeg)}</strong>
         </div>
-        <div className="s48-visor-next">
+        <div className="s48-visor-readout s48-visor-next">
           <span>Next stop</span>
           <strong>{next && state.next ? formatDistance(state.next.distanceM) : 'Home'}</strong>
-          <small>{next?.name}</small>
+          <small>{next?.name ?? plan.start.label}</small>
         </div>
-        <div className="s48-visor-budget">
-          <span>Remaining</span>
+        <div className="s48-visor-readout s48-visor-budget">
+          <span>Time remaining</span>
           <strong>{formatDuration(budget.time.remaining)}</strong>
-          <small>{formatEnergy(budget.energy.remaining)}</small>
-          <small>{formatDose(budget.dose.remaining)}</small>
-        </div>
-        <div
-          role="alert"
-          aria-hidden={!hasHazard}
-          className={`s48-visor-hazard${!hasHazard ? ' is-hidden' : ''}`}
-        >
-          {visibleHazardM !== null && visibleHazardM > 0 && `Impassable ${formatDistance(visibleHazardM)} ahead`}
         </div>
       </div>
-      {children}
-      <div className="s48-visor-controls">
-        <PlaybackBar
-          playback={playback}
-          durationS={track.durationS}
-          elapsedS={elapsedS}
-          siteData={siteData}
-          plan={plan}
-        />
-      </div>
+      {typeof children === 'function' ? children(hazardText) : children}
     </div>
   );
 };

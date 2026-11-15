@@ -1,5 +1,5 @@
 // Written with AI assistance, directed and reviewed by the team.
-import { Cesium3DTileset, Color, Ellipsoid, Globe, Ion, Viewer } from 'cesium';
+import { Cesium3DTileset, ClassificationType, Color, Ellipsoid, Globe, Ion, Viewer } from 'cesium';
 import { patchAntimeridianImagery } from './antimeridian';
 
 export const CESIUM_MARS_ASSET_ID = 3644333;
@@ -71,9 +71,20 @@ export async function createMarsViewer(
     viewer.scene.primitives.add(tileset);
     return { viewer, tileset, mode };
   } catch (error) {
-    console.warn('Cesium Mars tileset failed to load', error);
+    console.warn('Cesium Mars tileset failed to load; using the offline surface', error);
     mode = 'offline';
+    // The viewer was built for Cesium Mars without a globe; offline imagery and overlays need one.
+    if (!viewer.scene.globe && opts.globe !== false) viewer.scene.globe = new Globe(Ellipsoid.MARS);
     setOfflineGlobeColour();
+    viewer.scene.requestRender();
     return { viewer, tileset: null, mode };
   }
+}
+
+/**
+ * Where ground-clamped lines drape: Cesium Mars online; offline, the ellipsoid globe and our
+ * site terrain mesh (a 3D tileset) when one is attached.
+ */
+export function surfaceClassification(tileset: Cesium3DTileset | null): ClassificationType {
+  return tileset ? ClassificationType.CESIUM_3D_TILE : ClassificationType.BOTH;
 }

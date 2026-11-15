@@ -2,8 +2,8 @@
 // The one layout every tab uses: left panel, map, right panel, time bar under the map,
 // small map controls top-right. Both side panels collapse; below OVERLAY_BELOW_PX an open
 // panel slides over the map instead of narrowing it.
-import React, { useCallback, useEffect, useId, useState, type ReactNode } from 'react';
-import { OVERLAY_BELOW_PX, readPanels, togglePanel, writePanels, type PanelState, type Side } from './regions';
+import React, { useCallback, useEffect, useId, useState, type CSSProperties, type ReactNode } from 'react';
+import { OVERLAY_BELOW_PX, readPanels, togglePanel, writePanels, type PanelState, type Side } from './panelState';
 import './regions.css';
 
 export interface RegionsProps {
@@ -38,6 +38,20 @@ const useOverlay = () => {
   return overlay;
 };
 
+/** Height of the time bar in px, so a panel over the map can stop above it. */
+const useHeight = (element: HTMLElement | null) => {
+  const [height, setHeight] = useState(0);
+  useEffect(() => {
+    if (!element) { setHeight(0); return; }
+    const update = () => setHeight(Math.round(element.getBoundingClientRect().height));
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [element]);
+  return height;
+};
+
 const Chevron: React.FC<{ pointing: Side }> = ({ pointing }) => (
   <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false">
     <path d={pointing === 'left' ? 'M7.5 2.5 4 6l3.5 3.5' : 'M4.5 2.5 8 6 4.5 9.5'} fill="none" stroke="currentColor" strokeWidth="1.5" />
@@ -47,10 +61,18 @@ const Chevron: React.FC<{ pointing: Side }> = ({ pointing }) => (
 export const Regions: React.FC<RegionsProps> = ({ id, main, left, leftLabel = 'Panel', right, rightLabel = 'Details', controls, time, bare = false }) => {
   const overlay = useOverlay();
   const [panels, setPanels] = useState<PanelState>(() => readPanels(id, window.innerWidth, storage()));
+  const [timeBar, setTimeBar] = useState<HTMLDivElement | null>(null);
+  const timeHeight = useHeight(timeBar);
   const leftId = useId();
   const rightId = useId();
 
   useEffect(() => { setPanels(readPanels(id, window.innerWidth, storage())); }, [id]);
+
+  // Two open panels over a narrow map would cover it: a state remembered from a wide window,
+  // or a window narrowed past OVERLAY_BELOW_PX, keeps the right panel (the task) and folds the left.
+  useEffect(() => {
+    if (overlay) setPanels((current) => (current.left && current.right ? { ...current, left: false } : current));
+  }, [overlay, id]);
 
   const toggle = useCallback((side: Side) => {
     setPanels((current) => {
@@ -87,6 +109,7 @@ export const Regions: React.FC<RegionsProps> = ({ id, main, left, leftLabel = 'P
       data-left={leftOpen ? 'open' : 'closed'}
       data-right={rightOpen ? 'open' : 'closed'}
       data-bare={bare ? 'true' : 'false'}
+      style={{ '--s48-time-height': `${timeHeight}px` } as CSSProperties}
     >
       {hasLeft && (
         <aside id={leftId} className="s48-regions__panel s48-regions__panel--left" aria-label={leftLabel} hidden={!leftOpen}>
@@ -100,7 +123,7 @@ export const Regions: React.FC<RegionsProps> = ({ id, main, left, leftLabel = 'P
           {hasRight && handle('right', rightOpen, rightLabel, rightId)}
           {controls && <div className="s48-regions__controls" data-over-map>{controls}</div>}
         </div>
-        {time && <div className="s48-regions__time">{time}</div>}
+        {time && <div className="s48-regions__time" ref={setTimeBar}>{time}</div>}
       </div>
       {hasRight && (
         <aside id={rightId} className="s48-regions__panel s48-regions__panel--right" aria-label={rightLabel} hidden={!rightOpen}>

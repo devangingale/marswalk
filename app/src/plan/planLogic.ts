@@ -1,6 +1,10 @@
 import type { Plan, PlanParams, PlanStart, PlanStop, PlanTotals } from '../lib/plan';
 import type { RouteGrid } from '../lib/grid';
 
+export function isLatestPlanRequest(requestId: number, latestRequestId: number): boolean {
+  return requestId === latestRequestId;
+}
+
 export const DEFAULT_PARAMS: PlanParams = {
   crew: 2, time_limit_s: 28_800, suit_mass_kg: 120, body_mass_kg: 80,
   stop_time_s: 1200, solar_event: false,

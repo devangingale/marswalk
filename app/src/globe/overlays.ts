@@ -18,8 +18,10 @@ import {
   EntityCollection,
   HeightReference,
   HorizontalOrigin,
+  JulianDate,
   LabelStyle,
   Math as CesiumMath,
+  Scene,
   PolylineDashMaterialProperty,
   Matrix4,
   Transforms,
@@ -38,6 +40,7 @@ import {
   type SlopeStats,
 } from '../lib/routeShape';
 import { lonLatToCartesian, type Pose } from './frame';
+import { cullScreenLabels, type Box } from './graticule';
 import { circleRing, crewLabel, labelOnLeft, type CrewMarkerModel } from '../safety/crewMarkers';
 import { crewRingImage } from '../safety/crewMarkerImage';
 import { canvasMarkerImages, readToken, type MarkerImage, type MarkerImages, type TokenReader } from './markerImages';
@@ -57,6 +60,8 @@ import {
   sectionForLegs,
   sectionLabel,
   slopeLabels,
+  screenSpan,
+  showSummaryLabels,
   stretchStyles,
   waypointLabel,
   type RouteHover,
@@ -117,6 +122,7 @@ export interface OverlayOptions {
   /** CESIUM_3D_TILE on Cesium Mars; TERRAIN on the bare-ellipsoid fallback. */
   classification?: ClassificationType;
   onSectionHover?: (sectionId: string | null) => void;
+  scene?: Scene;
   /** A separate collection (a data source added after the others) for the crew and rover, so they draw on top. */
   crewHost?: OverlayHost;
   /** The astronaut mark; drawn from tokens on a canvas unless a stub is given (tests). */
@@ -156,6 +162,9 @@ export class GlobeOverlays {
   private images: MarkerImages | null;
   private readonly classification: ClassificationType;
   private readonly onSectionHover?: (sectionId: string | null) => void;
+  private readonly scene?: Scene;
+  private readonly hiddenLabels = new Set<Entity>();
+  private readonly removeScreenUpdate?: () => void;
   private readonly meta = new Map<Entity, Meta>();
   private readonly owned = new Set<Entity>();
   private readonly groups: Record<'plan' | 'rover' | 'chemistry' | 'walker' | 'crew', Entity[]> = {
@@ -190,6 +199,8 @@ export class GlobeOverlays {
     this.images = options.images ?? null;
     this.classification = options.classification ?? ClassificationType.CESIUM_3D_TILE;
     this.onSectionHover = options.onSectionHover;
+    this.scene = options.scene;
+    this.removeScreenUpdate = this.scene?.preRender.addEventListener((_scene, time) => this.updateScreenLabels(time));
   }
 
   private markers(): MarkerImages {
@@ -222,6 +233,7 @@ export class GlobeOverlays {
     this.groups[group].push(entity);
     this.owned.add(entity);
     if (meta) this.meta.set(entity, meta);
+    if (entity.label) entity.label.show = new CallbackProperty(() => !this.hiddenLabels.has(entity), false);
     return entity;
   }
 
@@ -230,8 +242,81 @@ export class GlobeOverlays {
       this.collection(group).remove(entity);
       this.meta.delete(entity);
       this.owned.delete(entity);
+      this.hiddenLabels.delete(entity);
     }
     this.groups[group] = [];
+  }
+
+  private updateScreenLabels(time: JulianDate): void {
+    const scene = this.scene;
+    if (!scene || !this.plan) return;
+    const project = (entity: Entity) => {
+      const position = entity.position?.getValue(time);
+      return position ? scene.cartesianToCanvasCoordinates(position) : undefined;
+    };
+    const markers = this.groups.plan.filter((entity) => entity.billboard && this.markerPriority(entity) !== null);
+    const markerData: { entity: Entity; point: Cartesian2; width: number; height: number; priority: number }[] = [];
+    for (const marker of markers) {
+      const point = project(marker);
+      if (!point) continue;
+      const width = marker.billboard?.width?.getValue(time) ?? 20;
+      const height = marker.billboard?.height?.getValue(time) ?? 20;
+      markerData.push({ entity: marker, point, width, height, priority: this.markerPriority(marker)! });
+    }
+    const markerBoxes: Box[] = markerData.map(({ point, width, height }) => [
+      point.x - width / 2, point.y - height / 2, point.x + width / 2, point.y + height / 2,
+    ]);
+
+    const routePoints = routeLine(this.plan).flatMap(([lon, lat]) => {
+      const point = scene.cartesianToCanvasCoordinates(this.surfacePosition(lon, lat));
+      return point ? [{ x: point.x, y: point.y }] : [];
+    });
+    const summariesVisible = showSummaryLabels(screenSpan(routePoints));
+    const candidates: { id: string; box: Box; priority: number }[] = [];
+    const entities: Entity[] = [];
+    this.hiddenLabels.clear();
+    for (const entity of this.groups.plan) {
+      if (!entity.label) continue;
+      this.hiddenLabels.add(entity);
+      const priority = this.labelPriority(entity);
+      if (priority === null || (priority === 3 && !summariesVisible)) continue;
+      const point = project(entity);
+      const text = entity.label.text?.getValue(time) ?? '';
+      if (!point || !text) continue;
+      const font = entity.label.font?.getValue(time) ?? '13px sans-serif';
+      const fontSize = Number(font.match(/(\d+(?:\.\d+)?)px/)?.[1] ?? 13);
+      const width = [...text].reduce((sum, char) => sum + fontSize * (char === ' ' ? 0.28 : 0.54), 0) + 4;
+      const height = fontSize + 4;
+      const offset = entity.label.pixelOffset?.getValue(time) ?? Cartesian2.ZERO;
+      const horizontal = entity.label.horizontalOrigin?.getValue(time) ?? HorizontalOrigin.CENTER;
+      const vertical = entity.label.verticalOrigin?.getValue(time) ?? VerticalOrigin.CENTER;
+      const x = point.x + offset.x;
+      const y = point.y + offset.y;
+      const left = horizontal === HorizontalOrigin.RIGHT ? x - width : horizontal === HorizontalOrigin.CENTER ? x - width / 2 : x;
+      const top = vertical === VerticalOrigin.BOTTOM ? y - height : vertical === VerticalOrigin.CENTER ? y - height / 2 : y;
+      candidates.push({ id: entity.id, box: [left, top, left + width, top + height], priority });
+      entities.push(entity);
+    }
+    const visibleIds = new Set(cullScreenLabels(candidates, markerBoxes));
+    for (const entity of entities) if (visibleIds.has(entity.id)) this.hiddenLabels.delete(entity);
+  }
+
+  private markerPriority(entity: Entity): number | null {
+    const lines = this.meta.get(entity);
+    if (lines?.kind !== 'text') return null;
+    if (lines.lines[0].startsWith('Stop ')) return 0;
+    if (lines.lines[0] === 'Rover drop-off') return 1;
+    if (lines.lines[0] === 'Fork') return 2;
+    return null;
+  }
+
+  private labelPriority(entity: Entity): number | null {
+    const lines = this.meta.get(entity);
+    if (lines?.kind !== 'text') return null;
+    if (lines.lines[0] === 'Rover drop-off') return 1;
+    if (lines.lines[0] === 'Fork' || lines.lines[0].startsWith('to Stop ') || lines.lines[0] === 'back to drop-off') return 2;
+    if (/^(High|Low|Steepest)\b/.test(lines.lines[0])) return 3;
+    return null;
   }
 
   /** Bundle elevation grid for slopes; without it the gradient view and slope markers stay off. */
@@ -319,7 +404,7 @@ export class GlobeOverlays {
             return style === 'highlight' ? highlighted : colour;
           }, false),
         );
-      // zIndex orders ground lines: casing, then the coloured body, then the dashed core.
+      // Put the A3 route above rover traverses, then order casing, body, and dashed core.
       const polyline = (
         line: [number, number][],
         width: number,
@@ -337,19 +422,19 @@ export class GlobeOverlays {
         },
       });
 
-      this.add('plan', polyline(stretch.line, casingWidth + 2, 10, { material: styleColour(casing, casing) }), meta);
+      this.add('plan', polyline(stretch.line, casingWidth + 2, 400, { material: styleColour(casing, casing) }), meta);
       const grade = this.gradient && this.stats ? this.stretchGrades(stretch) : null;
       if (grade) {
         for (const run of grade) {
           const c = grades[run.bin - 1];
-          this.add('plan', polyline(run.line, coreWidth + 2, 20, { material: styleColour(c, c) }), meta);
+          this.add('plan', polyline(run.line, coreWidth + 2, 410, { material: styleColour(c, c) }), meta);
         }
       } else {
-        this.add('plan', polyline(stretch.line, coreWidth + 2, 20, { material: styleColour(base, highlight) }), meta);
+        this.add('plan', polyline(stretch.line, coreWidth + 2, 410, { material: styleColour(base, highlight) }), meta);
         this.cores[index].push(
           this.add(
             'plan',
-            polyline(stretch.line, 2, 30, {
+            polyline(stretch.line, 2, 420, {
               material: new PolylineDashMaterialProperty({ color: dash, gapColor: Color.TRANSPARENT, dashLength: 12 }),
             }),
             meta,
@@ -364,7 +449,7 @@ export class GlobeOverlays {
           {
             position,
             billboard: {
-              ...this.billboard(this.markers().chevron(), NEAR),
+              ...this.billboard(this.markers().chevron()),
               rotation: -CesiumMath.toRadians(c.bearingDeg),
               alignedAxis: northAt(position),
             },
@@ -381,14 +466,14 @@ export class GlobeOverlays {
     return gradientDeg.every(Number.isFinite) ? gradeRuns(stretch.line, gradientDeg) : null;
   }
 
-  private billboard(image: MarkerImage, show: DistanceDisplayCondition): Entity.ConstructorOptions['billboard'] {
+  private billboard(image: MarkerImage, show?: DistanceDisplayCondition): Entity.ConstructorOptions['billboard'] {
     return {
       image: image.image,
       width: image.width,
       height: image.height,
       heightReference: this.useSurfaceHeights ? HeightReference.NONE : HeightReference.CLAMP_TO_GROUND,
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
-      distanceDisplayCondition: show,
+      ...(show ? { distanceDisplayCondition: show } : {}),
     };
   }
 
@@ -421,7 +506,7 @@ export class GlobeOverlays {
       const lines = fork.branches.map((b) => branchLabel(b.toLabel, plan));
       this.add(
         'plan',
-        { position: this.surfacePosition(fork.lon, fork.lat), billboard: this.billboard(this.markers().fork(), SITE) },
+        { position: this.surfacePosition(fork.lon, fork.lat), billboard: this.billboard(this.markers().fork()) },
         { kind: 'text', lines: ['Fork', ...lines] },
       );
       const at: [number, number] = [fork.lon, fork.lat];
@@ -434,7 +519,7 @@ export class GlobeOverlays {
         this.add('plan', {
           position: this.surfacePosition(lon, lat),
           label: this.label(lines[i], NEAR, [dx, dy], dx < 0),
-        });
+        }, { kind: 'text', lines: [lines[i]] });
       });
     }
   }
@@ -479,8 +564,10 @@ export class GlobeOverlays {
       stats.steepestAt ? distanceAlong(routeLine(plan), stats.steepestAt, frame) : 0,
     );
     const marks: [number, number, MarkerImage, string][] = [];
-    if (stats.highAt && labels.high) marks.push([stats.highAt[0], stats.highAt[1], images.high(), labels.high]);
-    if (stats.lowAt && labels.low) marks.push([stats.lowAt[0], stats.lowAt[1], images.low(), labels.low]);
+    // A flat or zero-length route has its high and low on one vertex: two labels on one spot, so neither.
+    const samePoint = !!stats.highAt && !!stats.lowAt && stats.highAt[0] === stats.lowAt[0] && stats.highAt[1] === stats.lowAt[1];
+    if (!samePoint && stats.highAt && labels.high) marks.push([stats.highAt[0], stats.highAt[1], images.high(), labels.high]);
+    if (!samePoint && stats.lowAt && labels.low) marks.push([stats.lowAt[0], stats.lowAt[1], images.low(), labels.low]);
     if (stats.steepestAt && labels.steepest) {
       marks.push([stats.steepestAt[0], stats.steepestAt[1], images.steepest(), labels.steepest]);
     }
@@ -502,7 +589,7 @@ export class GlobeOverlays {
   setRover(traverse: GeoJSON.LineString | null, sites: PhotoSite[], state: RoverOverlayState): void {
     this.roverData = { traverse, sites, state };
     this.drawRover();
-    // MapLibre kept the planned route above rover overlays; preserve that draw order in Cesium.
+    // Keep the planned route above rover overlays in Cesium.
     this.setPlan(this.plan, this.origin ?? undefined);
   }
 
@@ -721,6 +808,7 @@ export class GlobeOverlays {
   }
 
   clear(): void {
+    this.removeScreenUpdate?.();
     this.crewKey = '';
     this.crewModel = null;
     for (const group of Object.keys(this.groups) as (keyof GlobeOverlays['groups'])[]) this.removeGroup(group);

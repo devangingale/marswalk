@@ -78,6 +78,11 @@ export type HoverMode = 'route' | 'section';
 
 /** Pixel span under which the route is too small on screen to hover by section. */
 export const SECTION_HOVER_MIN_PX = 400;
+export const SUMMARY_LABEL_MIN_PX = 150;
+
+export function showSummaryLabels(routeSpanPx: number): boolean {
+  return routeSpanPx >= SUMMARY_LABEL_MIN_PX;
+}
 
 export function hoverMode(spanPx: number): HoverMode {
   return spanPx < SECTION_HOVER_MIN_PX ? 'route' : 'section';
