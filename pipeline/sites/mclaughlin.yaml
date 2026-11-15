@@ -1,0 +1,13 @@
+# McLaughlin Crater floor. Ancient lacustrine carbonate and clay hydrated mineral site.
+name: mclaughlin
+title: McLaughlin Crater
+rover: null
+
+dem: data/raw/mclaughlin_hirise_dtm/DTEEC_040512_2020_040156_2020_A01_1m_Eqc_latTs0_lon0.tif
+image: data/raw/mclaughlin_hirise_ortho/ESP_040156_2020_RED_A_01_ORTHO_25cm_Eqc_latTs0_lon0.tif
+poses: null
+
+# Walk area [left, bottom, right, top]: 4 x 4 km area on crater floor.
+area: [-1313800, 1285000, -1309800, 1289000]
+
+out: data/sites/mclaughlin

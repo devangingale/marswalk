@@ -454,7 +454,7 @@ export const App: React.FC = () => {
             currentSite={currentSiteId}
             onSiteChange={handleSiteChange}
             siteTitle={siteData.title}
-            roverName={siteData.rover}
+            roverName={siteData.rover ?? undefined}
           />
           {siteData.size_m && (
             <span className="s48-site-extent num" title="Site footprint">
@@ -507,9 +507,9 @@ export const App: React.FC = () => {
               <LayerPanel
                 layers={siteData.layers}
                 layerStates={layerStates}
-                roverOverlayState={roverOverlayState}
-                photosAvailable={photosAvailable}
-                onToggleRoverOverlay={toggleRoverOverlay}
+                roverOverlayState={siteData.rover ? roverOverlayState : undefined}
+                photosAvailable={siteData.rover ? photosAvailable : false}
+                onToggleRoverOverlay={siteData.rover ? toggleRoverOverlay : undefined}
                 onToggleLayer={handleToggleLayer}
                 onOpacityChange={handleOpacityChange}
                 globalLayers={wholePlanet.layers}

@@ -13,6 +13,7 @@ interface SiteSwitcherProps {
 const SITE_NAMES: Record<string, { name: string; rover: string }> = {
   gale: { name: 'Mount Sharp, Gale', rover: 'Curiosity' },
   jezero: { name: 'Jezero delta', rover: 'Perseverance' },
+  mclaughlin: { name: 'McLaughlin Crater', rover: '' },
 };
 
 export const SiteSwitcher: React.FC<SiteSwitcherProps> = ({
