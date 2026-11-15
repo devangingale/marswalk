@@ -1,18 +1,22 @@
 // Written with AI assistance, directed and reviewed by the team.
-// React side of the 360° surface view: loads panoramas.json (falling back to the built-in
-// sample stops), owns the SurfaceView on the globe's viewer, and draws the enter popover and,
-// while the camera is inside a panorama, the astronaut visor HUD.
+// React side of the 360° surface view: loads panoramas.json (from pipeline/build_panoramas.py),
+// owns the SurfaceView on the globe's viewer, and draws the enter popover and, while the camera
+// is inside a panorama, the astronaut visor HUD. There is no fallback content: if the manifest
+// or a photo does not load, the popover or a notice says so.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { Viewer } from 'cesium';
-import { formatDistance, loadManifest, nearestStop, stopById, type LoadedManifest, type LonLat, type PanoramaStop } from './panoramas';
-import { SurfaceView, isInSurfaceView } from './SurfaceView';
-import { stepsFor } from './steps';
-import { VisorHud, type ImageState } from './VisorHud';
+import { formatMetres } from './geodesic';
+import { loadManifest, nearestStop, stopById, type LoadedManifest, type LonLat, type PanoramaStop } from './panoramas';
+import { SurfaceView, isInSurfaceView, type ReconGround, type ReconSite } from './SurfaceView';
+import { ReconHud, VisorHud } from './VisorHud';
 import './surface360.css';
 
 /** Fade length for entering and leaving, ms; matches --s360-fade in surface360.css. */
 const FADE_MS = 220;
 const ZOOM_STEP_DEG = 5;
+const NOTICE_MS = 6000;
+/** A known site counts as having a surface mosaic when a panorama stop is this close, metres. */
+export const MOSAIC_RADIUS_M = 2000;
 
 export interface EnterCandidate {
   /** Screen position of the click, relative to the map container. */
@@ -25,41 +29,60 @@ export interface EnterCandidate {
 export interface Surface360 {
   active: boolean;
   ready: boolean;
+  /** Why panoramas are unavailable, when the manifest failed to load. */
+  unavailable: string | null;
   /** Nearest panorama stop to a point, for the enter popover. */
   nearest: (at: LonLat) => { stop: PanoramaStop; distanceM: number } | null;
   enter: (stopId: string) => void;
+  /** Eye-level view on the orbital surface at a site with no surface mosaic. */
+  enterRecon: (site: ReconSite) => void;
   exit: () => void;
   overlay: React.ReactNode;
 }
 
 export function useSurface360(viewer: Viewer | null): Surface360 {
   const [loaded, setLoaded] = useState<LoadedManifest | null>(null);
+  const [unavailable, setUnavailable] = useState<string | null>(null);
   const [view, setView] = useState<SurfaceView | null>(null);
   const [stop, setStop] = useState<PanoramaStop | null>(null);
-  const [imageState, setImageState] = useState<ImageState>('loading');
+  const [recon, setRecon] = useState<{ site: ReconSite; ground: ReconGround } | null>(null);
   const [fading, setFading] = useState(false);
   const [stepFade, setStepFade] = useState(false);
-  /** EVA steps walked with < and > since entering the view. */
-  const [stepsWalked, setStepsWalked] = useState(0);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let live = true;
-    void loadManifest().then((m) => {
-      if (live) setLoaded(m);
-    });
+    loadManifest()
+      .then((m) => live && setLoaded(m))
+      .catch((error: unknown) => {
+        if (!live) return;
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn('360° surface view unavailable:', message);
+        setUnavailable(message);
+      });
     return () => {
       live = false;
     };
   }, []);
 
   useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(null), NOTICE_MS);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+
+  useEffect(() => {
     if (!viewer) return;
     const created = new SurfaceView(viewer, {
-      onStop: (s, state) => {
+      onStop: (s) => {
         setStop(s);
-        setImageState(state);
+        setRecon(null);
       },
-      onWalk: (metres) => setStepsWalked((n) => n + stepsFor(metres)),
+      onRecon: (site, ground) => {
+        setRecon({ site, ground });
+        setStop(null);
+      },
+      onError: setNotice,
       onStepFade: setStepFade,
     });
     setView(created);
@@ -67,36 +90,44 @@ export function useSurface360(viewer: Viewer | null): Surface360 {
       created.destroy();
       setView(null);
       setStop(null);
+      setRecon(null);
     };
   }, [viewer]);
 
-  const active = stop !== null;
-
-  const fade = useCallback((then: () => void) => {
-    setFading(true);
-    window.setTimeout(() => {
-      then();
-      requestAnimationFrame(() => setFading(false));
-    }, FADE_MS);
-  }, []);
+  const active = stop !== null || recon !== null;
 
   const enter = useCallback(
     (stopId: string) => {
       const target = loaded && stopById(loaded.manifest, stopId);
       if (!view || !loaded || !target) return;
-      setStepsWalked(0);
-      fade(() => view.enter(loaded.manifest, loaded.baseUrl, target));
+      // The photo loads first (the screen dims meanwhile); only then does the orbital view fade out.
+      setFading(true);
+      void view.enter(loaded.manifest, loaded.baseUrl, target).then(() => {
+        window.setTimeout(() => setFading(false), FADE_MS);
+      });
     },
-    [view, loaded, fade],
+    [view, loaded],
+  );
+
+  const enterRecon = useCallback(
+    (site: ReconSite) => {
+      if (!view || view.active) return;
+      setFading(true);
+      void view.enterRecon(site).then(() => window.setTimeout(() => setFading(false), FADE_MS));
+    },
+    [view],
   );
 
   const exit = useCallback(() => {
     if (!view?.active) return;
-    fade(() => {
+    setFading(true);
+    window.setTimeout(() => {
       view.exit();
       setStop(null);
-    });
-  }, [view, fade]);
+      setRecon(null);
+      requestAnimationFrame(() => setFading(false));
+    }, FADE_MS);
+  }, [view]);
 
   // ?pano=<stop id> opens straight into that stop's panorama, like the page's other URL state.
   const deepLinked = useRef(false);
@@ -107,11 +138,11 @@ export function useSurface360(viewer: Viewer | null): Surface360 {
     if (id && stopById(loaded.manifest, id)) enter(id);
   }, [view, loaded, enter]);
 
-  const walk = useCallback((stopId: string) => view?.walk(stopId), [view]);
-  const jump = useCallback((stopId: string) => view?.goTo(stopId), [view]);
+  const walk = useCallback((stopId: string) => void view?.walk(stopId), [view]);
+  const jump = useCallback((stopId: string) => void view?.goTo(stopId), [view]);
   const zoom = useCallback((delta: number) => view?.zoomBy(delta), [view]);
 
-  // + / - zoom the lens. Escape is the visor's: it closes the POI drawer first, then exits.
+  // + / - zoom the lens. Escape is the visor's: it collapses the metadata card first, then exits.
   useEffect(() => {
     if (!active) return;
     const onKey = (event: KeyboardEvent) => {
@@ -141,20 +172,24 @@ export function useSurface360(viewer: Viewer | null): Surface360 {
         <VisorHud
           stop={stop}
           manifest={loaded.manifest}
-          isSample={loaded.isSample}
-          imageState={imageState}
+          baseUrl={loaded.baseUrl}
           zoomStepDeg={ZOOM_STEP_DEG}
-          stepsWalked={stepsWalked}
           onExit={exit}
           onZoom={zoom}
           onWalk={walk}
           onJump={jump}
         />
       )}
+      {inside && recon && <ReconHud site={recon.site} ground={recon.ground} zoomStepDeg={ZOOM_STEP_DEG} onExit={exit} onZoom={zoom} />}
+      {notice && (
+        <div className="s360-notice" role="alert">
+          {notice}
+        </div>
+      )}
     </>
   );
 
-  return { active, ready: !!loaded && !!view, nearest, enter, exit, overlay };
+  return { active, ready: !!loaded && !!view, unavailable, nearest, enter, enterRecon, exit, overlay };
 }
 
 /** The popover on a clicked waypoint or rover marker. */
@@ -175,7 +210,7 @@ export const EnterSurfacePopover: React.FC<{
       {near ? (
         <>
           <div className="s360-popover__meta">
-            Panorama: {near.stop.name} · {near.distanceM < 5 ? 'here' : `${formatDistance(near.distanceM)} away`}
+            {near.stop.pia_id} · {near.stop.rover} sol {near.stop.sol} · {near.distanceM < 5 ? 'here' : `${formatMetres(near.distanceM)} away`}
           </div>
           <button
             type="button"
@@ -190,7 +225,7 @@ export const EnterSurfacePopover: React.FC<{
           </button>
         </>
       ) : (
-        <div className="s360-popover__meta">Loading panoramas…</div>
+        <div className="s360-popover__meta">{surface.unavailable ? `360° view unavailable: ${surface.unavailable}` : 'Loading panoramas…'}</div>
       )}
     </div>
   );

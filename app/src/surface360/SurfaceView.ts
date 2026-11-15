@@ -1,11 +1,14 @@
 // Written with AI assistance, directed and reviewed by the team.
 // The 360° astronaut surface view on the globe's own viewer: an equirectangular panorama
-// around a stop, the camera locked inside it, ground chevrons to the previous and next stops
-// and science markers at their bearings. Entering hides the orbital scene; exiting restores
-// the camera and everything that was shown.
+// around a stop, the camera locked inside it, and ground chevrons along the true geodesic
+// bearing to the previous and next stops on the same rover traverse. Only the stop's real NASA
+// photo is ever shown: it is loaded before entering, and a stop whose photo fails is not entered.
+// Entering hides the orbital scene; exiting restores the camera and everything that was shown.
 import {
   Cartesian2,
   Cartesian3,
+  Cartographic,
+  Cesium3DTileset,
   Color,
   CustomDataSource,
   Ellipsoid,
@@ -24,21 +27,16 @@ import {
   VerticalOrigin,
   type Viewer,
 } from 'cesium';
-import { fallbackPanorama } from './fallbackPanorama';
-import { legBetween, legLabel } from './steps';
+import { formatMetres, geodesicBearingDeg, geodesicM } from './geodesic';
 import {
   EYE_HEIGHT_M,
   FOV_DEFAULT_DEG,
-  bearingDeg,
   clampFov,
-  distanceM,
   enuDirection,
   frameHeadingDeg,
   resolveImageUrl,
   stopById,
-  stopLonLat,
   type PanoramaManifest,
-  type PanoramaPoi,
   type PanoramaStop,
   type Walkability,
 } from './panoramas';
@@ -47,15 +45,35 @@ export interface SurfaceTelemetry {
   heading: number;
   pitch: number;
   fov: number;
+  /** The panorama stop, or null in orbital recon. */
   stop: PanoramaStop | null;
+  /** The known site in orbital recon (no surface mosaic), else null. */
+  site: ReconSite | null;
+}
+
+/** A known site (known_sites.csv via sites.json) viewed at eye level on the orbital surface. */
+export interface ReconSite {
+  id: string;
+  name: string;
+  lat: number;
+  lon_east: number;
+  /** MOLA elevation from the site finder's evidence, metres, when published. */
+  elevation_m: number | null;
+}
+
+/**
+ * What the recon camera actually stands on: Cesium Mars 3D tiles (built from orbital DEMs and
+ * imagery), or, offline, the orbital imagery draped on the smooth ellipsoid with no relief.
+ */
+export interface ReconGround {
+  terrain: 'tiles' | 'ellipsoid';
+  /** Ground height under the eye on the rendered surface, metres. */
+  groundM: number;
 }
 
 declare global {
   interface Window {
     marswalkTelemetry?: SurfaceTelemetry;
-  }
-  interface WindowEventMap {
-    'marswalk:poi-select': CustomEvent<PanoramaPoi>;
   }
 }
 
@@ -69,11 +87,12 @@ export function isInSurfaceView(viewer: Viewer): boolean {
 
 export interface SurfaceViewOptions {
   onTelemetry?: (t: SurfaceTelemetry) => void;
-  onStop?: (stop: PanoramaStop, imageState: 'loading' | 'photo' | 'synthetic') => void;
-  onPoi?: (poi: PanoramaPoi | null) => void;
-  /** A step walked to a neighbouring stop with < or >, with its surface distance. */
-  onWalk?: (metres: number, to: PanoramaStop) => void;
-  /** True while a step transition has the screen dimmed. */
+  onStop?: (stop: PanoramaStop) => void;
+  /** Entered orbital recon at a site, standing on the given ground. */
+  onRecon?: (site: ReconSite, ground: ReconGround) => void;
+  /** A stop's photo could not be loaded (offline, CORS, not 2:1); the view stays where it was. */
+  onError?: (message: string) => void;
+  /** True while a photo loads or a step transition has the screen dimmed. */
   onStepFade?: (on: boolean) => void;
 }
 
@@ -89,24 +108,19 @@ const PANORAMA_RADIUS_M = 1000;
 /** The camera orbits the eye point at this distance, so rotating looks around in place. */
 const LOOK_RANGE_M = 0.01;
 const CHEVRON_DISTANCE_M = 5;
-const POI_DISTANCE_M = 40;
 /** Fraction of the way to the target FOV covered each frame. */
 const FOV_EASE = 0.2;
 
-const TINTS: Record<Walkability, [string, string]> = {
+/** Chevron tint by the target stop's walkability; 'unknown' where no DEM grid covers it. */
+type Tint = Walkability | 'unknown';
+const TINTS: Record<Tint, [string, string]> = {
   safe: ['#39e58c', '#38d9f0'],
   caution: ['#ffc152', '#ff9a3c'],
   hazard: ['#ff7a45', '#eb3b4f'],
+  unknown: ['#e6eef3', '#a9bcc8'],
 };
 
-const POI_COLOURS: Record<string, string> = {
-  hazard: '#eb517c',
-  geology: '#8ec1f5',
-  terrain: '#e8c27a',
-  comms: '#6fd3e8',
-};
-
-function chevronImage(walkability: Walkability): HTMLCanvasElement {
+function chevronImage(walkability: Tint): HTMLCanvasElement {
   const size = 96;
   const c = document.createElement('canvas');
   c.width = size;
@@ -132,27 +146,6 @@ function chevronImage(walkability: Walkability): HTMLCanvasElement {
     ctx.stroke();
     ctx.fill();
   }
-  return c;
-}
-
-function poiImage(type: string): HTMLCanvasElement {
-  const size = 64;
-  const c = document.createElement('canvas');
-  c.width = size;
-  c.height = size;
-  const ctx = c.getContext('2d')!;
-  const colour = POI_COLOURS[type.toLowerCase()] ?? '#f4ede4';
-  ctx.beginPath();
-  ctx.arc(size / 2, size / 2, 22, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(10, 18, 28, 0.55)';
-  ctx.fill();
-  ctx.lineWidth = 5;
-  ctx.strokeStyle = colour;
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(size / 2, size / 2, 7, 0, Math.PI * 2);
-  ctx.fillStyle = colour;
-  ctx.fill();
   return c;
 }
 
@@ -200,13 +193,15 @@ export class SurfaceView {
   private panorama: EquirectangularPanorama | null = null;
   private saved: SavedScene | null = null;
   private targetFov = FOV_DEFAULT_DEG;
-  private step: { phase: 'out' | 'in'; start: number; fov: number; to: string } | null = null;
+  private step: { phase: 'out' | 'in'; start: number; fov: number; to: PanoramaStop; image: HTMLImageElement } | null = null;
+  private pending = false;
+  private readonly images = new Map<string, Promise<HTMLImageElement>>();
   private loadId = 0;
-  private readonly telemetry: SurfaceTelemetry = { heading: 0, pitch: 0, fov: FOV_DEFAULT_DEG, stop: null };
+  private readonly telemetry: SurfaceTelemetry = { heading: 0, pitch: 0, fov: FOV_DEFAULT_DEG, stop: null, site: null };
+  private recon: ReconSite | null = null;
   private lastTelemetryKey = '';
-  private readonly chevronImages = new Map<Walkability, HTMLCanvasElement>();
-  private readonly poiImages = new Map<string, HTMLCanvasElement>();
-  private readonly meta = new Map<Entity, { kind: 'go'; stopId: string } | { kind: 'poi'; poi: PanoramaPoi }>();
+  private readonly chevronImages = new Map<Tint, HTMLCanvasElement>();
+  private readonly meta = new Map<Entity, { stopId: string }>();
 
   constructor(viewer: Viewer, options: SurfaceViewOptions = {}) {
     this.viewer = viewer;
@@ -245,35 +240,136 @@ export class SurfaceView {
     return this.targetFov;
   }
 
-  /** Enters the view at a stop, keeping the orbital camera to restore on exit. */
-  enter(manifest: PanoramaManifest, baseUrl: string, stop: PanoramaStop): void {
+  /**
+   * Enters the view at a stop, keeping the orbital camera to restore on exit. The photo is
+   * loaded first; if it fails, the orbital view is left as it was and onError reports why.
+   */
+  async enter(manifest: PanoramaManifest, baseUrl: string, stop: PanoramaStop): Promise<boolean> {
     this.manifest = manifest;
     this.baseUrl = baseUrl;
+    const image = await this.load(stop);
+    if (!image) return false;
     if (!this.saved) this.hideOrbitalScene();
     this.targetFov = FOV_DEFAULT_DEG;
     this.setFrustumFov(FOV_DEFAULT_DEG);
-    this.showStop(stop, stop.heading, stop.pitch);
+    this.showStop(stop, image, stop.heading, stop.pitch);
+    return true;
   }
 
   /**
-   * Steps to a neighbouring stop with a 0.6 s push-in-and-settle: the lens narrows and the
+   * Steps to the previous or next stop with a 0.6 s push-in-and-settle: the lens narrows and the
    * screen dims for the first half, the stop swaps, then the lens settles back as it clears.
-   * Counts as walked distance (onWalk).
+   * The next photo is loaded before the step starts.
    */
-  walk(stopId: string): void {
-    if (!this.active || this.step || !this.manifest || !stopById(this.manifest, stopId)) return;
-    this.step = { phase: 'out', start: performance.now(), fov: this.targetFov, to: stopId };
+  async walk(stopId: string): Promise<void> {
+    const to = this.manifest && stopById(this.manifest, stopId);
+    if (!this.active || this.recon || this.step || this.pending || !to) return;
+    const image = await this.load(to);
+    if (!image || !this.active) return;
+    this.step = { phase: 'out', start: performance.now(), fov: this.targetFov, to, image };
     this.options.onStepFade?.(true);
     this.viewer.scene.requestRender();
   }
 
-  /** Jumps to any stop (the mini-map), keeping the direction of travel as the view heading. */
-  goTo(stopId: string): void {
-    const from = this.stop;
+  /** Jumps to any stop (the mini-map). */
+  async goTo(stopId: string): Promise<void> {
     const to = this.manifest && stopById(this.manifest, stopId);
-    if (!to) return;
-    const heading = from && distanceM(stopLonLat(from), stopLonLat(to)) > 1 ? bearingDeg(stopLonLat(from), stopLonLat(to)) : this.telemetry.heading;
-    this.showStop(to, heading, 0);
+    if (!this.active || this.recon || this.step || this.pending || !to) return;
+    const image = await this.load(to);
+    if (image && this.active) this.arrive(to, image);
+  }
+
+  /**
+   * Orbital recon at a site with no surface mosaic: the camera stands 1.8 m above the rendered
+   * surface (Cesium Mars 3D tiles when loaded, else the imagery-draped ellipsoid), pitch 0,
+   * locked in place so it can only turn and tilt. The globe, tiles and imagery stay visible;
+   * pins and overlays are hidden.
+   */
+  async enterRecon(site: ReconSite): Promise<ReconGround | null> {
+    if (this.saved || this.pending) return null;
+    this.pending = true;
+    this.options.onStepFade?.(true);
+    let ground: ReconGround = { terrain: 'ellipsoid', groundM: 0 };
+    try {
+      ground = await this.groundAt(site);
+    } finally {
+      this.pending = false;
+      this.options.onStepFade?.(false);
+    }
+    if (this.saved) return null;
+    this.recon = site;
+    this.telemetry.site = site;
+    this.telemetry.stop = null;
+    this.hideOrbitalScene(true);
+    this.targetFov = FOV_DEFAULT_DEG;
+    this.setFrustumFov(FOV_DEFAULT_DEG);
+    const eye = Cartesian3.fromDegrees(site.lon_east, site.lat, ground.groundM + EYE_HEIGHT_M, Ellipsoid.MARS);
+    this.viewer.camera.lookAtTransform(
+      Transforms.eastNorthUpToFixedFrame(eye, Ellipsoid.MARS),
+      new HeadingPitchRange(0, 0, LOOK_RANGE_M),
+    );
+    this.updateRotateRate();
+    this.options.onRecon?.(site, ground);
+    this.publishTelemetry(true);
+    this.viewer.scene.requestRender();
+    return ground;
+  }
+
+  /** Height of the rendered surface at a site: sampled from loaded 3D tiles, else the ellipsoid (0 m). */
+  private async groundAt(site: ReconSite): Promise<ReconGround> {
+    const { scene } = this.viewer;
+    let tiles = false;
+    for (let i = 0; i < scene.primitives.length; i++) {
+      const item = scene.primitives.get(i) as unknown;
+      if (item instanceof Cesium3DTileset && item.show) tiles = true;
+    }
+    if (tiles && scene.sampleHeightSupported) {
+      try {
+        const [sample] = await scene.sampleHeightMostDetailed([Cartographic.fromDegrees(site.lon_east, site.lat)]);
+        if (sample && Number.isFinite(sample.height)) return { terrain: 'tiles', groundM: sample.height };
+      } catch (error) {
+        console.warn('Terrain height sample failed; standing on the ellipsoid', error);
+      }
+    }
+    return { terrain: 'ellipsoid', groundM: 0 };
+  }
+
+  /** Shows a stop facing the true geodesic bearing from the one we left, when they differ. */
+  private arrive(to: PanoramaStop, image: HTMLImageElement): void {
+    const from = this.stop;
+    const heading = (from && geodesicBearingDeg(from, to)) ?? this.telemetry.heading;
+    this.showStop(to, image, heading, 0);
+  }
+
+  /** The stop's photo, cached; null (with onError) when it cannot be used. */
+  private async load(stop: PanoramaStop): Promise<HTMLImageElement | null> {
+    const url = resolveImageUrl(stop, this.baseUrl);
+    let request = this.images.get(url);
+    if (!request) {
+      request = new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
+        image.crossOrigin = 'anonymous';
+        image.onload = () =>
+          image.naturalWidth > 0 && Math.abs(image.naturalWidth / image.naturalHeight - 2) < 0.01
+            ? resolve(image)
+            : reject(new Error(`${stop.pia_id} panorama is ${image.naturalWidth}x${image.naturalHeight}, not 2:1`));
+        image.onerror = () => reject(new Error(`${stop.pia_id} panorama did not load (offline or blocked)`));
+        image.src = url;
+      });
+      this.images.set(url, request);
+    }
+    this.pending = true;
+    this.options.onStepFade?.(true);
+    try {
+      return await request;
+    } catch (error) {
+      this.images.delete(url);
+      this.options.onError?.(error instanceof Error ? error.message : String(error));
+      return null;
+    } finally {
+      this.pending = false;
+      if (!this.step) this.options.onStepFade?.(false);
+    }
   }
 
   zoomBy(deltaDeg: number): void {
@@ -310,10 +406,11 @@ export class SurfaceView {
     this.saved = null;
     lockedViewers.delete(this.viewer);
     this.stop = null;
+    this.recon = null;
     this.telemetry.stop = null;
+    this.telemetry.site = null;
     this.lastTelemetryKey = '';
     delete window.marswalkTelemetry;
-    this.options.onPoi?.(null);
     scene.requestRender();
   }
 
@@ -325,11 +422,14 @@ export class SurfaceView {
     void this.viewer.dataSources.remove(this.source, true);
   }
 
-  private hideOrbitalScene(): void {
+  /** keepSurface (orbital recon) leaves the globe, 3D tiles, imagery and sky; only pins and overlays go. */
+  private hideOrbitalScene(keepSurface = false): void {
     const { scene, camera } = this.viewer;
+    // A fly-to still running (a site pin click) would otherwise carry the camera off the stop.
+    camera.cancelFlight();
     const controller = scene.screenSpaceCameraController as unknown as Record<string, unknown>;
     const primitives: SavedScene['primitives'] = [];
-    for (let i = 0; i < scene.primitives.length; i++) {
+    for (let i = 0; !keepSurface && i < scene.primitives.length; i++) {
       const item = scene.primitives.get(i) as { show?: boolean };
       if (typeof item.show === 'boolean' && this.hideable(item)) primitives.push([item as { show: boolean }, item.show]);
     }
@@ -358,12 +458,14 @@ export class SurfaceView {
     for (const [item] of primitives) item.show = false;
     for (const [item] of dataSources) item.show = false;
     this.viewer.entities.show = false;
-    if (scene.globe) scene.globe.show = false;
-    if (scene.skyAtmosphere) scene.skyAtmosphere.show = false;
-    if (scene.skyBox) scene.skyBox.show = false;
-    if (scene.sun) scene.sun.show = false;
-    if (scene.moon) scene.moon.show = false;
-    scene.fog.enabled = false;
+    if (!keepSurface) {
+      if (scene.globe) scene.globe.show = false;
+      if (scene.skyAtmosphere) scene.skyAtmosphere.show = false;
+      if (scene.skyBox) scene.skyBox.show = false;
+      if (scene.sun) scene.sun.show = false;
+      if (scene.moon) scene.moon.show = false;
+      scene.fog.enabled = false;
+    }
 
     // Look around only: drag to turn, no panning, no dolly. The wheel is FOV zoom (see constructor).
     const c = scene.screenSpaceCameraController;
@@ -390,7 +492,7 @@ export class SurfaceView {
   /** Hides orbital primitives added while the view is open (a site mesh landing late), and restores them on exit. */
   private hideLatePrimitives(): void {
     const saved = this.saved;
-    if (!saved) return;
+    if (!saved || this.recon) return;
     const primitives = this.viewer.scene.primitives;
     for (let i = 0; i < primitives.length; i++) {
       const item = primitives.get(i) as { show?: boolean };
@@ -400,31 +502,13 @@ export class SurfaceView {
     }
   }
 
-  private showStop(stop: PanoramaStop, headingDeg: number, pitchDeg: number): void {
+  private showStop(stop: PanoramaStop, image: HTMLImageElement, headingDeg: number, pitchDeg: number): void {
     this.stop = stop;
     this.telemetry.stop = stop;
-    this.options.onPoi?.(null);
+    this.telemetry.site = null;
     const eye = this.eye(stop);
-
-    const id = ++this.loadId;
-    this.setPanorama(stop, fallbackPanorama(stop));
-    this.options.onStop?.(stop, 'loading');
-    const image = new Image();
-    image.crossOrigin = 'anonymous';
-    image.onload = () => {
-      if (id !== this.loadId) return;
-      if (image.naturalWidth > 0 && Math.abs(image.naturalWidth / image.naturalHeight - 2) < 0.05) {
-        this.setPanorama(stop, image);
-        this.options.onStop?.(stop, 'photo');
-      } else {
-        console.warn(`Panorama ${stop.image_url} is not 2:1; keeping the synthetic horizon`);
-        this.options.onStop?.(stop, 'synthetic');
-      }
-    };
-    image.onerror = () => {
-      if (id === this.loadId) this.options.onStop?.(stop, 'synthetic');
-    };
-    image.src = resolveImageUrl(stop, this.baseUrl);
+    this.setPanorama(stop, image);
+    this.options.onStop?.(stop);
 
     const camera = this.viewer.camera;
     camera.lookAtTransform(
@@ -441,7 +525,7 @@ export class SurfaceView {
     return Cartesian3.fromDegrees(stop.lon_east, stop.lat, stop.height + EYE_HEIGHT_M, Ellipsoid.MARS);
   }
 
-  private setPanorama(stop: PanoramaStop, image: HTMLImageElement | HTMLCanvasElement): void {
+  private setPanorama(stop: PanoramaStop, image: HTMLImageElement): void {
     this.removePanorama();
     const transform = Transforms.headingPitchRollToFixedFrame(
       this.eye(stop),
@@ -476,21 +560,26 @@ export class SurfaceView {
     this.meta.clear();
     if (!manifest) return;
 
-    const links: [PanoramaStop | undefined, '<' | '>', number][] = [
-      [stopById(manifest, stop.prev_id), '<', stop.heading + 180],
-      [stopById(manifest, stop.next_id), '>', stop.heading],
+    // prev_id / next_id only ever link stops on the same rover traverse (build_panoramas.py).
+    const links: [PanoramaStop | undefined, '<' | '>'][] = [
+      [stopById(manifest, stop.prev_id), '<'],
+      [stopById(manifest, stop.next_id), '>'],
     ];
-    for (const [target, glyph, fallbackBearing] of links) {
+    for (const [target, glyph] of links) {
       if (!target) continue;
-      const d = distanceM(stopLonLat(stop), stopLonLat(target));
-      const bearing = d > 1 ? bearingDeg(stopLonLat(stop), stopLonLat(target)) : fallbackBearing;
+      const bearing = geodesicBearingDeg(stop, target);
+      if (bearing === null) continue;
       const ground = this.around(eye, bearing, 0, CHEVRON_DISTANCE_M, EYE_HEIGHT_M);
       const ahead = this.around(eye, bearing, 0, CHEVRON_DISTANCE_M + 1, EYE_HEIGHT_M);
       const axis = Cartesian3.normalize(Cartesian3.subtract(ahead, ground, new Cartesian3()), new Cartesian3());
-      let image = this.chevronImages.get(target.walkability);
-      if (!image) this.chevronImages.set(target.walkability, (image = chevronImage(target.walkability)));
-      const leg = legLabel(legBetween(stop, target));
-      const text = glyph === '<' ? `<  PREV SOL ${target.sol} · ${leg}` : `NEXT SOL ${target.sol} · ${leg}  >`;
+      const tint: Tint = target.walkability ?? 'unknown';
+      let image = this.chevronImages.get(tint);
+      if (!image) this.chevronImages.set(tint, (image = chevronImage(tint)));
+      const leg = `SOL ${target.sol} · ${formatMetres(geodesicM(stop, target))} · ${Math.round(bearing)}°`;
+      const text = glyph === '<' ? `<  PREV ${leg}` : `NEXT ${leg}  >`;
+      const walk = target.walkability
+        ? `${target.walkability.toUpperCase()}${target.slope_deg !== null ? ` · ${target.slope_deg}° slope` : ''}`
+        : 'NO DEM GRID AT STOP';
       const entity = this.source.entities.add({
         position: ground,
         billboard: {
@@ -501,9 +590,9 @@ export class SurfaceView {
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
         },
         label: {
-          text: `${text}\n${target.walkability.toUpperCase()}`,
+          text: `${text}\n${walk}`,
           font: '600 15px Barlow, "Segoe UI", Arial, sans-serif',
-          fillColor: Color.fromCssColorString(TINTS[target.walkability][0]),
+          fillColor: Color.fromCssColorString(TINTS[tint][0]),
           outlineColor: Color.fromCssColorString('#0a1828'),
           outlineWidth: 4,
           style: LabelStyle.FILL_AND_OUTLINE,
@@ -513,29 +602,7 @@ export class SurfaceView {
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
         },
       });
-      this.meta.set(entity, { kind: 'go', stopId: target.id });
-    }
-
-    for (const poi of stop.pois) {
-      const key = poi.type.toLowerCase();
-      let image = this.poiImages.get(key);
-      if (!image) this.poiImages.set(key, (image = poiImage(poi.type)));
-      const entity = this.source.entities.add({
-        position: this.around(eye, poi.heading, poi.pitch, POI_DISTANCE_M),
-        billboard: { image, width: 34, height: 34, disableDepthTestDistance: Number.POSITIVE_INFINITY },
-        label: {
-          text: poi.title,
-          font: '600 14px Barlow, "Segoe UI", Arial, sans-serif',
-          fillColor: Color.fromCssColorString('#f4ede4'),
-          outlineColor: Color.fromCssColorString('#0a1828'),
-          outlineWidth: 4,
-          style: LabelStyle.FILL_AND_OUTLINE,
-          pixelOffset: new Cartesian2(0, -26),
-          verticalOrigin: VerticalOrigin.BOTTOM,
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
-        },
-      });
-      this.meta.set(entity, { kind: 'poi', poi });
+      this.meta.set(entity, { stopId: target.id });
     }
   }
 
@@ -547,13 +614,7 @@ export class SurfaceView {
   private click(position: Cartesian2): void {
     if (!this.active) return;
     const hit = this.picked(position);
-    if (!hit) return;
-    if (hit.kind === 'go') {
-      this.walk(hit.stopId);
-      return;
-    }
-    window.dispatchEvent(new CustomEvent('marswalk:poi-select', { detail: hit.poi }));
-    this.options.onPoi?.(hit.poi);
+    if (hit) void this.walk(hit.stopId);
   }
 
   private hover(position: Cartesian2): void {
@@ -592,10 +653,7 @@ export class SurfaceView {
     if (step.phase === 'out') {
       this.setFrustumFov(step.fov * (1 - (1 - STEP_PUSH) * e));
       if (t >= 1) {
-        const from = this.stop;
-        const to = this.manifest && stopById(this.manifest, step.to);
-        if (from && to) this.options.onWalk?.(legBetween(from, to), to);
-        this.goTo(step.to);
+        this.arrive(step.to, step.image);
         this.step = { ...step, phase: 'in', start: performance.now() };
         this.options.onStepFade?.(false);
       }
@@ -622,13 +680,14 @@ export class SurfaceView {
   }
 
   private publishTelemetry(force = false): void {
-    if (!this.active || !this.stop) return;
+    const id = this.stop?.id ?? (this.recon && `recon:${this.recon.id}`);
+    if (!this.active || !id) return;
     const camera = this.viewer.camera;
     this.telemetry.heading = CesiumMath.toDegrees(CesiumMath.zeroToTwoPi(camera.heading));
     this.telemetry.pitch = CesiumMath.toDegrees(camera.pitch);
     this.telemetry.fov = this.currentFov();
     window.marswalkTelemetry = this.telemetry;
-    const key = `${this.stop.id}|${this.telemetry.heading.toFixed(1)}|${this.telemetry.pitch.toFixed(1)}|${this.telemetry.fov.toFixed(1)}`;
+    const key = `${id}|${this.telemetry.heading.toFixed(1)}|${this.telemetry.pitch.toFixed(1)}|${this.telemetry.fov.toFixed(1)}`;
     if (!force && key === this.lastTelemetryKey) return;
     this.lastTelemetryKey = key;
     this.options.onTelemetry?.({ ...this.telemetry });

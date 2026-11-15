@@ -49,7 +49,9 @@ import { formatElevation, formatLatLon, graticuleStep, screenSpan, sectionLabel 
 import { useGlobeTheme } from './theme/useGlobeTheme';
 import { SafetyLayer } from '../safety/SafetyLayer';
 import { offsetLonLat, type CrewMarkerModel } from '../safety/crewMarkers';
-import { EnterSurfacePopover, useSurface360, type EnterCandidate } from '../surface360/Surface360';
+import { EnterSurfacePopover, MOSAIC_RADIUS_M, useSurface360, type EnterCandidate } from '../surface360/Surface360';
+import { formatMetres } from '../surface360/geodesic';
+import type { Site } from './sites/types';
 import { isInSurfaceView } from '../surface360/SurfaceView';
 
 const CAVE_CREDIT = 'Mars Global Cave Candidate Catalog (MGC³), USGS Astrogeology Science Center';
@@ -257,6 +259,40 @@ export const GlobePage: React.FC = () => {
   surfaceActiveRef.current = surface.active;
   const [enterCandidate, setEnterCandidate] = useState<EnterCandidate | null>(null);
   // The 360° view takes the whole map: the layer panel folds away and comes back on exit.
+  // Known sites (known_sites.csv via sites.json): the rover's 360° mosaic when one is within
+  // MOSAIC_RADIUS_M, else an eye-level view on the orbital surface. Candidates get neither.
+  const siteAction = useCallback(
+    (site: Site) => {
+      if (site.kind === 'new') return null;
+      const near = surface.nearest({ lon: site.lon, lat: site.lat });
+      if (near && near.distanceM <= MOSAIC_RADIUS_M) {
+        return (
+          <button type="button" className="s48-btn s48-btn--primary" disabled={!surface.ready} onClick={() => surface.enter(near.stop.id)}>
+            Enter 360° Surface View · {near.stop.pia_id}, {formatMetres(near.distanceM)} away
+          </button>
+        );
+      }
+      return (
+        <button
+          type="button"
+          className="s48-btn s48-btn--secondary"
+          disabled={surface.active}
+          onClick={() =>
+            surface.enterRecon({
+              id: site.id,
+              name: site.name,
+              lat: site.lat,
+              lon_east: site.lon,
+              elevation_m: Number.isFinite(site.evidence?.elevation_m) ? site.evidence.elevation_m : null,
+            })
+          }
+        >
+          Surface View (Orbital DEM)
+        </button>
+      );
+    },
+    [surface],
+  );
   const panelBeforeSurface = useRef<boolean | null>(null);
   useEffect(() => {
     if (surface.active) {
@@ -753,6 +789,7 @@ export const GlobePage: React.FC = () => {
             viewer={viewer}
             active={mode === 'earth' && panelOpen && panelTab === 'sites'}
             registerHover={registerSiteHover}
+            siteAction={siteAction}
             onHide={() => setPanelOpen(false)}
           />
           <div

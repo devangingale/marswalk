@@ -38,6 +38,21 @@
   }
 }
 
+.s360-notice {
+  position: absolute;
+  z-index: 35;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-danger-subtle);
+  color: var(--color-text);
+  border-left: 3px solid var(--color-danger);
+  border-radius: var(--radius-2);
+  box-shadow: var(--shadow-popover);
+}
+
 .s360-popover {
   position: absolute;
   z-index: 15;

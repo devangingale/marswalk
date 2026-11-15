@@ -363,3 +363,8 @@
     max-height: min(calc(100% - var(--space-16) - var(--space-4)), 320px);
   }
 }
+
+.sites-card__action {
+  display: grid;
+  margin-top: var(--space-2);
+}

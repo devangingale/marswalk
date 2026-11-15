@@ -1,40 +1,51 @@
 // Written with AI assistance, directed and reviewed by the team.
-// The panoramas.json contract for the 360° surface view: types, loading with a built-in
-// sample fallback, and the plain geometry the view needs (bearings, distances, image columns).
+// The panoramas.json contract for the 360° surface view, as written by
+// pipeline/build_panoramas.py, and the plain geometry the view needs (bearings, image columns).
+// There is no built-in fallback: if the manifest does not load, the view is unavailable.
 import { MARS_RADIUS_METERS } from '../config';
-import sampleManifest from '../fixtures/panoramas.sample.json';
 
 export type Walkability = 'safe' | 'caution' | 'hazard';
 
-export interface PanoramaPoi {
-  id: string;
-  title: string;
-  type: string;
-  /** Compass bearing, degrees clockwise from north. */
-  heading: number;
-  /** Degrees above (+) or below (-) the horizon. */
-  pitch: number;
-  detail: string;
-}
-
 export interface PanoramaStop {
   id: string;
+  /** Photojournal title of the mosaic. */
   name: string;
+  rover: string;
+  mission: string;
+  /** Sol the mosaic was taken (the first, for a mosaic taken over several sols). */
   sol: number;
+  /** Last sol of a mosaic taken over several sols at one parked position, else null. */
+  sol_end: number | null;
+  /** Sol of the localized rover pose used for position (the same sol, or the nearest localized one). */
+  pose_sol: number;
+  /** Areocentric latitude and east longitude from the rover localization (PDS PLACES). */
   lat: number;
   lon_east: number;
-  /** Ground height, metres; the eye sits 1.8 m above it. */
+  /** Rover elevation from the localization, metres; the eye sits 1.8 m above it. */
   height: number;
   /** Compass bearing of the image's centre column, degrees. */
   heading: number;
+  /** Where heading comes from: "caption" (stated by NASA) or "rover yaw, sol N" (an approximation). */
+  heading_source: string;
   pitch: number;
   roll: number;
   image_url: string;
-  walkability: Walkability;
-  next_orbiter_pass: string;
+  /** From a grids.py cost grid covering the stop; null when no grid covers it. */
+  walkability: Walkability | null;
+  slope_deg: number | null;
+  walkability_source: string | null;
+  /** passes.py SPICE bundle for the site (MRO and Odyssey); null when none is published. */
+  passes_url: string | null;
   next_id: string | null;
   prev_id: string | null;
-  pois: PanoramaPoi[];
+  /** Distance the rover drove from this stop's pose to the next stop's, metres. */
+  drive_m_to_next: number | null;
+  pia_id: string;
+  instrument: string;
+  /** Official Photojournal caption. */
+  caption: string;
+  credit: string;
+  source_url: string;
 }
 
 export interface PanoramaManifest {
@@ -43,10 +54,8 @@ export interface PanoramaManifest {
 
 export interface LoadedManifest {
   manifest: PanoramaManifest;
-  /** Base URL that relative image_url values resolve against. */
+  /** Base URL that relative image_url and passes_url values resolve against. */
   baseUrl: string;
-  /** True when the built-in sample stands in for a missing or invalid manifest. */
-  isSample: boolean;
 }
 
 /** Suited eye height above the ground, metres. */
@@ -58,38 +67,25 @@ export const FOV_DEFAULT_DEG = 75;
 export const PANORAMAS_URL: string =
   (import.meta.env.VITE_PANORAMAS_URL as string | undefined) || '/panoramas.json';
 
-export const SAMPLE_MANIFEST = sampleManifest as PanoramaManifest;
-
 const WALKABILITY: readonly Walkability[] = ['safe', 'caution', 'hazard'];
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const isStr = (v: unknown): v is string => typeof v === 'string';
-const isRef = (v: unknown): v is string | null => v === null || isStr(v);
-
-function isPoi(v: unknown): v is PanoramaPoi {
-  const p = v as Record<string, unknown>;
-  return !!p && isStr(p.id) && isStr(p.title) && isStr(p.type) && isNum(p.heading) && isNum(p.pitch) && isStr(p.detail);
-}
+const isNullable = <T,>(v: unknown, test: (x: unknown) => x is T): v is T | null => v === null || test(v);
 
 function isStop(v: unknown): v is PanoramaStop {
   const s = v as Record<string, unknown>;
   return (
     !!s &&
-    isStr(s.id) &&
-    isStr(s.name) &&
-    isNum(s.sol) &&
-    isNum(s.lat) &&
-    isNum(s.lon_east) &&
-    isNum(s.height) &&
-    isNum(s.heading) &&
-    isNum(s.pitch) &&
-    isNum(s.roll) &&
-    isStr(s.image_url) &&
-    WALKABILITY.includes(s.walkability as Walkability) &&
-    isStr(s.next_orbiter_pass) &&
-    isRef(s.next_id) &&
-    isRef(s.prev_id) &&
-    Array.isArray(s.pois) &&
-    s.pois.every(isPoi)
+    [s.id, s.name, s.rover, s.mission, s.image_url, s.pia_id, s.instrument, s.caption, s.credit, s.source_url, s.heading_source].every(isStr) &&
+    isNullable(s.sol_end, isNum) &&
+    [s.sol, s.pose_sol, s.lat, s.lon_east, s.height, s.heading, s.pitch, s.roll].every(isNum) &&
+    (s.walkability === null || WALKABILITY.includes(s.walkability as Walkability)) &&
+    isNullable(s.slope_deg, isNum) &&
+    isNullable(s.walkability_source, isStr) &&
+    isNullable(s.passes_url, isStr) &&
+    isNullable(s.next_id, isStr) &&
+    isNullable(s.prev_id, isStr) &&
+    isNullable(s.drive_m_to_next, isNum)
   );
 }
 
@@ -101,26 +97,31 @@ export function parseManifest(value: unknown): PanoramaManifest | null {
   return { stops };
 }
 
-/** The page URL that relative manifest and image paths resolve against. */
+/** The page URL that relative manifest paths resolve against. */
 const pageUrl = () => globalThis.location?.href ?? 'http://localhost/';
 
-/** Fetches the manifest; any failure (network, HTTP, HTML from a dev server, bad schema) falls back to the sample. */
+/** Fetches and validates the manifest. Throws with a readable reason on any failure. */
 export async function loadManifest(url = PANORAMAS_URL, fetcher: typeof fetch = fetch): Promise<LoadedManifest> {
   const baseUrl = new URL(url, pageUrl()).href;
+  const response = await fetcher(url);
+  if (!response.ok) throw new Error(`panoramas.json: HTTP ${response.status}`);
+  let body: unknown;
   try {
-    const response = await fetcher(url);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const manifest = parseManifest(await response.json());
-    if (!manifest) throw new Error('panoramas.json does not match the contract');
-    return { manifest, baseUrl, isSample: false };
-  } catch (error) {
-    console.info('Using the built-in sample panoramas:', error instanceof Error ? error.message : error);
-    return { manifest: SAMPLE_MANIFEST, baseUrl: pageUrl(), isSample: true };
+    body = await response.json();
+  } catch {
+    throw new Error('panoramas.json is not JSON');
   }
+  const manifest = parseManifest(body);
+  if (!manifest) throw new Error('panoramas.json does not match the contract');
+  return { manifest, baseUrl };
+}
+
+export function resolveUrl(relative: string, baseUrl: string): string {
+  return new URL(relative, baseUrl).href;
 }
 
 export function resolveImageUrl(stop: PanoramaStop, baseUrl: string): string {
-  return new URL(stop.image_url, baseUrl).href;
+  return resolveUrl(stop.image_url, baseUrl);
 }
 
 export function stopById(manifest: PanoramaManifest, id: string | null | undefined): PanoramaStop | undefined {

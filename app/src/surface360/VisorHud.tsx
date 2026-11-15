@@ -1,45 +1,31 @@
 // Written with AI assistance, directed and reviewed by the team.
-// Astronaut visor HUD for the 360° surface view. It reads the camera from
-// window.marswalkTelemetry every frame and opens the science/hazard drawer on
-// marswalk:poi-select, so anything else that publishes those (another view, a test) drives it too.
+// Astronaut visor HUD for the 360° surface view. Everything on it is measured or catalogued:
+// the camera from window.marswalkTelemetry (read every frame), the stop's rover pose (PDS PLACES),
+// walkability from the pipeline's DEM cost grid, relay passes from the passes.py SPICE bundle,
+// distances on the Mars ellipsoid, and the NASA/JPL Photojournal metadata. Where a source does
+// not cover the stop, the HUD says so instead of showing a value.
 // The wrapper ignores the pointer so the panorama underneath can be dragged; controls opt back in.
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MiniMap } from './MiniMap';
-import {
-  FOV_MAX_DEG,
-  FOV_MIN_DEG,
-  compassPoint,
-  stopById,
-  wrap360,
-  type PanoramaManifest,
-  type PanoramaPoi,
-  type PanoramaStop,
-} from './panoramas';
-import type { SurfaceTelemetry } from './SurfaceView';
-import { formatClock, formatLatLon, parsePass } from './visorFormat';
-import { legBetween, legLabel } from './steps';
+import { formatMetres, geodesicM } from './geodesic';
+import { FOV_MAX_DEG, FOV_MIN_DEG, compassPoint, resolveUrl, stopById, wrap360, type PanoramaManifest, type PanoramaStop } from './panoramas';
+import { ORBITER_NAMES, isPassBundle, relayStatus, type PassBundle } from './relay';
+import type { ReconGround, ReconSite, SurfaceTelemetry } from './SurfaceView';
+import { formatClock, formatLatLon } from './visorFormat';
 import './VisorHud.css';
-
-export type ImageState = 'loading' | 'photo' | 'synthetic';
 
 interface VisorHudProps {
   stop: PanoramaStop;
   manifest: PanoramaManifest;
-  isSample: boolean;
-  imageState: ImageState;
+  baseUrl: string;
   zoomStepDeg: number;
-  /** EVA steps walked with < and > since entering. */
-  stepsWalked: number;
   onExit: () => void;
   onZoom: (deltaDeg: number) => void;
-  /** Step to the previous or next stop (counts as walked). */
+  /** Step to the previous or next stop on the traverse. */
   onWalk: (stopId: string) => void;
   /** Jump to any stop from the mini-map. */
   onJump: (stopId: string) => void;
 }
-
-/** Suit readings shown on the visor. Simulated: the demo has no suit link. */
-const SUIT = { o2Pct: 94, pressurePsi: 4.3, extC: -62 };
 
 /** Live copy of window.marswalkTelemetry, refreshed each animation frame when it changes. */
 function useTelemetry(ref: React.MutableRefObject<SurfaceTelemetry | null>): SurfaceTelemetry | null {
@@ -64,17 +50,73 @@ function useTelemetry(ref: React.MutableRefObject<SurfaceTelemetry | null>): Sur
   return telemetry;
 }
 
-/** Seconds since the stop was entered, ticking once a second. */
-function useSecondsAtStop(stopId: string): number {
-  const [elapsed, setElapsed] = useState(0);
+const passCache = new Map<string, Promise<PassBundle | null>>();
+
+/** The stop's SPICE pass bundle and whether it loaded. */
+function usePassBundle(stop: PanoramaStop, baseUrl: string): { bundle: PassBundle | null; state: 'none' | 'loading' | 'ready' | 'failed' } {
+  const url = stop.passes_url ? resolveUrl(stop.passes_url, baseUrl) : null;
+  const [result, setResult] = useState<{ url: string | null; bundle: PassBundle | null }>({ url: null, bundle: null });
   useEffect(() => {
-    const started = performance.now();
-    setElapsed(0);
-    const timer = window.setInterval(() => setElapsed((performance.now() - started) / 1000), 1000);
-    return () => window.clearInterval(timer);
-  }, [stopId]);
-  return elapsed;
+    if (!url) return;
+    let live = true;
+    let request = passCache.get(url);
+    if (!request) {
+      request = fetch(url)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((body: unknown) => (isPassBundle(body) ? body : null))
+        .catch(() => null);
+      passCache.set(url, request);
+    }
+    void request.then((bundle) => {
+      if (live) setResult({ url, bundle });
+    });
+    return () => {
+      live = false;
+    };
+  }, [url]);
+  if (!url) return { bundle: null, state: 'none' };
+  if (result.url !== url) return { bundle: null, state: 'loading' };
+  return { bundle: result.bundle, state: result.bundle ? 'ready' : 'failed' };
 }
+
+/** Wall clock, ticking once a second, for pass countdowns. */
+function useNow(): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  return now;
+}
+
+const hhmm = (iso: string) => iso.slice(11, 16);
+
+const RelayReadout: React.FC<{ stop: PanoramaStop; baseUrl: string }> = ({ stop, baseUrl }) => {
+  const { bundle, state } = usePassBundle(stop, baseUrl);
+  const now = useNow();
+  if (state === 'none') return <span>NO SPICE PASS BUNDLE FOR THIS SITE</span>;
+  if (state === 'loading') return <span>LOADING PASSES…</span>;
+  if (!bundle) return <span>PASS BUNDLE DID NOT LOAD</span>;
+  const status = relayStatus(bundle, now);
+  const where = `SPICE passes above 10° at ${bundle.lat.toFixed(4)}°, ${bundle.lon_east.toFixed(4)}°E (${bundle.site} reference point)`;
+  if (status.kind === 'outside-window') {
+    return (
+      <span title={where}>
+        PASSES COMPUTED {status.window.start.slice(0, 10)} – {status.window.end.slice(0, 10)} ONLY
+      </span>
+    );
+  }
+  const name = ORBITER_NAMES[status.pass.orbiter] ?? status.pass.orbiter;
+  return status.kind === 'overhead' ? (
+    <span className="is-live" title={where}>
+      {name} IN VIEW · LOS {hhmm(status.pass.set_utc)}Z (T−{formatClock(status.setsInS)})
+    </span>
+  ) : (
+    <span title={where}>
+      {name} AOS {hhmm(status.pass.rise_utc)}Z (T−{formatClock(status.risesInS)}) · MAX {Math.round(status.pass.peak_elevation_deg)}°
+    </span>
+  );
+};
 
 const CompassTape: React.FC<{ heading: number }> = ({ heading }) => {
   // Ticks every 5° across ±75° of the view heading; the tape scrolls continuously.
@@ -93,7 +135,7 @@ const CompassTape: React.FC<{ heading: number }> = ({ heading }) => {
     );
   }
   return (
-    <div className="visor-tape" role="img" aria-label={`Heading ${Math.round(wrap360(heading))} degrees ${compassPoint(heading)}`}>
+    <div className="visor-tape" role="img" aria-label={`Camera azimuth ${Math.round(wrap360(heading))} degrees ${compassPoint(heading)}`}>
       <div className="visor-tape__scale">{ticks}</div>
       <div className="visor-tape__caret" aria-hidden="true" />
       <div className="visor-tape__value num">{String(Math.round(wrap360(heading)) % 360).padStart(3, '0')}°</div>
@@ -101,80 +143,74 @@ const CompassTape: React.FC<{ heading: number }> = ({ heading }) => {
   );
 };
 
-export const VisorHud: React.FC<VisorHudProps> = ({ stop, manifest, isSample, imageState, zoomStepDeg, stepsWalked, onExit, onZoom, onWalk, onJump }) => {
+export const VisorHud: React.FC<VisorHudProps> = ({ stop, manifest, baseUrl, zoomStepDeg, onExit, onZoom, onWalk, onJump }) => {
   const telemetryRef = useRef<SurfaceTelemetry | null>(null);
   const telemetry = useTelemetry(telemetryRef);
   const [hidden, setHidden] = useState(false);
-  const [poi, setPoi] = useState<PanoramaPoi | null>(null);
-  const elapsed = useSecondsAtStop(stop.id);
-  const pass = useMemo(() => parsePass(stop.next_orbiter_pass), [stop.next_orbiter_pass]);
+  const [metaOpen, setMetaOpen] = useState(true);
   const prev = stopById(manifest, stop.prev_id);
   const next = stopById(manifest, stop.next_id);
-  const prevLeg = useMemo(() => (prev ? legLabel(legBetween(stop, prev)) : null), [stop, prev]);
-  const nextLeg = useMemo(() => (next ? legLabel(legBetween(stop, next)) : null), [stop, next]);
+  const prevLeg = useMemo(() => (prev ? { geodesic: geodesicM(stop, prev), drive: prev.drive_m_to_next } : null), [stop, prev]);
+  const nextLeg = useMemo(() => (next ? { geodesic: geodesicM(stop, next), drive: stop.drive_m_to_next } : null), [stop, next]);
 
-  const heading = telemetry?.heading ?? stop.heading;
+  const azimuth = telemetry?.heading ?? stop.heading;
   const pitch = telemetry?.pitch ?? 0;
   const fov = telemetry?.fov ?? 75;
 
-  // The drawer follows marswalk:poi-select from any source, and closes on a new stop.
-  useEffect(() => {
-    const onSelect = (event: CustomEvent<PanoramaPoi>) => setPoi(event.detail);
-    window.addEventListener('marswalk:poi-select', onSelect);
-    return () => window.removeEventListener('marswalk:poi-select', onSelect);
-  }, []);
-  useEffect(() => setPoi(null), [stop.id]);
-
-  // Escape closes the drawer first, then leaves the view.
-  const poiOpen = poi !== null;
+  // Escape collapses the metadata card first, then leaves the view.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      if (poiOpen) setPoi(null);
+      if (metaOpen) setMetaOpen(false);
       else onExit();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [poiOpen, onExit]);
+  }, [metaOpen, onExit]);
 
-  const remaining = pass ? pass.seconds - elapsed : null;
-  const poiKind = poi?.type.toLowerCase() === 'hazard' ? 'hazard' : 'science';
+  const leg = (l: { geodesic: number; drive: number | null }) =>
+    `${formatMetres(l.geodesic)}${l.drive !== null ? ` · ${formatMetres(l.drive)} driven` : ''}`;
 
   return (
     <div className={`visor${hidden ? ' visor--hidden' : ''}`} role="region" aria-label="Astronaut visor HUD">
       <div className="visor__glass" aria-hidden="true" />
 
       <header className="visor-top visor-hideable">
-        <CompassTape heading={heading} />
+        <CompassTape heading={azimuth} />
         <div className="visor-telemetry num">
+          <span>
+            <b>SOL</b> {stop.sol}
+            {stop.sol_end !== null && `–${stop.sol_end}`}
+            {stop.pose_sol !== stop.sol && <i className="visor-note"> (pose sol {stop.pose_sol})</i>}
+          </span>
           <span>
             <b>POS</b> {formatLatLon(stop.lat, stop.lon_east)}
           </span>
           <span>
-            <b>SOL</b> {String(stop.sol).padStart(4, '0')}
+            <b>ELEV</b> {Math.round(stop.height).toLocaleString('en-GB')} m
           </span>
-          <span className={remaining !== null && remaining <= 0 ? 'is-live' : undefined}>
-            <b>RELAY</b>{' '}
-            {pass ? (remaining! > 0 ? `${pass.orbiter} AOS T−${formatClock(remaining!)}` : `${pass.orbiter} IN CONTACT`) : 'NO PASS SCHEDULED'}
-            <i className="visor-sim">SIM</i>
+          <span>
+            <b>AZ</b> {Math.round(wrap360(azimuth))}° <b>EL</b> {pitch >= 0 ? '+' : ''}
+            {Math.round(pitch)}° <b>FOV</b> {Math.round(fov)}°
           </span>
         </div>
       </header>
 
       <aside className="visor-suit">
-        <div className="visor-suit__readings visor-hideable num" aria-label="Suit status (simulated)">
+        <div className="visor-suit__readings visor-hideable num" aria-label="Site status">
           <span>
-            <b>O2</b> {SUIT.o2Pct}%
+            <b>RELAY</b> <RelayReadout stop={stop} baseUrl={baseUrl} />
           </span>
-          <span>
-            <b>SUIT</b> {SUIT.pressurePsi.toFixed(1)} PSI
-          </span>
-          <span>
-            <b>EXT</b> {SUIT.extC}°C
-          </span>
-          <i className="visor-sim">SIM</i>
-          <span className="visor-suit__steps" aria-live="polite">
-            <b>STEPS</b> {stepsWalked.toLocaleString('en-GB')}
+          <span title={stop.walkability_source ?? 'No grids.py DEM cost grid covers this stop'}>
+            <b>WALK</b>{' '}
+            {stop.walkability ? (
+              <>
+                <span className={`visor-chip visor-chip--${stop.walkability}`}>{stop.walkability}</span>
+                {stop.slope_deg !== null && ` ${stop.slope_deg}° slope`}
+              </>
+            ) : (
+              'NO DEM GRID AT STOP'
+            )}
           </span>
         </div>
         <div className="visor-controls">
@@ -190,26 +226,16 @@ export const VisorHud: React.FC<VisorHudProps> = ({ stop, manifest, isSample, im
       <section className="visor-stop visor-hideable" aria-label="Stop">
         <div className="visor-stop__name">{stop.name}</div>
         <div className="visor-stop__row">
-          <span className={`visor-chip visor-chip--${stop.walkability}`}>{stop.walkability}</span>
-          <span className="num">
-            HDG {Math.round(wrap360(heading))}° · PITCH {pitch >= 0 ? '+' : ''}
-            {Math.round(pitch)}° · FOV {Math.round(fov)}°
-          </span>
+          {stop.rover} · {stop.instrument} · {stop.pia_id}
         </div>
         <div className="visor-stop__nav">
           <button type="button" className="visor-btn" disabled={!prev} onClick={() => prev && onWalk(prev.id)}>
-            &lt; {prev ? `PREV SOL ${prev.sol} · ${prevLeg}` : 'START OF TRAVERSE'}
+            &lt; {prev && prevLeg ? `PREV SOL ${prev.sol} · ${leg(prevLeg)}` : 'START OF TRAVERSE'}
           </button>
           <button type="button" className="visor-btn" disabled={!next} onClick={() => next && onWalk(next.id)}>
-            {next ? `NEXT SOL ${next.sol} · ${nextLeg}` : 'END OF TRAVERSE'} &gt;
+            {next && nextLeg ? `NEXT SOL ${next.sol} · ${leg(nextLeg)}` : 'END OF TRAVERSE'} &gt;
           </button>
         </div>
-        {(imageState !== 'photo' || isSample) && (
-          <p className="visor-stop__note">
-            {imageState === 'loading' ? 'Loading panorama… ' : imageState === 'synthetic' ? 'No photo: synthetic horizon. ' : ''}
-            {isSample ? 'Sample stops (panoramas.json not loaded).' : ''}
-          </p>
-        )}
       </section>
 
       <div className="visor-zoom visor-hideable" role="group" aria-label="Optical zoom">
@@ -222,27 +248,131 @@ export const VisorHud: React.FC<VisorHudProps> = ({ stop, manifest, isSample, im
         </button>
       </div>
 
-      <section className={`visor-drawer visor-hideable${poi ? ' is-open' : ''}`} aria-label="Point of interest" aria-hidden={!poi}>
-        {poi && (
-          <>
-            <div className="visor-drawer__head">
-              <span className={`visor-chip visor-chip--${poiKind}`}>{poi.type}</span>
-              <button type="button" className="visor-btn visor-drawer__close" aria-label="Close" onClick={() => setPoi(null)}>
-                ×
-              </button>
-            </div>
-            <h2 className="visor-drawer__title">{poi.title}</h2>
-            <p className="visor-drawer__detail">{poi.detail}</p>
-            <div className="visor-drawer__meta num">
-              BRG {Math.round(wrap360(poi.heading))}° {compassPoint(poi.heading)} · EL {poi.pitch >= 0 ? '+' : ''}
-              {Math.round(poi.pitch)}°
-            </div>
-          </>
+      <section className={`visor-meta visor-hideable${metaOpen ? ' is-open' : ''}`} aria-label="NASA/JPL mission metadata">
+        <button type="button" className="visor-btn visor-meta__toggle" aria-expanded={metaOpen} onClick={() => setMetaOpen((o) => !o)}>
+          NASA/JPL Mission Metadata {metaOpen ? '▾' : '▸'}
+        </button>
+        {metaOpen && (
+          <div className="visor-meta__body">
+            <dl className="visor-meta__fields num">
+              <dt>Catalog</dt>
+              <dd>
+                <a href={stop.source_url} target="_blank" rel="noreferrer">
+                  {stop.pia_id}
+                </a>
+              </dd>
+              <dt>Rover</dt>
+              <dd>
+                {stop.rover} ({stop.mission})
+              </dd>
+              <dt>Instrument</dt>
+              <dd>{stop.instrument}</dd>
+              <dt>Sol captured</dt>
+              <dd>
+                {stop.sol}
+                {stop.sol_end !== null && `–${stop.sol_end}`}
+              </dd>
+              <dt>Position</dt>
+              <dd>
+                PDS PLACES rover pose, sol {stop.pose_sol}
+                {stop.pose_sol !== stop.sol && ' (nearest localized sol)'}
+              </dd>
+            </dl>
+            <p className="visor-meta__caption">{stop.caption}</p>
+            <p className="visor-meta__credit">Image credit: {stop.credit}</p>
+            <p className="visor-meta__note">
+              {stop.heading_source === 'caption'
+                ? `Orientation from the official caption (image centre faces ${Math.round(stop.heading)}°).`
+                : `Image centre set to the ${stop.heading_source}; the mosaic's own pointing is not published with the image, so the photo may be rotated relative to the compass.`}
+            </p>
+          </div>
         )}
       </section>
 
       <div className="visor-minimap visor-hideable">
         <MiniMap manifest={manifest} stop={stop} telemetryRef={telemetryRef} onSelect={onJump} />
+      </div>
+    </div>
+  );
+};
+
+interface ReconHudProps {
+  site: ReconSite;
+  ground: ReconGround;
+  zoomStepDeg: number;
+  onExit: () => void;
+  onZoom: (deltaDeg: number) => void;
+}
+
+/**
+ * Visor for orbital recon at a known site with no surface mosaic: the camera stands at eye level
+ * on the orbital surface. The badge says plainly that this is orbital data, not a surface photo,
+ * and which surface is actually rendered.
+ */
+export const ReconHud: React.FC<ReconHudProps> = ({ site, ground, zoomStepDeg, onExit, onZoom }) => {
+  const telemetryRef = useRef<SurfaceTelemetry | null>(null);
+  const telemetry = useTelemetry(telemetryRef);
+  const [hidden, setHidden] = useState(false);
+  const azimuth = telemetry?.heading ?? 0;
+  const pitch = telemetry?.pitch ?? 0;
+  const fov = telemetry?.fov ?? 75;
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && onExit();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onExit]);
+
+  return (
+    <div className={`visor${hidden ? ' visor--hidden' : ''}`} role="region" aria-label="Orbital recon visor">
+      <div className="visor__glass" aria-hidden="true" />
+
+      <header className="visor-top visor-hideable">
+        <CompassTape heading={azimuth} />
+        <div className="visor-telemetry num">
+          <span>
+            <b>SITE</b> {site.name}
+          </span>
+          <span>
+            <b>POS</b> {formatLatLon(site.lat, site.lon_east)}
+          </span>
+          <span title="MOLA elevation from the site finder (sites.json)">
+            <b>ELEV</b> {site.elevation_m !== null ? `${Math.round(site.elevation_m).toLocaleString('en-GB')} m (MOLA)` : 'not published'}
+          </span>
+          <span>
+            <b>AZ</b> {Math.round(wrap360(azimuth))}° <b>EL</b> {pitch >= 0 ? '+' : ''}
+            {Math.round(pitch)}° <b>FOV</b> {Math.round(fov)}°
+          </span>
+        </div>
+      </header>
+
+      <aside className="visor-suit">
+        <div className="visor-recon visor-hideable" role="status">
+          <strong>SOURCE: ORBITAL DEM RECON (NO SURFACE MOSAIC AT SITE)</strong>
+          <span>
+            {ground.terrain === 'tiles'
+              ? `Cesium Mars 3D tiles (orbital DEM and imagery); eye 1.8 m above the tile surface at ${Math.round(ground.groundM).toLocaleString('en-GB')} m.`
+              : 'Offline: no 3D terrain tiles loaded, so orbital imagery is draped on the smooth Mars ellipsoid with no relief.'}
+          </span>
+        </div>
+        <div className="visor-controls">
+          <button type="button" className="visor-btn" aria-pressed={hidden} onClick={() => setHidden((h) => !h)}>
+            {hidden ? '[Show HUD]' : '[Hide HUD]'}
+          </button>
+          <button type="button" className="visor-btn visor-btn--exit" onClick={onExit}>
+            Exit Surface View
+          </button>
+        </div>
+      </aside>
+
+      <div className="visor-zoom visor-hideable" role="group" aria-label="Optical zoom">
+        <button type="button" className="visor-btn" aria-label="Zoom in" disabled={fov <= FOV_MIN_DEG + 0.5} onClick={() => onZoom(-zoomStepDeg)}>
+          +
+        </button>
+        <span className="num">{Math.round(fov)}°</span>
+        <button type="button" className="visor-btn" aria-label="Zoom out" disabled={fov >= FOV_MAX_DEG - 0.5} onClick={() => onZoom(zoomStepDeg)}>
+          −
+        </button>
       </div>
     </div>
   );

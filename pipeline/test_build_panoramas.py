@@ -43,28 +43,6 @@ def test_pitch_moves_the_strip_and_tall_strips_are_cropped():
     assert tall.size == (400, 200)
 
 
-def test_build_writes_contract_stops_chained_by_sol(tmp_path, monkeypatch):
-    raw = tmp_path / "raw"
-    raw.mkdir()
-    _strip(800, 200).save(raw / "gale_sol3481.jpg")
-    _strip(800, 200).save(raw / "gale_sol3167.jpg")
-    out_dir = tmp_path / "panos"
-    out_json = tmp_path / "panoramas.json"
-    monkeypatch.setattr(bp, "ROOT", tmp_path.parent)
-    stops = bp.build(bp.load_sources(tmp_path / "none.json", raw), raw, out_dir, out_json, 256, 80)
-    data = json.loads(out_json.read_text())
-    assert [s["id"] for s in data["stops"]] == [s["id"] for s in stops]
-    by_id = {s["id"]: s for s in data["stops"]}
-    assert by_id["gale_3167"]["next_id"] == "gale_3481" and by_id["gale_3481"]["prev_id"] == "gale_3167"
-    for stop in data["stops"]:
-        assert set(stop) == {
-            "id", "name", "sol", "lat", "lon_east", "height", "heading", "pitch", "roll", "image_url",
-            "walkability", "next_orbiter_pass", "next_id", "prev_id", "pois",
-        }
-        assert stop["image_url"].startswith("./panos/")
-        assert Image.open(out_dir / f"{stop['id']}.jpg").size == (256, 128)
-
-
 def test_white_cutouts_are_replaced_with_sky():
     strip = _strip(2000, 500)
     # A white gap along the top edge of the strip, as Mastcam mosaics have.
@@ -88,3 +66,47 @@ def test_black_cutouts_are_replaced_with_fill():
     frame = bp.to_equirectangular(strip, 2000, 360, 0)
     # The gap sits in the ground band (rows ~650-750); it now shows the regolith gradient, not black.
     assert max(frame.getpixel((1000, 720))) > 15
+
+
+def test_pose_lookup_uses_where_the_rover_stood_on_that_sol():
+    poses = [{"sol": "10", "lat": "0", "lon": "0"}, {"sol": "10", "lat": "0", "lon": "0.001"}, {"sol": "14", "lat": "0", "lon": "0.002"}]
+    assert bp.pose_index_for_sol(poses, 10) == 1  # last pose of the sol
+    assert bp.pose_index_for_sol(poses, 13) == 1  # still parked where sol 10's drive ended
+    assert bp.pose_index_for_sol(poses, 14) == 2
+    assert bp.pose_index_for_sol(poses, 3) == 0  # nothing earlier: first pose after
+
+
+def test_drive_distance_sums_every_pose_segment():
+    # Out 0.001 deg east and back: the drive is twice the one-way distance; the endpoints coincide.
+    poses = [{"lat": "0", "lon": "0"}, {"lat": "0", "lon": "0.001"}, {"lat": "0", "lon": "0"}]
+    one_way = bp.segment_m(0, 0, 0, 0.001)
+    assert abs(one_way - 59.27) < 0.05  # 0.001 deg of equator on Mars
+    assert abs(bp.drive_distance_m(poses, 0, 2) - 2 * one_way) < 1e-9
+
+
+def test_grid_bundle_samples_the_published_sample_grid():
+    grid = bp.GridBundle.find("gale")
+    assert grid is not None
+    site = json.loads((grid.folder / "site.json").read_text())
+    west, south, east, north = site["bounds_lonlat"]
+    inside = grid.sample((south + north) / 2, (west + east) / 2)
+    assert inside["walkability"] in {"safe", "caution", "hazard"}
+    assert inside["slope_deg"] is None or 0 <= inside["slope_deg"] < 90
+    assert grid.sample(north + 0.05, east + 0.05) is None
+
+
+def test_caption_skips_navigation_and_notes():
+    page = (
+        "<p>Explore Search News &amp; Events " + "x" * 200 + "</p>"
+        "<p>Photojournal Note: Also available is a high resolution TIF file of this mosaic, very large indeed.</p>"
+        "<p>Description NASA&#039;s Curiosity Mars rover captured this 360-degree panorama near a location nicknamed X, seen through a dusty haze.</p>"
+    )
+    assert bp.caption_from_page(page).startswith("NASA's Curiosity Mars rover captured")
+
+
+def test_relay_passes_keep_only_mro_and_odyssey(tmp_path, monkeypatch=None):
+    url = bp.copy_relay_passes("gale", tmp_path)
+    assert url == f"./{tmp_path.name}/gale.json"
+    bundle = json.loads((tmp_path / "gale.json").read_text())
+    assert bundle["passes"] and {p["orbiter"] for p in bundle["passes"]} <= {"MRO", "ODY"}
+    assert bp.copy_relay_passes("nowhere", tmp_path) is None

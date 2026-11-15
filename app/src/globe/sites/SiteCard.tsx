@@ -21,6 +21,8 @@ interface SiteCardProps {
   placeName: string | null;
   rank: number | null;
   onClose: () => void;
+  /** Extra action for the site, such as entering its surface view. */
+  action?: React.ReactNode;
 }
 
 interface EvidenceRow {
@@ -40,7 +42,7 @@ function evidenceRows(site: Site): EvidenceRow[] {
   ];
 }
 
-export const SiteCard: React.FC<SiteCardProps> = ({ site, vetoes, placeName, rank, onClose }) => {
+export const SiteCard: React.FC<SiteCardProps> = ({ site, vetoes, placeName, rank, onClose, action }) => {
   const isCandidate = site.kind === 'new';
   const vetos = site.vetoed ? vetoLines(site.veto_reason, vetoes) : [];
 
@@ -56,6 +58,8 @@ export const SiteCard: React.FC<SiteCardProps> = ({ site, vetoes, placeName, ran
           Close
         </button>
       </header>
+
+      {action && <div className="sites-card__action">{action}</div>}
 
       <div className="sites-card__score">
         <span className="sites-card__score-label">Score</span>
