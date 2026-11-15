@@ -11,6 +11,7 @@ import pytest
 from pipeline.site_terrain3d import (
     MARS_A,
     SKIRT_MARGIN_M,
+    DEFAULT_HEIGHT_OFFSETS_M,
     build_tileset,
     decode_terrain_rgb,
     enu_axes,
@@ -137,3 +138,9 @@ def test_tileset_skirt_floor_sits_below_the_lowest_site_edge(tmp_path):
     # Vertical half-axis spans the skirt floor (-3950 m) to the top corner (-3906 m), within the curvature sag.
     assert abs(box[9:12] @ up) == pytest.approx(22.0, abs=1e-3)
     assert [child["content"]["uri"] for child in tileset["root"]["children"]] == ["1/0_0.glb", "1/1_0.glb", "1/0_1.glb", "1/1_1.glb"]
+
+
+def test_default_height_offsets():
+    assert DEFAULT_HEIGHT_OFFSETS_M["gale"] == pytest.approx(70.91)
+    assert DEFAULT_HEIGHT_OFFSETS_M["jezero"] == pytest.approx(-70.92)
+

@@ -38,6 +38,11 @@ SKIRT_MARGIN_M = 20.0
 NORMAL_SCALE = 127
 BAND_ROWS = 8
 
+DEFAULT_HEIGHT_OFFSETS_M: dict[str, float] = {
+    "gale": 70.91,
+    "jezero": -70.92,
+}
+
 
 def decode_terrain_rgb(rgb: np.ndarray) -> np.ndarray:
     """Heights in metres from Mapbox terrain-RGB pixels; the all-zero nodata pixel becomes NaN."""
@@ -411,7 +416,11 @@ def main() -> None:
     terrain = site["terrain"]
     if terrain.get("encoding") != "mapbox":
         raise ValueError(f"unsupported terrain encoding {terrain.get('encoding')}")
-    offset = args.height_offset_m if args.height_offset_m is not None else terrain.get("height_offset_m")
+    offset = (
+        args.height_offset_m
+        if args.height_offset_m is not None
+        else terrain.get("height_offset_m", DEFAULT_HEIGHT_OFFSETS_M.get(site.get("id")))
+    )
     if offset is None:
         raise SystemExit("height offset missing: pass --height-offset-m or record terrain.height_offset_m in site.json")
     lon, lat, cell_m = site_grid(site, args.resolution_m or dem_resolution_m(site))
