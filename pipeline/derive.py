@@ -80,6 +80,10 @@ def main() -> None:
     small = img[:, ::step, ::step]
     rgb = np.repeat(small, 3, axis=0) if small.shape[0] == 1 else small[:3]
     pic = Image.fromarray(np.moveaxis(rgb, 0, -1))
+    if not cfg.get("poses"):
+        pic.save(out / "quicklook.png")
+        print(f"quicklook: {pic.width}x{pic.height}, no rover poses for this site")
+        return
     poses = load_poses(cfg)
     px = (poses["x"].to_numpy() - itf.c) / itf.a / step
     py = (poses["y"].to_numpy() - itf.f) / itf.e / step

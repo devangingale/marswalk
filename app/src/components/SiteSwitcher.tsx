@@ -10,9 +10,14 @@ interface SiteSwitcherProps {
   roverName?: string;
 }
 
-const SITE_NAMES: Record<string, { name: string; rover: string }> = {
+const SITE_NAMES: Record<string, { name: string; rover: string; description?: string }> = {
   gale: { name: 'Mount Sharp, Gale', rover: 'Curiosity' },
   jezero: { name: 'Jezero delta', rover: 'Perseverance' },
+  candidate001: {
+    name: 'Candidate 001',
+    rover: '',
+    description: 'Site-finder pick at 13.6°S 58.5°W, walked on the nearest HiRISE 1 m DTM; no rover has been here.',
+  },
 };
 
 export const SiteSwitcher: React.FC<SiteSwitcherProps> = ({
@@ -65,6 +70,7 @@ export const SiteSwitcher: React.FC<SiteSwitcherProps> = ({
             return (
               <li
                 key={siteId}
+                title={info.description}
                 role="option"
                 aria-selected={isSelected}
                 onClick={() => {

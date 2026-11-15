@@ -30,7 +30,7 @@ function localBundles() {
           res.end();
           return;
         }
-        const match = /^\/(gale|jezero)\/(.+)$/.exec(req.url?.split('?')[0] ?? '');
+        const match = /^\/(gale|jezero|candidate\d{3})\/(.+)$/.exec(req.url?.split('?')[0] ?? '');
         if (!match) {
           next();
           return;

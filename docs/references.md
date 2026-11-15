@@ -30,6 +30,9 @@ Not every dataset below ends up in the final product; trim this list to what is 
 | gale_ctx | `data/raw/gale_ctx` | USGS Astrogeology / NASA PDS public domain (US Government work) |
 | gale_dem | `data/raw/gale_dem` | USGS Astrogeology / NASA PDS public domain (US Government work) |
 | jezero_hirise_ortho | `data/raw/jezero_hirise_ortho` | USGS Astrogeology / NASA PDS public domain (US Government work) |
+| candidate001_hirise_dtm | `data/raw/candidate001_hirise_dtm` | HiRISE DTM DTEEC_007205_1660_024505_1660_A01 (https://hirise-pds.lpl.arizona.edu/PDS/DTM/PSP/ORB_007200_007299/PSP_007205_1660_ESP_024505_1660/); free to use with credit NASA/JPL/University of Arizona |
+| candidate001_hirise_ortho | `data/raw/candidate001_hirise_ortho` | HiRISE orthoimage PSP_007205_1660_RED_B_01_ORTHO (same folder); free to use with credit NASA/JPL/University of Arizona |
+| candidate001_mola_hrsc | `data/raw/candidate001_mola_hrsc` | Crop of the USGS MOLA/HRSC BlendDEM v2 (https://planetarymaps.usgs.gov/mosaic/Mars/HRSC_MOLA_Blend/); MOLA part public domain, HRSC part CC BY-SA 3.0 IGO |
 | pds_places | `data/raw/pds_places` | NASA PDS public domain (US Government work) |
 | localized_rover_poses | `shared/poses/gale_poses.csv`, `shared/poses/jezero_poses.csv` | NASA/JPL PDS Places rover-position records, public domain (US Government work) |
 | rover_images | `data/raw/rover_images` | Raw images from NASA are not copyrighted (#55); retain each feed credit and check third-party assets. |

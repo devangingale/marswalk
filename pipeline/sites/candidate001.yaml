@@ -1,0 +1,19 @@
+# Candidate 001 from the site finder (13.59375 S, 58.46875 W, score 77.96).
+# No rover has been here: no poses, photos or traverse. The walk area sits on the
+# nearest HiRISE DTM, whose footprint edge is 27.5 km from the candidate point.
+name: candidate001
+title: Candidate 001
+rover: ""
+
+# Source rasters are the HiRISE DTM DTEEC_007205_1660_024505_1660_A01 (1 m) and the
+# PSP_007205_1660_RED_B_01 orthoimage (0.5 m), warped from their -10 deg standard
+# parallel to the pipeline grid (equirectangular, lat_ts=0, lon_0=0, R=3396190 m).
+dem: data/processed/candidate001/DTEEC_007205_1660_024505_1660_A01_Eqc_latTs0_lon0.tif
+image: data/processed/candidate001/PSP_007205_1660_RED_B_01_ORTHO_area_Eqc_latTs0_lon0.tif
+
+# Walk area [left, bottom, right, top]: 4 x 4 km true ground at the DTM's north end,
+# the fully covered window closest to the candidate; 86% of it is under 20 deg.
+# Centre 30.1 km from the candidate point, nearest edge 27.4 km.
+area: [-3495958, -820183, -3491838, -816183]
+
+out: data/sites/candidate001

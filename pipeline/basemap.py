@@ -138,7 +138,7 @@ def bake_site(site: str, source_path: Path = SOURCE, output: Path | None = None,
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("site", choices=("gale", "jezero", "all"))
+    parser.add_argument("site", help="site id with a bundle under data/sites/<site>/bundle, or all (gale and jezero)")
     parser.add_argument("--source", type=Path, default=SOURCE)
     parser.add_argument("--radius-deg", type=float, default=DEFAULT_RADIUS_DEG)
     args = parser.parse_args()
