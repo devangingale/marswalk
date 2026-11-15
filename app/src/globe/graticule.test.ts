@@ -1,6 +1,6 @@
 // Written with AI assistance, directed and reviewed by the team.
 import { describe, expect, it } from 'vitest';
-import { cullLabels, graticuleLines } from './graticule';
+import { cullLabels, cullScreenLabels, graticuleLines } from './graticule';
 
 describe('graticuleLines', () => {
   it('covers the planet every 10 degrees, parallels from 80 S to 80 N', () => {
@@ -64,5 +64,32 @@ describe('cullLabels with panels', () => {
       [[16, 16 - 14, 336, 200]],
     );
     expect(kept.map((l) => l.text)).toEqual(['137.362° E']);
+  });
+});
+
+describe('cullScreenLabels', () => {
+  it('keeps the highest priority label in a shared screen box', () => {
+    expect(cullScreenLabels([
+      { id: 'summary', box: [0, 0, 40, 14], priority: 3 },
+      { id: 'fork', box: [0, 0, 40, 14], priority: 2 },
+      { id: 'dropoff', box: [0, 0, 40, 14], priority: 1 },
+      { id: 'clear', box: [50, 0, 90, 14], priority: 3 },
+    ])).toEqual(['dropoff', 'clear']);
+  });
+
+  it('keeps exact priority order and excludes overlaps with marker boxes', () => {
+    expect(cullScreenLabels([
+      { id: 'summary', box: [20, 0, 60, 14], priority: 3 },
+      { id: 'fork', box: [12, 0, 52, 14], priority: 2 },
+      { id: 'dropoff', box: [0, 0, 36, 14], priority: 1 },
+      { id: 'clear', box: [80, 0, 120, 14], priority: 3 },
+    ], [[0, 0, 10, 14]])).toEqual(['fork', 'clear']);
+  });
+
+  it('allows boxes that touch at an edge', () => {
+    expect(cullScreenLabels([
+      { id: 'first', box: [0, 0, 20, 14], priority: 1 },
+      { id: 'second', box: [20, 0, 40, 14], priority: 2 },
+    ])).toEqual(['first', 'second']);
   });
 });

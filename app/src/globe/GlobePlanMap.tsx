@@ -112,7 +112,7 @@ export const GlobePlanMap: React.FC<MapProps> = ({
       heightOffsetRef.current = heightOffset;
       if (tileset && gridRef.current) flyToSite(surfaceHeightM(gridRef.current, mid.lon, mid.lat, heightOffset));
 
-      const overlays = new GlobeOverlays(viewer, { classification: tileset ? ClassificationType.CESIUM_3D_TILE : ClassificationType.TERRAIN });
+      const overlays = new GlobeOverlays(viewer, { scene: viewer.scene, classification: tileset ? ClassificationType.CESIUM_3D_TILE : ClassificationType.TERRAIN });
       overlaysRef.current = overlays;
       if (tileset) overlays.setHeightOffsetM(heightOffset);
       overlays.setGrid(gridRef.current);

@@ -7,7 +7,8 @@ interface Props { plan: Plan; moverTimeS: number }
 const formatClock = (hours: number) => `${String(Math.floor(hours)).padStart(2, '0')}:${String(Math.floor((hours % 1) * 60)).padStart(2, '0')}`;
 export const speedLabel = (secondsPerKm: number) => {
   if (!Number.isFinite(secondsPerKm) || secondsPerKm <= 0) return '—';
-  return `${(3600 / secondsPerKm).toFixed(1)} km/h`;
+  const speedKmh = 3600 / secondsPerKm;
+  return speedKmh < 0.1 ? '< 0.1 km/h' : `${speedKmh.toFixed(1)} km/h`;
 };
 
 export const PlanPace: React.FC<Props> = ({ plan, moverTimeS }) => {

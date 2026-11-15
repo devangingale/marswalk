@@ -3,7 +3,6 @@
 
 interface ImportMetaEnv {
   readonly VITE_CESIUM_ION_TOKEN?: string;
-  readonly VITE_RENDERER?: 'maplibre' | 'cesium';
   readonly VITE_GLOBE_BASE?: string;
 }
 

@@ -21,7 +21,7 @@ import { GlobePlanMap } from './globe/GlobePlanMap';
 import { WalkView } from './components/WalkView';
 import { VisorView } from './components/VisorView';
 import { PlanRail } from './plan/PlanRail';
-import { findWalkableCentre, makeInitialPlan, nextStopName } from './plan/planLogic';
+import { findWalkableCentre, isLatestPlanRequest, makeInitialPlan, nextStopName } from './plan/planLogic';
 import { loadGrid, type RouteGrid } from './lib/grid';
 import type { PlanStop } from './lib/plan';
 import { reachableMask, snapToReachable, snapToPassable } from './lib/snap';
@@ -163,14 +163,27 @@ export const App: React.FC = () => {
     planWorker.current?.terminate();
     planWorker.current = worker;
     const id = ++requestId.current;
+    let completed = false;
     setComputing(true);
     worker.onmessage = (event: MessageEvent<{ id: number; plan?: Plan; error?: string }>) => {
-      if (event.data.id !== requestId.current) return;
+      if (!isLatestPlanRequest(event.data.id, requestId.current)) return;
+      completed = true;
       setComputing(false);
       if (event.data.plan) setPlan(event.data.plan);
     };
+    worker.onerror = () => {
+      if (!isLatestPlanRequest(id, requestId.current)) return;
+      completed = true;
+      setComputing(false);
+    };
     worker.postMessage({ id, header: routeGrid.header, origin: routeGrid.origin, elev: routeGrid.elevData.slice(), cost: routeGrid.costData.slice(), site: plan.site, params: plan.params, start: plan.start, stops: plan.stops, dose: doseRates.surface, solarDose: doseRates.solar });
-    return () => worker.terminate();
+    return () => {
+      worker.terminate();
+      if (isLatestPlanRequest(id, requestId.current) && !completed) {
+        requestId.current++;
+        setComputing(false);
+      }
+    };
   }, [routeInputKey, routeGrid, routeGridSite, currentSiteId, doseRates]);
 
   const handleSiteChange = (newSiteId: string) => {
