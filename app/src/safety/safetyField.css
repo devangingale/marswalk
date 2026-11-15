@@ -186,7 +186,7 @@
   z-index: 3;
 }
 .s48-safety--visor-ladder { left: var(--space-4); right: auto; }
-.s48-safety--visor-sos { right: var(--space-4); left: auto; }
+.s48-safety--visor-sos { right: var(--space-4); left: auto; width: 320px; }
 .s48-safety--visor section {
   background: var(--visor-plate);
   border-color: var(--color-rule);
@@ -206,7 +206,7 @@
 }
 
 @media (max-width: 1100px) {
-  .s48-safety--visor {
+  .s48-safety--visor-ladder {
     width: 240px;
   }
 }
