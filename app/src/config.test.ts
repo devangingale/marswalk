@@ -18,6 +18,7 @@ describe('Mission Configuration (app/src/config.ts)', () => {
   it('provides available sites list driving site switcher without hardcoding', () => {
     expect(AVAILABLE_SITES).toContain('gale');
     expect(AVAILABLE_SITES).toContain('jezero');
+    expect(AVAILABLE_SITES).toContain('candidate006');
     expect(DEFAULT_SITE).toBe('gale');
   });
 

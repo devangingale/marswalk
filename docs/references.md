@@ -30,6 +30,7 @@ Not every dataset below ends up in the final product; trim this list to what is 
 | gale_ctx | `data/raw/gale_ctx` | USGS Astrogeology / NASA PDS public domain (US Government work) |
 | gale_dem | `data/raw/gale_dem` | USGS Astrogeology / NASA PDS public domain (US Government work) |
 | jezero_hirise_ortho | `data/raw/jezero_hirise_ortho` | USGS Astrogeology / NASA PDS public domain (US Government work) |
+| candidate006_hirise_dtm, candidate006_hirise_ortho | `data/raw/candidate006_hirise_dtm`, `data/raw/candidate006_hirise_ortho`: HiRISE DTM DTEEC_043850_1685_043916_1685_A01 and RED ortho ESP_043850_1685_RED_A_01_ORTHO (https://hirise-pds.lpl.arizona.edu/PDS/DTM/ESP/ORB_043800_043899/ESP_043850_1685_ESP_043916_1685/) | NASA PDS; free to use with credit NASA/JPL/University of Arizona |
 | pds_places | `data/raw/pds_places` | NASA PDS public domain (US Government work) |
 | localized_rover_poses | `shared/poses/gale_poses.csv`, `shared/poses/jezero_poses.csv` | NASA/JPL PDS Places rover-position records, public domain (US Government work) |
 | rover_images | `data/raw/rover_images` | Raw images from NASA are not copyrighted (#55); retain each feed credit and check third-party assets. |

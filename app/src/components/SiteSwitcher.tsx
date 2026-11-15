@@ -10,9 +10,14 @@ interface SiteSwitcherProps {
   roverName?: string;
 }
 
-const SITE_NAMES: Record<string, { name: string; rover: string }> = {
+const SITE_NAMES: Record<string, { name: string; rover: string; description?: string }> = {
   gale: { name: 'Mount Sharp, Gale', rover: 'Curiosity' },
   jezero: { name: 'Jezero delta', rover: 'Perseverance' },
+  candidate006: {
+    name: 'Candidate 006',
+    rover: '',
+    description: 'Site-finder candidate on the Melas Chasma floor; walk area on the nearest HiRISE DTM, about 18 km from the point.',
+  },
 };
 
 export const SiteSwitcher: React.FC<SiteSwitcherProps> = ({
@@ -47,6 +52,7 @@ export const SiteSwitcher: React.FC<SiteSwitcherProps> = ({
         className="s48-site__btn"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
+        title={SITE_NAMES[currentSite]?.description}
         onClick={() => setIsOpen(!isOpen)}
       >
         <span>{currentInfo.name}</span>
@@ -60,13 +66,14 @@ export const SiteSwitcher: React.FC<SiteSwitcherProps> = ({
         <ul className="s48-site__list" role="listbox" aria-label="Site">
           {availableSites.map((siteId) => {
             const isSelected = siteId === currentSite;
-            const info = SITE_NAMES[siteId] || { name: siteId.toUpperCase(), rover: '' };
+            const info = SITE_NAMES[siteId] || { name: siteId.toUpperCase(), rover: '', description: undefined };
 
             return (
               <li
                 key={siteId}
                 role="option"
                 aria-selected={isSelected}
+                title={info.description}
                 onClick={() => {
                   onSiteChange(siteId);
                   setIsOpen(false);

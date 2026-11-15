@@ -1,0 +1,18 @@
+# Candidate 006: site-finder candidate (-11.71875, -69.15625, score 76.82) on the floor of
+# Melas Chasma. No rover has driven here, so there is no traverse and no poses file.
+# The walk area sits on the nearest real HiRISE DTM, about 18 km from the candidate point.
+name: candidate006
+title: Candidate 006, Melas Chasma floor
+rover: null
+
+# HiRISE PDS DTM and RED ortho, reprojected to equirectangular lat_ts=0, lon_0=0,
+# R=3396190 m (the pipeline convention); see data/raw/candidate006_hirise_*/manifest.json.
+dem: data/raw/candidate006_hirise_dtm/DTEEC_043850_1685_043916_1685_A01_Eqc_latTs0_lon0_1m.tif
+image: data/raw/candidate006_hirise_ortho/ESP_043850_1685_RED_A_01_ORTHO_crop_Eqc_latTs0_lon0_25cm.tif
+poses: null
+
+# Walk area [left, bottom, right, top]: 4 x 4 km inside the DTM, as close to the candidate
+# point as the DTM allows while staying mostly below 20 degrees.
+area: [-4115600, -685300, -4111600, -681300]
+
+out: data/sites/candidate006

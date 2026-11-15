@@ -223,7 +223,7 @@ def main() -> None:
             layers.append({**meta,"type":"raster","url":f"{meta['id']}.pmtiles"})
 
     origin={"lon0":lon0,"lat0":lat0,"lat_c":lat_c}
-    site={"id":cfg["name"],"title":cfg["title"],"rover":cfg["rover"],"origin":origin,
+    site={"id":cfg["name"],"title":cfg["title"],"rover":cfg.get("rover"),"origin":origin,
           "size_m":{"width":size_w,"height":size_h},"bounds_lonlat":[float(west),float(south),float(east),float(north)],
           "default_start":{"lon":float((west+east)/2),"lat":float((south+north)/2),"label":"Rover drop-off"},
           "basemap":{"url":"basemap.pmtiles","source":"MOLA/HRSC BlendDEM, USGS Astrogeology"},
