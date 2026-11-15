@@ -354,8 +354,8 @@ export const ReconHud: React.FC<ReconHudProps> = ({ site, ground, zoomStepDeg, o
           <strong>SOURCE: ORBITAL DEM RECON (NO SURFACE MOSAIC AT SITE)</strong>
           <span>
             {ground.terrain === 'tiles'
-              ? `Cesium Mars 3D tiles (orbital DEM and imagery); eye 1.8 m above the tile surface at ${Math.round(ground.groundM).toLocaleString('en-GB')} m.`
-              : 'Offline: no 3D terrain tiles loaded, so orbital imagery is draped on the smooth Mars ellipsoid with no relief.'}
+              ? `3D terrain tiles from orbital DEMs cover this site; eye 1.8 m above the tile surface at ${Math.round(ground.groundM).toLocaleString('en-GB')} m.`
+              : 'No 3D terrain tiles cover this site, so orbital imagery is draped on the smooth Mars ellipsoid with no relief.'}
           </span>
         </div>
         <div className="visor-controls">

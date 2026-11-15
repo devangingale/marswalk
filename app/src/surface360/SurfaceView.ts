@@ -5,8 +5,10 @@
 // photo is ever shown: it is loaded before entering, and a stop whose photo fails is not entered.
 // Entering hides the orbital scene; exiting restores the camera and everything that was shown.
 import {
+  BoundingSphere,
   Cartesian2,
   Cartesian3,
+  CameraEventType,
   Cartographic,
   Cesium3DTileset,
   Color,
@@ -62,8 +64,9 @@ export interface ReconSite {
 }
 
 /**
- * What the recon camera actually stands on: Cesium Mars 3D tiles (built from orbital DEMs and
- * imagery), or, offline, the orbital imagery draped on the smooth ellipsoid with no relief.
+ * What the recon camera actually stands on: 3D terrain tiles built from orbital DEMs that cover
+ * the site (Cesium Mars, or a site terrain mesh), or, with none covering it, the orbital imagery
+ * draped on the smooth ellipsoid with no relief.
  */
 export interface ReconGround {
   terrain: 'tiles' | 'ellipsoid';
@@ -177,6 +180,8 @@ const CONTROLLER_KEYS = [
   'enableZoom',
   'enableLook',
   'enableCollisionDetection',
+  // The globe page's ground pan clears this (it drives left-drag itself); the surface view needs it back.
+  'rotateEventTypes',
   '_minimumRotateRate',
   '_maximumRotateRate',
 ] as const;
@@ -315,17 +320,23 @@ export class SurfaceView {
     return ground;
   }
 
-  /** Height of the rendered surface at a site: sampled from loaded 3D tiles, else the ellipsoid (0 m). */
+  /**
+   * Height of the rendered surface at a site, sampled only from 3D tilesets whose bounds contain
+   * it (a site terrain mesh elsewhere on the planet must not count); else the ellipsoid (0 m).
+   */
   private async groundAt(site: ReconSite): Promise<ReconGround> {
     const { scene } = this.viewer;
-    let tiles = false;
+    const surface = Cartesian3.fromDegrees(site.lon_east, site.lat, 0, Ellipsoid.MARS);
+    const covering: Cesium3DTileset[] = [];
+    const others: Cesium3DTileset[] = [];
     for (let i = 0; i < scene.primitives.length; i++) {
       const item = scene.primitives.get(i) as unknown;
-      if (item instanceof Cesium3DTileset && item.show) tiles = true;
+      if (!(item instanceof Cesium3DTileset) || !item.show) continue;
+      (BoundingSphere.distanceSquaredTo(item.boundingSphere, surface) === 0 ? covering : others).push(item);
     }
-    if (tiles && scene.sampleHeightSupported) {
+    if (covering.length && scene.sampleHeightSupported) {
       try {
-        const [sample] = await scene.sampleHeightMostDetailed([Cartographic.fromDegrees(site.lon_east, site.lat)]);
+        const [sample] = await scene.sampleHeightMostDetailed([Cartographic.fromDegrees(site.lon_east, site.lat)], others);
         if (sample && Number.isFinite(sample.height)) return { terrain: 'tiles', groundM: sample.height };
       } catch (error) {
         console.warn('Terrain height sample failed; standing on the ellipsoid', error);
@@ -475,6 +486,7 @@ export class SurfaceView {
     c.enableZoom = false;
     c.enableLook = false;
     c.enableCollisionDetection = false;
+    c.rotateEventTypes = CameraEventType.LEFT_DRAG;
     this.source.show = true;
     lockedViewers.add(this.viewer);
   }

@@ -123,8 +123,6 @@ export interface OverlayOptions {
   crewImage?: () => MarkerImage;
 }
 
-/** Keep vertex clustering below the bundle grid's 2 m spacing. */
-const SHARED_TOLERANCE_M = 0.5;
 /** Forks closer than this are one fork on screen. */
 const FORK_MERGE_M = 15;
 /** A split that rejoins within this distance is a planner wobble, not a fork worth marking. */
@@ -287,7 +285,7 @@ export class GlobeOverlays {
     }
 
     const legs = plan.route.legs;
-    this.stretches = sharedSegments(legs, frame, SHARED_TOLERANCE_M).map((s) => ({ ...s, shared: s.legs.length > 1 }));
+    this.stretches = sharedSegments(legs, frame).map((s) => ({ ...s, shared: s.legs.length > 1 }));
     this.sectionList = routeSections(plan, frame);
     this.styles = this.stretches.map(() => 'normal');
     this.cores = this.stretches.map(() => []);
@@ -427,7 +425,7 @@ export class GlobeOverlays {
   }
 
   private drawForks(plan: Plan, frame: GridOrigin): void {
-    const forks = dropBubbles(mergeForks(forkPoints(plan.route.legs, frame, SHARED_TOLERANCE_M), frame), frame);
+    const forks = dropBubbles(mergeForks(forkPoints(plan.route.legs, frame), frame), frame);
     for (const fork of forks) {
       const lines = fork.branches.map((b) => branchLabel(b.toLabel, plan));
       this.add(
