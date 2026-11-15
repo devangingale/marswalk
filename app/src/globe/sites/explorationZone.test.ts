@@ -173,9 +173,31 @@ describe('Exploration Zone in-zone queries', () => {
       );
 
       const result = queryIceZone(0, 0, grid);
-      expect(result).toContain('Nearest ice signal');
+      expect(result).toContain('Weak ice signal');
+      expect(result).toContain('SWIM 0–1 m');
       expect(result).toContain('+0.42');
       expect(result).toContain('highest +0.88');
+    });
+
+    it('labels signals as likely ice when consistency is 0.5 or greater', () => {
+      const grid = makeMockGrid(
+        -0.5,
+        0.5,
+        0.25,
+        4,
+        4,
+        [
+          [-0.5, -0.4, -0.2, -0.1],
+          [-0.3, -0.1, 0.75, 0.25],
+          [-0.2, 0.15, 0.75, 0.35],
+          [-0.1, 0.2, 0.3, 0.1],
+        ],
+        0.001,
+        -1.0,
+      );
+
+      const result = queryIceZone(0, 0, grid);
+      expect(result).toBe('Likely ice (SWIM 0–1 m, +0.75) at 10 km');
     });
 
     it('reports highest consistency when all cells within 100 km are negative (no ice)', () => {

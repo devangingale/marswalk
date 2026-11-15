@@ -48,7 +48,7 @@ interface EvidenceRow {
 function evidenceRows(site: Site): EvidenceRow[] {
   const e = site.evidence;
   return [
-    { label: 'Distance to ice', value: formatDistanceKm(e.ice_dist_km), unit: 'km' },
+    { label: 'Distance to ice (SWIM, ice likely ≥ +0.5)', value: formatDistanceKm(e.ice_dist_km), unit: 'km' },
     { label: 'Radiation', value: formatDose(e.dose_ugy_day), unit: 'µGy/day' },
     { label: 'Dust p95', value: formatDust(e.dust_p95), unit: '' },
     { label: 'Caves within 100 km', value: formatCount(e.cave_count_zone), unit: '' },

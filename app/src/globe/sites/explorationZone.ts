@@ -261,7 +261,16 @@ export function queryIceZone(
   if (sampled === 0) return `No SWIM coverage within ${radiusKm} km`;
 
   if (nearestIceDist !== Infinity) {
-    return `Nearest ice signal ${formatDistanceKm(nearestIceDist)} km (${formatConsistency(nearestIceVal)}); highest ${formatConsistency(highestVal)} (${formatDistanceKm(highestDist)} km)`;
+    const isWeak = nearestIceVal < 0.5;
+    const signalLabel = isWeak ? 'Weak ice signal' : 'Likely ice';
+    const hasDifferentHighest =
+      highestVal > nearestIceVal &&
+      (formatConsistency(highestVal) !== formatConsistency(nearestIceVal) ||
+        formatDistanceKm(highestDist) !== formatDistanceKm(nearestIceDist));
+    const highestSuffix = hasDifferentHighest
+      ? `; highest ${formatConsistency(highestVal)} (${formatDistanceKm(highestDist)} km)`
+      : '';
+    return `${signalLabel} (SWIM 0–1 m, ${formatConsistency(nearestIceVal)}) at ${formatDistanceKm(nearestIceDist)} km${highestSuffix}`;
   }
 
   return `No ice signal within ${radiusKm} km (highest consistency ${formatConsistency(highestVal)})`;
