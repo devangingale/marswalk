@@ -45,7 +45,7 @@ export const StopDetails: React.FC<StopDetailsProps> = ({ waypoint, arrived, fee
 
       {feeds.status === 'ready' && (
         <>
-          <section className="s48-stop-photos" aria-label="Rover photos">
+          {waypoint.id !== 'start' && <section className="s48-stop-photos" aria-label="Rover photos">
             <h3>Rover photos</h3>
             {!feeds.photosAvailable ? (
               <p className="s48-stop-no-photo">Rover photos are not available for this site.</p>
@@ -74,7 +74,7 @@ export const StopDetails: React.FC<StopDetailsProps> = ({ waypoint, arrived, fee
                 ))}
               </ul>
             )}
-          </section>
+          </section>}
 
           <section className="s48-stop-conditions" aria-label="Conditions">
             <h3>Conditions</h3>

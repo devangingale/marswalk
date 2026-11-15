@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { formatDuration } from './format';
-import { Playback, PLAYBACK_RATE } from './usePlayback';
+import { Playback } from './usePlayback';
+import { cycleSpeed, PLAYBACK_SPEEDS, speedLabel } from './playbackSpeed';
 import { SiteData } from '../types';
 import { Plan } from '../lib/plan';
 import { timelineReadoutsAt } from './timelineReadouts';
@@ -16,7 +17,8 @@ export interface PlaybackBarProps {
   compact?: boolean;
 }
 
-const KEYS_HINT = 'Space: play or pause · Left/Right: step 1 % · Page Up/Down: previous or next stop';
+const KEYS_HINT = 'Space: play or pause · Left/Right: step 1 % · Page Up/Down: previous or next stop · - / +: slower or faster';
+const SPEED_HINT = 'Playback speed: walk time per second. ×1 is real time. Keys: - or [ slower, + or ] faster';
 
 /** The playback bar in the time region under the map, in Walk and Visor. */
 export function PlaybackBar({ playback, durationS, elapsedS, siteData, plan, compact = false }: PlaybackBarProps) {
@@ -64,7 +66,26 @@ export function PlaybackBar({ playback, durationS, elapsedS, siteData, plan, com
           <span title="Time to sunset">{readouts.sunsetFormatted}</span>
         </span>
       )}
-      {!compact && <span className="s48-playback__speed" title="Playback speed">×{PLAYBACK_RATE}</span>}
+      {compact ? (
+        <button
+          type="button"
+          className="s48-playback__speed-cycle"
+          onClick={() => playback.setSpeed(cycleSpeed(playback.speed))}
+          aria-label={`Playback speed ${speedLabel(playback.speed)}, change`}
+          aria-keyshortcuts="Minus Plus BracketLeft BracketRight"
+          title={SPEED_HINT}
+        >
+          {speedLabel(playback.speed)}
+        </button>
+      ) : (
+        <div className="s48-seg s48-seg--sm s48-playback__speeds" role="group" aria-label="Playback speed" title={SPEED_HINT}>
+          {PLAYBACK_SPEEDS.map((speed) => (
+            <button key={speed} type="button" aria-pressed={playback.speed === speed} onClick={() => playback.setSpeed(speed)}>
+              {speedLabel(speed)}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

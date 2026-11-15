@@ -1,15 +1,16 @@
 // Written with AI assistance, directed and reviewed by the team.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-
-/** Seconds of walk replayed per second of playback. */
-export const PLAYBACK_RATE = 60;
+import { advanceElapsed, getSpeed, usePlaybackSpeed, type PlaybackSpeed } from './playbackSpeed';
 
 export interface Playback {
   elapsedS: number;
   playing: boolean;
   toggle: () => void;
   seek: (elapsedS: number) => void;
+  /** Seconds of walk per second of playback, shared by Walk and Visor. */
+  speed: PlaybackSpeed;
+  setSpeed: (speed: PlaybackSpeed) => void;
 }
 
 type SharedControls = Pick<Playback, 'toggle' | 'seek'>;
@@ -25,6 +26,7 @@ function publishPlaying(playing: boolean) {
 /** Controls the active route clock from views that receive elapsed time only. */
 export function useSharedPlayback(durationS: number, elapsedS: number): Playback {
   const [playing, setPlaying] = useState(sharedPlaying);
+  const [speed, setSpeed] = usePlaybackSpeed();
   useEffect(() => {
     listeners.add(setPlaying);
     setPlaying(sharedPlaying);
@@ -35,6 +37,8 @@ export function useSharedPlayback(durationS: number, elapsedS: number): Playback
     playing,
     toggle: () => sharedControls?.toggle(),
     seek: (value) => sharedControls?.seek(Math.min(Math.max(value, 0), durationS)),
+    speed,
+    setSpeed,
   };
 }
 
@@ -42,6 +46,7 @@ export function useSharedPlayback(durationS: number, elapsedS: number): Playback
 export function usePlayback(durationS: number): Playback {
   const [elapsedS, setElapsedS] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = usePlaybackSpeed();
   const elapsedRef = useRef(0);
 
   const seek = useCallback(
@@ -59,7 +64,8 @@ export function usePlayback(durationS: number): Playback {
     let frame = 0;
     let last = performance.now();
     const tick = (now: number) => {
-      const next = Math.min(durationS, elapsedRef.current + ((now - last) / 1000) * PLAYBACK_RATE);
+      // The speed is read each frame, so a change mid-playback continues from where it is.
+      const next = advanceElapsed(elapsedRef.current, (now - last) / 1000, getSpeed(), durationS);
       last = now;
       elapsedRef.current = next;
       setElapsedS(next);
@@ -92,5 +98,5 @@ export function usePlayback(durationS: number): Playback {
     };
   }, [toggle, seek]);
 
-  return { elapsedS, playing, toggle, seek };
+  return { elapsedS, playing, toggle, seek, speed, setSpeed };
 }
