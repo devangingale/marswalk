@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  BoundingSphere, Cartesian2, Cartographic, ClassificationType, Color, ConstantPositionProperty, Entity, HeadingPitchRange, Math as CesiumMath,
+  BoundingSphere, Cartesian2, Cartographic, Color, ConstantPositionProperty, Entity, HeadingPitchRange, Math as CesiumMath,
   ScreenSpaceEventHandler, ScreenSpaceEventType, Viewer,
 } from 'cesium';
 import type { MapProps } from '../types';
@@ -9,7 +9,7 @@ import type { RouteGrid } from '../lib/grid';
 import { lonlatToLocalMetres } from '../lib/grid';
 import { ScaleBar } from '../components/ScaleBar';
 import { GlobeOverlays, photoSites, surfaceHeightM } from './overlays';
-import { createMarsViewer, initCesium } from './cesiumSetup';
+import { createMarsViewer, initCesium, surfaceClassification } from './cesiumSetup';
 import { installGroundPan } from './groundPan';
 import { cartesianToLonLat, lonLatToCartesian, metresPerPixel as measureMetresPerPixel, siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M } from './frame';
 import { GlobeImagery } from './imageryLayers';
@@ -112,7 +112,7 @@ export const GlobePlanMap: React.FC<MapProps> = ({
       heightOffsetRef.current = heightOffset;
       if (tileset && gridRef.current) flyToSite(surfaceHeightM(gridRef.current, mid.lon, mid.lat, heightOffset));
 
-      const overlays = new GlobeOverlays(viewer, { scene: viewer.scene, classification: tileset ? ClassificationType.CESIUM_3D_TILE : ClassificationType.TERRAIN });
+      const overlays = new GlobeOverlays(viewer, { scene: viewer.scene, classification: surfaceClassification(tileset) });
       overlaysRef.current = overlays;
       if (tileset) overlays.setHeightOffsetM(heightOffset);
       overlays.setGrid(gridRef.current);
