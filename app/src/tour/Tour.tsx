@@ -177,7 +177,7 @@ const TourWelcome: React.FC<TourWelcomeProps> = ({ onStart, onSkip }) => {
         aria-labelledby={titleId}
       >
         <h2 id={titleId} className="s48-tour-welcome__title">
-          Welcome to Sol 48
+          Welcome to Sol-48
         </h2>
         <p className="s48-tour-welcome__text">
           New here? A two-minute tour of the four tabs.
