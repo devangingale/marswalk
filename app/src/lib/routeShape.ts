@@ -123,15 +123,6 @@ export function sharedSegments(
   // Convert all legs to local points
   const rawLegs = legs.map((leg) => toLocalPoints(leg.line, origin));
 
-  // Compute cumulative path distances and unit tangents for each leg
-  const rawPathDists: number[][] = rawLegs.map((pts) => {
-    const dists: number[] = [0];
-    for (let i = 1; i < pts.length; i++) {
-      dists.push(dists[i - 1] + distLocal(pts[i - 1], pts[i]));
-    }
-    return dists;
-  });
-
   const rawTanX: Float64Array[] = [];
   const rawTanY: Float64Array[] = [];
   for (let l = 0; l < rawLegs.length; l++) {

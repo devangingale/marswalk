@@ -496,12 +496,18 @@ describe('routeShape', () => {
     // Warm up JIT
     sharedSegments(samplePlan.route.legs.slice(0, 1), galeOrigin, 3);
 
-    // 1. Gale sample plan
-    const t0 = performance.now();
-    const galeSegments = sharedSegments(samplePlan.route.legs, galeOrigin, 3);
-    const galeElapsed = performance.now() - t0;
+    // 1. Gale sample plan (median of 5 runs to avoid OS scheduling spikes)
+    const galeRuns: number[] = [];
+    let galeSegments: ReturnType<typeof sharedSegments> = [];
+    for (let r = 0; r < 5; r++) {
+      const t0 = performance.now();
+      galeSegments = sharedSegments(samplePlan.route.legs, galeOrigin, 3);
+      galeRuns.push(performance.now() - t0);
+    }
+    galeRuns.sort((a, b) => a - b);
+    const galeMedian = galeRuns[2];
     expect(galeSegments.length).toBeGreaterThan(0);
-    expect(galeElapsed).toBeLessThan(50);
+    expect(galeMedian).toBeLessThan(50);
 
     // 2. 5,000-vertex synthetic route (2,500 outbound + 2,500 return out-and-back)
     const outPts: [number, number][] = [];
@@ -535,10 +541,16 @@ describe('routeShape', () => {
       max_slope_deg: 0,
     };
 
-    const t1 = performance.now();
-    const synthSegments = sharedSegments([legA, legB], testOrigin, 3);
-    const synthElapsed = performance.now() - t1;
+    const synthRuns: number[] = [];
+    let synthSegments: ReturnType<typeof sharedSegments> = [];
+    for (let r = 0; r < 5; r++) {
+      const t1 = performance.now();
+      synthSegments = sharedSegments([legA, legB], testOrigin, 3);
+      synthRuns.push(performance.now() - t1);
+    }
+    synthRuns.sort((a, b) => a - b);
+    const synthMedian = synthRuns[2];
     expect(synthSegments.length).toBeGreaterThan(0);
-    expect(synthElapsed).toBeLessThan(50);
+    expect(synthMedian).toBeLessThan(50);
   });
 });

@@ -4,7 +4,7 @@
  * Pure camera and coordinate math for Walk and Visor globe views.
  */
 
-import type { GridOrigin, RouteGrid } from '../../lib/grid';
+import type { RouteGrid } from '../../lib/grid';
 import type { Plan } from '../../lib/plan';
 import type { TrackVertex } from '../../walk/track';
 import { eyeHeightM } from '../frame';
@@ -14,7 +14,7 @@ import { eyeHeightM } from '../frame';
  * Filters out degenerate legs (fewer than 2 distinct points).
  * Intra-leg vertex clustering is handled safely in sharedSegments without thinning.
  */
-export function sanitizePlanForOverlays(plan: Plan, _origin?: GridOrigin): Plan {
+export function sanitizePlanForOverlays(plan: Plan): Plan {
   if (!plan.route?.legs) return plan;
 
   const sanitizedLegs = plan.route.legs.filter((leg) => {

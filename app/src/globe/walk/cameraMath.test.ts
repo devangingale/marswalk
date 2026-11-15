@@ -102,7 +102,7 @@ describe('sanitizePlanForOverlays', () => {
       },
     };
 
-    const sanitized = sanitizePlanForOverlays(plan, origin);
+    const sanitized = sanitizePlanForOverlays(plan);
     expect(sanitized.route.legs).toHaveLength(0);
   });
 
@@ -132,7 +132,7 @@ describe('sanitizePlanForOverlays', () => {
       },
     };
 
-    const sanitized = sanitizePlanForOverlays(plan, origin);
+    const sanitized = sanitizePlanForOverlays(plan);
     const preservedLine = sanitized.route.legs[0].line;
     expect(preservedLine.length).toBe(11);
     expect(preservedLine).toEqual(line);
