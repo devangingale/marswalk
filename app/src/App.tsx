@@ -32,6 +32,7 @@ import { DEFAULT_SURFACE_DOSE_MGY_PER_DAY, DEFAULT_SOLAR_EVENT_MGY_PER_DAY } fro
 import { type Mover } from './globe/plan/MoverPicker';
 import { useGlobeTheme } from './globe/theme/useGlobeTheme';
 import type { ThemeOverride } from './globe/theme/theme';
+import { setSurfaceMode, useSurfaceMode, type SurfaceMode } from './globe/surfaceMode';
 import './plan/plan.css';
 import './styles/visualReview.css';
 
@@ -52,6 +53,11 @@ const THEMES: { id: ThemeOverride; label: string }[] = [
   { id: 'auto', label: 'Auto' },
   { id: 'day', label: 'Day' },
   { id: 'night', label: 'Night' },
+];
+/** Online (Cesium Mars, the default) or Offline (our tiles on a plain globe), the user's choice. */
+const SURFACE_MODES: { id: SurfaceMode; label: string }[] = [
+  { id: 'online', label: 'Online' },
+  { id: 'offline', label: 'Offline' },
 ];
 
 /** ?tab=explore|plan|walk|visor; Plan when absent. main.tsx maps the older ?globe=1 to Explore. */
@@ -245,6 +251,7 @@ export const App: React.FC = () => {
     };
   }, [routeInputKey, routeGrid, routeGridSite, currentSiteId, doseRates]);
 
+  const surfaceMode = useSurfaceMode();
   const { override, setOverride, theme } = useGlobeTheme(
     { lat: siteData.origin.lat0, lon: siteData.origin.lon0 },
     mode === 'walk' || mode === 'visor' ? 'mars' : 'earth',
@@ -442,6 +449,14 @@ export const App: React.FC = () => {
         </div>
 
         <span className="grow" />
+
+        <div className="s48-seg s48-surface-mode" role="group" aria-label="Map surface">
+          {SURFACE_MODES.map((option) => (
+            <button key={option.id} type="button" aria-pressed={surfaceMode === option.id} onClick={() => setSurfaceMode(option.id)}>
+              {option.label}
+            </button>
+          ))}
+        </div>
 
         <div className="s48-seg s48-theme" role="group" aria-label="Theme">
           {THEMES.map((option) => (
