@@ -13,7 +13,6 @@ import {
   EllipsoidalOccluder,
   Entity,
   HeadingPitchRange,
-  HeightReference,
   IntersectionTests,
   Math as CesiumMath,
   Ray,
@@ -37,7 +36,7 @@ import { createMarsViewer, initCesium } from './cesiumSetup';
 import { installGroundPan } from './groundPan';
 import { buildCornerPlan } from './cornerPlan';
 import { cartesianToLonLat, lonLatToCartesian, siteHeightOffsetM } from './frame';
-import { GlobeGlobalLayers, GlobeLayer, globeAssetUrl, loadGlobeManifest } from './globalLayers';
+import { GlobeGlobalLayers, GlobeLayer, loadGlobeManifest } from './globalLayers';
 import { GlobeGraticule, cullLabels, graticuleLines, type Box, type GraticuleLine, type ViewBounds } from './graticule';
 import { GlobeImagery } from './imageryLayers';
 import { attachSiteTerrain, measureEdgeSeam, type SiteTerrainMesh } from './siteTerrain';
@@ -49,10 +48,10 @@ import { GlobeTemperatureLayer, loadTemperatureManifest } from './temperature/te
 import { TemperatureRow } from './temperature/TemperatureRow';
 import { readoutLines, seasonBin, type TemperatureKind, type TemperatureManifest } from './temperature/temperatureManifest';
 import { SiteFinder } from './sites/SiteFinder';
-import { canvasMarkerImages } from './markerImages';
 import { GlobeOverlays } from './overlays';
 import { formatElevation, formatLatLon, graticuleStep, screenSpan, sectionLabel } from './routeLook';
 import type { Theme } from './theme/theme';
+import { ExploreAnnotations, HeatmapButtons, HotspotList, chooseHeatmap, defaultGlobalOn, type AnnotationsSnapshot } from './annotations';
 
 const CAVE_CREDIT = 'Mars Global Cave Candidate Catalog (MGC³), USGS Astrogeology Science Center';
 /** Data overlays start at the --map-overlay-opacity token value. */
@@ -60,15 +59,10 @@ const OVERLAY_OPACITY = 0.7;
 
 /** Opening view: the whole disc, centred on the Gale longitude. */
 const PLANET_VIEW = { lon: 137.4, lat: -4.7, heightM: 9_000_000 };
-const CAVE_HOVER = 'unexplored, from orbit';
 
 const SAMPLE_PLAN = samplePlanJson as unknown as Plan;
 type PlanChoice = 'corner' | 'sample';
 const PLAN_TITLES: Record<PlanChoice, string> = { corner: 'Corner loop', sample: 'Boxwork out and back' };
-
-interface CaveCollection {
-  features: { geometry: { coordinates: [number, number] }; properties: { id: string } }[];
-}
 
 interface Hover {
   x: number;
@@ -99,7 +93,7 @@ function urlState() {
   const view = params.get('view')?.split(',').map(Number);
   return {
     flyToSite: params.get('fly') === '1' || params.has('siteId') || (params.has('site') && AVAILABLE_SITES.includes(params.get('site')!)),
-    globalOn: list('layers'),
+    globalOn: defaultGlobalOn(params.has('layers') ? list('layers') : null),
     siteOn: params.has('site') && !AVAILABLE_SITES.includes(params.get('site')!) ? list('site') : (params.has('siteLayers') ? list('siteLayers') : null),
     caves: params.get('caves') === '1',
     view: view?.length === 3 && view.every(Number.isFinite) ? (view as [number, number, number]) : null,
@@ -217,7 +211,7 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
   const siteTerrainRef = useRef<SiteTerrainMesh | null>(null);
   const globalRef = useRef<GlobeGlobalLayers | null>(null);
   const temperatureRef = useRef<GlobeTemperatureLayer | null>(null);
-  const cavesRef = useRef<CustomDataSource | null>(null);
+  const annotationsRef = useRef<ExploreAnnotations | null>(null);
   const overlaysRef = useRef<GlobeOverlays | null>(null);
   const graticuleRef = useRef<GlobeGraticule | null>(null);
   const gridRef = useRef<RouteGrid | null>(null);
@@ -240,7 +234,7 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
   const [ls, setLs] = useState(() => marsSolarLongitude(Date.now()));
   const bin = seasonBin(ls);
   const [cavesOn, setCavesOn] = useState(initial.caves);
-  const [caveCount, setCaveCount] = useState(0);
+  const [annotations, setAnnotations] = useState<AnnotationsSnapshot>({ caveCount: 0, hotspots: [] });
   const [leftView, setLeftView] = useState<'layers' | 'sites'>('layers');
   const [notice, setNotice] = useState<string | null>(null);
   const [hover, setHover] = useState<Hover | null>(null);
@@ -264,8 +258,8 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
   const [cursor, setCursor] = useState<string | null>(null);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
 
-  const statesRef = useRef({ layerStates, globalStates, cavesOn, graticuleOn });
-  statesRef.current = { layerStates, globalStates, cavesOn, graticuleOn };
+  const statesRef = useRef({ layerStates, globalStates, graticuleOn });
+  statesRef.current = { layerStates, globalStates, graticuleOn };
 
   const cornerPlan = React.useMemo(() => {
     if (!siteData) return null;
@@ -331,10 +325,12 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
       // Markers clamp to Cesium Mars only when the tileset takes part in height queries.
       if (tileset) tileset.enableCollision = true;
 
-      const caves = new CustomDataSource('caves');
-      caves.show = statesRef.current.cavesOn;
-      cavesRef.current = caves;
-      void viewer.dataSources.add(caves);
+      annotationsRef.current = new ExploreAnnotations(viewer, {
+        base: GLOBE_BASE,
+        values: (id) => globalRef.current?.values(id) ?? Promise.reject(new Error('Globe layers not loaded')),
+        onChange: setAnnotations,
+        blockers: () => [...(rootRef.current?.querySelectorAll(LABEL_BLOCKERS) ?? [])],
+      });
 
       const graticuleSource = new CustomDataSource('graticule');
       void viewer.dataSources.add(graticuleSource);
@@ -396,29 +392,6 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
         })
         .catch((error) => console.warn('Temperature manifest did not load', error));
 
-      fetch(globeAssetUrl(GLOBE_BASE, 'caves.geojson'))
-        .then((r) => (r.ok ? (r.json() as Promise<CaveCollection>) : Promise.reject(new Error(`HTTP ${r.status}`))))
-        .then((data) => {
-          if (disposed) return;
-          const triangle = canvasMarkerImages().cave();
-          for (const f of data.features) {
-            const [lon, lat] = f.geometry.coordinates;
-            caves.entities.add({
-              id: `cave:${f.properties.id}`,
-              name: f.properties.id,
-              position: lonLatToCartesian(lon, lat, 0),
-              billboard: {
-                image: triangle.image,
-                width: triangle.width,
-                height: triangle.height,
-                heightReference: HeightReference.CLAMP_TO_GROUND,
-              },
-            });
-          }
-          setCaveCount(data.features.length);
-        })
-        .catch((error) => console.warn('Cave candidates did not load', error));
-
       if (initial.view) void flyTo(viewer, initial.view[0], initial.view[1], initial.view[2], -90);
 
       let frame = 0;
@@ -458,8 +431,9 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
               return;
             }
           }
-          if (picked?.id instanceof Entity && caves.entities.contains(picked.id)) {
-            place([`Cave candidate ${picked.id.name}`, CAVE_HOVER]);
+          const caveLines = annotationsRef.current?.hover(picked);
+          if (caveLines) {
+            place(caveLines);
             return;
           }
           const siteLines = siteHoverRef.current?.(picked?.id instanceof Entity ? picked.id : null);
@@ -481,6 +455,7 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
       handler?.destroy();
       removers.forEach((remove) => remove());
       overlaysRef.current?.clear();
+      annotationsRef.current?.destroy();
       graticuleRef.current?.clear();
       siteImageryRef.current?.clear();
       siteTerrainRef.current?.destroy();
@@ -565,9 +540,10 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
   useEffect(() => siteImageryRef.current?.apply(layerStates), [layerStates]);
   useEffect(() => globalRef.current?.apply(globalStates), [globalStates]);
   useEffect(() => temperatureRef.current?.apply({ ...temperature, bin }), [temperature, bin, temperatureManifest]);
-  useEffect(() => {
-    if (cavesRef.current) cavesRef.current.show = cavesOn;
-  }, [cavesOn]);
+  useEffect(
+    () => annotationsRef.current?.update({ layers: globalLayers, states: globalStates, caves: cavesOn }),
+    [viewer, globalLayers, globalStates, cavesOn],
+  );
   useEffect(() => refreshGraticule(), [graticuleOn, refreshGraticule]);
 
   useEffect(() => {
@@ -593,14 +569,6 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
       if (!entity.label) continue;
       entity.label.fillColor = labelFill as never;
       entity.label.outlineColor = labelOutline as never;
-    }
-    if (cavesRef.current) {
-      const fill = cssColour('--map-cave');
-      for (const entity of cavesRef.current.entities.values) {
-        if (!entity.point) continue;
-        entity.point.color = fill as never;
-        entity.point.outlineColor = labelOutline as never;
-      }
     }
     viewer.scene.requestRender();
   }, [theme, viewer]);
@@ -663,9 +631,15 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
           globalStates={globalStates}
           onToggleGlobal={toggle(setGlobalStates)}
           onGlobalOpacityChange={setOpacity(setGlobalStates)}
+          globalDetail={Object.fromEntries(
+            annotations.hotspots.map((set) => [
+              set.layer.id,
+              <HotspotList key={set.layer.id} set={set} onSelect={(lon, lat) => annotationsRef.current?.focus(lon, lat)} />,
+            ]),
+          )}
           caves={
-            caveCount > 0
-              ? { enabled: cavesOn, count: caveCount, credit: CAVE_CREDIT, onToggle: () => setCavesOn((v) => !v) }
+            annotations.caveCount > 0
+              ? { enabled: cavesOn, count: annotations.caveCount, credit: CAVE_CREDIT, onToggle: () => setCavesOn((v) => !v) }
               : undefined
           }
           temperature={
@@ -750,6 +724,7 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
       <button type="button" className="s48-btn s48-btn--secondary" onClick={flyToPlanet}>
         Whole planet
       </button>
+      <HeatmapButtons layers={globalLayers} states={globalStates} onChoose={(id) => setGlobalStates((prev) => chooseHeatmap(prev, id))} />
       {siteData && (
         <button type="button" className="s48-btn s48-btn--secondary explore-site-btn" onClick={flyToSite} title={`Fly to ${siteData.title}`}>
           {siteData.title}
