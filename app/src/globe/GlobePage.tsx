@@ -24,7 +24,7 @@ import {
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import '../shell/shell.css';
 import './globe.css';
-import { DEFAULT_SITE, GLOBE_BASE, getSiteBaseUrl, getSiteJsonUrl } from '../config';
+import { AVAILABLE_SITES, DEFAULT_SITE, GLOBE_BASE, getSiteBaseUrl, getSiteJsonUrl } from '../config';
 import { LayerPanel } from '../components/LayerPanel';
 import samplePlanJson from '../fixtures/plan.sample.json';
 import { loadGrid, type RouteGrid } from '../lib/grid';
@@ -37,7 +37,7 @@ import { cartesianToLonLat, lonLatToCartesian, siteHeightOffsetM } from './frame
 import { GlobeGlobalLayers, GlobeLayer, globeAssetUrl, loadGlobeManifest } from './globalLayers';
 import { GlobeGraticule, cullLabels, graticuleLines, type Box, type GraticuleLine, type ViewBounds } from './graticule';
 import { GlobeImagery } from './imageryLayers';
-import { attachSiteTerrain, type SiteTerrainMesh } from './siteTerrain';
+import { attachSiteTerrain, measureEdgeSeam, type SiteTerrainMesh } from './siteTerrain';
 import { GlobeTimeTools } from './Clock';
 import { marsSolarLongitude } from '../lib/sun';
 import { GlobeTemperatureLayer, loadTemperatureManifest } from './temperature/temperatureLayer';
@@ -93,14 +93,19 @@ function urlState() {
   const params = new URLSearchParams(window.location.search);
   const list = (key: string) => params.get(key)?.split(',').filter(Boolean) ?? [];
   const view = params.get('view')?.split(',').map(Number);
+  const siteParam = params.get('siteId') || (params.get('site') && AVAILABLE_SITES.includes(params.get('site')!) ? params.get('site')! : null);
+  const siteId = siteParam && AVAILABLE_SITES.includes(siteParam) ? siteParam : DEFAULT_SITE;
   return {
+    siteId,
+    flyToSite: params.get('fly') === '1' || params.has('siteId') || (params.has('site') && AVAILABLE_SITES.includes(params.get('site')!)),
     globalOn: list('layers'),
-    siteOn: params.has('site') ? list('site') : null,
+    siteOn: params.has('site') && !AVAILABLE_SITES.includes(params.get('site')!) ? list('site') : (params.has('siteLayers') ? list('siteLayers') : null),
     caves: params.get('caves') === '1',
     view: view?.length === 3 && view.every(Number.isFinite) ? (view as [number, number, number]) : null,
     plan: (params.get('plan') === 'sample' ? 'sample' : 'corner') as PlanChoice,
     slopes: params.get('slopes') === '1',
     grid: params.get('grid') === '1',
+    sample: params.get('sample') === '1',
   };
 }
 
@@ -435,7 +440,8 @@ export const GlobePage: React.FC = () => {
         })
         .catch((error) => console.warn('Cave candidates did not load', error));
 
-      fetch(getSiteJsonUrl(DEFAULT_SITE))
+      const siteBaseUrl = initial.sample ? `/sample/${initial.siteId}` : getSiteBaseUrl(initial.siteId);
+      fetch(initial.sample ? `${siteBaseUrl}/site.json` : getSiteJsonUrl(initial.siteId))
         .then((r) => (r.ok ? (r.json() as Promise<SiteData>) : Promise.reject(new Error(`HTTP ${r.status}`))))
         .then(async (site) => {
           if (disposed) return;
@@ -452,18 +458,22 @@ export const GlobePage: React.FC = () => {
           setLayerStates(states);
           siteImageryRef.current!.apply(states);
           await siteImageryRef.current!.setSite(site, mode);
-          siteTerrainRef.current = await attachSiteTerrain(viewer, tileset, site);
-          const loaded = await loadGrid(getSiteBaseUrl(site.id), site.origin);
+          const loaded = await loadGrid(siteBaseUrl, site.origin);
           if (disposed) return;
           gridRef.current = loaded;
           setGrid(loaded);
           const offset = await siteHeightOffsetM(viewer, tileset, site, loaded);
           console.info(`Height offset at ${site.id}: ${offset.toFixed(2)} m`);
-          if (mode === 'offline' && !initial.view) {
+          const seam = await measureEdgeSeam(viewer, tileset, site, loaded, offset);
+          if (seam) {
+            console.info(`Site terrain seam at ${site.id}: mean ${seam.meanM.toFixed(2)} m, max ${seam.maxM.toFixed(2)} m (${seam.samples} edge points)`);
+          }
+          siteTerrainRef.current = await attachSiteTerrain(viewer, tileset, site, offset, siteBaseUrl);
+          if (!initial.view && (mode === 'offline' || initial.flyToSite)) {
             const [west, south, east, north] = site.bounds_lonlat;
             const lon = (west + east) / 2;
             const lat = (south + north) / 2;
-            void flyTo(viewer, lon, lat, Math.max(site.size_m.width, site.size_m.height) * 2, -60, 0);
+            void flyTo(viewer, lon, lat, Math.max(site.size_m.width, site.size_m.height) * 2, -60, mode === 'offline' ? 0 : undefined);
           }
           // Mars mode frames the crew only after the site's opening view.
           siteSettledRef.current = true;
@@ -733,7 +743,7 @@ export const GlobePage: React.FC = () => {
             <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
             {/* The clock, dust history and conditions are Earth-mode planning chrome; Mars mode stays minimal. */}
             {mode === 'earth' && dustScene && <GlobeTimeTools scene={dustScene} onLs={setLs} />}
-            {mode === 'earth' && siteData && (
+            {siteData && mode !== 'mars' && (
               <div className="globe-sites" data-over-map>
                 <button type="button" className="s48-btn s48-btn--secondary" onClick={flyToPlanet}>
                   Whole planet

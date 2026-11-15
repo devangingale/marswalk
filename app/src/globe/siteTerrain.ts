@@ -2,6 +2,7 @@
 // Our 1 m HiRISE terrain mesh for the site, from <site base>/terrain3d/ (pipeline/site_terrain3d.py).
 import {
   Cartesian3,
+  Cartographic,
   Cesium3DTileset,
   ClippingPolygon,
   ClippingPolygonCollection,
@@ -19,6 +20,7 @@ import {
   Viewer,
 } from 'cesium';
 import { getSiteBaseUrl } from '../config';
+import type { RouteGrid } from '../lib/grid';
 import type { SiteData } from '../types';
 import { readToken } from './markerImages';
 
@@ -179,6 +181,61 @@ class ImageryMirror {
   }
 }
 
+export interface SeamReport {
+  meanM: number;
+  maxM: number;
+  samples: number;
+}
+
+/**
+ * Samples Cesium Mars along the site rectangle edge and compares with the mesh heights
+ * (DEM elevation + heightOffsetM). Returns the mean and max absolute differences, or null
+ * when offline or when no height samples succeed.
+ */
+export async function measureEdgeSeam(
+  viewer: Viewer,
+  marsTileset: Cesium3DTileset | null,
+  site: SiteData,
+  grid: RouteGrid,
+  heightOffsetM: number,
+  samplesPerEdge = 8,
+): Promise<SeamReport | null> {
+  if (!marsTileset || viewer.isDestroyed()) return null;
+  const [west, south, east, north] = site.bounds_lonlat;
+  const points: { lon: number; lat: number }[] = [];
+  for (let i = 0; i < samplesPerEdge; i++) {
+    const f = i / (samplesPerEdge - 1);
+    points.push({ lon: west + f * (east - west), lat: south });
+    points.push({ lon: east, lat: south + f * (north - south) });
+    points.push({ lon: east - f * (east - west), lat: north });
+    points.push({ lon: west, lat: north - f * (north - south) });
+  }
+
+  let sampled: (Cartographic | undefined)[];
+  try {
+    sampled = await viewer.scene.sampleHeightMostDetailed(
+      points.map((p) => Cartographic.fromDegrees(p.lon, p.lat)),
+    );
+  } catch {
+    return null;
+  }
+
+  const diffs: number[] = [];
+  for (let i = 0; i < points.length; i++) {
+    const s = sampled[i]?.height;
+    if (s === undefined) continue;
+    const { row, col } = grid.lonlatToRowCol(points[i].lon, points[i].lat);
+    const bundleM = grid.getElevation(row, col);
+    if (!Number.isFinite(bundleM)) continue;
+    diffs.push(Math.abs(bundleM + heightOffsetM - s));
+  }
+
+  if (diffs.length === 0) return null;
+  const meanM = diffs.reduce((a, b) => a + b, 0) / diffs.length;
+  const maxM = Math.max(...diffs);
+  return { meanM, maxM, samples: diffs.length };
+}
+
 /**
  * Shows the site's own terrain mesh when the bundle has one, else resolves null and changes nothing.
  * Online it replaces Cesium Mars inside the site rectangle; offline it sits on the plain ellipsoid,
@@ -189,12 +246,15 @@ export async function attachSiteTerrain(
   viewer: Viewer,
   marsTileset: Cesium3DTileset | null,
   site: SiteData,
+  measuredHeightOffsetM?: number,
+  siteBaseUrl?: string,
 ): Promise<SiteTerrainMesh | null> {
   let tileset: Cesium3DTileset;
   try {
-    tileset = await Cesium3DTileset.fromUrl(`${getSiteBaseUrl(site.id)}/terrain3d/tileset.json`, {
+    tileset = await Cesium3DTileset.fromUrl(`${siteBaseUrl ?? getSiteBaseUrl(site.id)}/terrain3d/tileset.json`, {
       ellipsoid: Ellipsoid.MARS,
       enableCollision: true,
+      maximumScreenSpaceError: 2,
     });
   } catch {
     return null;
@@ -210,11 +270,14 @@ export async function attachSiteTerrain(
   const centreLon = (west + east) / 2;
   const centreLat = (south + north) / 2;
   tileset.customShader = hillshadeShader(centreLon, centreLat);
-  let heightOffsetM = extras.height_offset_m;
+  let heightOffsetM = measuredHeightOffsetM ?? extras.height_offset_m;
   if (!marsTileset) {
     const lift = -extras.edge_min_height_m;
     tileset.modelMatrix = liftMatrix(centreLon, centreLat, extras.edge_min_height_m, lift);
     heightOffsetM += lift;
+  } else if (measuredHeightOffsetM !== undefined && Math.abs(measuredHeightOffsetM - extras.height_offset_m) > 1e-3) {
+    const delta = measuredHeightOffsetM - extras.height_offset_m;
+    tileset.modelMatrix = liftMatrix(centreLon, centreLat, extras.edge_min_height_m, delta);
   }
   surface.clippingPolygons = new ClippingPolygonCollection({
     polygons: [new ClippingPolygon({ positions: siteCorners(site.bounds_lonlat), ellipsoid: Ellipsoid.MARS })],
