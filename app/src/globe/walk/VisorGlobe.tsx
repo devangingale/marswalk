@@ -14,7 +14,7 @@ import { getSiteBaseUrl } from '../../config';
 import { loadGrid, type RouteGrid } from '../../lib/grid';
 import type { Plan } from '../../lib/plan';
 import type { SiteData } from '../../types';
-import { formatDistance, formatDuration, formatHeading } from '../../walk/format';
+import { formatDistance, formatDuration, formatHeading, BACK_AT_SHELTER, nextWaypointHeading } from '../../walk/format';
 import { hazardAhead, hazardFlags } from '../../walk/hazard';
 import { budgetRemaining, RouteTrack, walkStateAt, waypointById } from '../../walk/track';
 import { createMarsViewer, initCesium, type CesiumFailure } from '../cesiumSetup';
@@ -27,6 +27,7 @@ import { initialMapLoadState, markFirstFrame, setStreaming, updateLoadSource, ty
 import { markMapLoadMilestone } from '../loadMilestones';
 import type { SiteTerrainMesh } from '../siteTerrain';
 import { groundHeightAt } from './cameraMath';
+import { compactDirections, TurnArrow, trueNorthTitle, useDirectionsNow } from '../../components/DirectionsPanel';
 import './walkGlobe.css';
 import '../../components/walk.css';
 
@@ -68,6 +69,7 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
   const [hazardData, setHazardData] = useState<HazardData>({ status: 'loading' });
   const state = walkStateAt(plan, track, elapsedS);
   const budget = budgetRemaining(plan, state.used);
+  const directions = useDirectionsNow(plan, track, siteData.origin, state);
   const pose = useMemo(
     () => ({ lon: state.lon, lat: state.lat, headingDeg: state.headingDeg }),
     [state.lon, state.lat, state.headingDeg],
@@ -313,7 +315,7 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
       <MapLoadStatus state={loadState} />
       <SurfaceNotice failure={failure} placement="low" />
       <div className="s48-visor-overlay">
-        <div className="s48-visor-readout s48-visor-heading">
+        <div className="s48-visor-readout s48-visor-heading" data-tour="visor-readouts">
           <span>Heading</span>
           <div className="s48-heading-tape" aria-hidden="true">
             {Array.from({ length: 5 }, (_, index) => {
@@ -328,12 +330,21 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
           </div>
           <strong>{formatHeading(state.headingDeg)}</strong>
         </div>
-        <div className="s48-visor-readout s48-visor-next">
-          <span>Next stop</span>
-          <strong>{next && state.next ? formatDistance(state.next.distanceM) : 'Home'}</strong>
-          <small>{next?.name ?? plan.start.label}</small>
+        <div className="s48-visor-readout s48-visor-next" data-tour="visor-readouts">
+          <span>{nextWaypointHeading(state.next?.id ?? 'start')}</span>
+          <strong>{next && state.next ? formatDistance(state.next.distanceM) : 'Back'}</strong>
+          <small>{next?.name ?? BACK_AT_SHELTER}</small>
+          {directions.next && (
+            <div
+              className="s48-visor-directions"
+              title={directions.target ? trueNorthTitle(directions.target.bearingDeg, directions.target.compass) : undefined}
+            >
+              <TurnArrow deg={directions.relativeTurnDeg} />
+              <span>{compactDirections(directions)}</span>
+            </div>
+          )}
         </div>
-        <div className="s48-visor-readout s48-visor-budget">
+        <div className="s48-visor-readout s48-visor-budget" data-tour="visor-readouts">
           <span>Time remaining</span>
           <strong>{formatDuration(budget.time.remaining)}</strong>
         </div>

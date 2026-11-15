@@ -15,7 +15,7 @@ A static web app. An astronaut stacks data layers over a 4 × 4 km area, drops s
 | Topic | Decision |
 |---|---|
 | Sites | Gale / Mount Sharp (full), Jezero (second site, same pipeline, no site-specific code) |
-| Travel mode | On foot. The walk starts and ends at a movable "rover / habitat" marker, so a rover drop-off is represented without building a vehicle model |
+| Travel mode | On foot. The walk starts and ends at a movable shelter the user places: a habitat, a pressurised rover or a radiation shelter (no vehicle model) |
 | Default walk | Two astronauts, 8-hour limit, all parameters editable |
 | Route cost | A cost grid (section 6). What produces it is swappable: the slope-and-roughness rule is the default; the learned walkability model replaces it only if it passes its gate (phase 2) |
 | App hosting | Vercel, Dev's personal account |
@@ -135,7 +135,7 @@ Rules:
   "version": 1,
   "site": "gale",
   "params": { "crew": 2, "time_limit_s": 28800, "suit_mass_kg": 120, "body_mass_kg": 80, "stop_time_s": 1200, "solar_event": false },
-  "start": { "lon": 137.3900, "lat": -4.7800, "label": "Rover drop-off" },
+  "start": { "lon": 137.3900, "lat": -4.7800, "label": "Shelter · Habitat", "kind": "habitat" },
   "stops": [
     { "id": "s1", "name": "Boxwork ridge", "lon": 137.3795, "lat": -4.8120, "note": "Mineral veins standing as ridges", "dwell_s": 1200 }
   ],
@@ -157,7 +157,10 @@ Rules:
 ```
 
 - `line` is `[lon, lat]` pairs, densified so no two points are more than 4 m apart. Walk and Visor animate along it.
-- The route always returns to `start`.
+- `start` is the shelter: the safe haven the walk starts from and must end at (NASA EVA practice: stay within walk-back of a safe haven; see `docs/research/eva-limits.md` and `docs/research/radiation-shelter.md`). It is not a stop.
+- `start.kind` is optional: `"habitat"`, `"rover"` (pressurised rover) or `"radiation_shelter"`. When absent the shelter is a pressurised rover, so plans written before the field existed (start label "Rover drop-off") still load. Any other value fails validation. New plans default to `"habitat"`.
+- `start.label` is the shelter's name on screen; the default is "Shelter · " plus the type (e.g. "Shelter · Pressurised rover"). The user can rename it.
+- The route always returns to `start` (`returns_to_start` must be `true`); budgets, turn-back and the night return depend on it.
 - `turn_back` is the last point from which walking home still fits the binding limit; `reason` names that limit (`time` or `energy`).
 - A stop that cannot be reached sets `feasible: false` and adds a plain-language entry to `warnings`; the app never draws a line through impassable ground.
 - A committed example lives at `app/src/fixtures/plan.sample.json`.

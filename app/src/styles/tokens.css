@@ -144,6 +144,8 @@
   --map-chevron: #f2f5f7;               /* direction of travel, on the route */
   --map-fork: #f2f5f7;                  /* diamond where the line splits or merges */
   --map-fork-ring: #0a1828;
+  --map-turn: #c4e0fb;                  /* next turn point in Walk: hollow ring on the route */
+  --map-turn-ring: #0a1828;
   --map-cave: #b48cf0;                  /* cave candidates: small triangle, violet from the layer palette */
   --map-graticule: rgba(242, 245, 247, 0.45);
   /* Route gradient, one blue family, flat to steep (no red or green). */

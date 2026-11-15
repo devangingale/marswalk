@@ -307,6 +307,25 @@ export function sunElevationDeg(utcMs: number, latDeg: number, lonEastDeg: numbe
 }
 
 /**
+ * The Sun in the local sky: azimuth in degrees clockwise from true north [0, 360) and
+ * elevation above the horizon [-90, 90]. Mars24 Eq. D-5 and D-6 (declination, local true
+ * solar time and hour angle), as calculateMarsParameters.
+ */
+export function sunPosition(
+  utcMs: number,
+  latDeg: number,
+  lonEastDeg: number
+): { azimuthDeg: number; elevationDeg: number } {
+  const { azimuthDeg, elevationDeg } = calculateMarsParameters(utcMs, latDeg, lonEastDeg);
+  return { azimuthDeg, elevationDeg };
+}
+
+/** UTC ms of local mean midnight that starts the sol containing utcMs at lonEastDeg. */
+export function solStartAt(utcMs: number, lonEastDeg: number): number {
+  return utcMs - (localMeanSolarTime(utcMs, lonEastDeg) / 24) * MARS_SOL_MS;
+}
+
+/**
  * Helper bisection search for zero solar elevation between tA and tB.
  * Tolerates up to 1000 ms (1 second) interval window.
  */

@@ -118,7 +118,7 @@ describe('nightTrigger', () => {
 
 describe('nightShelter', () => {
   const sites = [
-    { id: 'dropoff', alongM: 0 },
+    { id: 'plan-shelter', alongM: 0 },
     { id: 'node', alongM: 300 },
     { id: 'off-track', alongM: null },
   ];
@@ -127,8 +127,8 @@ describe('nightShelter', () => {
     expect(nightShelter(sites, 450)!.id).toBe('node');
   });
 
-  it('falls back to the drop-off before the crew reaches a node', () => {
-    expect(nightShelter(sites, 250)!.id).toBe('dropoff');
+  it('falls back to the plan shelter before the crew reaches a node', () => {
+    expect(nightShelter(sites, 250)!.id).toBe('plan-shelter');
   });
 
   it('counts a shelter the crew is standing at', () => {

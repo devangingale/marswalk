@@ -5,7 +5,7 @@ import { useHold } from './useHold';
 import type { NightModel } from './useSafetyModel';
 import { formatBearing, formatLocalClock, formatWalkDistance, formatDistance } from './format';
 import { DotFilled, DotHollow } from './glyphs';
-import { shelterKindName } from './WarningLadder';
+import { shelterDisplayName } from './WarningLadder';
 
 /** Closer than this to the shelter (or the rover to the crew), metres, it is here. */
 const AT_SHELTER_M = 5;
@@ -29,7 +29,7 @@ export const NightPanel: React.FC<{
       <h3 className="s48-night__title">Night return</h3>
       <div className="s48-night__nav">
         <div className="s48-night__row">
-          <span className="s48-night__label">{shelterKindName(shelter.kind)}</span>
+          <span className="s48-night__label">{shelterDisplayName(shelter)}</span>
           {atShelter ? (
             <span className="s48-night__none">Here</span>
           ) : (

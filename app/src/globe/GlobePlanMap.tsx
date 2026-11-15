@@ -46,6 +46,8 @@ interface GlobePlanMapProps extends MapProps {
   /** Tilted view showing relief; off is straight down. */
   relief?: boolean;
   wholePlanet?: WholePlanetLayers;
+  /** "Move shelter" is on: the next click places the shelter (App routes it), markers do not drag. */
+  placingShelter?: boolean;
 }
 
 /** Caves within 4,000 km of the camera; anything farther at site zoom is through the planet. */
@@ -75,7 +77,7 @@ function token(value: string, fallback: string): string {
 
 export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
   siteData, layerStates, roverOverlayState, plan, onMapPoint, onStartChange, onStopChange, onRoutePointHover,
-  grid, activePoint, relief = false, wholePlanet,
+  grid, activePoint, relief = false, wholePlanet, placingShelter = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
@@ -83,6 +85,7 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
   const imageryRef = useRef<GlobeImagery | null>(null);
   const gridRef = useRef<RouteGrid | null>(null);
   const planRef = useRef(plan);
+  const placingRef = useRef(placingShelter);
   const callbacksRef = useRef({ onMapPoint, onStartChange, onStopChange, onRoutePointHover });
   const dragRef = useRef<DragTarget | null>(null);
   const dragPointRef = useRef<{ lon: number; lat: number } | null>(null);
@@ -103,6 +106,7 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
   const reportLoad = (source: LoadSource, status: 'pending' | 'loading' | 'ready' | 'failed', progress?: number) => setLoadState((current) => updateLoadSource(current, source, status, progress));
 
   planRef.current = plan;
+  placingRef.current = placingShelter;
   callbacksRef.current = { onMapPoint, onStartChange, onStopChange, onRoutePointHover };
   roverStateRef.current = roverOverlayState;
 
@@ -267,6 +271,7 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
         else setHover(null);
       }, ScreenSpaceEventType.MOUSE_MOVE);
       const beginDrag = (event: ScreenSpaceEventHandler.PositionedEvent) => {
+        if (placingRef.current) return;
         const picked = viewer.scene.pick(event.position) as { id?: unknown } | undefined;
         const id = picked?.id;
         if (typeof id === 'object' && id && 'position' in id) {
@@ -302,7 +307,8 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
         const position = entity?.position?.getValue(viewer.clock.currentTime);
         const location = cartesianToLonLat(position);
         const current = planRef.current;
-        if (location && current) {
+        // Placing the shelter: any click on the site places it, markers included.
+        if (location && current && !placingRef.current) {
           const hitPoint = lonlatToLocalMetres(location.lon, location.lat, siteData.origin);
           const isPlanMarker = [current.start, ...current.stops].some((item) => {
             const marker = lonlatToLocalMetres(item.lon, item.lat, siteData.origin);
@@ -473,11 +479,12 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
   }, [activePoint]);
 
   // Leaving the map clears the hover dot and tag; a drag in progress keeps them.
-  return <div className="globe-plan-map" onPointerLeave={() => { setHover(null); if (!dragRef.current) onRoutePointHover?.(null); }}>
+  return <div className={`globe-plan-map${placingShelter ? ' is-placing-shelter' : ''}`} onPointerLeave={() => { setHover(null); if (!dragRef.current) onRoutePointHover?.(null); }}>
     <div ref={containerRef} className="globe-plan-canvas" />
     <MapLoadStatus state={loadState} />
     {offline && !failure && <div className="globe-plan-offline">Offline · local terrain</div>}
     <SurfaceNotice failure={failure} />
+    {placingShelter && <div className="globe-plan-placing" role="status">Click the map to place the shelter · Esc cancels</div>}
     {hover && <div className="globe-plan-hover" style={{ left: hover.x, top: hover.y }}>{hover.lines.join('\n')}</div>}
     <ScaleBar metresPerPixel={scale} />
   </div>;

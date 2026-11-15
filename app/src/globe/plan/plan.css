@@ -28,6 +28,8 @@
 .globe-plan-map canvas { display: block; width: 100%; height: 100%; }
 /* Below the left panel handle, which sits at the top-left corner of the map. */
 .globe-plan-offline { position: absolute; left: var(--space-3); top: calc(var(--space-3) + var(--space-8) + var(--space-1)); z-index: 4; padding: var(--space-1) var(--space-2); background: var(--map-tag-bg); color: var(--map-label-text); font-size: var(--text-sm); }
+.globe-plan-map.is-placing-shelter .globe-plan-canvas, .globe-plan-map.is-placing-shelter canvas { cursor: crosshair; }
+.globe-plan-placing { position: absolute; left: 50%; top: var(--space-3); z-index: 5; transform: translateX(-50%); padding: var(--space-1) var(--space-3); border: var(--border-width) solid var(--color-accent); border-radius: var(--radius-1); background: var(--map-tag-bg); color: var(--map-label-text); font: var(--weight-medium) var(--text-sm) / var(--leading-sm) var(--font-ui); pointer-events: none; }
 .globe-plan-hover { position: absolute; z-index: 5; max-width: 280px; white-space: pre-line; padding: var(--space-1) var(--space-2); border-radius: var(--radius-1); background: var(--map-tag-bg); color: var(--map-label-text); font: var(--weight-medium) var(--text-sm) / var(--leading-sm) var(--font-data); pointer-events: none; }
 @media (max-width: 1024px) {
   .globe-mover button { font-size: var(--text-xs); }
