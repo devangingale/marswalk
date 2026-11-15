@@ -3,7 +3,7 @@
 // small map controls top-right. Both side panels collapse; below OVERLAY_BELOW_PX an open
 // panel slides over the map instead of narrowing it.
 import React, { useCallback, useEffect, useId, useState, type ReactNode } from 'react';
-import { OVERLAY_BELOW_PX, readPanels, togglePanel, writePanels, type PanelState, type Side } from './regions';
+import { OVERLAY_BELOW_PX, readPanels, togglePanel, writePanels, type PanelState, type Side } from './panelState';
 import './regions.css';
 
 export interface RegionsProps {
