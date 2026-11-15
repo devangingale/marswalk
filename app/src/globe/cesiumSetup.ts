@@ -174,6 +174,9 @@ export async function createMarsViewer(
     tileset.maximumScreenSpaceError = 4;
     viewer.scene.primitives.add(tileset);
     watchImagery(viewer, tileset.imageryLayers);
+    tileset.tileLoad.addEventListener(() => {
+      if (!viewer.isDestroyed()) viewer.scene.requestRender();
+    });
     return { viewer, tileset, mode, failure: null };
   } catch (error) {
     // Reported to the user (the map notice offers the offline view); the plain globe keeps our

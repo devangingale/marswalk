@@ -16,6 +16,7 @@ import { lonlatToLocalMetres } from '../lib/grid';
 import { ScaleBar } from '../components/ScaleBar';
 import { GlobeOverlays, photoSites, surfaceHeightM } from './overlays';
 import { createMarsViewer, groundGlobe, initCesium, surfaceClassification, type CesiumFailure } from './cesiumSetup';
+import { renderFor } from './renderOnDemand';
 import { useSurfaceMode } from './surfaceMode';
 import { SurfaceNotice } from './SurfaceNotice';
 import { installGroundPan } from './groundPan';
@@ -129,31 +130,57 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
     }), 30000);
     let terrainReady = false;
     let terrainActivity = false;
-    let imageryHasRendered = false;
+    let imageryTilesArrived = false;
+    let imageryDrawn = false;
+    let imageryFailed = false;
+    let imageryDrawnFrames = 0;
+    let maxTerrainTiles = 0;
+    let terrainTilesLoaded = 0;
     setLoadState(initialMapLoadState());
-    reportLoad('terrain', 'loading'); reportLoad('imagery', 'loading'); reportLoad('bundles', 'loading'); reportLoad('layers', 'loading');
+    reportLoad('terrain', 'loading', 0.05); reportLoad('imagery', 'loading', 0.05); reportLoad('bundles', 'loading', 0.05); reportLoad('layers', 'loading', 0.05);
     const startup = async () => {
       initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, surfaceMode === 'online');
       const { viewer, tileset, mode, failure: loadFailure } = await createMarsViewer(container, { interactive: true });
       if (disposed) { viewer.destroy(); return; }
       viewerRef.current = viewer;
       if (viewer.scene.globe) {
-        const globeProgress = (remaining: number) => setLoadState((current) => setStreaming(current, remaining > 0));
+        let maxGlobeTiles = 0;
+        const globeProgress = (remaining: number) => {
+          setLoadState((current) => setStreaming(current, remaining > 0));
+          maxGlobeTiles = Math.max(maxGlobeTiles, remaining);
+          if (maxGlobeTiles > 0) {
+            const fraction = (maxGlobeTiles - remaining) / maxGlobeTiles;
+            reportLoad('terrain', 'loading', Math.max(0.15, Math.min(0.9, fraction)));
+          }
+          if (!viewer.isDestroyed()) viewer.scene.requestRender();
+        };
         viewer.scene.globe.tileLoadProgressEvent.addEventListener(globeProgress);
         removeGlobeProgress = () => viewer.scene.globe.tileLoadProgressEvent.removeEventListener(globeProgress);
       }
       if (tileset) {
         const progress = (requests: number, processing: number) => {
-          if (requests + processing > 0) terrainActivity = true;
-          setLoadState((current) => setStreaming(current, requests + processing > 0));
-          if (terrainActivity && requests + processing === 0 && !terrainReady) {
+          const pending = requests + processing;
+          if (pending > 0) terrainActivity = true;
+          setLoadState((current) => setStreaming(current, pending > 0));
+          maxTerrainTiles = Math.max(maxTerrainTiles, terrainTilesLoaded + pending);
+          const ratio = maxTerrainTiles > 0 ? terrainTilesLoaded / maxTerrainTiles : 0;
+          reportLoad('terrain', 'loading', Math.max(0.15, Math.min(0.9, ratio)));
+          if (terrainActivity && pending === 0 && !terrainReady) {
             terrainReady = true;
             markMapLoadMilestone('ground');
             reportLoad('terrain', 'ready');
             viewer.scene.requestRender();
           }
         };
-        const tileLoad = () => { terrainReady = true; markMapLoadMilestone('ground'); reportLoad('terrain', 'ready'); viewer.scene.requestRender(); };
+        const tileLoad = () => {
+          terrainTilesLoaded++;
+          maxTerrainTiles = Math.max(maxTerrainTiles, terrainTilesLoaded);
+          reportLoad('terrain', 'loading', Math.max(0.2, Math.min(0.95, terrainTilesLoaded / maxTerrainTiles)));
+          terrainReady = true;
+          markMapLoadMilestone('ground');
+          reportLoad('terrain', 'ready');
+          viewer.scene.requestRender();
+        };
         tileset.loadProgress.addEventListener(progress);
         tileset.tileLoad.addEventListener(tileLoad);
         removeProgress = () => tileset.loadProgress.removeEventListener(progress);
@@ -163,7 +190,15 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
         reportLoad('terrain', loadFailure ? 'failed' : 'ready');
       }
       const postRender = () => {
-        if (terrainReady && imageryHasRendered) {
+        if (imageryTilesArrived && !imageryDrawn) {
+          imageryDrawnFrames++;
+          if (imageryDrawnFrames >= 2) {
+            imageryDrawn = true;
+            markMapLoadMilestone('imagery');
+            reportLoad('imagery', 'ready');
+          }
+        }
+        if (terrainReady && (imageryDrawn || imageryFailed)) {
           markMapLoadMilestone('ground');
           markMapLoadMilestone('frame');
           setLoadState((current) => markFirstFrame(current));
@@ -192,32 +227,32 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
         offset: new HeadingPitchRange(0, CesiumMath.toRadians(-90), range),
       });
       flyToSite(0);
-      // Site imagery starts now, not after the height sample below: that waits for Cesium Mars's
-      // most detailed tiles at the site, which took about 10 s on a cold load.
-      const imageryTarget = tileset?.imageryLayers ?? viewer.imageryLayers;
-      const imagery = new GlobeImagery(imageryTarget, () => {
-        if (imageryHasRendered) return;
-        imageryHasRendered = true;
-        reportLoad('imagery', 'ready');
-        viewer.scene.requestRender();
-      });
-      imageryRef.current = imagery;
-      imagery.apply(layerStates, true);
-      const imageryReady = imagery.setSite(siteData, mode);
-      imageryReady.then(() => {
-        reportLoad('layers', 'ready');
-        viewer.scene.requestRender();
-      }).catch(() => {
-        imageryHasRendered = true;
-        reportLoad('imagery', 'failed'); reportLoad('layers', 'failed');
-        viewer.scene.requestRender();
-      });
       if (tileset) {
         try {
           const [ground] = await viewer.scene.sampleHeightMostDetailed([Cartographic.fromDegrees(mid.lon, mid.lat)]);
-          if (ground?.height !== undefined && !disposed) flyToSite(ground.height);
+          if (ground?.height !== undefined && !disposed) flyToSite(Math.max(0, ground.height));
         } catch { /* the tileset may not have sampled the site yet */ }
       }
+
+      const imageryTarget = tileset?.imageryLayers ?? viewer.imageryLayers;
+      const imagery = new GlobeImagery(imageryTarget, () => {
+        imageryTilesArrived = true;
+        reportLoad('imagery', 'loading', 0.6);
+        if (!viewer.isDestroyed()) renderFor(viewer.scene, 1000);
+      });
+      imageryRef.current = imagery;
+      imagery.apply(layerStates, true);
+      reportLoad('imagery', 'loading', 0.2);
+      reportLoad('layers', 'loading', 0.3);
+      const imageryReady = imagery.setSite(siteData, mode);
+      imageryReady.then(() => {
+        reportLoad('layers', 'ready');
+        if (!viewer.isDestroyed()) viewer.scene.requestRender();
+      }).catch(() => {
+        imageryFailed = true;
+        reportLoad('imagery', 'failed'); reportLoad('layers', 'failed');
+        if (!viewer.isDestroyed()) viewer.scene.requestRender();
+      });
       await imageryReady;
       if (disposed) return;
       setImageryTarget(imageryTarget);
@@ -228,7 +263,7 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
           : SPIKE_HEIGHT_OFFSETS_M[siteData.id] ?? 0
         : 0;
       heightOffsetRef.current = heightOffset;
-      if (tileset && gridRef.current) flyToSite(surfaceHeightM(gridRef.current, mid.lon, mid.lat, heightOffset));
+      if (tileset && gridRef.current) flyToSite(Math.max(0, surfaceHeightM(gridRef.current, mid.lon, mid.lat, heightOffset)));
 
       const overlays = new GlobeOverlays(viewer, { scene: viewer.scene, classification: surfaceClassification(tileset) });
       overlaysRef.current = overlays;
@@ -237,10 +272,18 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
       overlays.setPlan(planRef.current, siteData.origin);
       void Promise.all([
         fetch(resolveSiteAssetUrl(siteData.id, `/data/${siteData.id}/traverse.geojson`), { signal: AbortSignal.timeout(15000) })
-          .then((response) => { if (!response.ok) throw new Error('Traverse data unavailable'); return response.json() as Promise<GeoJSON.FeatureCollection<GeoJSON.LineString>>; })
+          .then((response) => {
+            if (!response.ok) throw new Error('Traverse data unavailable');
+            reportLoad('bundles', 'loading', 0.5);
+            return response.json() as Promise<GeoJSON.FeatureCollection<GeoJSON.LineString>>;
+          })
           .then((collection) => collection?.features.find((feature) => feature.geometry.type === 'LineString')?.geometry ?? null),
         fetch(resolveSiteAssetUrl(siteData.id, siteData.photos_url ?? `/data/${siteData.id}/photos.json`), { signal: AbortSignal.timeout(15000) })
-          .then((response) => { if (!response.ok || !response.headers.get('content-type')?.includes('json')) throw new Error('Photo data unavailable'); return response.json() as Promise<{ lon: number; lat: number; sol: number }[]>; }),
+          .then((response) => {
+            if (!response.ok || !response.headers.get('content-type')?.includes('json')) throw new Error('Photo data unavailable');
+            reportLoad('bundles', 'loading', 0.8);
+            return response.json() as Promise<{ lon: number; lat: number; sol: number }[]>;
+          }),
       ]).then(([traverse, photos]) => {
         reportLoad('bundles', 'ready');
         if (disposed) return;
@@ -402,7 +445,12 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
     overlays.setGradient(true);
     overlays.setPlan(plan, siteData.origin);
   }, [plan, siteData.origin]);
-  useEffect(() => { imageryRef.current?.apply(layerStates); }, [layerStates]);
+  useEffect(() => {
+    imageryRef.current?.apply(layerStates);
+    if (viewerRef.current && !viewerRef.current.isDestroyed()) {
+      viewerRef.current.scene.requestRender();
+    }
+  }, [layerStates]);
 
   const globalList = wholePlanet?.layers;
   const globalStates = wholePlanet?.states;

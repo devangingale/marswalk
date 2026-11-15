@@ -40,7 +40,7 @@ export function installRenderOnDemand(viewer: Viewer, inputs: EventTarget = docu
   };
   const request = () => {
     if (viewer.isDestroyed()) remove();
-    else scene.requestRender();
+    else renderFor(scene, SETTLE_MS);
   };
 
   removers.push(
@@ -75,6 +75,14 @@ export function installRenderOnDemand(viewer: Viewer, inputs: EventTarget = docu
 
   removers.push(watchImagery(viewer, viewer.imageryLayers));
 
+  if (viewer.camera) {
+    removers.push(viewer.camera.moveEnd.addEventListener(request));
+  }
+
+  if (scene.globe) {
+    removers.push(scene.globe.tileLoadProgressEvent.addEventListener(request));
+  }
+
   scene.requestRender();
   return remove;
 }
@@ -82,7 +90,7 @@ export function installRenderOnDemand(viewer: Viewer, inputs: EventTarget = docu
 /** Requests a frame when layers are added, removed, reordered, shown or hidden. */
 export function watchImagery(viewer: Viewer, layers: ImageryLayerCollection): () => void {
   const request = () => {
-    if (!viewer.isDestroyed()) viewer.scene.requestRender();
+    if (!viewer.isDestroyed()) renderFor(viewer.scene, SETTLE_MS);
   };
   const removers = [layers.layerAdded, layers.layerRemoved, layers.layerMoved, layers.layerShownOrHidden].map((event) =>
     event.addEventListener(request),

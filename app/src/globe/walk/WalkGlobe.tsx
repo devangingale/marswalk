@@ -62,7 +62,7 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
   const heightOffsetRef = useRef<number | null>(SPIKE_HEIGHT_OFFSETS_M[siteData.id] ?? 0);
   const meshRef = useRef<SiteTerrainMesh | null>(null);
   const [loadState, setLoadState] = useState<MapLoadState>(initialMapLoadState);
-  const reportLoad = (source: LoadSource, status: 'pending' | 'loading' | 'ready' | 'failed') => setLoadState((current) => updateLoadSource(current, source, status));
+  const reportLoad = (source: LoadSource, status: 'pending' | 'loading' | 'ready' | 'failed', progress?: number) => setLoadState((current) => updateLoadSource(current, source, status, progress));
 
   const turnRef = useRef(turnPoint);
   turnRef.current = turnPoint;
@@ -87,9 +87,11 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
     }), 30000);
     let terrainReady = false;
     let terrainActivity = false;
-    let imageryReady = false;
+    let imageryTilesArrived = false;
+    let imageryDrawn = false;
+    let imageryFailed = false;
     setLoadState(initialMapLoadState());
-    reportLoad('terrain', 'loading'); reportLoad('imagery', 'loading'); reportLoad('bundles', 'loading'); reportLoad('layers', 'loading');
+    reportLoad('terrain', 'loading', 0.05); reportLoad('imagery', 'loading', 0.05); reportLoad('bundles', 'loading', 0.05); reportLoad('layers', 'loading', 0.05);
     heightOffsetRef.current = SPIKE_HEIGHT_OFFSETS_M[siteData.id] ?? 0;
     initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, surfaceMode === 'online');
     setFailure(null);
@@ -104,7 +106,10 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
 
       viewerRef.current = viewer;
       if (viewer.scene.globe) {
-        const globeProgress = (remaining: number) => setLoadState((current) => setStreaming(current, remaining > 0));
+        const globeProgress = (remaining: number) => {
+          setLoadState((current) => setStreaming(current, remaining > 0));
+          if (!viewer.isDestroyed()) viewer.scene.requestRender();
+        };
         viewer.scene.globe.tileLoadProgressEvent.addEventListener(globeProgress);
         removeGlobeProgress = () => viewer.scene.globe.tileLoadProgressEvent.removeEventListener(globeProgress);
       }
@@ -125,7 +130,18 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
         removeTileLoad = () => tileset.tileLoad.removeEventListener(tileLoad);
       } else { reportLoad('terrain', loadFailure ? 'failed' : 'loading'); }
       const postRender = () => {
-        if (terrainReady && imageryReady) { markMapLoadMilestone('ground'); markMapLoadMilestone('frame'); setLoadState((current) => markFirstFrame(current)); removePostRender?.(); removePostRender = null; }
+        if (imageryTilesArrived && !imageryDrawn) {
+          imageryDrawn = true;
+          markMapLoadMilestone('imagery');
+          reportLoad('imagery', 'ready');
+        }
+        if (terrainReady && (imageryDrawn || imageryFailed)) {
+          markMapLoadMilestone('ground');
+          markMapLoadMilestone('frame');
+          setLoadState((current) => markFirstFrame(current));
+          removePostRender?.();
+          removePostRender = null;
+        }
       };
       viewer.scene.postRender.addEventListener(postRender); removePostRender = () => viewer.scene.postRender.removeEventListener(postRender);
       (container as any)._viewer = viewer;
@@ -134,18 +150,17 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
       }
 
       const imagery = new GlobeImagery(tileset ? tileset.imageryLayers : viewer.imageryLayers, () => {
-        if (imageryReady) return;
-        imageryReady = true;
-        reportLoad('imagery', 'ready');
-        viewer.scene.requestRender();
+        imageryTilesArrived = true;
+        if (!viewer.isDestroyed()) viewer.scene.requestRender();
       });
       imageryRef.current = imagery;
       try {
         await imagery.setSite(siteData, mode);
         reportLoad('layers', 'ready');
       } catch {
-        imageryReady = true;
+        imageryFailed = true;
         reportLoad('imagery', 'failed'); reportLoad('layers', 'failed');
+        if (!viewer.isDestroyed()) viewer.scene.requestRender();
       }
       if (disposed) return;
 

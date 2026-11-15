@@ -33,6 +33,7 @@ import { normalizeShelter, type Plan } from '../lib/plan';
 import { sections as routeSections } from '../lib/routeShape';
 import type { LayerState, SiteData } from '../types';
 import { createMarsViewer, initCesium, type CesiumFailure } from './cesiumSetup';
+import { renderFor } from './renderOnDemand';
 import { useSurfaceMode, type SurfaceMode } from './surfaceMode';
 import { SurfaceNotice } from './SurfaceNotice';
 import { installGroundPan } from './groundPan';
@@ -243,7 +244,7 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
   const [siteData, setSiteData] = useState<SiteData | null>(null);
   const [loadState, setLoadState] = useState<MapLoadState>(initialMapLoadState);
   const initialReadyRef = useRef({ terrain: false, imagery: false, firstFrame: false });
-  const reportLoad = (source: 'terrain' | 'imagery' | 'bundles' | 'layers', status: 'pending' | 'loading' | 'ready' | 'failed') => setLoadState((current) => updateLoadSource(current, source, status));
+  const reportLoad = (source: 'terrain' | 'imagery' | 'bundles' | 'layers', status: 'pending' | 'loading' | 'ready' | 'failed', progress?: number) => setLoadState((current) => updateLoadSource(current, source, status, progress));
   const [siteFailed, setSiteFailed] = useState(false);
   const [layerStates, setLayerStates] = useState<Record<string, LayerState>>({});
   const [globalLayers, setGlobalLayers] = useState<GlobeLayer[]>([]);
@@ -402,7 +403,9 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
     }), 30000);
     initialReadyRef.current = { terrain: false, imagery: false, firstFrame: false };
     setLoadState(initialMapLoadState());
-    reportLoad('terrain', 'loading'); reportLoad('imagery', 'loading'); reportLoad('bundles', 'loading'); reportLoad('layers', 'loading');
+    reportLoad('terrain', 'loading', 0.05); reportLoad('imagery', 'loading', 0.05); reportLoad('bundles', 'loading', 0.05); reportLoad('layers', 'loading', 0.05);
+    let imageryTilesArrived = false;
+    let imageryDrawn = false;
     cesiumModeRef.current = initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, surfaceMode === 'online');
 
     void (async () => {
@@ -416,16 +419,31 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
       tilesetRef.current = tileset;
       viewerRef.current = viewer;
       if (viewer.scene.globe) {
-        const globeProgress = (remaining: number) => setLoadState((current) => setStreaming(current, remaining > 0));
+        let maxGlobeTiles = 0;
+        const globeProgress = (remaining: number) => {
+          setLoadState((current) => setStreaming(current, remaining > 0));
+          maxGlobeTiles = Math.max(maxGlobeTiles, remaining);
+          if (maxGlobeTiles > 0) {
+            const fraction = (maxGlobeTiles - remaining) / maxGlobeTiles;
+            reportLoad('terrain', 'loading', Math.max(0.15, Math.min(0.9, fraction)));
+          }
+          if (!viewer.isDestroyed()) viewer.scene.requestRender();
+        };
         viewer.scene.globe.tileLoadProgressEvent.addEventListener(globeProgress);
         removeGlobeProgress = () => viewer.scene.globe.tileLoadProgressEvent.removeEventListener(globeProgress);
       }
       if (tileset) {
         let terrainActivity = false;
+        let maxTerrainTiles = 0;
+        let terrainTilesLoaded = 0;
         const progress = (requests: number, processing: number) => {
-          if (requests + processing > 0) terrainActivity = true;
-          setLoadState((current) => setStreaming(current, requests + processing > 0));
-          if (terrainActivity && requests + processing === 0 && !initialReadyRef.current.terrain) {
+          const pending = requests + processing;
+          if (pending > 0) terrainActivity = true;
+          setLoadState((current) => setStreaming(current, pending > 0));
+          maxTerrainTiles = Math.max(maxTerrainTiles, terrainTilesLoaded + pending);
+          const ratio = maxTerrainTiles > 0 ? terrainTilesLoaded / maxTerrainTiles : 0;
+          reportLoad('terrain', 'loading', Math.max(0.15, Math.min(0.9, ratio)));
+          if (terrainActivity && pending === 0 && !initialReadyRef.current.terrain) {
             initialReadyRef.current.terrain = true;
             markMapLoadMilestone('ground');
             reportLoad('terrain', 'ready');
@@ -433,6 +451,9 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
           }
         };
         const tileLoad = () => {
+          terrainTilesLoaded++;
+          maxTerrainTiles = Math.max(maxTerrainTiles, terrainTilesLoaded);
+          reportLoad('terrain', 'loading', Math.max(0.2, Math.min(0.95, terrainTilesLoaded / maxTerrainTiles)));
           initialReadyRef.current.terrain = true;
           markMapLoadMilestone('ground');
           reportLoad('terrain', 'ready');
@@ -445,8 +466,18 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
         initialReadyRef.current.terrain = true;
         reportLoad('terrain', created.failure ? 'failed' : 'ready');
       }
+      let imageryDrawnFrames = 0;
       const firstRender = () => {
-        if (initialReadyRef.current.terrain && initialReadyRef.current.imagery && !initialReadyRef.current.firstFrame) {
+        if (imageryTilesArrived && !imageryDrawn) {
+          imageryDrawnFrames++;
+          if (imageryDrawnFrames >= 2) {
+            imageryDrawn = true;
+            initialReadyRef.current.imagery = true;
+            markMapLoadMilestone('imagery');
+            reportLoad('imagery', 'ready');
+          }
+        }
+        if (initialReadyRef.current.terrain && (initialReadyRef.current.imagery || imageryDrawn) && !initialReadyRef.current.firstFrame) {
           initialReadyRef.current.firstFrame = true;
           markMapLoadMilestone('ground');
           markMapLoadMilestone('frame');
@@ -505,15 +536,15 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
       overlaysRef.current = new GlobeOverlays(viewer, { onSectionHover: setHoveredSection });
       const imageryTarget = tileset?.imageryLayers ?? viewer.imageryLayers;
       siteImageryRef.current = new GlobeImagery(imageryTarget, () => {
-        if (initialReadyRef.current.imagery) return;
-        initialReadyRef.current.imagery = true;
-        reportLoad('imagery', 'ready');
-        viewer.scene.requestRender();
+        imageryTilesArrived = true;
+        reportLoad('imagery', 'loading', 0.6);
+        if (!viewer.isDestroyed()) renderFor(viewer.scene, 1000);
       });
       setDustScene(viewer.scene);
       // Last, so the site load (keyed on the viewer) finds the imagery and overlays ready.
       setViewer(viewer);
 
+      reportLoad('layers', 'loading', 0.2);
       loadGlobeManifest(GLOBE_BASE)
         .then((manifest) => {
           if (disposed) return;
@@ -675,6 +706,7 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
           reportLoad('imagery', 'ready');
         }
         viewer.scene.requestRender();
+        reportLoad('bundles', 'loading', 0.3);
         const loaded = await loadGrid(siteBaseUrl, site.origin);
         if (cancelled) return;
         reportLoad('bundles', 'ready');
