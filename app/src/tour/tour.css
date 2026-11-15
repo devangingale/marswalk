@@ -1,0 +1,141 @@
+/* Written with AI assistance, directed and reviewed by the team. */
+/* Guided tour: top-bar buttons, the blurred and dimmed panes around the spotlight, the ring, the popover. */
+
+.s48-tour-start {
+  display: inline-flex;
+  gap: var(--space-1);
+}
+.s48-tour-start .s48-btn {
+  min-height: calc(var(--hit-plan) - 4px);
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+}
+.s48-tour-start__short {
+  display: none;
+}
+/* The top bar is full at 1024 px: the second button keeps its name for screen readers, shows This tab. */
+@media (max-width: 1199px) {
+  .s48-tour-start__long {
+    display: none;
+  }
+  .s48-tour-start__short {
+    display: inline;
+  }
+}
+
+.s48-tour {
+  /* Dims in both themes: the dark map halo, not the theme background. */
+  --tour-dim: color-mix(in srgb, var(--map-label-halo) 50%, transparent);
+  --tour-blur: var(--space-1);
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  font-family: var(--font-ui);
+}
+
+/* Four panes leave a cut-out over the section; clicks on them never reach the app. */
+.s48-tour__pane {
+  position: fixed;
+  pointer-events: auto;
+  background: var(--tour-dim);
+  backdrop-filter: blur(var(--tour-blur));
+  -webkit-backdrop-filter: blur(var(--tour-blur));
+  transition: top var(--motion-base) var(--motion-ease), left var(--motion-base) var(--motion-ease),
+    width var(--motion-base) var(--motion-ease), height var(--motion-base) var(--motion-ease);
+}
+
+.s48-tour__ring {
+  position: fixed;
+  border: var(--focus-width) solid var(--color-accent);
+  border-radius: var(--radius-2);
+  box-shadow: 0 0 0 var(--focus-width) var(--color-focus-outer);
+  pointer-events: none;
+  transition: top var(--motion-base) var(--motion-ease), left var(--motion-base) var(--motion-ease),
+    width var(--motion-base) var(--motion-ease), height var(--motion-base) var(--motion-ease);
+}
+
+.s48-tour__pop {
+  position: fixed;
+  width: 360px;
+  max-width: calc(100vw - 2 * var(--space-4));
+  box-sizing: border-box;
+  padding: var(--space-4);
+  pointer-events: auto;
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  border: var(--border-width) solid var(--color-control-border);
+  border-radius: var(--radius-2);
+  box-shadow: var(--shadow-popover);
+  transition: top var(--motion-base) var(--motion-ease), left var(--motion-base) var(--motion-ease);
+}
+.s48-tour__pop:focus-visible,
+.s48-tour__pop .s48-btn:focus-visible {
+  outline: var(--focus-width) solid var(--color-focus-inner);
+  outline-offset: var(--focus-offset);
+  box-shadow: 0 0 0 calc(var(--focus-offset) + var(--focus-width) * 2) var(--color-focus-outer);
+}
+
+.s48-tour__count {
+  margin: 0 0 var(--space-1);
+  font-family: var(--font-data);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-variant-numeric: var(--numeric);
+  color: var(--color-text-muted);
+}
+
+.s48-tour__title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-lg);
+  line-height: var(--leading-lg);
+  font-weight: var(--weight-semibold);
+}
+
+.s48-tour__lines {
+  display: grid;
+  gap: var(--space-2);
+}
+.s48-tour__line {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+}
+.s48-tour__line--plain {
+  display: block;
+}
+.s48-tour__label {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.s48-tour__note {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  background: var(--color-caution-subtle);
+  border-left: var(--focus-width) solid var(--color-caution);
+  border-radius: var(--radius-1);
+}
+
+.s48-tour__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+.s48-tour__grow {
+  flex: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .s48-tour__pane,
+  .s48-tour__ring,
+  .s48-tour__pop {
+    transition: none;
+  }
+}

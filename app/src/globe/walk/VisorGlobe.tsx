@@ -233,7 +233,7 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
       <div ref={containerRef} className="s48-visor-globe" />
       <SurfaceNotice failure={failure} placement="low" />
       <div className="s48-visor-overlay">
-        <div className="s48-visor-readout s48-visor-heading">
+        <div className="s48-visor-readout s48-visor-heading" data-tour="visor-readouts">
           <span>Heading</span>
           <div className="s48-heading-tape" aria-hidden="true">
             {Array.from({ length: 5 }, (_, index) => {
@@ -248,7 +248,7 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
           </div>
           <strong>{formatHeading(state.headingDeg)}</strong>
         </div>
-        <div className="s48-visor-readout s48-visor-next">
+        <div className="s48-visor-readout s48-visor-next" data-tour="visor-readouts">
           <span>{nextWaypointHeading(state.next?.id ?? 'start')}</span>
           <strong>{next && state.next ? formatDistance(state.next.distanceM) : 'Back'}</strong>
           <small>{next?.name ?? BACK_AT_SHELTER}</small>
@@ -262,7 +262,7 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
             </div>
           )}
         </div>
-        <div className="s48-visor-readout s48-visor-budget">
+        <div className="s48-visor-readout s48-visor-budget" data-tour="visor-readouts">
           <span>Time remaining</span>
           <strong>{formatDuration(budget.time.remaining)}</strong>
         </div>
