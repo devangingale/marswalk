@@ -128,6 +128,19 @@
   display: none;
 }
 
+/* The site finder's sections share the layer panel's section style (shell.css). */
+.explore-left__sites .panel-sec {
+  padding-top: var(--space-3);
+}
+
+.explore-left__sites .panel-sec > h3 {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+
 /* Caves are small triangles on the globe; the layer panel swatch matches. */
 .explore-left .s48-cave-dot {
   width: 10px;

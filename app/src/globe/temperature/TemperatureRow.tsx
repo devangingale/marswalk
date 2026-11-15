@@ -51,7 +51,7 @@ export const TemperatureRow: React.FC<TemperatureRowProps> = ({
   return (
     <div className="s48-layer s48-temp">
       <div className="s48-layer__head">
-        <label>
+        <label title={TITLE}>
           <input type="checkbox" className="s48-check" checked={enabled} onChange={onToggle} />
           <span className="s48-layer__title">{TITLE}</span>
         </label>

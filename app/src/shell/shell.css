@@ -186,3 +186,168 @@
   background: var(--map-cave);
   box-shadow: 0 0 0 1px var(--map-label-halo);
 }
+
+/* --- Layer panel: On now, then This site and Whole planet in collapsible groups. --- */
+/* Section headings: On now, This site, Whole planet (and the Explore site finder, globe.css). */
+.s48-lp .panel-sec {
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
+}
+
+.s48-lp .panel-sec > h3 {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.s48-lp .panel-sec > h3 small {
+  font-family: var(--font-data);
+  font-variant-numeric: var(--numeric);
+}
+
+.s48-lp__groups {
+  display: grid;
+}
+
+.s48-lp-group + .s48-lp-group {
+  border-top: var(--border-width) solid var(--color-rule);
+}
+
+.s48-lp-group__btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--hit-plan);
+  padding: 0 var(--space-1);
+  border: 0;
+  border-radius: var(--radius-1);
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+  font-weight: var(--weight-medium);
+  text-align: left;
+  cursor: pointer;
+}
+
+.s48-lp-group__btn:hover {
+  background: var(--color-surface-raised);
+}
+
+.s48-lp-group__chev {
+  color: var(--color-text-muted);
+  transition: transform var(--motion-fast) var(--motion-ease);
+}
+
+.s48-lp-group.is-open .s48-lp-group__chev {
+  transform: rotate(90deg);
+}
+
+.s48-lp-group__label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.s48-lp-group__count {
+  flex: none;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-muted);
+}
+
+.s48-lp-group__items {
+  display: grid;
+  padding: 0 0 var(--space-2) var(--space-1);
+}
+
+.s48-lp-group__items[hidden] {
+  display: none;
+}
+
+/* The checkbox never wraps away from its name: long names truncate, the label carries a tooltip. */
+.s48-lp .s48-layer__head label {
+  min-width: 0;
+}
+
+.s48-lp .s48-layer__note {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* On now: one compact row per visible layer. */
+.s48-now {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.s48-now__row {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-1) 0;
+}
+
+.s48-now__row + .s48-now__row {
+  border-top: var(--border-width) solid var(--color-rule);
+}
+
+.s48-now__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.s48-now__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+
+.s48-now__body {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.s48-now__body--full {
+  grid-template-columns: 1fr;
+}
+
+.s48-now__legend {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.s48-now__legend .s48-legend__ramp {
+  flex: 1;
+  height: 6px;
+}
+
+.s48-opacity--compact {
+  grid-template-columns: 1fr 36px;
+}
+
+.s48-now__note,
+.s48-now__empty {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
