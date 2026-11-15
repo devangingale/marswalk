@@ -199,7 +199,7 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
     );
   }
 
-  const hazardText = !hasHazard ? null : hazardM < 1 ? 'Impassable ground ahead' : `Impassable ${formatDistance(hazardM)} ahead`;
+  const hazardText = !hasHazard ? null : hazardM < 2.5 ? 'Impassable ground ahead' : `Impassable ${formatDistance(hazardM)} ahead`;
 
   // Four readouts: heading, next stop, time remaining, and the warning ladder state (children).
   return (

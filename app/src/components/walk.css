@@ -121,5 +121,6 @@ div.s48-visor-shell {
 
 /* Below 1200 px a panel slides over the map; in Walk it stops at the time bar so Play stays reachable. */
 .s48-walk .s48-regions[data-overlay='true'] .s48-regions__panel {
+  height: auto;
   bottom: calc(var(--hit-walk) + 2 * var(--space-2) + var(--border-width));
 }
