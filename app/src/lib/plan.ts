@@ -32,10 +32,65 @@ export interface PlanParams {
   solar_event: boolean;
 }
 
+/**
+ * The shelter the walk starts from and must return to (NASA EVA ops: stay within walk-back
+ * of a safe haven). Optional in plan.json; plans without it are a pressurised rover.
+ */
+export type ShelterType = 'habitat' | 'rover' | 'radiation_shelter';
+
+export const SHELTER_TYPES: readonly ShelterType[] = ['habitat', 'rover', 'radiation_shelter'];
+
+/** New plans start from a habitat, the base the crew lives in. */
+export const DEFAULT_SHELTER_TYPE: ShelterType = 'habitat';
+
+/** The shelter type as named on screen. */
+export const SHELTER_TYPE_NAMES: Record<ShelterType, string> = {
+  habitat: 'Habitat',
+  rover: 'Pressurised rover',
+  radiation_shelter: 'Radiation shelter',
+};
+
+/** One plain line per type, shown under the type select. */
+export const SHELTER_TYPE_HINTS: Record<ShelterType, string> = {
+  habitat: 'The base the crew lives in.',
+  rover: 'Pressurised rover: the crew drove here and the rover waits as their shelter.',
+  radiation_shelter: 'A shielded refuge for solar storms.',
+};
+
 export interface PlanStart {
   lon: number;
   lat: number;
   label: string;
+  /** Shelter type; absent means 'rover' (plans written before the field existed started at a rover drop-off). */
+  kind?: ShelterType;
+}
+
+/** The start's shelter type, 'rover' when the plan does not say. */
+export function shelterType(start: Pick<PlanStart, 'kind'>): ShelterType {
+  return start.kind && SHELTER_TYPES.includes(start.kind) ? start.kind : 'rover';
+}
+
+/** Default shelter name for a type, e.g. "Shelter · Pressurised rover". */
+export function defaultShelterLabel(kind: ShelterType): string {
+  return `Shelter · ${SHELTER_TYPE_NAMES[kind]}`;
+}
+
+/** Labels the app wrote itself (the old drop-off name, bare "Shelter", a typed default), not a user's name. */
+export function isDefaultShelterLabel(label: string): boolean {
+  const trimmed = label.trim();
+  return trimmed === '' || trimmed === 'Rover drop-off' || trimmed === 'Shelter'
+    || SHELTER_TYPES.some((kind) => defaultShelterLabel(kind) === trimmed);
+}
+
+/** The start with its type filled in and an app-written label replaced by the type's default. */
+export function normalizeShelter(start: PlanStart): PlanStart {
+  const kind = shelterType(start);
+  return { ...start, kind, label: isDefaultShelterLabel(start.label) ? defaultShelterLabel(kind) : start.label };
+}
+
+/** Changes the shelter type; a default label follows the type, a user's own name stays. */
+export function setShelterType(start: PlanStart, kind: ShelterType): PlanStart {
+  return { ...start, kind, label: isDefaultShelterLabel(start.label) ? defaultShelterLabel(kind) : start.label };
 }
 
 export interface PlanStop {
@@ -357,7 +412,7 @@ export function buildPlan(input: BuildPlanInput): Plan {
 
   let currentWp: Waypoint = {
     id: 'start',
-    name: start.label || 'Rover drop-off',
+    name: start.label || defaultShelterLabel(shelterType(start)),
     lon: start.lon,
     lat: start.lat,
     dwell_s: 0,
@@ -433,7 +488,7 @@ export function buildPlan(input: BuildPlanInput): Plan {
   if (currentWp.id !== 'start') {
     const returnWp: Waypoint = {
       id: 'start',
-      name: start.label || 'Rover drop-off',
+      name: start.label || defaultShelterLabel(shelterType(start)),
       lon: start.lon,
       lat: start.lat,
       dwell_s: 0,
@@ -448,7 +503,7 @@ export function buildPlan(input: BuildPlanInput): Plan {
 
     if (!legResult.feasible) {
       overallFeasible = false;
-      warnings.push("Can't return to Rover drop-off. Move it.");
+      warnings.push("Can't return to the shelter. Move it.");
     } else {
       rawLegResults.push(legResult);
 
@@ -564,6 +619,9 @@ export function validatePlan(plan: unknown): { valid: boolean; errors: string[] 
     if (typeof p.start.lon !== 'number') errors.push('start.lon must be a number');
     if (typeof p.start.lat !== 'number') errors.push('start.lat must be a number');
     if (typeof p.start.label !== 'string') errors.push('start.label must be a string');
+    if (p.start.kind !== undefined && !SHELTER_TYPES.includes(p.start.kind)) {
+      errors.push(`start.kind must be one of ${SHELTER_TYPES.join(', ')}`);
+    }
   }
 
   if (!Array.isArray(p.stops)) {

@@ -29,7 +29,7 @@ import { AVAILABLE_SITES, GLOBE_BASE, getSiteBaseUrl, getSiteJsonUrl } from '../
 import { LayerPanel } from '../components/LayerPanel';
 import samplePlanJson from '../fixtures/plan.sample.json';
 import { loadGrid, type RouteGrid } from '../lib/grid';
-import type { Plan } from '../lib/plan';
+import { normalizeShelter, type Plan } from '../lib/plan';
 import { sections as routeSections } from '../lib/routeShape';
 import type { LayerState, SiteData } from '../types';
 import { createMarsViewer, initCesium, type CesiumFailure } from './cesiumSetup';
@@ -68,7 +68,8 @@ const OVERLAY_OPACITY = 0.7;
 /** Opening view: the whole disc, centred on the Gale longitude. */
 const PLANET_VIEW = { lon: 137.4, lat: -4.7, heightM: 9_000_000 };
 
-const SAMPLE_PLAN = samplePlanJson as unknown as Plan;
+// The sample plan predates shelter types: its start reads as the shelter (a pressurised rover).
+const SAMPLE_PLAN = { ...(samplePlanJson as unknown as Plan), start: normalizeShelter((samplePlanJson as unknown as Plan).start) };
 type PlanChoice = 'corner' | 'sample';
 const PLAN_TITLES: Record<PlanChoice, string> = { corner: 'Corner loop', sample: 'Boxwork out and back' };
 

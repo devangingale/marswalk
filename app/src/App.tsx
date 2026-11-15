@@ -1,6 +1,6 @@
 // Written with AI assistance, directed and reviewed by the team.
 
-import React, { Suspense, lazy, useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useReducer, useState, useCallback, useRef } from 'react';
 import { SiteData, LayerState, AppMode, RoverOverlayState } from './types';
 import {
   TILES_BASE,
@@ -21,12 +21,13 @@ import { WalkView } from './components/WalkView';
 import { VisorView } from './components/VisorView';
 import { PlanRail } from './plan/PlanRail';
 import { Regions } from './shell/Regions';
+import { TourControls } from './tour/Tour';
 import { useWholePlanet } from './plan/wholePlanet';
 import { TemperatureRow } from './globe/temperature/TemperatureRow';
 import { legendRamp } from './globe/temperature/temperatureManifest';
-import { findWalkableCentre, isLatestPlanRequest, makeInitialPlan, nextStopName } from './plan/planLogic';
+import { findWalkableCentre, isLatestPlanRequest, makeInitialPlan, mapClickAction, nextStopName, SHELTER_MOVE_IDLE, shelterMoveReducer } from './plan/planLogic';
 import { loadGrid, type RouteGrid } from './lib/grid';
-import type { PlanStop } from './lib/plan';
+import { normalizeShelter, type PlanStop } from './lib/plan';
 import { reachableMask, snapToReachable, snapToPassable } from './lib/snap';
 import { DEFAULT_SURFACE_DOSE_MGY_PER_DAY, DEFAULT_SOLAR_EVENT_MGY_PER_DAY } from './lib/energy';
 import { type Mover } from './globe/plan/MoverPicker';
@@ -101,7 +102,7 @@ export const App: React.FC = () => {
   const [photosAvailable, setPhotosAvailable] = useState(false);
   const [relief, setRelief] = useState(false);
   // The plan Walk and Visor replay (contracts section 7). The Plan view sets it; until then, the sample plan.
-  const [plan, setPlan] = useState<Plan>(() => makeInitialPlan(DEFAULT_SITE, stubSiteSample.default_start));
+  const [plan, setPlan] = useState<Plan>(() => makeInitialPlan(DEFAULT_SITE, { ...stubSiteSample.default_start, kind: 'habitat', label: '' }));
   const [mover, setMover] = useState<Mover>('walker');
   const [profileHover, setProfileHover] = useState<{ lon: number; lat: number } | null>(null);
   const [routeGrid, setRouteGrid] = useState<RouteGrid | null>(null);
@@ -109,6 +110,7 @@ export const App: React.FC = () => {
   const [computing, setComputing] = useState(false);
   const [doseRates, setDoseRates] = useState({ surface: DEFAULT_SURFACE_DOSE_MGY_PER_DAY, solar: DEFAULT_SOLAR_EVENT_MGY_PER_DAY });
   const [stopNotices, setStopNotices] = useState<Record<string, string>>({});
+  const [shelterMove, dispatchShelterMove] = useReducer(shelterMoveReducer, SHELTER_MOVE_IDLE);
   const planWorker = useRef<Worker | null>(null);
   const requestId = useRef(0);
   const initializedPlanSite = useRef<string | null>(null);
@@ -295,18 +297,31 @@ export const App: React.FC = () => {
 
   const updateStart = useCallback((newStart: Plan['start']) => {
     let resolvedStart = newStart;
+    let movedM = 0;
     if (routeGrid) {
       const startRc = routeGrid.lonlatToRowCol(newStart.lon, newStart.lat);
       if (!routeGrid.isInside(startRc.row, startRc.col) || !routeGrid.isPassable(startRc.row, startRc.col)) {
         const snapped = snapToPassable(routeGrid, newStart);
         if (snapped) {
           resolvedStart = { ...newStart, lon: snapped.lon, lat: snapped.lat };
+          movedM = snapped.movedM;
         }
       }
       reachableMask(routeGrid, resolvedStart);
     }
+    dispatchShelterMove({ type: 'placed', movedM });
     setPlan((current) => ({ ...current, start: resolvedStart }));
   }, [routeGrid]);
+
+  // A Plan map click adds a stop, or places the shelter while "Move shelter" is on.
+  const handleMapPoint = useCallback((point: { lon: number; lat: number }) => {
+    if (mapClickAction(shelterMove) === 'place-shelter') updateStart({ ...plan.start, ...point });
+    else addStop(point);
+  }, [shelterMove, plan.start, updateStart, addStop]);
+  const toggleShelterMove = useCallback(() => dispatchShelterMove({ type: 'toggle' }), []);
+  const cancelShelterMove = useCallback(() => dispatchShelterMove({ type: 'cancel' }), []);
+  // Leaving Plan or changing site ends move mode.
+  useEffect(() => dispatchShelterMove({ type: 'cancel' }), [mode, currentSiteId]);
 
   const updateStop = useCallback((changed: PlanStop) => {
     let target = changed;
@@ -368,7 +383,7 @@ export const App: React.FC = () => {
     }
 
     setStopNotices(newNotices);
-    setPlan({ ...imported, start: resolvedStart, stops: resolvedStops });
+    setPlan({ ...imported, start: normalizeShelter(resolvedStart), stops: resolvedStops });
   }, [routeGrid]);
 
   const changePlan = useCallback((next: Plan) => {
@@ -425,7 +440,7 @@ export const App: React.FC = () => {
       <header className="mock-top" data-theme={mode === 'walk' && walkNight ? 'night' : undefined}>
         <span className="wordmark">Sol-48</span>
 
-        <nav className="s48-seg s48-tabs" aria-label="Tabs">
+        <nav className="s48-seg s48-tabs" aria-label="Tabs" data-tour="tabs">
           {TABS.map((tab) => (
             <button key={tab.id} type="button" aria-pressed={mode === tab.id} aria-current={mode === tab.id ? 'page' : undefined} onClick={() => setMode(tab.id)}>
               {tab.label}
@@ -450,7 +465,7 @@ export const App: React.FC = () => {
 
         <span className="grow" />
 
-        <div className="s48-seg s48-surface-mode" role="group" aria-label="Map surface">
+        <div className="s48-seg s48-surface-mode" role="group" aria-label="Map surface" data-tour="surface">
           {SURFACE_MODES.map((option) => (
             <button key={option.id} type="button" aria-pressed={surfaceMode === option.id} onClick={() => setSurfaceMode(option.id)}>
               {option.label}
@@ -458,6 +473,7 @@ export const App: React.FC = () => {
           ))}
         </div>
 
+        <TourControls tab={mode} onTab={setMode} />
         <div className="s48-seg s48-theme" role="group" aria-label="Theme">
           {THEMES.map((option) => (
             <button key={option.id} type="button" aria-pressed={override === option.id} onClick={() => setOverride(option.id)}>
@@ -526,13 +542,13 @@ export const App: React.FC = () => {
               />
             }
             leftLabel="Layers"
-            main={<GlobePlanMap siteData={siteData} layerStates={layerStates} roverOverlayState={roverOverlayState} plan={plan} grid={routeGrid} activePoint={profileHover} relief={relief} wholePlanet={wholePlanet} onMapPoint={addStop} onStartChange={updateStart} onStopChange={updateStop} onRoutePointHover={setProfileHover} />}
+            main={<GlobePlanMap siteData={siteData} layerStates={layerStates} roverOverlayState={roverOverlayState} plan={plan} grid={routeGrid} activePoint={profileHover} relief={relief} wholePlanet={wholePlanet} onMapPoint={handleMapPoint} placingShelter={shelterMove.active} onStartChange={updateStart} onStopChange={updateStop} onRoutePointHover={setProfileHover} />}
             controls={
               <button type="button" className="s48-btn s48-btn--secondary" aria-pressed={relief} onClick={() => setRelief((on) => !on)}>
                 3D relief
               </button>
             }
-            right={<PlanRail plan={plan} grid={routeGrid} computing={computing} onChange={changePlan} onImport={handleImportPlan} mover={mover} onMoverChange={setMover} activePoint={profileHover} onProfileHover={setProfileHover} stopNotices={stopNotices} />}
+            right={<PlanRail plan={plan} grid={routeGrid} computing={computing} onChange={changePlan} onImport={handleImportPlan} mover={mover} onMoverChange={setMover} activePoint={profileHover} onProfileHover={setProfileHover} stopNotices={stopNotices} shelterMove={shelterMove} onMoveShelter={toggleShelterMove} onCancelMoveShelter={cancelShelterMove} />}
             rightLabel="Plan"
           />
         ) : mode === 'walk' ? (

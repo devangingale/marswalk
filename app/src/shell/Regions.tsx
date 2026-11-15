@@ -91,6 +91,7 @@ export const Regions: React.FC<RegionsProps> = ({ id, main, left, leftLabel = 'P
     <button
       type="button"
       className={`s48-regions__handle s48-regions__handle--${side}`}
+      data-tour={`${id}-${side}-handle`}
       aria-expanded={open}
       aria-controls={controlsId}
       aria-label={`${open ? 'Hide' : 'Show'} ${label.toLowerCase()}`}
@@ -112,21 +113,21 @@ export const Regions: React.FC<RegionsProps> = ({ id, main, left, leftLabel = 'P
       style={{ '--s48-time-height': `${timeHeight}px` } as CSSProperties}
     >
       {hasLeft && (
-        <aside id={leftId} className="s48-regions__panel s48-regions__panel--left" aria-label={leftLabel} hidden={!leftOpen}>
+        <aside id={leftId} className="s48-regions__panel s48-regions__panel--left" aria-label={leftLabel} hidden={!leftOpen} data-tour={`${id}-left`}>
           {left}
         </aside>
       )}
       <div className="s48-regions__centre">
-        <div className="s48-regions__main">
+        <div className="s48-regions__main" data-tour={`${id}-main`}>
           {main}
           {hasLeft && handle('left', leftOpen, leftLabel, leftId)}
           {hasRight && handle('right', rightOpen, rightLabel, rightId)}
-          {controls && <div className="s48-regions__controls" data-over-map>{controls}</div>}
+          {controls && <div className="s48-regions__controls" data-over-map data-tour={`${id}-controls`}>{controls}</div>}
         </div>
-        {time && <div className="s48-regions__time" ref={setTimeBar}>{time}</div>}
+        {time && <div className="s48-regions__time" ref={setTimeBar} data-tour={`${id}-time`}>{time}</div>}
       </div>
       {hasRight && (
-        <aside id={rightId} className="s48-regions__panel s48-regions__panel--right" aria-label={rightLabel} hidden={!rightOpen}>
+        <aside id={rightId} className="s48-regions__panel s48-regions__panel--right" aria-label={rightLabel} hidden={!rightOpen} data-tour={`${id}-right`}>
           {right}
         </aside>
       )}

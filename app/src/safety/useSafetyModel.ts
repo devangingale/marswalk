@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Plan } from '../lib/plan';
+import { defaultShelterLabel, shelterType, type Plan } from '../lib/plan';
 import { loadGrid, type GridOrigin, type RouteGrid } from '../lib/grid';
 import type { CommandReceipt, TelemetryAdapter, TelemetrySnapshot } from '../lib/telemetry';
 import { createSimulatedAdapter, localMetreDistance, EVA_SECONDARY_O2_S } from '../lib/telemetrySim';
@@ -80,7 +80,7 @@ export interface SafetyModelOptions {
 export interface NightModel {
   trigger: NightTrigger;
   /** Straight line from the lead to the shelter at the end of the way back. */
-  shelter: { distanceM: number; bearingDeg: number; kind: ShelterKind };
+  shelter: { distanceM: number; bearingDeg: number; kind: ShelterKind; name?: string; primary?: boolean };
   /** The way back over the walked track. */
   wayBackM: number;
   /** Next hazard along the way back; null when none, undefined while the grid loads. */
@@ -293,7 +293,7 @@ export function useSafetyModel({ plan, origin, siteId, lat, lonEast, elapsedS }:
       }
       night = {
         trigger,
-        shelter: { ...toShelter, kind: nightSite.candidate.kind },
+        shelter: { ...toShelter, kind: nightSite.candidate.kind, name: nightSite.candidate.name, primary: nightSite.candidate.primary },
         wayBackM: wayBack.lengthM,
         hazard: hazardNav,
         habitat: habitatReceipt,
@@ -385,26 +385,38 @@ export function useSafetyModel({ plan, origin, siteId, lat, lonEast, elapsedS }:
   return model;
 }
 
-interface ShelterSite extends LonLat {
+export interface ShelterSite extends LonLat {
   candidate: Omit<ShelterCandidate, 'distanceM'>;
   /** Distance along the planned track where the shelter sits; null when it is off the track. */
   alongM: number | null;
 }
 
-/** Simulated shelters near the walk (positions are simulated, labelled so on screen). */
-function shelterSites(plan: Plan, track: RouteTrack): ShelterSite[] {
+/** The plan shelter's type as a safety shelter kind. */
+export function planShelterKind(start: Plan['start']): ShelterKind {
+  const kind = shelterType(start);
+  return kind === 'radiation_shelter' ? 'radiation-shelter' : kind;
+}
+
+/**
+ * Shelters near the walk. The plan shelter (start and finish) comes first, as the primary
+ * safe haven with its type; the others are simulated (labelled so on screen).
+ */
+export function shelterSites(plan: Plan, track: RouteTrack): ShelterSite[] {
   const start = { lon: plan.start.lon, lat: plan.start.lat };
-  // Before the route is computed the track is empty: the route-sited shelters fall back to the drop-off.
+  const kind = planShelterKind(plan.start);
+  // Before the route is computed the track is empty: the route-sited shelters fall back to the plan shelter.
   const at = (frac: number) =>
     track.vertices[Math.floor(track.vertices.length * frac)] ?? { ...start, along_m: 0 };
   // A habitat node sited on the planned route, about 70 % along.
   const node = at(0.7);
   // A crater-wall shelter near the route, about 40 % along.
   const shield = at(0.4);
+  const name = plan.start.label.trim() || defaultShelterLabel(shelterType(plan.start));
   return [
-    { ...start, alongM: 0, candidate: { id: 'dropoff', kind: 'dropoff' } },
-    { ...start, alongM: 0, candidate: { id: 'rover', kind: 'rover' } },
-    // A habitat roughly 1.2 km north of the drop-off.
+    { ...start, alongM: 0, candidate: { id: 'plan-shelter', kind, primary: true, name } },
+    // The pressurised rover waits at the plan shelter; when the shelter is the rover, it is listed once.
+    ...(kind === 'rover' ? [] : [{ ...start, alongM: 0, candidate: { id: 'rover', kind: 'rover' as const } }]),
+    // A habitat roughly 1.2 km north of the plan shelter.
     { lon: start.lon, lat: start.lat + 1200 / 59000, alongM: null, candidate: { id: 'habitat', kind: 'habitat' } },
     { lon: node.lon, lat: node.lat, alongM: node.along_m, candidate: { id: 'habitat-route', kind: 'habitat', onRoute: true } },
     { lon: shield.lon, lat: shield.lat, alongM: null, candidate: { id: 'shield', kind: 'terrain-shield', skyBlockedFrac: 0.55 } },

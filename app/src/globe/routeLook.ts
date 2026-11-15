@@ -30,9 +30,9 @@ export function formatElevation(m: number): string {
   return `${groupThousands(Math.round(m))} m`;
 }
 
-/** Drop-off for the start, else the stop's 1-based number in plan order. */
+/** Shelter for the start (where the walk begins and ends), else the stop's 1-based number in plan order. */
 export function waypointLabel(id: string, plan: Plan): string {
-  if (id === START_ID) return 'Drop-off';
+  if (id === START_ID) return 'Shelter';
   const index = plan.stops.findIndex((s) => s.id === id);
   return index >= 0 ? String(index + 1) : id;
 }
@@ -45,7 +45,7 @@ function totals(plan: Plan, legIndices: number[]) {
   };
 }
 
-/** For example: Drop-off → 3 via 2 · 2.4 km · 55 min. */
+/** For example: Shelter → 3 via 2 · 2.4 km · 55 min. */
 export function sectionLabel(section: Section, plan: Plan): string {
   const via = section.detourStopIds.length
     ? ` via ${section.detourStopIds.map((id) => waypointLabel(id, plan)).join(', ')}`
@@ -63,9 +63,9 @@ export function routeLabel(plan: Plan): string {
   return `${chain} · ${formatDistance(distance)} · ${formatDuration(time)}`;
 }
 
-/** Fork branch label from forkPoints' toLabel ('drop-off' or a stop id). */
+/** Fork branch label from forkPoints' toLabel (routeShape's 'drop-off' id for the start, or a stop id). */
 export function branchLabel(toLabel: string, plan: Plan): string {
-  if (toLabel === 'drop-off' || toLabel === START_ID) return 'back to drop-off';
+  if (toLabel === 'drop-off' || toLabel === START_ID) return 'back to shelter';
   return `to Stop ${waypointLabel(toLabel, plan)}`;
 }
 
@@ -145,7 +145,7 @@ export function slopeLabels(stats: SlopeStats, steepestAlongM: number) {
     steepest:
       stats.steepestDeg === null
         ? ''
-        : `Steepest ${Math.round(stats.steepestDeg)}° · ${formatDistance(steepestAlongM)} from drop-off`,
+        : `Steepest ${Math.round(stats.steepestDeg)}° · ${formatDistance(steepestAlongM)} from shelter`,
   };
 }
 
@@ -310,3 +310,6 @@ export function formatGraticule(value: number, axis: 'lat' | 'lon', step: number
   if (axis === 'lat') return `${text} ${value < 0 ? 'S' : 'N'}`;
   return `${text} ${value < 0 ? 'W' : 'E'}`;
 }
+
+/** Hover line on the shelter marker, so nobody takes it for a stop. */
+export const SHELTER_HINT = 'Shelter: start and finish of the walk';

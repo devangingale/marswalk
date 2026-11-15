@@ -29,7 +29,7 @@ import {
 } from 'cesium';
 import type { ChemistryPositionGroup } from '../lib/chemistry';
 import { lonlatToLocalMetres, type GridOrigin, type RouteGrid } from '../lib/grid';
-import type { Plan } from '../lib/plan';
+import { defaultShelterLabel, isDefaultShelterLabel, shelterType, type Plan } from '../lib/plan';
 import {
   forkPoints,
   sections as routeSections,
@@ -64,6 +64,7 @@ import {
   showSummaryLabels,
   stretchStyles,
   waypointLabel,
+  SHELTER_HINT,
   type RouteHover,
   type StretchStyle,
 } from './routeLook';
@@ -154,7 +155,7 @@ export interface SurfaceTarget {
 
 type Meta =
   | { kind: 'route'; stretch: number }
-  | { kind: 'text'; lines: string[]; target?: () => SurfaceTarget | undefined };
+  | { kind: 'text'; lines: string[]; target?: () => SurfaceTarget | undefined; shelter?: true };
 
 interface Stretch extends SharedSegment {
   shared: boolean;
@@ -176,12 +177,13 @@ export class GlobeOverlays {
   private readonly removeScreenUpdate?: () => void;
   private readonly meta = new Map<Entity, Meta>();
   private readonly owned = new Set<Entity>();
-  private readonly groups: Record<'plan' | 'rover' | 'chemistry' | 'walker' | 'crew', Entity[]> = {
+  private readonly groups: Record<'plan' | 'rover' | 'chemistry' | 'walker' | 'crew' | 'turn', Entity[]> = {
     plan: [],
     rover: [],
     chemistry: [],
     walker: [],
     crew: [],
+    turn: [],
   };
 
   private plan: Plan | undefined;
@@ -314,7 +316,7 @@ export class GlobeOverlays {
     const lines = this.meta.get(entity);
     if (lines?.kind !== 'text') return null;
     if (lines.lines[0].startsWith('Stop ')) return 0;
-    if (lines.lines[0] === 'Rover drop-off') return 1;
+    if (lines.shelter) return 1;
     if (lines.lines[0] === 'Fork') return 2;
     return null;
   }
@@ -322,8 +324,8 @@ export class GlobeOverlays {
   private labelPriority(entity: Entity): number | null {
     const lines = this.meta.get(entity);
     if (lines?.kind !== 'text') return null;
-    if (lines.lines[0] === 'Rover drop-off') return 1;
-    if (lines.lines[0] === 'Fork' || lines.lines[0].startsWith('to Stop ') || lines.lines[0] === 'back to drop-off') return 2;
+    if (lines.shelter) return 1;
+    if (lines.lines[0] === 'Fork' || lines.lines[0].startsWith('to Stop ') || lines.lines[0] === 'back to shelter') return 2;
     if (/^(High|Low|Steepest)\b/.test(lines.lines[0])) return 3;
     return null;
   }
@@ -350,7 +352,7 @@ export class GlobeOverlays {
 
   /**
    * Draws a plan. Distances use the local-metre frame at origin (the site's), or at the
-   * drop-off when no origin is given.
+   * shelter when no origin is given.
    */
   setPlan(plan: Plan | undefined, origin?: GridOrigin): void {
     this.removeGroup('plan');
@@ -536,14 +538,15 @@ export class GlobeOverlays {
   private drawStops(plan: Plan): void {
     const images = this.markers();
     const start = plan.start;
+    const name = isDefaultShelterLabel(start.label) ? defaultShelterLabel(shelterType(start)) : start.label;
     this.add(
       'plan',
       {
         position: this.surfacePosition(start.lon, start.lat),
-        billboard: this.billboard(images.dropOff(), REGION),
-        label: this.label('Rover drop-off', SITE, [-20, 0], true),
+        billboard: this.billboard(images.dropOff(shelterType(start)), REGION),
+        label: this.label(name, SITE, [-20, 0], true),
       },
-      { kind: 'text', lines: ['Rover drop-off', formatLatLon(start.lon, start.lat)], target: () => ({ title: 'Rover drop-off', lon: start.lon, lat: start.lat }) },
+      { kind: 'text', shelter: true, lines: [name, SHELTER_HINT, formatLatLon(start.lon, start.lat)], target: () => ({ title: name, lon: start.lon, lat: start.lat }) },
     );
     plan.stops.forEach((stop) => {
       const number = waypointLabel(stop.id, plan);
@@ -677,6 +680,13 @@ export class GlobeOverlays {
     });
   }
 
+  /** Walk: the next turn point on the route, drawn with the given marker image. Null clears it. */
+  setTurnPoint(point: { lon: number; lat: number } | null, image?: MarkerImage): void {
+    this.removeGroup('turn');
+    if (!point || !image) return;
+    this.add('turn', { position: lonLatToCartesian(point.lon, point.lat, 0), billboard: this.billboard(image, REGION) });
+  }
+
   /**
    * Both astronauts with their position uncertainty circles, the pressurised rover with
    * its arrival time, and the night way back as a corridor (Mars mode and Walk). Null
@@ -748,7 +758,7 @@ export class GlobeOverlays {
         'crew',
         {
           position: live((m) => (m.rover ? this.surfacePosition(m.rover.lon, m.rover.lat) : undefined), undefined) as never,
-          billboard: this.billboard(this.markers().dropOff(), REGION),
+          billboard: this.billboard(this.markers().dropOff('rover'), REGION),
           label: { ...this.label(rover.label, REGION, [20, 0]), text: live((m) => m.rover?.label ?? '', '') },
         },
         {
@@ -767,7 +777,7 @@ export class GlobeOverlays {
     return this.useSurfaceHeights ? surfaceHeightM(this.grid, lon, lat, this.heightOffsetM) : 0;
   }
 
-  /** Hover text for a picked marker (stop, drop-off, fork, slope point, photo site), else null. */
+  /** Hover text for a picked marker (stop, shelter, fork, slope point, photo site), else null. */
   hoverLabel(picked: unknown): string | null {
     const meta = this.metaFor(picked);
     if (!meta) return null;

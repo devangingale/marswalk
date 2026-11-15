@@ -14,7 +14,7 @@ function latLon(lon: number, lat: number): string {
 
 /**
  * Rover panel (design: "Hardware links"). The simulated pressurised rover waits
- * at the drop-off; the panel shows its state, the crew's fix with its
+ * at the plan shelter; the panel shows its state, the crew's fix with its
  * uncertainty, and a hold-to-send "Come to me" command whose effect is shown
  * before and after sending. Commands go through the telemetry adapter only.
  */
