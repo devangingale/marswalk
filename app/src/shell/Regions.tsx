@@ -3,7 +3,7 @@
 // small map controls top-right. Both side panels collapse; below OVERLAY_BELOW_PX an open
 // panel slides over the map instead of narrowing it.
 import React, { useCallback, useEffect, useId, useState, type ReactNode } from 'react';
-import { OVERLAY_BELOW_PX, readPanels, togglePanel, writePanels, type PanelState, type Side } from './regions';
+import { OVERLAY_BELOW_PX, readPanels, togglePanel, writePanels, type PanelState, type Side } from './panelState';
 import './regions.css';
 
 export interface RegionsProps {
@@ -51,6 +51,12 @@ export const Regions: React.FC<RegionsProps> = ({ id, main, left, leftLabel = 'P
   const rightId = useId();
 
   useEffect(() => { setPanels(readPanels(id, window.innerWidth, storage())); }, [id]);
+
+  // Two open panels over a narrow map would cover it: a state remembered from a wide window,
+  // or a window narrowed past OVERLAY_BELOW_PX, keeps the right panel (the task) and folds the left.
+  useEffect(() => {
+    if (overlay) setPanels((current) => (current.left && current.right ? { ...current, left: false } : current));
+  }, [overlay, id]);
 
   const toggle = useCallback((side: Side) => {
     setPanels((current) => {
