@@ -13,6 +13,8 @@ from candidate_hirise import (
     build_index,
     choose_observation,
     covered_entry,
+    distance_to_footprint_km,
+    find_nearest_observation,
     footprint_contains,
     footprint_lonlat,
     has_data_at,
@@ -267,3 +269,35 @@ def test_uncovered_entry_names_blank_products():
         "name": "X",
         "reason": "3 HiRISE products cover the site point but none has image data there",
     }
+
+
+def test_uncovered_entry_records_nearest_observation_and_distance():
+    assert uncovered_entry({"name": "Y"}, nearest_observation_id="ESP_040307_1825", nearest_distance_km=12.2) == {
+        "covered": False,
+        "name": "Y",
+        "reason": "No HiRISE RDR V1.1 footprint in ODE contains the site point",
+        "nearest_observation_id": "ESP_040307_1825",
+        "nearest_distance_km": 12.2,
+    }
+
+
+def test_distance_to_footprint_km_measures_segment_distance():
+    # Square footprint from lon 301.4 to 301.6, lat -13.7 to -13.5
+    footprint = "POLYGON ((301.6 -13.7, 301.4 -13.7, 301.4 -13.5, 301.6 -13.5, 301.6 -13.7))"
+    # Point at lon 301.5, lat -13.4 is 0.1 deg north of northern edge (-13.5)
+    # 0.1 deg latitude on Mars is approx 0.1 * 3396.19 * pi / 180 = ~5.927 km
+    d = distance_to_footprint_km(301.5, -13.4, footprint)
+    expected = 0.1 * 3396.19 * math.pi / 180.0
+    assert abs(d - expected) < 0.05
+
+
+def test_find_nearest_observation_picks_closest():
+    prods = [
+        product("ESP_011111_1660_RED", 4.0, "2012-01-01", COVER),
+        product("ESP_033333_1660_RED", 2.0, "2020-01-01", ELSEWHERE),
+    ]
+    # Point at lon 302.5, lat -13.6 is inside ELSEWHERE (302.4-302.6, -13.7 to -13.5)
+    res = find_nearest_observation(302.5, -13.6, prods)
+    assert res is not None
+    assert res[0] == "ESP_033333_1660"
+    assert res[1] == 0.0

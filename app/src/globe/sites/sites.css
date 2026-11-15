@@ -16,6 +16,8 @@
   --sites-hirise-footprint: var(--map-stop-selected-fill);
   --sites-hirise-marker: var(--map-stop-selected-fill);
   --sites-hirise-scrim: var(--map-tag-bg);
+  --sites-ez-outline: var(--map-stop-selected-fill);
+  --sites-ez-fill: rgba(142, 193, 245, 0.08);
 }
 
 /* --- Controls (chips, weights) stay in view while the list scrolls. --- */
@@ -391,3 +393,58 @@
   font-size: var(--text-sm);
   font-variant-numeric: var(--numeric);
 }
+
+/* --- Exploration Zone (100 km) section in site card --- */
+.sites-ez {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-surface-sunken);
+  border: var(--border-width) solid var(--color-rule);
+  border-radius: var(--radius-2);
+}
+.sites-ez__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+.sites-ez__title {
+  font-family: var(--font-data);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin: 0;
+}
+.sites-ez__citation {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.sites-ez__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sites-ez__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+}
+.sites-ez__label {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+.sites-ez__value {
+  font-family: var(--font-data);
+  font-size: var(--text-sm);
+  font-variant-numeric: var(--numeric);
+  color: var(--color-text);
+  text-align: right;
+}
+

@@ -29,6 +29,8 @@ export interface HiriseUncovered {
   covered: false;
   name: string;
   reason: string;
+  nearest_observation_id?: string;
+  nearest_distance_km?: number;
 }
 
 export type HiriseEntry = HiriseCovered | HiriseUncovered;
@@ -56,7 +58,11 @@ export type HiriseView =
       /** Site point as a percentage of the image width and height. */
       marker: { x: number; y: number } | null;
     }
-  | { kind: 'none' };
+  | {
+      kind: 'none';
+      nearestObservationId?: string;
+      nearestDistanceKm?: number;
+    };
 
 function percent(v: number): number {
   return Math.round(v * 1000) / 10;
@@ -66,7 +72,13 @@ function percent(v: number): number {
 export function hiriseView(index: HiriseIndex | null, siteId: string, base: string): HiriseView | null {
   const entry = index?.sites[siteId];
   if (!entry) return null;
-  if (!entry.covered) return { kind: 'none' };
+  if (!entry.covered) {
+    return {
+      kind: 'none',
+      nearestObservationId: entry.nearest_observation_id,
+      nearestDistanceKm: entry.nearest_distance_km,
+    };
+  }
   const [width, height] = entry.image_px;
   return {
     kind: 'image',

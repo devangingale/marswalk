@@ -1,0 +1,311 @@
+{
+  "version": 1,
+  "source": "MRO HiRISE RDR V1.1 (MRO-M-HIRISE-3-RDR-V1.1) via PDS Geosciences ODE REST",
+  "credit": "NASA/JPL/University of Arizona",
+  "licence": "Public domain: no copyright restriction on HiRISE images; credit requested",
+  "licence_url": "https://www.uahirise.org/media/usage.php",
+  "queried": "2026-11-15",
+  "selection_rule": "Among RED products whose footprint contains the site point (COLOR only when no RED covers it): the newest near-nadir one (emission <= 10 deg); if none is near-nadir, the smallest emission angle, newest on ties. RED is preferred because its browse covers the full 6 km swath; COLOR covers only the central strip.",
+  "sites": {
+    "candidate-000001": {
+      "covered": false,
+      "name": "Candidate 001",
+      "reason": "No HiRISE RDR V1.1 footprint in ODE contains the site point",
+      "nearest_observation_id": "ESP_029806_1660",
+      "nearest_distance_km": 6.2
+    },
+    "candidate-000002": {
+      "covered": false,
+      "name": "Candidate 002",
+      "reason": "No HiRISE RDR V1.1 footprint in ODE contains the site point",
+      "nearest_observation_id": "ESP_063841_1695",
+      "nearest_distance_km": 0.4
+    },
+    "candidate-000003": {
+      "covered": true,
+      "name": "Candidate 003",
+      "observation_id": "ESP_051253_1750",
+      "product_id": "ESP_051253_1750_RED",
+      "acquired": "2017-07-03",
+      "resolution_m_px": 0.5,
+      "browse_m_px": 3.39,
+      "emission_deg": 5.82,
+      "footprint": [
+        [
+          137.09,
+          -4.8749
+        ],
+        [
+          137.008,
+          -4.8848
+        ],
+        [
+          136.973,
+          -4.5899
+        ],
+        [
+          137.055,
+          -4.5799
+        ],
+        [
+          137.09,
+          -4.8749
+        ]
+      ],
+      "page_url": "https://www.uahirise.org/ESP_051253_1750",
+      "image": "hirise/candidate-000003.jpg",
+      "image_px": [
+        2048,
+        5329
+      ],
+      "image_bytes": 1856118,
+      "site_px": [
+        1014.3,
+        4611.1
+      ],
+      "observations_covering": 3,
+      "reason": "Newest of 2 near-nadir RED products (emission <= 10 deg) among 3 observations covering the site",
+      "credit": "NASA/JPL/University of Arizona"
+    },
+    "candidate-000004": {
+      "covered": false,
+      "name": "Candidate 004",
+      "reason": "No HiRISE RDR V1.1 footprint in ODE contains the site point",
+      "nearest_observation_id": "ESP_042808_1670",
+      "nearest_distance_km": 0.2
+    },
+    "candidate-000005": {
+      "covered": false,
+      "name": "Candidate 005",
+      "reason": "No HiRISE RDR V1.1 footprint in ODE contains the site point",
+      "nearest_observation_id": "ESP_084286_1960",
+      "nearest_distance_km": 13.1
+    },
+    "candidate-000006": {
+      "covered": false,
+      "name": "Candidate 006",
+      "reason": "No HiRISE RDR V1.1 footprint in ODE contains the site point",
+      "nearest_observation_id": "ESP_045393_1685",
+      "nearest_distance_km": 0.1
+    },
+    "candidate-000007": {
+      "covered": false,
+      "name": "Candidate 007",
+      "reason": "No HiRISE RDR V1.1 footprint in ODE contains the site point",
+      "nearest_observation_id": "ESP_028224_1735",
+      "nearest_distance_km": 1.4
+    },
+    "candidate-000008": {
+      "covered": false,
+      "name": "Candidate 008",
+      "reason": "No HiRISE RDR V1.1 footprint in ODE contains the site point",
+      "nearest_observation_id": "ESP_043784_1675",
+      "nearest_distance_km": 10.2
+    },
+    "candidate-000009": {
+      "covered": false,
+      "name": "Candidate 009",
+      "reason": "No HiRISE RDR V1.1 footprint in ODE contains the site point",
+      "nearest_observation_id": "ESP_088294_1825",
+      "nearest_distance_km": 5.3
+    },
+    "candidate-000010": {
+      "covered": false,
+      "name": "Candidate 010",
+      "reason": "No HiRISE RDR V1.1 footprint in ODE contains the site point",
+      "nearest_observation_id": "ESP_040307_1825",
+      "nearest_distance_km": 12.2
+    },
+    "landed-viking-2-lander": {
+      "covered": true,
+      "name": "Viking 2 Lander",
+      "observation_id": "ESP_086806_2280",
+      "product_id": "ESP_086806_2280_RED",
+      "acquired": "2025-02-01",
+      "resolution_m_px": 0.5,
+      "browse_m_px": 3.42,
+      "emission_deg": 4.0,
+      "footprint": [
+        [
+          134.361,
+          47.5888
+        ],
+        [
+          134.223,
+          47.5769
+        ],
+        [
+          134.193,
+          47.7316
+        ],
+        [
+          134.332,
+          47.7434
+        ],
+        [
+          134.361,
+          47.5888
+        ]
+      ],
+      "page_url": "https://www.uahirise.org/ESP_086806_2280",
+      "image": "hirise/landed-viking-2-lander.jpg",
+      "image_px": [
+        2048,
+        2876
+      ],
+      "image_bytes": 3028121,
+      "site_px": [
+        1069.6,
+        1315.3
+      ],
+      "observations_covering": 21,
+      "reason": "Newest of 21 near-nadir RED products (emission <= 10 deg) among 21 observations covering the site",
+      "credit": "NASA/JPL/University of Arizona"
+    },
+    "landed-insight-lander": {
+      "covered": true,
+      "name": "InSight Lander",
+      "observation_id": "ESP_087004_1845",
+      "product_id": "ESP_087004_1845_RED",
+      "acquired": "2025-02-16",
+      "resolution_m_px": 0.25,
+      "browse_m_px": 2.93,
+      "emission_deg": 7.81,
+      "footprint": [
+        [
+          135.678,
+          4.4352
+        ],
+        [
+          135.594,
+          4.425
+        ],
+        [
+          135.577,
+          4.5636
+        ],
+        [
+          135.661,
+          4.5738
+        ],
+        [
+          135.678,
+          4.4352
+        ]
+      ],
+      "page_url": "https://www.uahirise.org/ESP_087004_1845",
+      "image": "hirise/landed-insight-lander.jpg",
+      "image_px": [
+        2048,
+        3010
+      ],
+      "image_bytes": 2074941,
+      "site_px": [
+        944.4,
+        1444.2
+      ],
+      "observations_covering": 37,
+      "reason": "Newest of 22 near-nadir RED products (emission <= 10 deg) among 37 observations covering the site; skipped 2 with no image data at the site (ESP_087360_1845_RED, ESP_088494_1845_RED)",
+      "credit": "NASA/JPL/University of Arizona"
+    },
+    "landed-perseverance-mars-2020-octavia-e-butler-landing": {
+      "covered": true,
+      "name": "Perseverance (Mars 2020, Octavia E. Butler Landing)",
+      "observation_id": "ESP_088351_1985",
+      "product_id": "ESP_088351_1985_RED",
+      "acquired": "2025-06-01",
+      "resolution_m_px": 0.5,
+      "browse_m_px": 3.38,
+      "emission_deg": 5.99,
+      "footprint": [
+        [
+          77.4819,
+          18.3618
+        ],
+        [
+          77.3917,
+          18.3511
+        ],
+        [
+          77.3608,
+          18.5877
+        ],
+        [
+          77.4512,
+          18.5985
+        ],
+        [
+          77.4819,
+          18.3618
+        ]
+      ],
+      "page_url": "https://www.uahirise.org/ESP_088351_1985",
+      "image": "hirise/landed-perseverance-mars-2020-octavia-e-butler-landing.jpg",
+      "image_px": [
+        2048,
+        4331
+      ],
+      "image_bytes": 2431690,
+      "site_px": [
+        1522.3,
+        2692.0
+      ],
+      "observations_covering": 17,
+      "reason": "Newest of 7 near-nadir RED products (emission <= 10 deg) among 17 observations covering the site; skipped 1 with no image data at the site (ESP_088562_1985_RED)",
+      "credit": "NASA/JPL/University of Arizona"
+    },
+    "zone2015-arcadia-ice-rich-ground-stoker": {
+      "covered": true,
+      "name": "Arcadia Ice-Rich Ground (Stoker)",
+      "observation_id": "ESP_025656_2265",
+      "product_id": "ESP_025656_2265_RED",
+      "acquired": "2012-01-16",
+      "resolution_m_px": 0.25,
+      "browse_m_px": 3.42,
+      "emission_deg": 7.73,
+      "footprint": [
+        [
+          -171.109,
+          46.0449
+        ],
+        [
+          -171.244,
+          46.0348
+        ],
+        [
+          -171.276,
+          46.2409
+        ],
+        [
+          -171.141,
+          46.251
+        ],
+        [
+          -171.109,
+          46.0449
+        ]
+      ],
+      "page_url": "https://www.uahirise.org/ESP_025656_2265",
+      "image": "hirise/zone2015-arcadia-ice-rich-ground-stoker.jpg",
+      "image_px": [
+        2048,
+        3736
+      ],
+      "image_bytes": 3972241,
+      "site_px": [
+        933.0,
+        1572.5
+      ],
+      "observations_covering": 2,
+      "reason": "Newest of 1 near-nadir RED products (emission <= 10 deg) among 2 observations covering the site",
+      "credit": "NASA/JPL/University of Arizona"
+    },
+    "zone2015-mclaughlin-crater": {
+      "covered": false,
+      "name": "McLaughlin Crater",
+      "reason": "No HiRISE RDR V1.1 footprint in ODE contains the site point",
+      "nearest_observation_id": "ESP_037149_2020",
+      "nearest_distance_km": 0.3
+    }
+  }
+}

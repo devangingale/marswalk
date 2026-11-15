@@ -4,6 +4,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { HiriseView, thumbCrop } from './hirise';
+import { formatDistanceKm } from './format';
 
 /** Width / height of the card thumbnail; matches .sites-hirise__thumb in sites.css. */
 const THUMB_ASPECT = 4 / 3;
@@ -27,6 +28,24 @@ export const HiriseFigure: React.FC<HiriseFigureProps> = ({ view }) => {
     return (
       <section className="sites-hirise" aria-label="HiRISE image">
         <p className="sites-hirise__none">No HiRISE image covers this site</p>
+        {view.nearestDistanceKm !== undefined && (
+          <p className="sites-hirise__nearest">
+            Nearest HiRISE image {formatDistanceKm(view.nearestDistanceKm)} km away
+            {view.nearestObservationId && (
+              <>
+                {' ('}
+                <a
+                  href={`https://www.uahirise.org/${view.nearestObservationId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {view.nearestObservationId}
+                </a>
+                {')'}
+              </>
+            )}
+          </p>
+        )}
       </section>
     );
   }

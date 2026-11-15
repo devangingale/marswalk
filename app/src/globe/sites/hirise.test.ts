@@ -55,6 +55,15 @@ const INDEX: HiriseIndex = {
       covered: false,
       name: 'Candidate 001',
       reason: 'No HiRISE RDR V1.1 footprint in ODE contains the site point',
+      nearest_observation_id: 'ESP_029806_1660',
+      nearest_distance_km: 6.2,
+    },
+    'candidate-000010': {
+      covered: false,
+      name: 'Candidate 010',
+      reason: 'No HiRISE RDR V1.1 footprint in ODE contains the site point',
+      nearest_observation_id: 'ESP_040307_1825',
+      nearest_distance_km: 12.2,
     },
   },
 };
@@ -82,8 +91,17 @@ describe('hiriseView', () => {
     expect(view?.kind === 'image' && view.resolution).toBe('0.5 m/px (shown at 4.0 m/px)');
   });
 
-  it('says so when no image covers the site', () => {
-    expect(hiriseView(INDEX, 'candidate-000001', '/g')).toEqual({ kind: 'none' });
+  it('says so when no image covers the site and includes the nearest observation with distance', () => {
+    expect(hiriseView(INDEX, 'candidate-000001', '/g')).toEqual({
+      kind: 'none',
+      nearestObservationId: 'ESP_029806_1660',
+      nearestDistanceKm: 6.2,
+    });
+    expect(hiriseView(INDEX, 'candidate-000010', '/g')).toEqual({
+      kind: 'none',
+      nearestObservationId: 'ESP_040307_1825',
+      nearestDistanceKm: 12.2,
+    });
   });
 
   it('shows nothing for sites outside the index or without an index', () => {

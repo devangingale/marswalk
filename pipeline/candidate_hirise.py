@@ -36,6 +36,7 @@ OUT_DIR = ROOT / "data" / "globe" / "hirise"
 CACHE = ROOT / "data" / "raw" / "candidate_hirise"
 
 ODE_URL = "https://oderest.rsl.wustl.edu/live2/"
+MARS_RADIUS_KM = 3396.19
 USER_AGENT = "Marswalk/1.0 data pipeline"
 TOP_N = 10
 # Half-width of the query box around a site, degrees; containment is then tested exactly.
@@ -302,7 +303,73 @@ def covered_entry(
     }
 
 
-def uncovered_entry(site: dict, blank: int = 0) -> dict:
+def point_to_segment_km(lon: float, lat: float, lon1: float, lat1: float, lon2: float, lat2: float) -> float:
+    """Distance in km from a point to a line segment in local equirectangular projection."""
+    rad = math.pi / 180.0
+    x = (lon - lon1) * math.cos(0.5 * (lat + lat1) * rad) * (MARS_RADIUS_KM * rad)
+    y = (lat - lat1) * (MARS_RADIUS_KM * rad)
+    dx = (lon2 - lon1) * math.cos(0.5 * (lat1 + lat2) * rad) * (MARS_RADIUS_KM * rad)
+    dy = (lat2 - lat1) * (MARS_RADIUS_KM * rad)
+    seg_len_sq = dx * dx + dy * dy
+    if seg_len_sq == 0.0:
+        return math.hypot(x, y)
+    t = max(0.0, min(1.0, (x * dx + y * dy) / seg_len_sq))
+    return math.hypot(x - t * dx, y - t * dy)
+
+
+def distance_to_footprint_km(site_lon360: float, site_lat: float, wkt: str) -> float:
+    """Minimum distance in km from a site point (east-positive 0-360) to a footprint polygon."""
+    if footprint_contains(wkt, site_lon360, site_lat):
+        return 0.0
+    rings = parse_wkt_rings(wkt)
+    if not rings:
+        return float("inf")
+    ring = rings[0]
+    return min(
+        point_to_segment_km(site_lon360, site_lat, ring[i][0], ring[i][1], ring[i + 1][0], ring[i + 1][1])
+        for i in range(len(ring) - 1)
+    )
+
+
+def find_nearest_observation(
+    lon: float, lat: float, initial_products: list[dict] | None = None
+) -> tuple[str, float] | None:
+    """Finds the nearest observation id and distance in km for a site point."""
+    lon360 = lon_360(lon)
+    products = list(initial_products) if initial_products else []
+    if not products:
+        for half in (0.5, 1.0, 2.0, 5.0):
+            url = ode_query_url(lon, lat, half)
+            try:
+                request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+                with urllib.request.urlopen(request, timeout=30) as resp:
+                    doc = json.loads(resp.read().decode("utf-8"))
+                items = ode_products(doc)
+                if items:
+                    products = items
+                    break
+            except Exception:
+                continue
+    if not products:
+        return None
+    by_obs: dict[str, float] = {}
+    for p in products:
+        obs = p["Observation_id"]
+        d = distance_to_footprint_km(lon360, lat, p["Footprint_geometry"])
+        if obs not in by_obs or d < by_obs[obs]:
+            by_obs[obs] = d
+    if not by_obs:
+        return None
+    best_obs, best_dist = min(by_obs.items(), key=lambda t: t[1])
+    return best_obs, round(best_dist, 1)
+
+
+def uncovered_entry(
+    site: dict,
+    blank: int = 0,
+    nearest_observation_id: str | None = None,
+    nearest_distance_km: float | None = None,
+) -> dict:
     """index.json record for a site without a usable HiRISE image.
 
     blank counts products whose footprint contains the point but whose image is empty there.
@@ -312,7 +379,12 @@ def uncovered_entry(site: dict, blank: int = 0) -> dict:
         if blank
         else "No HiRISE RDR V1.1 footprint in ODE contains the site point"
     )
-    return {"covered": False, "name": site["name"], "reason": reason}
+    entry: dict = {"covered": False, "name": site["name"], "reason": reason}
+    if nearest_observation_id is not None:
+        entry["nearest_observation_id"] = nearest_observation_id
+    if nearest_distance_km is not None:
+        entry["nearest_distance_km"] = nearest_distance_km
+    return entry
 
 
 def build_index(entries: dict[str, dict], queried: str) -> dict:
@@ -388,8 +460,10 @@ def main() -> int:
                 break
             skip.add(pid)
         if choice is None:
-            entries[sid] = uncovered_entry(site, len(skip))
-            print(f"{sid}: no HiRISE coverage")
+            nearest = find_nearest_observation(site["lon"], site["lat"], products)
+            nearest_id, nearest_dist = nearest if nearest else (None, None)
+            entries[sid] = uncovered_entry(site, len(skip), nearest_id, nearest_dist)
+            print(f"{sid}: no HiRISE coverage" + (f", nearest {nearest_id} {nearest_dist} km" if nearest_id else ""))
             continue
         out = OUT_DIR / f"{sid}.jpg"
         shutil.copyfile(jpg, out)

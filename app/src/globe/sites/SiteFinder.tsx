@@ -30,6 +30,13 @@ import { isInSurfaceView } from '../../surface360/SurfaceView';
 import { SiteCard } from './SiteCard';
 import { HiriseIndex, hiriseFootprint, hiriseView } from './hirise';
 import { footprintOutline } from './hiriseFootprint';
+import { loadGlobeManifest, loadValuesGrid } from '../globalLayers';
+import type { ValuesGrid } from '../layerManifest';
+import {
+  explorationZoneEntities,
+  type ExplorationZoneColours,
+  type HydratedHotspot,
+} from './explorationZone';
 import './sites.css';
 
 interface SiteFinderProps {
@@ -69,6 +76,9 @@ export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, register
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hirise, setHirise] = useState<HiriseIndex | null>(null);
+  const [swimGrid, setSwimGrid] = useState<ValuesGrid | null>(null);
+  const [radGrid, setRadGrid] = useState<ValuesGrid | null>(null);
+  const [hydratedHotspots, setHydratedHotspots] = useState<HydratedHotspot[]>([]);
 
   const sourceRef = useRef<CustomDataSource | null>(null);
   const entitiesRef = useRef<Map<string, Entity>>(new Map());
@@ -98,6 +108,56 @@ export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, register
         if (!cancelled) setHirise(index);
       })
       .catch((error) => console.warn('HiRISE image index did not load', error));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Load globe manifest, value grids (SWIM ice and radiation) and hydrated mineral hotspots
+  // for the Exploration Zone detail queries.
+  useEffect(() => {
+    let cancelled = false;
+    loadGlobeManifest(GLOBE_BASE)
+      .then((manifest) => {
+        if (cancelled) return;
+        const hs: HydratedHotspot[] = [];
+        for (const layer of manifest.layers) {
+          if (layer.hotspots && (layer.id.startsWith('hydrated_') || layer.group === 'minerals')) {
+            for (const h of layer.hotspots) {
+              hs.push({
+                lon: h.lon,
+                lat: h.lat,
+                value: h.value,
+                title: layer.title,
+                layerTitle: layer.title,
+              });
+            }
+          }
+        }
+        if (!cancelled && hs.length > 0) {
+          setHydratedHotspots(hs);
+        }
+
+        const swimLayer = manifest.layers.find((l) => l.id === 'SWIM4MIM_Ci_0_1');
+        if (swimLayer?.values) {
+          loadValuesGrid(GLOBE_BASE, swimLayer.values)
+            .then((grid) => {
+              if (!cancelled) setSwimGrid(grid);
+            })
+            .catch((err) => console.warn('Could not load SWIM values grid', err));
+        }
+
+        const radLayer = manifest.layers.find((l) => l.id === 'dose_ugy_day');
+        if (radLayer?.values) {
+          loadValuesGrid(GLOBE_BASE, radLayer.values)
+            .then((grid) => {
+              if (!cancelled) setRadGrid(grid);
+            })
+            .catch((err) => console.warn('Could not load radiation values grid', err));
+        }
+      })
+      .catch((err) => console.warn('Could not load globe manifest for EZ queries', err));
+
     return () => {
       cancelled = true;
     };
@@ -226,6 +286,31 @@ export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, register
     };
   }, [viewer, data, hirise, selectedId]);
 
+  // Draw the 100 km Exploration Zone geodesic circle and perimeter label while a site is selected.
+  useEffect(() => {
+    const source = sourceRef.current;
+    if (!viewer || !source || !selected) return;
+
+    const colours: ExplorationZoneColours = {
+      outline: cssColour('--sites-ez-outline'),
+      fill: cssColour('--sites-ez-fill'),
+      labelText: cssColour('--map-label-fill'),
+      labelHalo: cssColour('--map-label-halo'),
+    };
+
+    const ezEntities = explorationZoneEntities(selected.lon, selected.lat, colours).map((opt) =>
+      source.entities.add(opt),
+    );
+    viewer.scene.requestRender();
+
+    return () => {
+      for (const entity of ezEntities) {
+        source.entities.remove(entity);
+      }
+      if (!viewer.isDestroyed()) viewer.scene.requestRender();
+    };
+  }, [viewer, selected]);
+
   // Register the hover-line resolver with the globe page's single tooltip.
   useEffect(() => {
     const fn = (entity: Entity | null): string[] | null => {
@@ -303,6 +388,10 @@ export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, register
             onClose={() => setSelectedId(null)}
             action={siteAction?.(selected)}
             hirise={hiriseView(hirise, selected.id, GLOBE_BASE)}
+            allSites={data.sites}
+            swimGrid={swimGrid}
+            radGrid={radGrid}
+            hydratedHotspots={hydratedHotspots}
           />,
           cardHost,
         )}
