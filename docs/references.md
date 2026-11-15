@@ -36,6 +36,7 @@ Not every dataset below ends up in the final product; trim this list to what is 
 | naif_spice | `data/raw/naif_spice` | NASA PDS / ESA — public domain (US Government work / ESA open access) |
 | rems | `data/raw/rems` | Public domain / NASA content; credit NASA/JPL-Caltech/CAB(CSIC-INTA) |
 | mcs_ddr_v62 | `data/raw/mcs_ddr_v62` | NASA PDS MRO-M-MCS-5-DDR-V6.2; NASA government data, public domain; no separate product-specific licence text stated |
+| tes_bandfield2002 | `data/raw/tes_bandfield2002` | NASA PDS — public domain |
 
 ## Site-finder criteria
 
@@ -64,6 +65,8 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 | Santee et al. 2003 (USARIEM TN03-3) correction to Pandolf 1977 | Downhill metabolic energy expenditure and eccentric braking correction | Santee, W. R., Blanchard, L. A., Speckman, K. L., Gonzalez, J. A., & Wallace, R. F. (2003). *Load carriage model development and testing with field data.* USARIEM Technical Note TN03-3 (DTIC ADA415788). Form as restated in Potter, A. W., et al. (2013). *Comparative analysis of metabolic cost equations: a review.* Journal of Sport and Human Performance, 1(3), 34–42. doi:10.12922/jshp.0009.2013. The operator before V² is unverified in the review PDF (see `docs/research/eva-limits.md`, row 3). |
 | NASA NAIF SPICE ephemerides | Orbiter pass prediction (MRO, 2001 Mars Odyssey, ExoMars TGO, Mars Express) | Acton, C. H. (1996). *Ancillary Data Services of NASA's Navigation and Ancillary Information Facility.* Planetary and Space Science, 44(1), 65–70; Public domain. |
 | Martian calendar (Clancy / Piqueux) | Martian year and sol to Earth date calculation | Clancy, R. T., et al. (2000). *An intercomparison of ground-based millimeter, MGS TES, and Viking atmospheric temperature measurements: Seasonal and interannual variability of temperatures and dust loading in the global Mars atmosphere.* Journal of Geophysical Research: Planets, 105(E4), 9553–9571. doi:10.1029/1999JE001089. Piqueux, S., et al. (2015). *Calculation of Mars solar longitude (Ls) and Martian calendar.* Icarus, 251, 332–339. doi:10.1016/j.icarus.2014.12.014. |
+| Tanaka et al. 2014 (SIM 3292) | USGS global geologic map of Mars (1:20M scale) unit classifications, ages, and boundaries | Tanaka, K.L., et al. (2014). *Geologic map of Mars.* USGS Scientific Investigations Map 3292, doi:10.3133/sim3292; Public domain. |
+| Bandfield 2002 TES mineral maps | Global olivine and mineral abundance heatmaps | Bandfield, J.L. (2002). *Global mineral distributions on Mars.* Journal of Geophysical Research: Planets, 107(E6), 5042, doi:10.1029/2001JE001510; NASA PDS / ASU Mars Global Data Sets, public domain. |
 
 ## Software and libraries
 
@@ -79,6 +82,7 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 | LightGBM (`lightgbm`) | Gradient-boosted tree walkability classifier | MIT |
 | scikit-learn (`scikit-learn`) | ROC AUC metrics and model interfaces | BSD-3-Clause |
 | spiceypy (`spiceypy==8.4.0`) | Python wrapper for CSPICE (NAIF SPICE toolkit N0067) for orbiter pass prediction | MIT |
+| pyshp (`pyshp==2.3.1`) | Pure-Python ESRI Shapefile reader for SIM 3292 geology rasterisation | MIT |
 
 ## Images, fonts, icons, text
 
