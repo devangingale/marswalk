@@ -244,7 +244,28 @@ export function chevronsFor(
 ): ChevronPosition[] {
   const fwd = directions.includes('fwd');
   const back = directions.includes('back');
-  if (!fwd) return back ? chevronPositions([...line].reverse(), origin, spacingM) : [];
+  if ((!fwd && !back) || line.length < 2) return [];
+  const lengthM = line.slice(1).reduce((sum, point, index) => {
+    const a = lonlatToLocalMetres(line[index][0], line[index][1], origin);
+    const b = lonlatToLocalMetres(point[0], point[1], origin);
+    return sum + Math.hypot(b.x_m - a.x_m, b.y_m - a.y_m);
+  }, 0);
+  if (lengthM <= 0) return [];
+  if (lengthM < spacingM) {
+    if (!fwd) return chevronPositions([...line].reverse(), origin, lengthM);
+    if (!back) return chevronPositions(line, origin, lengthM);
+    const shortSpacing = lengthM / 2;
+    const out = chevronPositions(line, origin, shortSpacing);
+    const offset = branchAnchor(line, line[0], shortSpacing / 2, origin);
+    const startIndex = nearestVertex(line, offset, origin);
+    const trimmed: [number, number][] = [offset, ...line.slice(startIndex + 1)];
+    const backward = chevronPositions(trimmed, origin, shortSpacing).map((c) => ({
+      ...c,
+      bearingDeg: (c.bearingDeg + 180) % 360,
+    }));
+    return [...out, ...backward];
+  }
+  if (!fwd) return chevronPositions([...line].reverse(), origin, spacingM);
   const out = chevronPositions(line, origin, spacingM);
   if (!back) return out;
   const offset = branchAnchor(line, line[0], spacingM / 2, origin);
