@@ -8,20 +8,28 @@ export type TourScope = 'all' | TourTab;
 
 export type TourState =
   | { open: false; finished?: 'done' | 'skipped' }
+  | { open: 'welcome' }
   | { open: true; scope: TourScope; index: number };
 
 export type TourAction =
-  | { type: 'start'; scope: TourScope }
+  | { type: 'welcome' }
+  | { type: 'start'; scope?: TourScope }
   | { type: 'next' }
   | { type: 'back' }
   | { type: 'skip' };
 
 export const CLOSED: TourState = { open: false };
+export const WELCOME: TourState = { open: 'welcome' };
 
 /** Next on the last step finishes the tour as done; Skip (and Esc) as skipped. */
 export function tourReducer(state: TourState, action: TourAction): TourState {
-  if (action.type === 'start') return { open: true, scope: action.scope, index: 0 };
+  if (action.type === 'welcome') return { open: 'welcome' };
+  if (action.type === 'start') return { open: true, scope: action.scope ?? 'all', index: 0 };
   if (!state.open) return state;
+  if (state.open === 'welcome') {
+    if (action.type === 'skip') return { open: false, finished: 'skipped' };
+    return state;
+  }
   const count = stepsFor(state.scope).length;
   switch (action.type) {
     case 'next':
@@ -34,12 +42,12 @@ export function tourReducer(state: TourState, action: TourAction): TourState {
 }
 
 export function currentStep(state: TourState): TourStep | null {
-  return state.open ? stepsFor(state.scope)[state.index] ?? null : null;
+  return state.open === true ? stepsFor(state.scope)[state.index] ?? null : null;
 }
 
 /** Step count text, e.g. 3 of 18. */
 export function stepCount(state: TourState): string {
-  return state.open ? `${state.index + 1} of ${stepsFor(state.scope).length}` : '';
+  return state.open === true ? `${state.index + 1} of ${stepsFor(state.scope).length}` : '';
 }
 
 // ---- First visit ------------------------------------------------------------------------

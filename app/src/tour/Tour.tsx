@@ -62,7 +62,7 @@ export const TourControls: React.FC<TourControlsProps> = ({ tab, onTab }) => {
 
   useEffect(() => {
     if (!shouldAutoStart(window.location.search, tourStorage())) return;
-    dispatch({ type: 'start', scope: 'all' });
+    dispatch({ type: 'welcome' });
     // ?tour=1 is a one-off: a reload after Skip or Done does not start it again.
     const params = new URLSearchParams(window.location.search);
     if (params.has('tour')) {
@@ -92,7 +92,15 @@ export const TourControls: React.FC<TourControlsProps> = ({ tab, onTab }) => {
           </button>
         )}
       </div>
-      {state.open && step &&
+      {state.open === 'welcome' &&
+        createPortal(
+          <TourWelcome
+            onStart={() => dispatch({ type: 'start', scope: 'all' })}
+            onSkip={() => dispatch({ type: 'skip' })}
+          />,
+          document.body,
+        )}
+      {state.open === true && step &&
         createPortal(
           <TourOverlay
             step={step}
@@ -108,6 +116,83 @@ export const TourControls: React.FC<TourControlsProps> = ({ tab, onTab }) => {
           document.body,
         )}
     </>
+  );
+};
+
+interface TourWelcomeProps {
+  onStart: () => void;
+  onSkip: () => void;
+}
+
+const TourWelcome: React.FC<TourWelcomeProps> = ({ onStart, onSkip }) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const startRef = useRef<HTMLButtonElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const titleId = 's48-tour-welcome-title';
+
+  // Focus lands on "Take the tour" and returns to where it was when the card closes.
+  useEffect(() => {
+    returnFocusRef.current = document.activeElement as HTMLElement | null;
+    startRef.current?.focus();
+    return () => {
+      const el = returnFocusRef.current;
+      if (el && el.isConnected) el.focus();
+    };
+  }, []);
+
+  // Esc closes (skips); Tab stays inside the card; other keys in the card stay out of the app.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const card = cardRef.current;
+      if (!card) return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        onSkip();
+        return;
+      }
+      if (event.key === 'Tab') {
+        const focusable = Array.from(card.querySelectorAll<HTMLElement>('button:not([disabled])'));
+        if (focusable.length === 0) return;
+        const index = focusable.indexOf(document.activeElement as HTMLElement);
+        const nextIndex = index === -1 ? 0 : (index + (event.shiftKey ? -1 : 1) + focusable.length) % focusable.length;
+        event.preventDefault();
+        event.stopPropagation();
+        focusable[nextIndex].focus();
+        return;
+      }
+      if (card.contains(event.target as Node)) event.stopPropagation();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [onSkip]);
+
+  return (
+    <div className="s48-tour-welcome" role="presentation">
+      <div
+        ref={cardRef}
+        className="s48-tour-welcome__card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+      >
+        <h2 id={titleId} className="s48-tour-welcome__title">
+          Welcome to Sol-48
+        </h2>
+        <p className="s48-tour-welcome__text">
+          New here? A two-minute tour of the four tabs.
+        </p>
+        <div className="s48-tour-welcome__actions">
+          <button type="button" className="s48-btn s48-btn--quiet" onClick={onSkip}>
+            Skip
+          </button>
+          <span className="s48-tour__grow" />
+          <button type="button" ref={startRef} className="s48-btn s48-btn--primary" onClick={onStart}>
+            Take the tour
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 
