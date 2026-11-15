@@ -299,11 +299,14 @@ describe('Plan builder and validation (Contracts Section 7 and 10)', () => {
       }
     }
 
-    // Write to app/src/fixtures/plan.sample.json, resolved from this file so the working directory does not matter
+    // Other test files import this fixture, so a run must never rewrite it: compare instead, and
+    // regenerate only on request (REGENERATE_FIXTURES=1 npx vitest run src/lib/plan.test.ts).
     const fixturePath = fileURLToPath(new URL('../fixtures/plan.sample.json', import.meta.url));
-    fs.writeFileSync(fixturePath, JSON.stringify(samplePlan, null, 2), 'utf-8');
-
-    expect(fs.existsSync(fixturePath)).toBe(true);
+    if (process.env.REGENERATE_FIXTURES === '1') {
+      fs.writeFileSync(fixturePath, JSON.stringify(samplePlan, null, 2), 'utf-8');
+    }
+    const committed = JSON.parse(fs.readFileSync(fixturePath, 'utf-8'));
+    expect(committed).toEqual(JSON.parse(JSON.stringify(samplePlan)));
   });
 
   it('buildPlan with one unreachable stop in the middle keeps the other legs and their totals', () => {
