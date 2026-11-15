@@ -400,7 +400,8 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
     let removeFirstRender: (() => void) | null = null;
     const failSafe = window.setTimeout(() => setLoadState((current) => {
       let next = current;
-      for (const source of ['terrain', 'imagery', 'bundles', 'layers'] as const) if (next.sources[source].status === 'pending' || next.sources[source].status === 'loading') next = updateLoadSource(next, source, 'failed');
+      // Still streaming after 30 s is slow, not broken: close the loader quietly; real errors report 'failed' themselves.
+      for (const source of ['terrain', 'imagery', 'bundles', 'layers'] as const) if (next.sources[source].status === 'pending' || next.sources[source].status === 'loading') next = updateLoadSource(next, source, 'ready');
       return markFirstFrame(next);
     }), 30000);
     initialReadyRef.current = { terrain: false, imagery: false, firstFrame: false };
