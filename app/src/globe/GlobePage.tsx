@@ -47,7 +47,7 @@ import { Regions } from '../shell/Regions';
 import { marsSolarLongitude } from '../lib/sun';
 import { GlobeTemperatureLayer, loadTemperatureManifest } from './temperature/temperatureLayer';
 import { TemperatureRow } from './temperature/TemperatureRow';
-import { readoutLines, seasonBin, type TemperatureKind, type TemperatureManifest } from './temperature/temperatureManifest';
+import { legendRamp, readoutLines, seasonBin, type TemperatureKind, type TemperatureManifest } from './temperature/temperatureManifest';
 import { SiteFinder } from './sites/SiteFinder';
 import { GlobeOverlays } from './overlays';
 import { formatElevation, formatLatLon, graticuleStep, screenSpan, sectionLabel } from './routeLook';
@@ -243,6 +243,17 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
   const [ls, setLs] = useState(() => marsSolarLongitude(Date.now()));
   const bin = seasonBin(ls);
   const [cavesOn, setCavesOn] = useState(initial.caves);
+  // Dust history from the time bar: off until asked for, or until Play starts.
+  const [dustHistoryOn, setDustHistoryOn] = useState(initial.globalOn.includes('dust_history'));
+  const [dustNote, setDustNote] = useState<string | undefined>(undefined);
+  const [dustLegend, setDustLegend] = useState<string | undefined>(undefined);
+  const dustOnRef = useRef(dustHistoryOn);
+  dustOnRef.current = dustHistoryOn;
+  const onClockPlay = useCallback(() => {
+    if (dustOnRef.current) return;
+    setDustHistoryOn(true);
+    setDustNote('Turned on by Play');
+  }, []);
   const [annotations, setAnnotations] = useState<AnnotationsSnapshot>({ caveCount: 0, hotspots: [] });
   const [leftView, setLeftView] = useState<'layers' | 'sites'>('layers');
   const [notice, setNotice] = useState<string | null>(null);
@@ -710,10 +721,28 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
               ? { enabled: cavesOn, count: annotations.caveCount, credit: CAVE_CREDIT, onToggle: () => setCavesOn((v) => !v) }
               : undefined
           }
+          panelId="explore"
+          dustHistory={
+            dustScene
+              ? {
+                  enabled: dustHistoryOn,
+                  note: dustHistoryOn ? dustNote : undefined,
+                  legend: dustLegend,
+                  onToggle: () => {
+                    setDustNote(undefined);
+                    setDustHistoryOn((on) => !on);
+                  },
+                }
+              : undefined
+          }
           temperature={
             temperatureManifest
               ? {
                   enabled: temperature.enabled,
+                  opacity: temperature.opacity,
+                  legend: legendRamp(temperatureManifest.legend),
+                  onToggle: () => setTemperature((t) => ({ ...t, enabled: !t.enabled })),
+                  onOpacityChange: (opacity) => setTemperature((t) => ({ ...t, opacity })),
                   row: (
                     <TemperatureRow
                       manifest={temperatureManifest}
@@ -868,7 +897,11 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
         // they return on exit.
         controls={surface.active ? undefined : controls}
         bare={surface.active}
-        time={dustScene ? <Clock scene={dustScene} onLs={setLs} /> : undefined}
+        time={
+          dustScene ? (
+            <Clock scene={dustScene} onLs={setLs} visible={dustHistoryOn} onPlay={onClockPlay} onLegend={setDustLegend} />
+          ) : undefined
+        }
       />
     </div>
   );

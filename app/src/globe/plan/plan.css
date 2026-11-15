@@ -26,7 +26,8 @@
 .globe-plan-map .cesium-viewer-cesiumWidgetContainer,
 .globe-plan-map .cesium-widget { width: 100%; height: 100%; }
 .globe-plan-map canvas { display: block; width: 100%; height: 100%; }
-.globe-plan-offline { position: absolute; left: var(--space-4); top: var(--space-3); z-index: 4; padding: var(--space-1) var(--space-2); background: var(--map-tag-bg); color: var(--map-label-text); font-size: var(--text-sm); }
+/* Below the left panel handle, which sits at the top-left corner of the map. */
+.globe-plan-offline { position: absolute; left: var(--space-3); top: calc(var(--space-3) + var(--space-8) + var(--space-1)); z-index: 4; padding: var(--space-1) var(--space-2); background: var(--map-tag-bg); color: var(--map-label-text); font-size: var(--text-sm); }
 .globe-plan-hover { position: absolute; z-index: 5; max-width: 280px; white-space: pre-line; padding: var(--space-1) var(--space-2); border-radius: var(--radius-1); background: var(--map-tag-bg); color: var(--map-label-text); font: var(--weight-medium) var(--text-sm) / var(--leading-sm) var(--font-data); pointer-events: none; }
 @media (max-width: 1024px) {
   .globe-mover button { font-size: var(--text-xs); }

@@ -12,6 +12,14 @@
   color: var(--color-text);
 }
 
+.s48-clock__label {
+  flex: none;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
 .s48-clock__controls {
   display: flex;
   gap: var(--space-1);

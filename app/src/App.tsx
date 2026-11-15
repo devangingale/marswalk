@@ -23,6 +23,7 @@ import { PlanRail } from './plan/PlanRail';
 import { Regions } from './shell/Regions';
 import { useWholePlanet } from './plan/wholePlanet';
 import { TemperatureRow } from './globe/temperature/TemperatureRow';
+import { legendRamp } from './globe/temperature/temperatureManifest';
 import { findWalkableCentre, isLatestPlanRequest, makeInitialPlan, nextStopName } from './plan/planLogic';
 import { loadGrid, type RouteGrid } from './lib/grid';
 import type { PlanStop } from './lib/plan';
@@ -486,8 +487,13 @@ export const App: React.FC = () => {
                 onGlobalOpacityChange={wholePlanet.setOpacity}
                 siteValues={wholePlanet.siteValues}
                 caves={wholePlanet.caves.length ? { enabled: wholePlanet.cavesOn, count: wholePlanet.caves.length, credit: CAVE_CREDIT, atSite: wholePlanet.cavesAtSite, onToggle: () => wholePlanet.setCavesOn((on) => !on) } : undefined}
+                panelId="plan"
                 temperature={wholePlanet.temperatureManifest ? {
                   enabled: wholePlanet.temperature.enabled,
+                  opacity: wholePlanet.temperature.opacity,
+                  legend: legendRamp(wholePlanet.temperatureManifest.legend),
+                  onToggle: () => wholePlanet.setTemperature((t) => ({ ...t, enabled: !t.enabled })),
+                  onOpacityChange: (opacity) => wholePlanet.setTemperature((t) => ({ ...t, opacity })),
                   atSite: wholePlanet.temperatureAtSite,
                   row: (
                     <TemperatureRow

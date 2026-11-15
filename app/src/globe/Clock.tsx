@@ -33,7 +33,27 @@ function fmtC(v: number | null): string {
   return `${v < 0 ? '−' : ''}${Math.abs(Math.round(v))}`;
 }
 
-export const Clock: React.FC<{ scene: Scene; onLs?: (ls: number) => void }> = ({ scene, onLs }) => {
+export interface ClockProps {
+  scene: Scene;
+  onLs?: (ls: number) => void;
+  /** Whether the dust history shell is drawn; the clock keeps time either way. Default on. */
+  visible?: boolean;
+  /** Called when Play starts, so the page can turn the dust history on. */
+  onPlay?: () => void;
+  /** CSS gradient of the dust palette, for the layer panel legend. */
+  onLegend?: (background: string) => void;
+}
+
+/** CSS gradient across the dust palette stops, positioned by value. */
+export function dustLegend(palette: DustIndex['palette']): string {
+  const stops = palette.stops;
+  const min = stops[0]?.[0] ?? 0;
+  const max = stops[stops.length - 1]?.[0] ?? 1;
+  const span = max - min || 1;
+  return `linear-gradient(to right, ${stops.map(([v, c]) => `${c} ${Number((((v - min) / span) * 100).toFixed(2))}%`).join(', ')})`;
+}
+
+export const Clock: React.FC<ClockProps> = ({ scene, onLs, visible = true, onPlay, onLegend }) => {
   const [index, setIndex] = useState<DustIndex | null>(null);
   const [yearIndex, setYearIndex] = useState(0);
   const [bytes, setBytes] = useState<Uint8Array | null>(null);
@@ -90,6 +110,12 @@ export const Clock: React.FC<{ scene: Scene; onLs?: (ls: number) => void }> = ({
     };
   }, [scene]);
 
+  useEffect(() => dustRef.current?.setVisible(visible), [visible, scene]);
+
+  useEffect(() => {
+    if (index) onLegend?.(dustLegend(index.palette));
+  }, [index, onLegend]);
+
   // Draw the current frame whenever it, or the loaded data, changes.
   useEffect(() => {
     if (!year || !grid || !bytes || !dustRef.current) return;
@@ -121,14 +147,18 @@ export const Clock: React.FC<{ scene: Scene; onLs?: (ls: number) => void }> = ({
   };
 
   return (
-    <div className="s48-clock" role="group" aria-label="Mars time slider">
+    <div className="s48-clock" role="group" aria-label="Dust history">
+        <span className="s48-clock__label" aria-hidden="true">Dust history</span>
         <div className="s48-clock__controls">
           <button
             type="button"
             className="s48-clock__btn"
             aria-pressed={playing}
             aria-label={playing ? 'Pause' : 'Play'}
-            onClick={() => setPlaying((p) => !p)}
+            onClick={() => {
+              if (!playing) onPlay?.();
+              setPlaying(!playing);
+            }}
           >
             {playing ? 'Pause' : 'Play'}
           </button>
