@@ -55,7 +55,9 @@ export interface GlobalLayerState {
 
 /**
  * Global science layers on the tileset, kept below the site layers in manifest order,
- * with value grids fetched the first time a layer is shown.
+ * with value grids fetched the first time a layer is shown. A layer is attached to the
+ * tileset only while shown: each attached layer costs the tileset shader a vertex
+ * attribute, and the full manifest has more layers than many GPUs allow.
  */
 export class GlobeGlobalLayers {
   private readonly imagery = new Map<string, ImageryLayer>();
@@ -67,19 +69,20 @@ export class GlobeGlobalLayers {
     private readonly base: string,
     readonly layers: GlobeLayer[],
   ) {
-    for (const [order, layer] of layers.entries()) {
-      const imagery = new ImageryLayer(createGlobalImagery(base, layer), { show: false });
-      target.add(imagery);
-      orderImageryLayer(target, imagery, imageryLayerRank('whole-planet', order));
-      this.imagery.set(layer.id, imagery);
-    }
+    for (const layer of layers) this.imagery.set(layer.id, new ImageryLayer(createGlobalImagery(base, layer)));
   }
 
   apply(states: Record<string, GlobalLayerState>): void {
-    for (const layer of this.layers) {
+    for (const [order, layer] of this.layers.entries()) {
       const imagery = this.imagery.get(layer.id)!;
       const state = states[layer.id];
-      imagery.show = !!state?.enabled;
+      const attached = this.target.contains(imagery);
+      if (state?.enabled && !attached) {
+        this.target.add(imagery);
+        orderImageryLayer(this.target, imagery, imageryLayerRank('whole-planet', order));
+      } else if (!state?.enabled && attached) {
+        this.target.remove(imagery, false);
+      }
       imagery.alpha = state?.opacity ?? 1;
       if (state?.enabled && layer.values) this.values(layer.id).catch((error) => console.warn(`Values for ${layer.id} did not load`, error));
     }
@@ -105,14 +108,17 @@ export class GlobeGlobalLayers {
   readouts(lon: number, lat: number): string[] {
     return this.layers.flatMap((layer) => {
       const grid = this.grids.get(layer.id);
-      if (!grid || !this.imagery.get(layer.id)!.show) return [];
+      if (!grid || !this.target.contains(this.imagery.get(layer.id)!)) return [];
       const value = readValue(grid, lon, lat);
       return value === null ? [] : [formatGlobalValue(layer, value)];
     });
   }
 
   destroy(): void {
-    for (const imagery of this.imagery.values()) this.target.remove(imagery, true);
+    for (const imagery of this.imagery.values()) {
+      if (this.target.contains(imagery)) this.target.remove(imagery, true);
+      else imagery.destroy();
+    }
     this.imagery.clear();
   }
 }

@@ -5,6 +5,7 @@
 
 import {
   Cartesian2,
+  Cartesian3,
   Color,
   ConstantProperty,
   CustomDataSource,
@@ -36,9 +37,19 @@ export const CAVE_HOVER = 'unexplored, from orbit';
 const CAVE_LABEL_HEIGHT_M = 1_500_000;
 /** Screen cell for cave thinning: about one entry marker. */
 const CAVE_CELL_PX = 14;
-/** Above this camera height the far side of the planet can hide marks, so they test for it. */
-const OCCLUSION_HEIGHT_M = 100_000;
+/**
+ * Marks past the horizon are hidden. The horizon is tested against the Mars ellipsoid shrunk
+ * below the deepest ground (Hellas, about 8 km under the datum), so it holds with the camera
+ * low inside a basin.
+ */
+const HORIZON_ELLIPSOID = new Ellipsoid(
+  Ellipsoid.MARS.radii.x - 10_000,
+  Ellipsoid.MARS.radii.y - 10_000,
+  Ellipsoid.MARS.radii.z - 10_000,
+);
 const LABEL_GAP_PX = 4;
+/** Map label size, as --text-sm. */
+const LABEL_PX = 13;
 const LABEL_HEIGHT_PX = 18;
 const ELEVATION_LAYER = 'elevation_m';
 
@@ -132,8 +143,10 @@ export class ExploreAnnotations {
     private readonly options: AnnotationsOptions,
   ) {
     this.images = annotationImages();
-    this.font = `600 13px ${readToken('--font-data') || 'sans-serif'}`;
-    this.measure.font = this.font;
+    // Labels rasterise at twice their size and draw at half scale, so they stay crisp.
+    const family = readToken('--font-data') || 'sans-serif';
+    this.font = `600 ${LABEL_PX * 2}px ${family}`;
+    this.measure.font = `600 ${LABEL_PX}px ${family}`;
     this.labelFill = Color.fromCssColorString(readToken('--map-label-text'));
     this.labelHalo = Color.fromCssColorString(readToken('--map-label-halo'));
     this.sources.caves.show = false;
@@ -218,7 +231,8 @@ export class ExploreAnnotations {
       font: this.font,
       fillColor: this.labelFill,
       outlineColor: this.labelHalo,
-      outlineWidth: 3,
+      outlineWidth: 5,
+      scale: 0.5,
       style: LabelStyle.FILL_AND_OUTLINE,
       horizontalOrigin: HorizontalOrigin.LEFT,
       verticalOrigin: VerticalOrigin.CENTER,
@@ -352,32 +366,57 @@ export class ExploreAnnotations {
     this.frameKey = key;
 
     const cameraHeight = camera.positionCartographic.height;
-    const occluder = cameraHeight > OCCLUSION_HEIGHT_M ? new EllipsoidalOccluder(Ellipsoid.MARS, camera.positionWC) : null;
+    const occluder = new EllipsoidalOccluder(HORIZON_ELLIPSOID, camera.positionWC);
+    const toPoint = new Cartesian3();
+    // Offline the planet is the plain ellipsoid globe; online it is the Cesium Mars tileset,
+    // whose ground the whole-planet elevation grid approximates.
+    const offline = !!scene.globe?.show;
     const project = (lon: number, lat: number): Cartesian2 | null => {
-      const ground = this.elevation ? readValue(this.elevation, lon, lat) ?? 0 : 0;
-      const world = lonLatToCartesian(lon, lat, scene.globe.show ? 0 : ground);
-      if (occluder && !occluder.isPointVisible(world)) return null;
+      const ground = !offline && this.elevation ? readValue(this.elevation, lon, lat) ?? 0 : 0;
+      const world = lonLatToCartesian(lon, lat, ground);
+      if (!occluder.isPointVisible(world)) return null;
+      if (Cartesian3.dot(Cartesian3.subtract(world, camera.positionWC, toPoint), camera.directionWC) <= 0) return null;
       const p = SceneTransforms.worldToWindowCoordinates(scene, world);
       return p && p.x >= 0 && p.y >= 0 && p.x <= width && p.y <= height ? p : null;
     };
 
-    const blocked: Rect[] = this.panelRects();
+    // Everything beyond the canvas edges counts as blocked, so no label is cut off.
+    const far = 1e6;
+    const blocked: Rect[] = [
+      ...this.panelRects(),
+      [width, -far, far, far],
+      [-far, height, far, far],
+      [-far, -far, 0, far],
+      [-far, -far, far, 0],
+    ];
     const labels: { mark: Mark; box: LabelBox }[] = [];
     const place = (mark: Mark, p: Cartesian2) => {
       const left = p.x + mark.half + LABEL_GAP_PX;
       labels.push({
         mark,
-        box: { rect: [left, p.y - LABEL_HEIGHT_PX / 2, left + this.textWidth(mark.label), p.y + LABEL_HEIGHT_PX / 2], priority: mark.priority },
+        // A gap's width of clear space after the text keeps neighbouring labels apart.
+        box: {
+          rect: [left, p.y - LABEL_HEIGHT_PX / 2, left + this.textWidth(mark.label) + LABEL_GAP_PX, p.y + LABEL_HEIGHT_PX / 2],
+          priority: mark.priority,
+        },
       });
     };
 
-    for (const mark of [...this.ranks, ...this.hotspotMarks]) {
+    // Ranked sites and highest values never overlap each other: the better one stays.
+    const marks = [...this.ranks, ...this.hotspotMarks];
+    const markRect = (mark: Mark, p: Cartesian2): Rect => [p.x - mark.half, p.y - mark.half, p.x + mark.half, p.y + mark.half];
+    const onScreenMarks = marks.flatMap((mark) => {
       const p = project(mark.lon, mark.lat);
-      mark.shown = mark.entity.show = !!p;
-      if (!p) continue;
-      blocked.push([p.x - mark.half, p.y - mark.half, p.x + mark.half, p.y + mark.half]);
+      return p ? [{ mark, p }] : [];
+    });
+    const keptMarks = new Set(placeLabels(onScreenMarks.map(({ mark, p }) => ({ rect: markRect(mark, p), priority: mark.priority }))));
+    const shownMarks = new Set<Mark>();
+    onScreenMarks.forEach(({ mark, p }, i) => {
+      if (!keptMarks.has(i)) return;
+      shownMarks.add(mark);
+      blocked.push(markRect(mark, p));
       place(mark, p);
-    }
+    });
 
     const caveLabels = this.input.caves && cameraHeight < CAVE_LABEL_HEIGHT_M;
     if (this.input.caves) {
@@ -395,20 +434,24 @@ export class ExploreAnnotations {
       );
       onScreen.forEach(({ mark, p }, i) => {
         setShow(mark, kept.has(i), false);
-        if (kept.has(i) && caveLabels) place(mark, p);
+        if (!kept.has(i)) return;
+        // Labels never cover a drawn triangle.
+        blocked.push(markRect(mark, p));
+        if (caveLabels) place(mark, p);
       });
     }
 
     const placed = new Set(placeLabels(labels.map((l) => l.box), blocked));
-    labels.forEach(({ mark }, i) => setShow(mark, mark.shown, placed.has(i)));
-    for (const mark of [...this.ranks, ...this.hotspotMarks]) if (!mark.shown) setShow(mark, false, false);
+    labels.forEach(({ mark }, i) => setShow(mark, true, placed.has(i)));
+    for (const mark of marks) if (!shownMarks.has(mark)) setShow(mark, false, false);
     scene.requestRender();
   }
 
-  /** Elements drawn over the map, in canvas pixels, so labels stay out from under them. */
+  /** Elements drawn over the map and the map credits, in canvas pixels, so labels stay clear of them. */
   private panelRects(): Rect[] {
     const canvas = this.viewer.scene.canvas.getBoundingClientRect();
-    return this.options.blockers().map((el) => {
+    const credits = this.viewer.container.querySelector('.cesium-widget-credits');
+    return [...this.options.blockers(), ...(credits ? [credits] : [])].map((el) => {
       const r = el.getBoundingClientRect();
       return [r.left - canvas.left, r.top - canvas.top, r.right - canvas.left, r.bottom - canvas.top];
     });
