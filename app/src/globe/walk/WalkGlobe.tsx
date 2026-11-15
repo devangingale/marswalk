@@ -171,7 +171,7 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
       });
       viewer.scene.requestRender();
     } else {
-      overlays.setPlan(sanitizePlanForOverlays(plan, siteData.origin), siteData.origin);
+      overlays.setPlan(sanitizePlanForOverlays(plan), siteData.origin);
 
       const currentPose = poseRef.current;
       const headingDeg = headingFromTrack(track.vertices, currentPose.alongM);
