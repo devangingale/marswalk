@@ -2,11 +2,18 @@ import React, { useMemo, useState } from 'react';
 import type { Plan, PlanParams, PlanStop } from '../lib/plan';
 import type { RouteGrid } from '../lib/grid';
 import { validatePlan } from '../lib/plan';
-import { budgetFractions, removeStop, reorderStop, sampleProfile, updateStop } from './planLogic';
+import { budgetFractions, removeStop, reorderStop, updateStop } from './planLogic';
+import { PlanProfile } from '../globe/plan/PlanProfile';
+import { PlanPace } from '../globe/plan/PlanPace';
+import { MoverPicker, moverBudget, type Mover } from '../globe/plan/MoverPicker';
+import '../globe/plan/plan.css';
 
 interface Props {
   plan: Plan; grid: RouteGrid | null; computing: boolean; onChange: (plan: Plan) => void;
   onImport: (plan: Plan) => void;
+  mover: Mover; onMoverChange: (mover: Mover) => void;
+  activePoint: { lon: number; lat: number } | null;
+  onProfileHover: (point: { lon: number; lat: number } | null) => void;
 }
 
 const fmtDistance = (m: number) => m >= 1000 ? `${(m / 1000).toFixed(1)}\u00a0km` : `${Math.round(m)}\u00a0m`;
@@ -20,40 +27,10 @@ const fmtEnergy = (energy: number) => `${Math.round(energy / 50) * 50}\u00a0kJ`;
 const fmtElevation = (metres: number, sign: '+' | '−') => Math.round(metres) === 0 ? `0\u00a0m` : `${sign}${Math.round(metres)}\u00a0m`;
 const clone = (plan: Plan, patch: Partial<Pick<Plan, 'params' | 'start' | 'stops'>>) => ({ ...plan, ...patch });
 
-export const PlanRail: React.FC<Props> = ({ plan, grid, computing, onChange, onImport }) => {
+export const PlanRail: React.FC<Props> = ({ plan, grid, computing, onChange, onImport, mover, onMoverChange, activePoint, onProfileHover }) => {
   const [paramsOpen, setParamsOpen] = useState(false);
   const fractions = budgetFractions(plan.route.totals, plan.params);
-  const line = useMemo(() => plan.route.legs.flatMap((leg, index) => index ? leg.line.slice(1) : leg.line), [plan.route.legs]);
-  const profile = useMemo(() => grid ? sampleProfile(grid, line) : [], [grid, line]);
-  const maxDistance = profile.at(-1)?.distanceM ?? 0;
-  const turnbackIndex = plan.route.turn_back && grid && profile.length ? profile.reduce((best, sample, index) => {
-    const target = grid.lonlatToLocalMetres(plan.route.turn_back!.lon, plan.route.turn_back!.lat);
-    const point = grid.lonlatToLocalMetres(sample.lon, sample.lat);
-    const bestPoint = grid.lonlatToLocalMetres(profile[best].lon, profile[best].lat);
-    return Math.hypot(target.x_m - point.x_m, target.y_m - point.y_m) < Math.hypot(target.x_m - bestPoint.x_m, target.y_m - bestPoint.y_m) ? index : best;
-  }, 0) : -1;
-  const elevations = profile.map((sample) => sample.elevationM);
-  const minElev = elevations.length ? Math.min(...elevations) : 0;
-  const maxElev = elevations.length ? Math.max(...elevations) : 0;
-  const plotLeft = 38;
-  const plotRight = 350;
-  const plotTop = 12;
-  const plotBottom = 64;
-  const xAt = (distance: number) => plotLeft + (maxDistance ? distance / maxDistance : 0) * (plotRight - plotLeft);
-  const yAt = (elevation: number) => plotBottom - ((elevation - minElev) / Math.max(1, maxElev - minElev)) * (plotBottom - plotTop);
-  const points = profile.map((sample) => `${xAt(sample.distanceM)},${yAt(sample.elevationM)}`).join(' ');
-  const stopPositions = plan.stops.map((stop) => {
-    if (!grid || !profile.length) return null;
-    const target = grid.lonlatToLocalMetres(stop.lon, stop.lat);
-    let closestIndex = 0;
-    let closestDistance = Infinity;
-    profile.forEach((sample, index) => {
-      const point = grid.lonlatToLocalMetres(sample.lon, sample.lat);
-      const distance = Math.hypot(target.x_m - point.x_m, target.y_m - point.y_m);
-      if (distance < closestDistance) { closestDistance = distance; closestIndex = index; }
-    });
-    return closestDistance <= 45 ? closestIndex : null;
-  });
+  const selectedBudget = moverBudget(plan, mover);
   const turnbackFits = Boolean(plan.route.turn_back && plan.route.totals.time_s <= plan.params.time_limit_s && (!plan.params.energy_limit_kj || plan.route.totals.energy_kj <= plan.params.energy_limit_kj));
   const turnbackElapsed = useMemo(() => {
     if (!plan.route.turn_back) return 0;
@@ -109,29 +86,16 @@ export const PlanRail: React.FC<Props> = ({ plan, grid, computing, onChange, onI
     {plan.stops.length > 0 && <section className="plan-section plan-budget" aria-labelledby="plan-budget-heading">
       <div className="plan-rail__head"><h2 id="plan-budget-heading">Budget</h2></div>
       <Budget label="Distance" value={fmtDistance(plan.route.totals.distance_m)} />
-      <Budget label="Time" value={fmtTime(plan.route.totals.time_s)} limit={fmtTime(plan.params.time_limit_s)} fraction={fractions.time} />
+      <Budget label="Time" value={selectedBudget.feasible ? fmtTime(selectedBudget.timeS) : 'Impassable'} limit={fmtTime(plan.params.time_limit_s)} fraction={selectedBudget.feasible ? selectedBudget.timeS / plan.params.time_limit_s : 2} />
       <div className="plan-budget__pair"><span>Climb</span><b>{fmtElevation(plan.route.totals.climb_m, '+')}</b><span>Descent</span><b>{fmtElevation(plan.route.totals.descent_m, '−')}</b></div>
       <Budget label="Energy" value={fmtEnergy(plan.route.totals.energy_kj)} limit={plan.params.energy_limit_kj ? `${Math.round(plan.params.energy_limit_kj)}\u00a0kJ` : undefined} fraction={plan.params.energy_limit_kj ? fractions.energy : undefined} />
       <Budget label="Radiation dose" value={fmtDose(plan.route.totals.dose_mgy)} />
       <div className="plan-turnback"><span>Turn-back</span><b>{!plan.route.turn_back || turnbackFits ? 'Not needed' : `Turn back by ${fmtTime(turnbackElapsed)} (${plan.route.turn_back.reason} limit)`}</b></div>
     </section>}
 
-    {plan.stops.length > 0 && <section className="plan-section plan-profile" aria-labelledby="plan-profile-heading">
-      <div className="plan-rail__head"><h2 id="plan-profile-heading">Elevation profile</h2></div>
-      <svg viewBox="0 0 360 88" role="img" aria-label="Elevation along route">
-        <line x1={plotLeft} y1={plotTop} x2={plotLeft} y2={plotBottom} className="profile-axis" />
-        <line x1={plotLeft} y1={plotBottom} x2={plotRight} y2={plotBottom} className="profile-axis" />
-        {elevations.length > 0 && <><text x="0" y={plotTop + 4} className="profile-label">{`${maxElev.toFixed(0)}\u00a0m`}</text><text x="0" y={plotBottom} className="profile-label">{`${minElev.toFixed(0)}\u00a0m`}</text></>}
-        {profile.length > 1 && <polyline points={points} className="profile-line" />}
-        {stopPositions.map((sampleIndex, index) => sampleIndex !== null && <g key={plan.stops[index].id}>
-          <line x1={xAt(profile[sampleIndex].distanceM)} x2={xAt(profile[sampleIndex].distanceM)} y1={plotTop} y2={plotBottom} className="profile-stop" />
-          <text x={xAt(profile[sampleIndex].distanceM)} y={plotTop + 10} textAnchor="middle" className="profile-stop-label">{index + 1}</text>
-        </g>)}
-        {turnbackIndex >= 0 && !turnbackFits && <g><path d={`M ${xAt(profile[turnbackIndex].distanceM) - 4} 2 l 8 0 l -4 6 z`} className="profile-turn" /><text x={xAt(profile[turnbackIndex].distanceM)} y="10" textAnchor="middle" className="profile-turn-label">T</text></g>}
-        <text x={plotLeft} y="82" className="profile-label">0</text><text x={plotRight} y="82" textAnchor="end" className="profile-label">{fmtDistance(maxDistance)}</text>
-      </svg>
-      {turnbackIndex >= 0 && !turnbackFits && <p className="plan-profile__turnback">T · Turn-back point</p>}
-    </section>}
+    <MoverPicker plan={plan} mover={mover} onChange={onMoverChange} />
+    {plan.stops.length > 0 && <PlanProfile plan={plan} grid={grid} activePoint={activePoint} onHover={onProfileHover} />}
+    {plan.stops.length > 0 && <PlanPace plan={plan} moverTimeS={selectedBudget.timeS} />}
 
     <details className="plan-params" open={paramsOpen} onToggle={(event) => setParamsOpen((event.currentTarget as HTMLDetailsElement).open)}>
       <summary>Parameters</summary>

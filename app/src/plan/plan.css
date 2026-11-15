@@ -13,7 +13,7 @@
 }
 
 .plan-body > .panel { grid-column: 1; grid-row: 1; min-width: 0; height: 100%; }
-.plan-body > .mapbox { grid-column: 2; grid-row: 1; min-width: 0; min-height: 0; height: 100%; }
+.plan-body > .globe-plan-map { grid-column: 2; grid-row: 1; min-width: 0; min-height: 0; height: 100%; }
 .plan-body > .plan-rail { grid-column: 3; grid-row: 1; }
 
 .plan-rail {
