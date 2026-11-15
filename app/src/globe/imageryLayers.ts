@@ -153,6 +153,7 @@ export class GlobeImagery {
         resolveSiteAssetUrl(site.id, source.url),
         source.source || undefined,
         enabled,
+        this.onTileReady,
       );
       if (generation !== this.tintGeneration || this.site !== site) return;
       const replacement = new ImageryLayer(provider, { show, alpha });
