@@ -355,21 +355,17 @@ export function buildPlan(input: BuildPlanInput): Plan {
     dwell_s: number;
   }
 
-  const waypoints: Waypoint[] = [
-    { id: 'start', name: start.label || 'Rover drop-off', lon: start.lon, lat: start.lat, dwell_s: 0 },
-    ...stops.map((s) => ({
-      id: s.id,
-      name: s.name,
-      lon: s.lon,
-      lat: s.lat,
-      dwell_s: s.dwell_s ?? params.stop_time_s,
-    })),
-  ];
-
-  waypoints.push({ id: 'start', name: start.label || 'Rover drop-off', lon: start.lon, lat: start.lat, dwell_s: 0 });
+  let currentWp: Waypoint = {
+    id: 'start',
+    name: start.label || 'Rover drop-off',
+    lon: start.lon,
+    lat: start.lat,
+    dwell_s: 0,
+  };
 
   const rawLegResults: LegPathResult[] = [];
   const planLegs: PlanLeg[] = [];
+  const reachedStopIds = new Set<string>();
 
   let totalDistanceM = 0;
   let totalWalkTimeS = 0;
@@ -377,11 +373,16 @@ export function buildPlan(input: BuildPlanInput): Plan {
   let totalDescentM = 0;
   let totalEnergyKj = 0;
 
-  for (let i = 0; i < waypoints.length - 1; i++) {
-    const fromWp = waypoints[i];
-    const toWp = waypoints[i + 1];
+  for (const stop of stops) {
+    const toWp: Waypoint = {
+      id: stop.id,
+      name: stop.name,
+      lon: stop.lon,
+      lat: stop.lat,
+      dwell_s: stop.dwell_s ?? params.stop_time_s,
+    };
 
-    const fromRc = grid.lonlatToRowCol(fromWp.lon, fromWp.lat);
+    const fromRc = grid.lonlatToRowCol(currentWp.lon, currentWp.lat);
     const toRc = grid.lonlatToRowCol(toWp.lon, toWp.lat);
 
     const legResult = findPath(grid, fromRc, toRc, {
@@ -389,30 +390,19 @@ export function buildPlan(input: BuildPlanInput): Plan {
       suitMassKg: params.suit_mass_kg,
     });
 
-    rawLegResults.push(legResult);
-
     if (!legResult.feasible) {
       overallFeasible = false;
-      const warnMsg = legResult.warning || `Cannot reach stop '${toWp.name}' (${toWp.id}) due to impassable terrain.`;
-      warnings.push(warnMsg);
-
-      planLegs.push({
-        from: fromWp.id,
-        to: toWp.id,
-        line: [],
-        distance_m: 0,
-        time_s: 0,
-        climb_m: 0,
-        descent_m: 0,
-        energy_kj: 0,
-        max_slope_deg: 0,
-      });
+      warnings.push(`Can't reach ${toWp.name}. Move or remove it.`);
+      // Skip this unreachable stop; next leg will route from currentWp
       continue;
     }
 
+    rawLegResults.push(legResult);
+    reachedStopIds.add(stop.id);
+
     const rawCoords: [number, number][] = legResult.steps.map((st) => [st.lon, st.lat]);
     if (rawCoords.length > 0) {
-      rawCoords[0] = [fromWp.lon, fromWp.lat];
+      rawCoords[0] = [currentWp.lon, currentWp.lat];
       rawCoords[rawCoords.length - 1] = [toWp.lon, toWp.lat];
     }
 
@@ -425,7 +415,7 @@ export function buildPlan(input: BuildPlanInput): Plan {
     totalEnergyKj += legResult.energy_kj;
 
     planLegs.push({
-      from: fromWp.id,
+      from: currentWp.id,
       to: toWp.id,
       line: densifiedLine,
       distance_m: Math.round(legResult.distance_m),
@@ -435,11 +425,65 @@ export function buildPlan(input: BuildPlanInput): Plan {
       energy_kj: Math.round(legResult.energy_kj),
       max_slope_deg: Number(legResult.max_slope_deg.toFixed(1)),
     });
+
+    currentWp = toWp;
+  }
+
+  // Return to start if we moved away from start
+  if (currentWp.id !== 'start') {
+    const returnWp: Waypoint = {
+      id: 'start',
+      name: start.label || 'Rover drop-off',
+      lon: start.lon,
+      lat: start.lat,
+      dwell_s: 0,
+    };
+    const fromRc = grid.lonlatToRowCol(currentWp.lon, currentWp.lat);
+    const toRc = grid.lonlatToRowCol(returnWp.lon, returnWp.lat);
+
+    const legResult = findPath(grid, fromRc, toRc, {
+      bodyMassKg: params.body_mass_kg,
+      suitMassKg: params.suit_mass_kg,
+    });
+
+    if (!legResult.feasible) {
+      overallFeasible = false;
+      warnings.push("Can't return to Rover drop-off. Move it.");
+    } else {
+      rawLegResults.push(legResult);
+
+      const rawCoords: [number, number][] = legResult.steps.map((st) => [st.lon, st.lat]);
+      if (rawCoords.length > 0) {
+        rawCoords[0] = [currentWp.lon, currentWp.lat];
+        rawCoords[rawCoords.length - 1] = [returnWp.lon, returnWp.lat];
+      }
+
+      const densifiedLine = densifyLine(rawCoords, grid.origin, 4.0);
+
+      totalDistanceM += legResult.distance_m;
+      totalWalkTimeS += legResult.time_s;
+      totalClimbM += legResult.climb_m;
+      totalDescentM += legResult.descent_m;
+      totalEnergyKj += legResult.energy_kj;
+
+      planLegs.push({
+        from: currentWp.id,
+        to: returnWp.id,
+        line: densifiedLine,
+        distance_m: Math.round(legResult.distance_m),
+        time_s: Math.round(legResult.time_s),
+        climb_m: Math.round(legResult.climb_m),
+        descent_m: Math.round(legResult.descent_m),
+        energy_kj: Math.round(legResult.energy_kj),
+        max_slope_deg: Number(legResult.max_slope_deg.toFixed(1)),
+      });
+    }
   }
 
   let totalDwellTimeS = 0;
   let totalDwellEnergyKj = 0;
   for (const st of stops) {
+    if (!reachedStopIds.has(st.id)) continue;
     const dwellS = st.dwell_s ?? params.stop_time_s;
     totalDwellTimeS += dwellS;
     totalDwellEnergyKj += dwellEnergyKj(dwellS, params.body_mass_kg, params.suit_mass_kg);
@@ -451,8 +495,9 @@ export function buildPlan(input: BuildPlanInput): Plan {
   const totalDoseMgy = calculateRadiationDose(totalTimeS, params.solar_event, surfaceDoseRate, solarEventRate);
 
   let turnBack: PlanTurnBack | null = null;
-  if (overallFeasible) {
-    turnBack = computeTurnBack(rawLegResults, stops, params, grid);
+  if (rawLegResults.length > 0) {
+    const reachedStopsList = stops.filter((s) => reachedStopIds.has(s.id));
+    turnBack = computeTurnBack(rawLegResults, reachedStopsList, params, grid);
   }
 
   const totals: PlanTotals = {

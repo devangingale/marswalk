@@ -7,6 +7,7 @@ import { PlanProfile } from '../globe/plan/PlanProfile';
 import { PlanPace } from '../globe/plan/PlanPace';
 import { MoverPicker, moverBudget, type Mover } from '../globe/plan/MoverPicker';
 import '../globe/plan/plan.css';
+import './snap.css';
 
 interface Props {
   plan: Plan; grid: RouteGrid | null; computing: boolean; onChange: (plan: Plan) => void;
@@ -14,6 +15,7 @@ interface Props {
   mover: Mover; onMoverChange: (mover: Mover) => void;
   activePoint: { lon: number; lat: number } | null;
   onProfileHover: (point: { lon: number; lat: number } | null) => void;
+  stopNotices?: Record<string, string>;
 }
 
 const fmtDistance = (m: number) => m >= 1000 ? `${(m / 1000).toFixed(1)}\u00a0km` : `${Math.round(m)}\u00a0m`;
@@ -27,7 +29,7 @@ const fmtEnergy = (energy: number) => `${Math.round(energy / 50) * 50}\u00a0kJ`;
 const fmtElevation = (metres: number, sign: '+' | '−') => Math.round(metres) === 0 ? `0\u00a0m` : `${sign}${Math.round(metres)}\u00a0m`;
 const clone = (plan: Plan, patch: Partial<Pick<Plan, 'params' | 'start' | 'stops'>>) => ({ ...plan, ...patch });
 
-export const PlanRail: React.FC<Props> = ({ plan, grid, computing, onChange, onImport, mover, onMoverChange, activePoint, onProfileHover }) => {
+export const PlanRail: React.FC<Props> = ({ plan, grid, computing, onChange, onImport, mover, onMoverChange, activePoint, onProfileHover, stopNotices }) => {
   const [paramsOpen, setParamsOpen] = useState(false);
   const fractions = budgetFractions(plan.route.totals, plan.params);
   const selectedBudget = moverBudget(plan, mover);
@@ -37,8 +39,11 @@ export const PlanRail: React.FC<Props> = ({ plan, grid, computing, onChange, onI
     const legIndex = Math.max(0, Math.min(plan.route.turn_back.leg, plan.route.legs.length - 1));
     const leg = plan.route.legs[legIndex];
     if (!leg) return 0;
-    const before = plan.route.legs.slice(0, legIndex).reduce((sum, item) => sum + item.time_s, 0)
-      + plan.stops.slice(0, legIndex).reduce((sum, stop) => sum + (stop.dwell_s ?? plan.params.stop_time_s), 0);
+    const before = plan.route.legs.slice(0, legIndex).reduce((sum, item) => {
+      const stop = plan.stops.find((s) => s.id === item.to);
+      const dwell = stop ? (stop.dwell_s ?? plan.params.stop_time_s) : 0;
+      return sum + item.time_s + dwell;
+    }, 0);
     let traveled = 0;
     let closestAlong = 0;
     let closest = Infinity;
@@ -79,14 +84,15 @@ export const PlanRail: React.FC<Props> = ({ plan, grid, computing, onChange, onI
             <button type="button" aria-label={`Move ${stop.name} down`} disabled={index === plan.stops.length - 1} onClick={() => onChange(clone(plan, { stops: reorderStop(plan.stops, index, index + 1) }))}>↓</button>
             <button type="button" aria-label={`Remove ${stop.name}`} onClick={() => onChange(clone(plan, { stops: removeStop(plan.stops, stop.id) }))}>×</button>
           </div>
+          {stopNotices?.[stop.id] && <p className="plan-stop-notice">{stopNotices[stop.id]}</p>}
         </li>)}</ol>}
-      {!!plan.route.warnings.length && <p className="plan-rail__warning">{plan.route.warnings[0]}</p>}
+      {!!plan.route.warnings.length && plan.route.warnings.map((w, idx) => <p key={idx} className="plan-rail__warning">{w}</p>)}
     </section>
 
     {plan.stops.length > 0 && <section className="plan-section plan-budget" aria-labelledby="plan-budget-heading">
       <div className="plan-rail__head"><h2 id="plan-budget-heading">Budget</h2></div>
       <Budget label="Distance" value={fmtDistance(plan.route.totals.distance_m)} />
-      <Budget label="Time" value={selectedBudget.feasible ? fmtTime(selectedBudget.timeS) : 'Impassable'} limit={fmtTime(plan.params.time_limit_s)} fraction={selectedBudget.feasible ? selectedBudget.timeS / plan.params.time_limit_s : 2} />
+      <Budget label="Time" value={selectedBudget.feasible || plan.route.legs.length > 0 ? fmtTime(selectedBudget.timeS) : 'Impassable'} limit={fmtTime(plan.params.time_limit_s)} fraction={selectedBudget.feasible || plan.route.legs.length > 0 ? selectedBudget.timeS / plan.params.time_limit_s : 2} />
       <div className="plan-budget__pair"><span>Climb</span><b>{fmtElevation(plan.route.totals.climb_m, '+')}</b><span>Descent</span><b>{fmtElevation(plan.route.totals.descent_m, '−')}</b></div>
       <Budget label="Energy" value={fmtEnergy(plan.route.totals.energy_kj)} limit={plan.params.energy_limit_kj ? `${Math.round(plan.params.energy_limit_kj)}\u00a0kJ` : undefined} fraction={plan.params.energy_limit_kj ? fractions.energy : undefined} />
       <Budget label="Radiation dose" value={fmtDose(plan.route.totals.dose_mgy)} />
