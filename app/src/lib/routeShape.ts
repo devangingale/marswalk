@@ -106,9 +106,9 @@ function getToLabel(to: string): string {
  * Splits the union of all leg lines into stretches; each stretch lists every
  * leg index that walks it and whether that leg walks it in the stretch's own
  * direction ('fwd') or reversed ('back'). Points of different legs within
- * `matchToleranceM` (default `toleranceM`) count as the same ground. Vertices are
- * clustered transitively, so keep it below the line's vertex spacing: a larger value
- * merges a densified route into one cluster.
+ * `matchToleranceM` (default `toleranceM`) count as the same ground.
+ * Vertices of the same leg are only matched if separated by > 3 * toleranceM
+ * along the path (genuine revisits).
  */
 export function sharedSegments(
   legs: PlanLeg[],
@@ -118,108 +118,509 @@ export function sharedSegments(
 ): SharedSegment[] {
   if (legs.length === 0) return [];
   const effectiveMatchToleranceM = Math.max(toleranceM, matchToleranceM);
+  const revisitThresholdM = 3 * toleranceM;
 
   // Convert all legs to local points
   const rawLegs = legs.map((leg) => toLocalPoints(leg.line, origin));
 
-  // Step 1: Project vertices onto segments of other legs to detect T-junctions or partial overlaps
-  const splitLegs: LocalPoint[][] = rawLegs.map((pts) => pts.map((p) => ({ ...p })));
+  // Compute cumulative path distances and unit tangents for each leg
+  const rawPathDists: number[][] = rawLegs.map((pts) => {
+    const dists: number[] = [0];
+    for (let i = 1; i < pts.length; i++) {
+      dists.push(dists[i - 1] + distLocal(pts[i - 1], pts[i]));
+    }
+    return dists;
+  });
 
-  for (let l1 = 0; l1 < rawLegs.length; l1++) {
-    for (const v of rawLegs[l1]) {
-      for (let l2 = 0; l2 < splitLegs.length; l2++) {
-        const line = splitLegs[l2];
-        for (let s = 0; s < line.length - 1; s++) {
-          const a = line[s];
-          const b = line[s + 1];
-          const dx = b.x_m - a.x_m;
-          const dy = b.y_m - a.y_m;
-          const segLenSq = dx * dx + dy * dy;
-          if (segLenSq === 0) continue;
+  const rawTanX: Float64Array[] = [];
+  const rawTanY: Float64Array[] = [];
+  for (let l = 0; l < rawLegs.length; l++) {
+    const pts = rawLegs[l];
+    const n = pts.length;
+    const tx = new Float64Array(n);
+    const ty = new Float64Array(n);
+    if (n >= 2) {
+      for (let i = 0; i < n; i++) {
+        let dx = 0;
+        let dy = 0;
+        if (i === 0) {
+          dx = pts[1].x_m - pts[0].x_m;
+          dy = pts[1].y_m - pts[0].y_m;
+        } else if (i === n - 1) {
+          dx = pts[n - 1].x_m - pts[n - 2].x_m;
+          dy = pts[n - 1].y_m - pts[n - 2].y_m;
+        } else {
+          dx = pts[i + 1].x_m - pts[i - 1].x_m;
+          dy = pts[i + 1].y_m - pts[i - 1].y_m;
+        }
+        const h = Math.hypot(dx, dy);
+        if (h > 0) {
+          tx[i] = dx / h;
+          ty[i] = dy / h;
+        }
+      }
+    }
+    rawTanX.push(tx);
+    rawTanY.push(ty);
+  }
 
-          const t = ((v.x_m - a.x_m) * dx + (v.y_m - a.y_m) * dy) / segLenSq;
-          if (t > 1e-4 && t < 1 - 1e-4) {
-            const projX = a.x_m + t * dx;
-            const projY = a.y_m + t * dy;
-            const dist = Math.hypot(v.x_m - projX, v.y_m - projY);
-            if (dist <= effectiveMatchToleranceM) {
-              const { lon, lat } = localMetresToLonLat(projX, projY, origin);
-              line.splice(s + 1, 0, { lon, lat, x_m: projX, y_m: projY });
-              break;
+  // Compute leg bounding boxes to quickly bypass non-overlapping legs
+  const legMinX = new Float64Array(rawLegs.length);
+  const legMaxX = new Float64Array(rawLegs.length);
+  const legMinY = new Float64Array(rawLegs.length);
+  const legMaxY = new Float64Array(rawLegs.length);
+  const legHasCandidateOverlap = new Uint8Array(rawLegs.length);
+
+  for (let l = 0; l < rawLegs.length; l++) {
+    let mnx = Infinity, mxx = -Infinity, mny = Infinity, mxy = -Infinity;
+    const pts = rawLegs[l];
+    for (let i = 0; i < pts.length; i++) {
+      const x = pts[i].x_m;
+      const y = pts[i].y_m;
+      if (x < mnx) mnx = x;
+      if (x > mxx) mxx = x;
+      if (y < mny) mny = y;
+      if (y > mxy) mxy = y;
+    }
+    legMinX[l] = mnx - effectiveMatchToleranceM;
+    legMaxX[l] = mxx + effectiveMatchToleranceM;
+    legMinY[l] = mny - effectiveMatchToleranceM;
+    legMaxY[l] = mxy + effectiveMatchToleranceM;
+  }
+
+  for (let l2 = 0; l2 < rawLegs.length; l2++) {
+    for (let l1 = 0; l1 < rawLegs.length; l1++) {
+      if (l1 === l2) continue;
+      if (
+        legMinX[l1] <= legMaxX[l2] && legMaxX[l1] >= legMinX[l2] &&
+        legMinY[l1] <= legMaxY[l2] && legMaxY[l1] >= legMinY[l2]
+      ) {
+        legHasCandidateOverlap[l2] = 1;
+        break;
+      }
+    }
+  }
+
+  // Step 1: Project vertices onto segments to detect T-junctions or partial overlaps
+  let totalRawV = 0;
+  for (let l = 0; l < rawLegs.length; l++) {
+    totalRawV += rawLegs[l].length;
+  }
+
+  const step1CellSize = Math.max(effectiveMatchToleranceM * 2, 10);
+  const HASH_SIZE_1 = Math.max(1024, 1 << Math.ceil(Math.log2(totalRawV * 2 + 1)));
+  const HASH_MASK_1 = HASH_SIZE_1 - 1;
+  const head1 = new Int32Array(HASH_SIZE_1).fill(-1);
+  const next1 = new Int32Array(totalRawV);
+  const v1CX = new Int32Array(totalRawV);
+  const v1CY = new Int32Array(totalRawV);
+  const v1Leg = new Int32Array(totalRawV);
+  const v1Idx = new Int32Array(totalRawV);
+  const v1X = new Float64Array(totalRawV);
+  const v1Y = new Float64Array(totalRawV);
+
+  let rawVCount = 0;
+  for (let l = 0; l < rawLegs.length; l++) {
+    const pts = rawLegs[l];
+    for (let i = 0; i < pts.length; i++) {
+      const vid = rawVCount++;
+      const p = pts[i];
+      const cx = Math.floor(p.x_m / step1CellSize);
+      const cy = Math.floor(p.y_m / step1CellSize);
+      v1CX[vid] = cx;
+      v1CY[vid] = cy;
+      v1Leg[vid] = l;
+      v1Idx[vid] = i;
+      v1X[vid] = p.x_m;
+      v1Y[vid] = p.y_m;
+
+      const h = ((cx * 73856093) ^ (cy * 19349663)) & HASH_MASK_1;
+      next1[vid] = head1[h];
+      head1[h] = vid;
+    }
+  }
+
+  interface SplitPoint extends LocalPoint {
+    ux: number;
+    uy: number;
+  }
+  const splitLegs: SplitPoint[][] = [];
+  const tolSq = effectiveMatchToleranceM * effectiveMatchToleranceM;
+  const projections: { t: number; x: number; y: number }[] = [];
+
+  for (let l2 = 0; l2 < rawLegs.length; l2++) {
+    const line = rawLegs[l2];
+    if (line.length < 2 || legHasCandidateOverlap[l2] === 0) {
+      splitLegs.push(line.map((p, idx) => ({ ...p, ux: rawTanX[l2][idx] ?? 0, uy: rawTanY[l2][idx] ?? 0 })));
+      continue;
+    }
+
+    const t0x = rawTanX[l2][0];
+    const t0y = rawTanY[l2][0];
+    const newLine: SplitPoint[] = [{ ...line[0], ux: t0x, uy: t0y }];
+
+    for (let s = 0; s < line.length - 1; s++) {
+      const a = line[s];
+      const b = line[s + 1];
+      const dx = b.x_m - a.x_m;
+      const dy = b.y_m - a.y_m;
+      const segLenSq = dx * dx + dy * dy;
+
+      if (segLenSq === 0) {
+        newLine.push({ ...b, ux: rawTanX[l2][s + 1], uy: rawTanY[l2][s + 1] });
+        continue;
+      }
+      const segLen = Math.sqrt(segLenSq);
+      const invSegLenSq = 1 / segLenSq;
+      const sUx = dx / segLen;
+      const sUy = dy / segLen;
+
+      const minX = Math.min(a.x_m, b.x_m) - effectiveMatchToleranceM;
+      const maxX = Math.max(a.x_m, b.x_m) + effectiveMatchToleranceM;
+      const minY = Math.min(a.y_m, b.y_m) - effectiveMatchToleranceM;
+      const maxY = Math.max(a.y_m, b.y_m) + effectiveMatchToleranceM;
+
+      const minCX = Math.floor(minX / step1CellSize);
+      const maxCX = Math.floor(maxX / step1CellSize);
+      const minCY = Math.floor(minY / step1CellSize);
+      const maxCY = Math.floor(maxY / step1CellSize);
+
+      projections.length = 0;
+
+      for (let cx = minCX; cx <= maxCX; cx++) {
+        for (let cy = minCY; cy <= maxCY; cy++) {
+          const h = ((cx * 73856093) ^ (cy * 19349663)) & HASH_MASK_1;
+          for (let vid = head1[h]; vid !== -1; vid = next1[vid]) {
+            if (v1Leg[vid] === l2) continue;
+            if (v1CX[vid] !== cx || v1CY[vid] !== cy) continue;
+
+            const vx = v1X[vid];
+            if (vx < minX || vx > maxX) continue;
+            const vy = v1Y[vid];
+            if (vy < minY || vy > maxY) continue;
+
+            const cLeg = v1Leg[vid];
+            const cIdx = v1Idx[vid];
+
+            const isEndpoint = cIdx === 0 || cIdx === rawLegs[cLeg].length - 1;
+            const cosAlign = Math.abs(rawTanX[cLeg][cIdx] * sUx + rawTanY[cLeg][cIdx] * sUy);
+
+            if (!isEndpoint && cosAlign < 0.707) {
+              continue;
+            }
+
+            if (isEndpoint) {
+              const distA = Math.hypot(vx - a.x_m, vy - a.y_m);
+              const distB = Math.hypot(vx - b.x_m, vy - b.y_m);
+              if (distA <= effectiveMatchToleranceM || distB <= effectiveMatchToleranceM) {
+                continue;
+              }
+            }
+
+            const t = ((vx - a.x_m) * dx + (vy - a.y_m) * dy) * invSegLenSq;
+            if (t > 1e-4 && t < 1 - 1e-4) {
+              const projX = a.x_m + t * dx;
+              const projY = a.y_m + t * dy;
+              const ddx = vx - projX;
+              const ddy = vy - projY;
+              const distSq = ddx * ddx + ddy * ddy;
+              if (distSq <= tolSq) {
+                projections.push({ t, x: projX, y: projY });
+              }
+            }
+          }
+        }
+      }
+
+      if (projections.length > 0) {
+        projections.sort((p1, p2) => p1.t - p2.t);
+        let lastT = -1;
+        for (let pi = 0; pi < projections.length; pi++) {
+          const proj = projections[pi];
+          if (proj.t - lastT > 1e-4) {
+            const { lon, lat } = localMetresToLonLat(proj.x, proj.y, origin);
+            newLine.push({ lon, lat, x_m: proj.x, y_m: proj.y, ux: sUx, uy: sUy });
+            lastT = proj.t;
+          }
+        }
+      }
+
+      newLine.push({ ...b, ux: rawTanX[l2][s + 1], uy: rawTanY[l2][s + 1] });
+    }
+
+    splitLegs.push(newLine);
+  }
+
+  // Step 2: Cluster vertices within toleranceM, allowing matches only across
+  // different legs or between genuine revisits on the same leg (> 3 * toleranceM).
+  let totalV = 0;
+  for (let l = 0; l < splitLegs.length; l++) {
+    totalV += splitLegs[l].length;
+  }
+
+  const posX = new Float64Array(totalV);
+  const posY = new Float64Array(totalV);
+  const tanX = new Float64Array(totalV);
+  const tanY = new Float64Array(totalV);
+  const legOf = new Int32Array(totalV);
+  const pathOf = new Float64Array(totalV);
+
+  let vCounter = 0;
+  for (let l = 0; l < splitLegs.length; l++) {
+    const pts = splitLegs[l];
+    let cumDist = 0;
+    for (let i = 0; i < pts.length; i++) {
+      if (i > 0) {
+        cumDist += distLocal(pts[i - 1], pts[i]);
+      }
+      const id = vCounter++;
+      posX[id] = pts[i].x_m;
+      posY[id] = pts[i].y_m;
+      tanX[id] = pts[i].ux;
+      tanY[id] = pts[i].uy;
+      legOf[id] = l;
+      pathOf[id] = cumDist;
+    }
+  }
+
+  const step2CellSize = Math.max(effectiveMatchToleranceM * 2, 10);
+  const HASH_SIZE_2 = Math.max(1024, 1 << Math.ceil(Math.log2(totalV * 2 + 1)));
+  const HASH_MASK_2 = HASH_SIZE_2 - 1;
+  const head2 = new Int32Array(HASH_SIZE_2).fill(-1);
+  const next2 = new Int32Array(totalV);
+  const v2CX = new Int32Array(totalV);
+  const v2CY = new Int32Array(totalV);
+
+  for (let i = 0; i < totalV; i++) {
+    const cx = Math.floor(posX[i] / step2CellSize);
+    const cy = Math.floor(posY[i] / step2CellSize);
+    v2CX[i] = cx;
+    v2CY[i] = cy;
+    const h = ((cx * 73856093) ^ (cy * 19349663)) & HASH_MASK_2;
+    next2[i] = head2[h];
+    head2[h] = i;
+  }
+
+  const maxPairs = totalV * 4;
+  const pairU = new Int32Array(maxPairs);
+  const pairV = new Int32Array(maxPairs);
+  const pairDistSq = new Float64Array(maxPairs);
+  let numPairs = 0;
+
+  const uLocalV = new Int32Array(32);
+  const uLocalDistSq = new Float64Array(32);
+
+  for (let u = 0; u < totalV; u++) {
+    const ux = posX[u];
+    const uy = posY[u];
+    const uLeg = legOf[u];
+    const uPath = pathOf[u];
+
+    const minCX = Math.floor((ux - effectiveMatchToleranceM) / step2CellSize);
+    const maxCX = Math.floor((ux + effectiveMatchToleranceM) / step2CellSize);
+    const minCY = Math.floor((uy - effectiveMatchToleranceM) / step2CellSize);
+    const maxCY = Math.floor((uy + effectiveMatchToleranceM) / step2CellSize);
+
+    let localCount = 0;
+
+    for (let cx = minCX; cx <= maxCX; cx++) {
+      for (let cy = minCY; cy <= maxCY; cy++) {
+        const h = ((cx * 73856093) ^ (cy * 19349663)) & HASH_MASK_2;
+        for (let vId = head2[h]; vId !== -1; vId = next2[vId]) {
+          if (vId <= u) continue;
+          if (v2CX[vId] !== cx || v2CY[vId] !== cy) continue;
+
+          if (uLeg === legOf[vId]) {
+            if (Math.abs(uPath - pathOf[vId]) <= revisitThresholdM) {
+              continue;
+            }
+          }
+
+          const dx = Math.abs(ux - posX[vId]);
+          if (dx > effectiveMatchToleranceM) continue;
+          const dy = Math.abs(uy - posY[vId]);
+          if (dy > effectiveMatchToleranceM) continue;
+
+          const distSq = dx * dx + dy * dy;
+          if (distSq <= tolSq) {
+            if (distSq > 0.25) {
+              const cosAlign = Math.abs(tanX[u] * tanX[vId] + tanY[u] * tanY[vId]);
+              if (cosAlign < 0.707) continue;
+            }
+
+            // Prune duplicate neighbours along the same pass of the other leg
+            const vLeg = legOf[vId];
+            const vPath = pathOf[vId];
+            let foundPass = -1;
+            for (let k = 0; k < localCount; k++) {
+              const cand = uLocalV[k];
+              if (legOf[cand] === vLeg && Math.abs(pathOf[cand] - vPath) <= revisitThresholdM) {
+                foundPass = k;
+                break;
+              }
+            }
+
+            if (foundPass >= 0) {
+              if (distSq < uLocalDistSq[foundPass]) {
+                uLocalV[foundPass] = vId;
+                uLocalDistSq[foundPass] = distSq;
+              }
+            } else if (localCount < 32) {
+              uLocalV[localCount] = vId;
+              uLocalDistSq[localCount] = distSq;
+              localCount++;
             }
           }
         }
       }
     }
-  }
 
-  // Step 2: Cluster vertices within toleranceM
-  const allVertices: LocalPoint[] = [];
-  for (const pts of splitLegs) {
-    for (const p of pts) {
-      allVertices.push(p);
+    for (let k = 0; k < localCount; k++) {
+      if (numPairs < maxPairs) {
+        pairU[numPairs] = u;
+        pairV[numPairs] = uLocalV[k];
+        pairDistSq[numPairs] = uLocalDistSq[k];
+        numPairs++;
+      }
     }
   }
 
-  // Connected components / disjoint-set
-  const parent = allVertices.map((_, i) => i);
+  // Counting sort on pairDistSq (scaled to integer keys 0..9000)
+  const pairOrder = new Int32Array(numPairs);
+  const maxBucket = 9000;
+  const bucketCounts = new Int32Array(maxBucket + 1);
+  for (let i = 0; i < numPairs; i++) {
+    const b = Math.min(maxBucket, (pairDistSq[i] * 1000) | 0);
+    bucketCounts[b]++;
+  }
+  for (let i = 1; i <= maxBucket; i++) {
+    bucketCounts[i] += bucketCounts[i - 1];
+  }
+  for (let i = numPairs - 1; i >= 0; i--) {
+    const b = Math.min(maxBucket, (pairDistSq[i] * 1000) | 0);
+    pairOrder[--bucketCounts[b]] = i;
+  }
+
+  const parent = new Int32Array(totalV);
+  for (let i = 0; i < totalV; i++) parent[i] = i;
+
   function find(i: number): number {
-    if (parent[i] === i) return i;
-    parent[i] = find(parent[i]);
-    return parent[i];
-  }
-  function union(i: number, j: number) {
-    const rootI = find(i);
-    const rootJ = find(j);
-    if (rootI !== rootJ) {
-      parent[rootJ] = rootI;
+    let root = i;
+    while (parent[root] !== root) {
+      root = parent[root];
     }
+    let curr = i;
+    while (curr !== root) {
+      const nxt = parent[curr];
+      parent[curr] = root;
+      curr = nxt;
+    }
+    return root;
   }
 
-  for (let i = 0; i < allVertices.length; i++) {
-    for (let j = i + 1; j < allVertices.length; j++) {
-      if (distLocal(allVertices[i], allVertices[j]) <= effectiveMatchToleranceM) {
-        union(i, j);
+  // Linked list for cluster members to avoid allocating array objects
+  const clusterHead = new Int32Array(totalV);
+  const clusterNext = new Int32Array(totalV);
+  const clusterTail = new Int32Array(totalV);
+  const clusterSize = new Int32Array(totalV);
+  for (let i = 0; i < totalV; i++) {
+    clusterHead[i] = i;
+    clusterNext[i] = -1;
+    clusterTail[i] = i;
+    clusterSize[i] = 1;
+  }
+
+  for (let i = 0; i < numPairs; i++) {
+    const pIdx = pairOrder[i];
+    const u = pairU[pIdx];
+    const v = pairV[pIdx];
+
+    const rootU = find(u);
+    const rootV = find(v);
+    if (rootU === rootV) continue;
+
+    const szU = clusterSize[rootU];
+    const szV = clusterSize[rootV];
+
+    if (szU === 1 && szV === 1) {
+      const uMember = clusterHead[rootU];
+      const vMember = clusterHead[rootV];
+      if (legOf[uMember] === legOf[vMember]) {
+        if (Math.abs(pathOf[uMember] - pathOf[vMember]) <= revisitThresholdM) {
+          continue;
+        }
       }
+      parent[rootU] = rootV;
+      clusterNext[clusterTail[rootV]] = uMember;
+      clusterTail[rootV] = uMember;
+      clusterSize[rootV] = 2;
+      continue;
     }
-  }
 
-  // Assign cluster centroids
-  const clusterMembers = new Map<number, LocalPoint[]>();
-  let vertexIdx = 0;
-  const vertexToCluster = new Map<LocalPoint, number>();
-
-  for (const pts of splitLegs) {
-    for (const p of pts) {
-      const root = find(vertexIdx);
-      if (!clusterMembers.has(root)) {
-        clusterMembers.set(root, []);
+    let conflict = false;
+    for (let mU = clusterHead[rootU]; mU !== -1; mU = clusterNext[mU]) {
+      const legU = legOf[mU];
+      const pathU = pathOf[mU];
+      for (let mV = clusterHead[rootV]; mV !== -1; mV = clusterNext[mV]) {
+        if (legU === legOf[mV]) {
+          if (Math.abs(pathU - pathOf[mV]) <= revisitThresholdM) {
+            conflict = true;
+            break;
+          }
+        }
       }
-      clusterMembers.get(root)!.push(p);
-      vertexToCluster.set(p, root);
-      vertexIdx++;
+      if (conflict) break;
+    }
+
+    if (conflict) continue;
+
+    if (szU < szV) {
+      parent[rootU] = rootV;
+      clusterNext[clusterTail[rootV]] = clusterHead[rootU];
+      clusterTail[rootV] = clusterTail[rootU];
+      clusterSize[rootV] = szU + szV;
+    } else {
+      parent[rootV] = rootU;
+      clusterNext[clusterTail[rootU]] = clusterHead[rootV];
+      clusterTail[rootU] = clusterTail[rootV];
+      clusterSize[rootU] = szU + szV;
     }
   }
 
-  const clusterCentroid = new Map<number, [number, number]>();
-  for (const [root, members] of clusterMembers.entries()) {
-    let sumX = 0;
-    let sumY = 0;
-    for (const m of members) {
-      sumX += m.x_m;
-      sumY += m.y_m;
+  const vertexToCluster = new Int32Array(totalV);
+  const clusterSumX = new Float64Array(totalV);
+  const clusterSumY = new Float64Array(totalV);
+  const clusterCount = new Int32Array(totalV);
+
+  for (let i = 0; i < totalV; i++) {
+    const r = find(i);
+    vertexToCluster[i] = r;
+    clusterSumX[r] += posX[i];
+    clusterSumY[r] += posY[i];
+    clusterCount[r]++;
+  }
+
+  const centroidComputed = new Uint8Array(totalV);
+  const centroidLon = new Float64Array(totalV);
+  const centroidLat = new Float64Array(totalV);
+
+  function getCentroid(r: number): [number, number] {
+    if (centroidComputed[r]) {
+      return [centroidLon[r], centroidLat[r]];
     }
-    const avgX = sumX / members.length;
-    const avgY = sumY / members.length;
-    const { lon, lat } = localMetresToLonLat(avgX, avgY, origin);
-    clusterCentroid.set(root, [lon, lat]);
+    const { lon, lat } = localMetresToLonLat(clusterSumX[r] / clusterCount[r], clusterSumY[r] / clusterCount[r], origin);
+    centroidLon[r] = lon;
+    centroidLat[r] = lat;
+    centroidComputed[r] = 1;
+    return [lon, lat];
   }
 
   // Step 3: Convert each leg into a sequence of cluster IDs, removing consecutive duplicates
+  let globalVIdx = 0;
   const legClusterSequences: number[][] = splitLegs.map((pts) => {
     const seq: number[] = [];
-    for (const p of pts) {
-      const c = vertexToCluster.get(p)!;
+    for (let i = 0; i < pts.length; i++) {
+      const c = vertexToCluster[globalVIdx++];
       if (seq.length === 0 || seq[seq.length - 1] !== c) {
         seq.push(c);
       }
@@ -229,13 +630,16 @@ export function sharedSegments(
 
   // Step 4: Map elementary edges between clusters
   interface UndirectedEdge {
-    c1: number; // min(u, v)
-    c2: number; // max(u, v)
+    id: number;
+    u: number;
+    v: number;
     legs: number[];
     directions: ('fwd' | 'back')[];
+    visited: boolean;
   }
 
-  const undirectedEdges = new Map<string, UndirectedEdge>();
+  const undirectedEdges = new Map<number, UndirectedEdge>();
+  let edgeIdCounter = 0;
 
   for (let l = 0; l < legClusterSequences.length; l++) {
     const seq = legClusterSequences[l];
@@ -244,145 +648,146 @@ export function sharedSegments(
       const to = seq[i + 1];
       if (from === to) continue;
 
-      const c1 = Math.min(from, to);
-      const c2 = Math.max(from, to);
-      const key = `${c1}_${c2}`;
-
+      const u = Math.min(from, to);
+      const v = Math.max(from, to);
+      const key = u * 1000000 + v;
       const dir: 'fwd' | 'back' = from < to ? 'fwd' : 'back';
 
       let edge = undirectedEdges.get(key);
       if (!edge) {
-        edge = { c1, c2, legs: [], directions: [] };
+        edge = { id: edgeIdCounter++, u, v, legs: [l], directions: [dir], visited: false };
         undirectedEdges.set(key, edge);
+      } else {
+        edge.legs.push(l);
+        edge.directions.push(dir);
       }
-      edge.legs.push(l);
-      edge.directions.push(dir);
     }
   }
 
-  // Step 5: Merge elementary edges into maximal stretches
-  interface Stretch {
+  for (const edge of undirectedEdges.values()) {
+    if (edge.legs.length === 2 && edge.legs[0] > edge.legs[1]) {
+      const tmpL = edge.legs[0];
+      edge.legs[0] = edge.legs[1];
+      edge.legs[1] = tmpL;
+      const tmpD = edge.directions[0];
+      edge.directions[0] = edge.directions[1];
+      edge.directions[1] = tmpD;
+    } else if (edge.legs.length > 2) {
+      const order = edge.legs.map((_, i) => i);
+      order.sort((a, b) => edge.legs[a] - edge.legs[b]);
+      edge.legs = order.map((i) => edge.legs[i]);
+      edge.directions = order.map((i) => edge.directions[i]);
+    }
+  }
+
+  // Step 5: Path decomposition into maximal stretches
+  const allEdges = Array.from(undirectedEdges.values());
+  const maxNodeId = totalV;
+  const incDeg = new Int32Array(maxNodeId);
+  const incEdge0 = new Int32Array(maxNodeId).fill(-1);
+  const incEdge1 = new Int32Array(maxNodeId).fill(-1);
+  const higherDegreeNodes = new Map<number, number[]>();
+
+  for (let eIdx = 0; eIdx < allEdges.length; eIdx++) {
+    const edge = allEdges[eIdx];
+    const u = edge.u;
+    const v = edge.v;
+
+    // Node u
+    if (incDeg[u] === 0) incEdge0[u] = eIdx;
+    else if (incDeg[u] === 1) incEdge1[u] = eIdx;
+    else {
+      let list = higherDegreeNodes.get(u);
+      if (!list) {
+        list = [incEdge0[u], incEdge1[u]];
+        higherDegreeNodes.set(u, list);
+      }
+      list.push(eIdx);
+    }
+    incDeg[u]++;
+
+    // Node v
+    if (incDeg[v] === 0) incEdge0[v] = eIdx;
+    else if (incDeg[v] === 1) incEdge1[v] = eIdx;
+    else {
+      let list = higherDegreeNodes.get(v);
+      if (!list) {
+        list = [incEdge0[v], incEdge1[v]];
+        higherDegreeNodes.set(v, list);
+      }
+      list.push(eIdx);
+    }
+    incDeg[v]++;
+  }
+
+  function canPassThrough(w: number): boolean {
+    if (incDeg[w] !== 2) return false;
+    const e1 = allEdges[incEdge0[w]];
+    const e2 = allEdges[incEdge1[w]];
+    if (e1.legs.length !== e2.legs.length) return false;
+
+    for (let k = 0; k < e1.legs.length; k++) {
+      if (e1.legs[k] !== e2.legs[k]) return false;
+      const towards1 = w === e1.v ? e1.directions[k] === 'fwd' : e1.directions[k] === 'back';
+      const towards2 = w === e2.v ? e2.directions[k] === 'fwd' : e2.directions[k] === 'back';
+      if (towards1 === towards2) return false;
+    }
+    return true;
+  }
+
+  interface StretchRaw {
     nodes: number[];
     legs: number[];
     directions: ('fwd' | 'back')[];
   }
+  const stretches: StretchRaw[] = [];
 
-  const activeStretches: Stretch[] = [];
-  for (const edge of undirectedEdges.values()) {
-    activeStretches.push({
-      nodes: [edge.c1, edge.c2],
+  // Walk edges in order of legs (allEdges) to discover maximal stretches
+  for (let eIdx = 0; eIdx < allEdges.length; eIdx++) {
+    const edge = allEdges[eIdx];
+    if (edge.visited) continue;
+    edge.visited = true;
+
+    // Trace forward from edge.v
+    const forwardNodes: number[] = [edge.v];
+    let currNode = edge.v;
+    let currEdge = edge;
+    while (canPassThrough(currNode)) {
+      const nextEIdx = incEdge0[currNode] === currEdge.id ? incEdge1[currNode] : incEdge0[currNode];
+      const nextEdge = allEdges[nextEIdx];
+      if (nextEdge.visited) break;
+      nextEdge.visited = true;
+      const nextNode = nextEdge.u === currNode ? nextEdge.v : nextEdge.u;
+      forwardNodes.push(nextNode);
+      currNode = nextNode;
+      currEdge = nextEdge;
+    }
+
+    // Trace backward from edge.u
+    const backwardNodes: number[] = [];
+    currNode = edge.u;
+    currEdge = edge;
+    while (canPassThrough(currNode)) {
+      const prevEIdx = incEdge0[currNode] === currEdge.id ? incEdge1[currNode] : incEdge0[currNode];
+      const prevEdge = allEdges[prevEIdx];
+      if (prevEdge.visited) break;
+      prevEdge.visited = true;
+      const prevNode = prevEdge.u === currNode ? prevEdge.v : prevEdge.u;
+      backwardNodes.push(prevNode);
+      currNode = prevNode;
+      currEdge = prevEdge;
+    }
+
+    const pathNodes = [...backwardNodes.reverse(), edge.u, ...forwardNodes];
+    stretches.push({
+      nodes: pathNodes,
       legs: [...edge.legs],
       directions: [...edge.directions],
     });
   }
 
-  let merged = true;
-  while (merged) {
-    merged = false;
-
-    outer: for (let i = 0; i < activeStretches.length; i++) {
-      for (let j = i + 1; j < activeStretches.length; j++) {
-        const s1 = activeStretches[i];
-        const s2 = activeStretches[j];
-
-        // Must have the exact same set of legs and directions (up to stretch reversal)
-        const s1Nodes = s1.nodes;
-        const s2Nodes = s2.nodes;
-
-        // Find potential shared endpoint
-        const s1Start = s1Nodes[0];
-        const s1End = s1Nodes[s1Nodes.length - 1];
-        const s2Start = s2Nodes[0];
-        const s2End = s2Nodes[s2Nodes.length - 1];
-
-        let junction: number | null = null;
-        let orientS1Forward = true;
-        let orientS2Forward = true;
-
-        if (s1End === s2Start) {
-          junction = s1End;
-          orientS1Forward = true;
-          orientS2Forward = true;
-        } else if (s1End === s2End) {
-          junction = s1End;
-          orientS1Forward = true;
-          orientS2Forward = false;
-        } else if (s1Start === s2Start) {
-          junction = s1Start;
-          orientS1Forward = false;
-          orientS2Forward = true;
-        } else if (s1Start === s2End) {
-          junction = s1Start;
-          orientS1Forward = false;
-          orientS2Forward = false;
-        }
-
-        if (junction === null) continue;
-
-        // Check if junction has any other incident stretches
-        let junctionIncidentCount = 0;
-        for (const s of activeStretches) {
-          if (s.nodes[0] === junction) junctionIncidentCount++;
-          if (s.nodes[s.nodes.length - 1] === junction) junctionIncidentCount++;
-        }
-        if (junctionIncidentCount !== 2) {
-          // Junction has branching or degree != 2
-          continue;
-        }
-
-        // Align S1 such that it ends at junction
-        const alignedS1Nodes = orientS1Forward ? [...s1.nodes] : [...s1.nodes].reverse();
-        const alignedS1Dirs = orientS1Forward
-          ? [...s1.directions]
-          : s1.directions.map((d) => (d === 'fwd' ? 'back' : 'fwd'));
-
-        // Align S2 such that it starts at junction
-        const alignedS2Nodes = orientS2Forward ? [...s2.nodes] : [...s2.nodes].reverse();
-        const alignedS2Dirs = orientS2Forward
-          ? [...s2.directions]
-          : s2.directions.map((d) => (d === 'fwd' ? 'back' : 'fwd'));
-
-        // Verify legs match exactly
-        if (s1.legs.length !== s2.legs.length) continue;
-
-        let legsCompatible = true;
-        for (let idx = 0; idx < s1.legs.length; idx++) {
-          const leg = s1.legs[idx];
-          const dir1 = alignedS1Dirs[idx];
-          const s2Idx = s2.legs.indexOf(leg);
-          if (s2Idx === -1) {
-            legsCompatible = false;
-            break;
-          }
-          const dir2 = alignedS2Dirs[s2Idx];
-          if (dir1 !== dir2) {
-            legsCompatible = false;
-            break;
-          }
-        }
-
-        if (!legsCompatible) continue;
-
-        // Merge s1 and s2
-        const mergedNodes = [...alignedS1Nodes, ...alignedS2Nodes.slice(1)];
-        const newStretch: Stretch = {
-          nodes: mergedNodes,
-          legs: [...s1.legs],
-          directions: alignedS1Dirs,
-        };
-
-        activeStretches.splice(j, 1);
-        activeStretches.splice(i, 1);
-        activeStretches.push(newStretch);
-        merged = true;
-        break outer;
-      }
-    }
-  }
-
   // Canonicalize stretch direction: first leg (lowest index) is always 'fwd'
-  const result: SharedSegment[] = activeStretches.map((s) => {
-    // Sort legs
+  const result: SharedSegment[] = stretches.map((s) => {
     const legIndices = s.legs.map((_, i) => i);
     legIndices.sort((a, b) => s.legs[a] - s.legs[b]);
 
@@ -395,7 +800,7 @@ export function sharedSegments(
       sortedDirs = sortedDirs.map((d) => (d === 'fwd' ? 'back' : 'fwd'));
     }
 
-    const line = nodes.map((c) => clusterCentroid.get(c)!);
+    const line = nodes.map((c) => getCentroid(c));
     return {
       line,
       legs: sortedLegs,

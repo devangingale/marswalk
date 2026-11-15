@@ -1,6 +1,7 @@
 // Written with AI assistance, directed and reviewed by the team.
 
 import { describe, expect, it } from 'vitest';
+import samplePlanJson from '../fixtures/plan.sample.json';
 import {
   createGrid,
   GridOrigin,
@@ -369,5 +370,175 @@ describe('routeShape', () => {
     expect(stats.steepestDeg).toBe(radToDeg(Math.atan(1 / 10)));
     const steepest = lonlatToLocalMetres(stats.steepestAt![0], stats.steepestAt![1], testOrigin);
     expect(steepest.x_m).toBeCloseTo(5, 1);
+  });
+
+  it('a single densified leg (vertices 1 m apart, straight and with a bend) yields one unshared stretch covering the whole leg, no forks, no collapse', () => {
+    // 11 vertices from (0,0) to (10,0), then 10 vertices from (10,1) to (10,10) -> 21 vertices total
+    const line: [number, number][] = [];
+    for (let x = 0; x <= 10; x++) {
+      line.push(pt(x, 0));
+    }
+    for (let y = 1; y <= 10; y++) {
+      line.push(pt(10, y));
+    }
+
+    const leg0: PlanLeg = {
+      from: 'start',
+      to: 'bend-end',
+      line,
+      distance_m: 20,
+      time_s: 16,
+      climb_m: 0,
+      descent_m: 0,
+      energy_kj: 2,
+      max_slope_deg: 0,
+    };
+
+    const stretches = sharedSegments([leg0], testOrigin, 3);
+    expect(stretches).toHaveLength(1);
+    expect(stretches[0].legs).toEqual([0]);
+    expect(stretches[0].directions).toEqual(['fwd']);
+    expect(stretches[0].line).toHaveLength(21);
+    expect(stretches[0].line[0]).toEqual(pt(0, 0));
+    expect(stretches[0].line[20]).toEqual(pt(10, 10));
+
+    const forks = forkPoints([leg0], testOrigin, 3);
+    expect(forks).toEqual([]);
+  });
+
+  it('an out-and-back where the return runs within 3 m of the outbound yields one shared stretch', () => {
+    // Outbound: 0 to 50 m along y=0 (51 vertices, 1 m apart)
+    // Return: 50 to 0 m along y=2 (51 vertices, 1 m apart, 2 m offset <= 3 m tolerance)
+    const outboundLine: [number, number][] = [];
+    for (let x = 0; x <= 50; x++) {
+      outboundLine.push(pt(x, 0));
+    }
+    const returnLine: [number, number][] = [];
+    for (let x = 50; x >= 0; x--) {
+      returnLine.push(pt(x, 2));
+    }
+
+    const leg0: PlanLeg = {
+      from: 'start',
+      to: 'turnaround',
+      line: outboundLine,
+      distance_m: 50,
+      time_s: 40,
+      climb_m: 0,
+      descent_m: 0,
+      energy_kj: 5,
+      max_slope_deg: 0,
+    };
+
+    const leg1: PlanLeg = {
+      from: 'turnaround',
+      to: 'start',
+      line: returnLine,
+      distance_m: 50,
+      time_s: 40,
+      climb_m: 0,
+      descent_m: 0,
+      energy_kj: 5,
+      max_slope_deg: 0,
+    };
+
+    const stretches = sharedSegments([leg0, leg1], testOrigin, 3);
+    expect(stretches).toHaveLength(1);
+    expect(stretches[0].legs).toEqual([0, 1]);
+    expect(stretches[0].directions).toEqual(['fwd', 'back']);
+    expect(stretches[0].line.length).toBeGreaterThanOrEqual(50);
+  });
+
+  it('two legs that touch at one point only yield no shared stretch', () => {
+    // Leg 0: (0,0) -> (25,0) -> (50,0)
+    // Leg 1: (50,0) -> (50,25) -> (50,50)
+    const leg0: PlanLeg = {
+      from: 'start',
+      to: 'corner',
+      line: [pt(0, 0), pt(25, 0), pt(50, 0)],
+      distance_m: 50,
+      time_s: 40,
+      climb_m: 0,
+      descent_m: 0,
+      energy_kj: 5,
+      max_slope_deg: 0,
+    };
+
+    const leg1: PlanLeg = {
+      from: 'corner',
+      to: 'end',
+      line: [pt(50, 0), pt(50, 25), pt(50, 50)],
+      distance_m: 50,
+      time_s: 40,
+      climb_m: 0,
+      descent_m: 0,
+      energy_kj: 5,
+      max_slope_deg: 0,
+    };
+
+    const stretches = sharedSegments([leg0, leg1], testOrigin, 3);
+    const shared = stretches.filter((s) => s.legs.length >= 2);
+    expect(shared).toHaveLength(0);
+    expect(stretches.every((s) => s.legs.length === 1)).toBe(true);
+
+    const forks = forkPoints([leg0, leg1], testOrigin, 3);
+    expect(forks).toEqual([]);
+  });
+
+  it('performance: sharedSegments runs under 50 ms on Gale sample plan and a 5,000-vertex route', () => {
+    const samplePlan = samplePlanJson as unknown as Plan;
+    const galeOrigin: GridOrigin = {
+      lon0: 137.36045619776752,
+      lat0: -4.765947140908848,
+      lat_c: -4.761729489694319,
+    };
+
+    // Warm up JIT
+    sharedSegments(samplePlan.route.legs.slice(0, 1), galeOrigin, 3);
+
+    // 1. Gale sample plan
+    const t0 = performance.now();
+    const galeSegments = sharedSegments(samplePlan.route.legs, galeOrigin, 3);
+    const galeElapsed = performance.now() - t0;
+    expect(galeSegments.length).toBeGreaterThan(0);
+    expect(galeElapsed).toBeLessThan(50);
+
+    // 2. 5,000-vertex synthetic route (2,500 outbound + 2,500 return out-and-back)
+    const outPts: [number, number][] = [];
+    const backPts: [number, number][] = [];
+    for (let i = 0; i < 2500; i++) {
+      outPts.push(pt(i * 2, 0));
+      backPts.push(pt(i * 2, 1));
+    }
+    backPts.reverse();
+
+    const legA: PlanLeg = {
+      from: 'start',
+      to: 'far',
+      line: outPts,
+      distance_m: 5000,
+      time_s: 4000,
+      climb_m: 0,
+      descent_m: 0,
+      energy_kj: 500,
+      max_slope_deg: 0,
+    };
+    const legB: PlanLeg = {
+      from: 'far',
+      to: 'start',
+      line: backPts,
+      distance_m: 5000,
+      time_s: 4000,
+      climb_m: 0,
+      descent_m: 0,
+      energy_kj: 500,
+      max_slope_deg: 0,
+    };
+
+    const t1 = performance.now();
+    const synthSegments = sharedSegments([legA, legB], testOrigin, 3);
+    const synthElapsed = performance.now() - t1;
+    expect(synthSegments.length).toBeGreaterThan(0);
+    expect(synthElapsed).toBeLessThan(50);
   });
 });
