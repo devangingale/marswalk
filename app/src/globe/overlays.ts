@@ -176,12 +176,13 @@ export class GlobeOverlays {
   private readonly removeScreenUpdate?: () => void;
   private readonly meta = new Map<Entity, Meta>();
   private readonly owned = new Set<Entity>();
-  private readonly groups: Record<'plan' | 'rover' | 'chemistry' | 'walker' | 'crew', Entity[]> = {
+  private readonly groups: Record<'plan' | 'rover' | 'chemistry' | 'walker' | 'crew' | 'turn', Entity[]> = {
     plan: [],
     rover: [],
     chemistry: [],
     walker: [],
     crew: [],
+    turn: [],
   };
 
   private plan: Plan | undefined;
@@ -675,6 +676,13 @@ export class GlobeOverlays {
       position: lonLatToCartesian(pose.lon, pose.lat, 0),
       billboard: this.billboard(this.markers().walker(), REGION),
     });
+  }
+
+  /** Walk: the next turn point on the route, drawn with the given marker image. Null clears it. */
+  setTurnPoint(point: { lon: number; lat: number } | null, image?: MarkerImage): void {
+    this.removeGroup('turn');
+    if (!point || !image) return;
+    this.add('turn', { position: lonLatToCartesian(point.lon, point.lat, 0), billboard: this.billboard(image, REGION) });
   }
 
   /**
