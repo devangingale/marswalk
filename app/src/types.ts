@@ -59,7 +59,7 @@ export interface SiteBasemap {
 export interface SiteData {
   id: string;
   title: string;
-  rover: string;
+  rover: string | null;
   origin: SiteOrigin;
   size_m: SiteSize;
   bounds_lonlat: [number, number, number, number];
