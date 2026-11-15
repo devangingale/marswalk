@@ -1,201 +1,723 @@
 {
- "version": 1,
- "layers": [
-  {
-   "id": "SWIM4MIM_Ci_0_1",
-   "title": "SWIM ice consistency at 0\u20131 m",
-   "group": "ice",
-   "units": "consistency",
-   "description": "SWIM water-ice consistency for the 0\u20131 m depth interval.",
-   "tiles": "layers/SWIM4MIM_Ci_0_1/{z}/{x}/{y}.png",
-   "tiling": "geographic",
-   "min_level": 0,
-   "max_level": 1,
-   "rectangle": [
-    -180,
-    -60,
-    180,
-    60
-   ],
-   "legend": {
-    "stops": [
-     [
-      -1,
-      "#00000000"
-     ],
-     [
-      0,
-      "#00000000"
-     ],
-     [
-      0.01,
-      "#3c80d181"
-     ],
-     [
-      1,
-      "#eef7fff0"
-     ]
-    ],
-    "min": -1.0,
-    "max": 1.0,
-    "min_label": "-1",
-    "max_label": "1",
-    "units": "consistency",
-    "palette": "swim_ice",
-    "palette_label": "OKLab blue at 0+ through light blue to near-white at +1"
-   },
-   "source": {
-    "dataset": "swim_ice",
-    "citation": "Mars Odyssey neutron/THEMIS, MRO SHARAD/CTX/HiRISE, MGS TES/MOLA data, processed by the Subsurface Water Ice Mapping (SWIM) project, PSI (NASA-funded through JPL); Morgan & Putzig et al. (2025), PSJ",
-    "licence": "Not stated on product page \u2014 check with PSI before redistribution",
-    "licence_note": "Licence is not stated by the source; retain this credit and check with the provider before redistribution."
-   }
-  },
-  {
-   "id": "dose_ugy_day",
-   "title": "Estimated surface radiation dose",
-   "group": "radiation",
-   "units": "\u00b5Gy/day",
-   "description": "Pressure-scaled estimate of daily surface radiation dose.",
-   "tiles": "layers/dose_ugy_day/{z}/{x}/{y}.png",
-   "tiling": "geographic",
-   "min_level": 0,
-   "max_level": 1,
-   "rectangle": [
-    -180,
-    -60,
-    180,
-    60
-   ],
-   "values": {
-    "url": "layers/dose_ugy_day/values.bin",
-    "width": 1440,
-    "height": 480,
-    "west": -180,
-    "north": 60,
-    "res_deg": 0.25,
-    "scale": 0.001094278541690907,
-    "offset": 261.010576171875,
-    "nodata": 65535
-   },
-   "legend": {
-    "stops": [
-     [
-      261.010576171875,
-      "#00000000"
-     ],
-     [
-      332.7230261230469,
-      "#ffe94dF0"
-     ]
-    ],
-    "min": 261.010576171875,
-    "max": 332.7230261230469,
-    "min_label": "261",
-    "max_label": "333",
-    "units": "\u00b5Gy/day",
-    "palette": "dose_yellow",
-    "palette_label": "OKLab pale yellow to bright yellow (#ffe94d)"
-   },
-   "source": {
-    "dataset": "msl_rad_dose",
-    "citation": "MSL RAD data (Mars Science Laboratory), processed by Heber & L\u00f6we, 'MSL/RAD Dose rates', Zenodo, doi:10.5281/zenodo.20536564",
-    "licence": "CC-BY-4.0"
-   }
-  },
-  {
-   "id": "dust_p95",
-   "title": "95th-percentile dust opacity",
-   "group": "dust",
-   "units": "\u03c4IR",
-   "description": "95th-percentile total-column infrared dust opacity across the source observations.",
-   "tiles": "layers/dust_p95/{z}/{x}/{y}.png",
-   "tiling": "geographic",
-   "min_level": 0,
-   "max_level": 1,
-   "rectangle": [
-    -180,
-    -60,
-    180,
-    60
-   ],
-   "values": {
-    "url": "layers/dust_p95/values.bin",
-    "width": 1440,
-    "height": 480,
-    "west": -180,
-    "north": 60,
-    "res_deg": 0.25,
-    "scale": 5.8163287745704615e-06,
-    "offset": 0.21993328601121903,
-    "nodata": 65535
-   },
-   "legend": {
-    "stops": [
-     [
-      0.21993328601121903,
-      "#00000000"
-     ],
-     [
-      0.6011005759239196,
-      "#662506F0"
-     ]
-    ],
-    "min": 0.21993328601121903,
-    "max": 0.6011005759239196,
-    "units": "\u03c4IR",
-    "palette": "YlOrBr",
-    "min_label": "0.22",
-    "max_label": "0.6",
-    "palette_label": "YlOrBr"
-   },
-   "source": {
-    "dataset": "montabone_dust",
-    "citation": "TES, THEMIS and MCS data (MGS, Mars Odyssey, MRO), processed by Montabone et al. (2015) Icarus doi:10.1016/j.icarus.2014.12.034 and Montabone et al. (2020) JGR Planets doi:10.1029/2019JE006111, LMD",
-    "licence": "CC-BY-SA-3.0"
-   }
-  },
-  {
-   "id": "tes_ti_night_2007",
-   "title": "Nighttime thermal inertia",
-   "group": "thermal",
-   "units": "raw TI units",
-   "description": "Global nighttime thermal inertia from TES observations.",
-   "tiles": "layers/tes_ti_night_2007/{z}/{x}/{y}.png",
-   "tiling": "geographic",
-   "min_level": 0,
-   "max_level": 1,
-   "rectangle": [
-    -180,
-    -60,
-    180,
-    60
-   ],
-   "legend": {
-    "stops": [
-     [
-      39.64051475524902,
-      "#00000000"
-     ],
-     [
-      380.8485266113281,
-      "#49006aF0"
-     ]
-    ],
-    "min": 39.64051475524902,
-    "max": 380.8485266113281,
-    "units": "raw TI units",
-    "palette": "RdPu",
-    "min_label": "39.6",
-    "max_label": "381",
-    "palette_label": "RdPu"
-   },
-   "source": {
-    "dataset": "tes_ti_2007",
-    "citation": "TES data (Mars Global Surveyor), processed by Putzig & Mellon (2007), Icarus 191, 68-94, doi:10.1016/j.icarus.2007.05.013; NASA PDS Geosciences MGS-M-TES-5-TIMAP-V1.0 (MGST_9001)",
-    "licence": "NASA PDS \u2014 public domain"
-   }
-  }
- ],
- "sample": "Levels 0-1 of four layers for development; full set is built by pipeline/globe_layers.py"
+  "version": 1,
+  "layers": [
+    {
+      "id": "SWIM4MIM_Ci_0_1",
+      "title": "SWIM ice consistency at 0\u20131 m",
+      "group": "ice",
+      "units": "consistency",
+      "description": "SWIM water-ice consistency for the 0\u20131 m depth interval.",
+      "tiles": "layers/SWIM4MIM_Ci_0_1/{z}/{x}/{y}.png",
+      "tiling": "geographic",
+      "min_level": 0,
+      "max_level": 1,
+      "rectangle": [
+        -180,
+        -60,
+        180,
+        60
+      ],
+      "legend": {
+        "stops": [
+          [
+            -1,
+            "#00000000"
+          ],
+          [
+            0,
+            "#00000000"
+          ],
+          [
+            0.01,
+            "#3c80d181"
+          ],
+          [
+            1,
+            "#eef7fff0"
+          ]
+        ],
+        "min": -1.0,
+        "max": 1.0,
+        "min_label": "-1",
+        "max_label": "1",
+        "units": "consistency",
+        "palette": "swim_ice",
+        "palette_label": "OKLab blue at 0+ through light blue to near-white at +1"
+      },
+      "source": {
+        "dataset": "swim_ice",
+        "citation": "Mars Odyssey neutron/THEMIS, MRO SHARAD/CTX/HiRISE, MGS TES/MOLA data, processed by the Subsurface Water Ice Mapping (SWIM) project, PSI (NASA-funded through JPL); Morgan & Putzig et al. (2025), PSJ",
+        "licence": "Not stated on product page \u2014 check with PSI before redistribution",
+        "licence_note": "Licence is not stated by the source; retain this credit and check with the provider before redistribution."
+      }
+    },
+    {
+      "id": "dose_ugy_day",
+      "title": "Estimated surface radiation dose",
+      "group": "radiation",
+      "units": "\u00b5Gy/day",
+      "description": "Pressure-scaled estimate of daily surface radiation dose.",
+      "tiles": "layers/dose_ugy_day/{z}/{x}/{y}.png",
+      "tiling": "geographic",
+      "min_level": 0,
+      "max_level": 1,
+      "rectangle": [
+        -180,
+        -60,
+        180,
+        60
+      ],
+      "values": {
+        "url": "layers/dose_ugy_day/values.bin",
+        "width": 1440,
+        "height": 480,
+        "west": -180,
+        "north": 60,
+        "res_deg": 0.25,
+        "scale": 0.001094278541690907,
+        "offset": 261.010576171875,
+        "nodata": 65535
+      },
+      "legend": {
+        "stops": [
+          [
+            261.010576171875,
+            "#00000000"
+          ],
+          [
+            332.7230261230469,
+            "#ffe94dF0"
+          ]
+        ],
+        "min": 261.010576171875,
+        "max": 332.7230261230469,
+        "min_label": "261",
+        "max_label": "333",
+        "units": "\u00b5Gy/day",
+        "palette": "dose_yellow",
+        "palette_label": "OKLab pale yellow to bright yellow (#ffe94d)"
+      },
+      "source": {
+        "dataset": "msl_rad_dose",
+        "citation": "MSL RAD data (Mars Science Laboratory), processed by Heber & L\u00f6we, 'MSL/RAD Dose rates', Zenodo, doi:10.5281/zenodo.20536564",
+        "licence": "CC-BY-4.0"
+      }
+    },
+    {
+      "id": "dust_p95",
+      "title": "95th-percentile dust opacity",
+      "group": "dust",
+      "units": "\u03c4IR",
+      "description": "95th-percentile total-column infrared dust opacity across the source observations.",
+      "tiles": "layers/dust_p95/{z}/{x}/{y}.png",
+      "tiling": "geographic",
+      "min_level": 0,
+      "max_level": 1,
+      "rectangle": [
+        -180,
+        -60,
+        180,
+        60
+      ],
+      "values": {
+        "url": "layers/dust_p95/values.bin",
+        "width": 1440,
+        "height": 480,
+        "west": -180,
+        "north": 60,
+        "res_deg": 0.25,
+        "scale": 5.8163287745704615e-06,
+        "offset": 0.21993328601121903,
+        "nodata": 65535
+      },
+      "legend": {
+        "stops": [
+          [
+            0.21993328601121903,
+            "#00000000"
+          ],
+          [
+            0.6011005759239196,
+            "#662506F0"
+          ]
+        ],
+        "min": 0.21993328601121903,
+        "max": 0.6011005759239196,
+        "units": "\u03c4IR",
+        "palette": "YlOrBr",
+        "min_label": "0.22",
+        "max_label": "0.6",
+        "palette_label": "YlOrBr"
+      },
+      "source": {
+        "dataset": "montabone_dust",
+        "citation": "TES, THEMIS and MCS data (MGS, Mars Odyssey, MRO), processed by Montabone et al. (2015) Icarus doi:10.1016/j.icarus.2014.12.034 and Montabone et al. (2020) JGR Planets doi:10.1029/2019JE006111, LMD",
+        "licence": "CC-BY-SA-3.0"
+      }
+    },
+    {
+      "id": "tes_ti_night_2007",
+      "title": "Nighttime thermal inertia",
+      "group": "thermal",
+      "units": "raw TI units",
+      "description": "Global nighttime thermal inertia from TES observations.",
+      "tiles": "layers/tes_ti_night_2007/{z}/{x}/{y}.png",
+      "tiling": "geographic",
+      "min_level": 0,
+      "max_level": 1,
+      "rectangle": [
+        -180,
+        -60,
+        180,
+        60
+      ],
+      "legend": {
+        "stops": [
+          [
+            39.64051475524902,
+            "#00000000"
+          ],
+          [
+            380.8485266113281,
+            "#49006aF0"
+          ]
+        ],
+        "min": 39.64051475524902,
+        "max": 380.8485266113281,
+        "units": "raw TI units",
+        "palette": "RdPu",
+        "min_label": "39.6",
+        "max_label": "381",
+        "palette_label": "RdPu"
+      },
+      "source": {
+        "dataset": "tes_ti_2007",
+        "citation": "TES data (Mars Global Surveyor), processed by Putzig & Mellon (2007), Icarus 191, 68-94, doi:10.1016/j.icarus.2007.05.013; NASA PDS Geosciences MGS-M-TES-5-TIMAP-V1.0 (MGST_9001)",
+        "licence": "NASA PDS \u2014 public domain"
+      }
+    },
+    {
+      "id": "geology",
+      "title": "Geologic units (SIM 3292)",
+      "group": "geology",
+      "units": "",
+      "description": "USGS global geologic map of Mars (Tanaka et al. 2014, SIM 3292) categorized by major epoch and terrain.",
+      "tiles": "layers/geology/{z}/{x}/{y}.png",
+      "tiling": "geographic",
+      "min_level": 0,
+      "max_level": 2,
+      "rectangle": [
+        -180,
+        -60,
+        180,
+        60
+      ],
+      "values": {
+        "url": "layers/geology/values.bin",
+        "width": 1440,
+        "height": 480,
+        "west": -180,
+        "north": 60,
+        "res_deg": 0.25,
+        "scale": 1.0,
+        "offset": 0.0,
+        "nodata": 65535
+      },
+      "legend": {
+        "stops": [
+          [
+            1,
+            "#8f7a52f0"
+          ],
+          [
+            2,
+            "#6e8c78f0"
+          ],
+          [
+            3,
+            "#bf8b50f0"
+          ],
+          [
+            4,
+            "#c47d6ef0"
+          ],
+          [
+            5,
+            "#a8a37ef0"
+          ],
+          [
+            6,
+            "#b5cbd8f0"
+          ],
+          [
+            7,
+            "#7d6f8df0"
+          ]
+        ],
+        "min": 1,
+        "max": 7,
+        "min_label": "Noachian highland",
+        "max_label": "Impact units",
+        "units": "",
+        "palette": "geology_muted",
+        "palette_label": "Muted categorical ramp (7 major epoch and terrain groups)"
+      },
+      "categories": {
+        "31": {
+          "id": 31,
+          "code": "lApc",
+          "name": "Late Amazonian polar cap unit",
+          "age": "Late Amazonian",
+          "group": "polar",
+          "group_label": "Polar deposits & ice",
+          "color": "#b5cbd8"
+        },
+        "14": {
+          "id": 14,
+          "code": "Hpe",
+          "name": "Hesperian polar edifice unit",
+          "age": "Hesperian",
+          "group": "polar",
+          "group_label": "Polar deposits & ice",
+          "color": "#b5cbd8"
+        },
+        "13": {
+          "id": 13,
+          "code": "Hp",
+          "name": "Hesperian polar unit",
+          "age": "Hesperian",
+          "group": "polar",
+          "group_label": "Polar deposits & ice",
+          "color": "#b5cbd8"
+        },
+        "40": {
+          "id": 40,
+          "code": "lNh",
+          "name": "Late Noachian highland unit",
+          "age": "Late Noachian",
+          "group": "noachian_highland",
+          "group_label": "Noachian highland",
+          "color": "#8f7a52"
+        },
+        "43": {
+          "id": 43,
+          "code": "mNh",
+          "name": "Middle Noachian highland unit",
+          "age": "Middle Noachian",
+          "group": "noachian_highland",
+          "group_label": "Noachian highland",
+          "color": "#8f7a52"
+        },
+        "1": {
+          "id": 1,
+          "code": "AHi",
+          "name": "Amazonian and Hesperian impact unit",
+          "age": "Amazonian and Hesperian",
+          "group": "impact",
+          "group_label": "Impact units",
+          "color": "#7d6f8d"
+        },
+        "6": {
+          "id": 6,
+          "code": "Ap",
+          "name": "Amazonian polar unit",
+          "age": "Amazonian",
+          "group": "polar",
+          "group_label": "Polar deposits & ice",
+          "color": "#b5cbd8"
+        },
+        "7": {
+          "id": 7,
+          "code": "Apu",
+          "name": "Amazonian polar undivided unit",
+          "age": "Amazonian",
+          "group": "polar",
+          "group_label": "Polar deposits & ice",
+          "color": "#b5cbd8"
+        },
+        "28": {
+          "id": 28,
+          "code": "eNh",
+          "name": "Early Noachian highland unit",
+          "age": "Early Noachian",
+          "group": "noachian_highland",
+          "group_label": "Noachian highland",
+          "color": "#8f7a52"
+        },
+        "20": {
+          "id": 20,
+          "code": "Nhe",
+          "name": "Noachian highland edifice unit",
+          "age": "Noachian",
+          "group": "noachian_highland",
+          "group_label": "Noachian highland",
+          "color": "#8f7a52"
+        },
+        "21": {
+          "id": 21,
+          "code": "Nhu",
+          "name": "Noachian highland undivided unit",
+          "age": "Noachian",
+          "group": "noachian_highland",
+          "group_label": "Noachian highland",
+          "color": "#8f7a52"
+        },
+        "25": {
+          "id": 25,
+          "code": "eHh",
+          "name": "Early Hesperian highland unit",
+          "age": "Early Hesperian",
+          "group": "noachian_highland",
+          "group_label": "Noachian highland",
+          "color": "#8f7a52"
+        },
+        "22": {
+          "id": 22,
+          "code": "Nve",
+          "name": "Noachian volcanic edifice unit",
+          "age": "Noachian",
+          "group": "noachian_highland",
+          "group_label": "Noachian highland",
+          "color": "#8f7a52"
+        },
+        "24": {
+          "id": 24,
+          "code": "eHb",
+          "name": "Early Hesperian basin unit",
+          "age": "Early Hesperian",
+          "group": "hesperian_plains",
+          "group_label": "Hesperian plains & lowlands",
+          "color": "#6e8c78"
+        },
+        "11": {
+          "id": 11,
+          "code": "HNhu",
+          "name": "Hesperian and Noachian highland undivided unit",
+          "age": "Hesperian and Noachian",
+          "group": "noachian_highland",
+          "group_label": "Noachian highland",
+          "color": "#8f7a52"
+        },
+        "41": {
+          "id": 41,
+          "code": "lNv",
+          "name": "Late Noachian volcanic unit",
+          "age": "Late Noachian",
+          "group": "noachian_highland",
+          "group_label": "Noachian highland",
+          "color": "#8f7a52"
+        },
+        "4": {
+          "id": 4,
+          "code": "ANa",
+          "name": "Amazonian and Noachian apron unit",
+          "age": "Amazonian and Noachian",
+          "group": "transition_apron",
+          "group_label": "Transition & apron",
+          "color": "#a8a37e"
+        },
+        "10": {
+          "id": 10,
+          "code": "HNb",
+          "name": "Hesperian and Noachian basin unit",
+          "age": "Hesperian and Noachian",
+          "group": "hesperian_plains",
+          "group_label": "Hesperian plains & lowlands",
+          "color": "#6e8c78"
+        },
+        "27": {
+          "id": 27,
+          "code": "eHv",
+          "name": "Early Hesperian volcanic unit",
+          "age": "Early Hesperian",
+          "group": "hesperian_volcanic",
+          "group_label": "Hesperian volcanic",
+          "color": "#bf8b50"
+        },
+        "12": {
+          "id": 12,
+          "code": "HNt",
+          "name": "Hesperian and Noachian transition unit",
+          "age": "Hesperian and Noachian",
+          "group": "transition_apron",
+          "group_label": "Transition & apron",
+          "color": "#a8a37e"
+        },
+        "23": {
+          "id": 23,
+          "code": "eAb",
+          "name": "Early Amazonian basin unit",
+          "age": "Early Amazonian",
+          "group": "hesperian_plains",
+          "group_label": "Hesperian plains & lowlands",
+          "color": "#6e8c78"
+        },
+        "44": {
+          "id": 44,
+          "code": "mNhm",
+          "name": "Middle Noachian highland massif unit",
+          "age": "Middle Noachian",
+          "group": "noachian_highland",
+          "group_label": "Noachian highland",
+          "color": "#8f7a52"
+        },
+        "29": {
+          "id": 29,
+          "code": "eNhm",
+          "name": "Early Noachian highland massif unit",
+          "age": "Early Noachian",
+          "group": "noachian_highland",
+          "group_label": "Noachian highland",
+          "color": "#8f7a52"
+        },
+        "38": {
+          "id": 38,
+          "code": "lHv",
+          "name": "Late Hesperian volcanic unit",
+          "age": "Late Hesperian",
+          "group": "hesperian_volcanic",
+          "group_label": "Hesperian volcanic",
+          "color": "#bf8b50"
+        },
+        "35": {
+          "id": 35,
+          "code": "lHb",
+          "name": "Late Hesperian basin unit",
+          "age": "Late Hesperian",
+          "group": "hesperian_plains",
+          "group_label": "Hesperian plains & lowlands",
+          "color": "#6e8c78"
+        },
+        "19": {
+          "id": 19,
+          "code": "Hve",
+          "name": "Hesperian volcanic edifice unit",
+          "age": "Hesperian",
+          "group": "hesperian_volcanic",
+          "group_label": "Hesperian volcanic",
+          "color": "#bf8b50"
+        },
+        "5": {
+          "id": 5,
+          "code": "Aa",
+          "name": "Amazonian apron unit",
+          "age": "Amazonian",
+          "group": "transition_apron",
+          "group_label": "Transition & apron",
+          "color": "#a8a37e"
+        },
+        "18": {
+          "id": 18,
+          "code": "Htu",
+          "name": "Hesperian transition undivided unit",
+          "age": "Hesperian",
+          "group": "transition_apron",
+          "group_label": "Transition & apron",
+          "color": "#a8a37e"
+        },
+        "37": {
+          "id": 37,
+          "code": "lHt",
+          "name": "Late Hesperian transition unit",
+          "age": "Late Hesperian",
+          "group": "transition_apron",
+          "group_label": "Transition & apron",
+          "color": "#a8a37e"
+        },
+        "16": {
+          "id": 16,
+          "code": "Ht",
+          "name": "Hesperian transition unit",
+          "age": "Hesperian",
+          "group": "transition_apron",
+          "group_label": "Transition & apron",
+          "color": "#a8a37e"
+        },
+        "17": {
+          "id": 17,
+          "code": "Hto",
+          "name": "Hesperian transition outflow unit",
+          "age": "Hesperian",
+          "group": "transition_apron",
+          "group_label": "Transition & apron",
+          "color": "#a8a37e"
+        },
+        "39": {
+          "id": 39,
+          "code": "lHvf",
+          "name": "Late Hesperian volcanic field unit",
+          "age": "Late Hesperian",
+          "group": "hesperian_volcanic",
+          "group_label": "Hesperian volcanic",
+          "color": "#bf8b50"
+        },
+        "34": {
+          "id": 34,
+          "code": "lAvf",
+          "name": "Late Amazonian volcanic field unit",
+          "age": "Late Amazonian",
+          "group": "amazonian_volcanic",
+          "group_label": "Amazonian volcanic",
+          "color": "#c47d6e"
+        },
+        "3": {
+          "id": 3,
+          "code": "AHv",
+          "name": "Amazonian and Hesperian volcanic",
+          "age": "Amazonian and Hesperian",
+          "group": "amazonian_volcanic",
+          "group_label": "Amazonian volcanic",
+          "color": "#c47d6e"
+        },
+        "9": {
+          "id": 9,
+          "code": "Ave",
+          "name": "Amazonian volcanic edifice",
+          "age": "Amazonian",
+          "group": "amazonian_volcanic",
+          "group_label": "Amazonian volcanic",
+          "color": "#c47d6e"
+        },
+        "2": {
+          "id": 2,
+          "code": "AHtu",
+          "name": "Amazonian and Hesperian transition undivided unit",
+          "age": "Amazonian and Hesperian",
+          "group": "transition_apron",
+          "group_label": "Transition & apron",
+          "color": "#a8a37e"
+        },
+        "26": {
+          "id": 26,
+          "code": "eHt",
+          "name": "Early Hesperian transition unit",
+          "age": "Early Hesperian",
+          "group": "transition_apron",
+          "group_label": "Transition & apron",
+          "color": "#a8a37e"
+        },
+        "30": {
+          "id": 30,
+          "code": "lAa",
+          "name": "Late Amazonian apron unit",
+          "age": "Late Amazonian",
+          "group": "transition_apron",
+          "group_label": "Transition & apron",
+          "color": "#a8a37e"
+        },
+        "33": {
+          "id": 33,
+          "code": "lAv",
+          "name": "Late Amazonian volcanic unit",
+          "age": "Late Amazonian",
+          "group": "amazonian_volcanic",
+          "group_label": "Amazonian volcanic",
+          "color": "#c47d6e"
+        },
+        "36": {
+          "id": 36,
+          "code": "lHl",
+          "name": "Late Hesperian lowland unit",
+          "age": "Late Hesperian",
+          "group": "hesperian_plains",
+          "group_label": "Hesperian plains & lowlands",
+          "color": "#6e8c78"
+        },
+        "42": {
+          "id": 42,
+          "code": "mAl",
+          "name": "Middle Amazonian lowland unit",
+          "age": "Middle Amazonian",
+          "group": "hesperian_plains",
+          "group_label": "Hesperian plains & lowlands",
+          "color": "#6e8c78"
+        },
+        "8": {
+          "id": 8,
+          "code": "Av",
+          "name": "Amazonian volcanic unit",
+          "age": "Amazonian",
+          "group": "amazonian_volcanic",
+          "group_label": "Amazonian volcanic",
+          "color": "#c47d6e"
+        },
+        "32": {
+          "id": 32,
+          "code": "lApd",
+          "name": "Late Amazonian polar dunes unit",
+          "age": "Late Amazonian",
+          "group": "polar",
+          "group_label": "Polar deposits & ice",
+          "color": "#b5cbd8"
+        },
+        "15": {
+          "id": 15,
+          "code": "Hpu",
+          "name": "Hesperian polar undivided unit",
+          "age": "Hesperian",
+          "group": "polar",
+          "group_label": "Polar deposits & ice",
+          "color": "#b5cbd8"
+        }
+      },
+      "source": {
+        "dataset": "tanaka2014_geo",
+        "citation": "Tanaka, K.L., et al., 2014, Geologic map of Mars: USGS Scientific Investigations Map 3292, doi:10.3133/sim3292 (data doi:10.5066/P9PBKSGE)",
+        "licence": "USGS \u2014 public domain"
+      }
+    },
+    {
+      "id": "tes_olivine",
+      "title": "TES olivine abundance",
+      "group": "minerals",
+      "units": "%",
+      "description": "Global surface olivine mineral abundance derived from MGS TES thermal infrared spectra (Bandfield 2002).",
+      "tiles": "layers/tes_olivine/{z}/{x}/{y}.png",
+      "tiling": "geographic",
+      "min_level": 0,
+      "max_level": 2,
+      "rectangle": [
+        -180,
+        -60,
+        180,
+        60
+      ],
+      "values": {
+        "url": "layers/tes_olivine/values.bin",
+        "width": 1440,
+        "height": 480,
+        "west": -180,
+        "north": 60,
+        "res_deg": 0.25,
+        "scale": 0.00022888882106997894,
+        "offset": 0.0,
+        "nodata": 65535
+      },
+      "legend": {
+        "stops": [
+          [
+            0.9,
+            "#e0f5ee80"
+          ],
+          [
+            3.5,
+            "#087f7bF0"
+          ]
+        ],
+        "min": 0.9,
+        "max": 3.5,
+        "min_label": "0.9",
+        "max_label": "3.5",
+        "units": "%",
+        "palette": "mineral_teal_green",
+        "palette_label": "OKLab pale teal-green to deep emerald teal"
+      },
+      "source": {
+        "dataset": "tes_bandfield2002",
+        "citation": "Bandfield, J.L., 2002, Global mineral distributions on Mars: Journal of Geophysical Research: Planets, v. 107, no. E6, p. 5042, doi:10.1029/2001JE001510; NASA PDS / ASU Mars Global Data Sets.",
+        "licence": "NASA PDS \u2014 public domain"
+      }
+    }
+  ],
+  "sample": "Levels 0-1 of four layers for development; full set is built by pipeline/globe_layers.py"
 }

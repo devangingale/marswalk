@@ -1,12 +1,19 @@
 // Written with AI assistance, directed and reviewed by the team.
 
 /**
- * Base URL for tile bundles and site metadata. Set VITE_TILES_BASE to override;
- * development defaults to the local full bundles and production to the sample.
+ * Production CDN: the Cloudflare R2 bucket's public URL (no trailing slash), which serves the
+ * site bundles and the 360° surface view data (panoramas.json, panos/, passes/). Empty in
+ * development, where everything comes from the Vite dev server.
+ */
+export const R2_BASE: string = ((import.meta.env.VITE_R2_BASE_URL as string | undefined) ?? '').replace(/\/+$/, '');
+
+/**
+ * Base URL for tile bundles and site metadata. VITE_TILES_BASE overrides; otherwise production
+ * uses the R2 CDN, development the local full bundles, and a production build without R2 the sample.
  */
 export const TILES_BASE: string =
   (import.meta.env.VITE_TILES_BASE as string) ||
-  (import.meta.env.MODE === 'development' ? '/local-bundles' : '/sample');
+  (import.meta.env.MODE === 'development' ? '/local-bundles' : R2_BASE || '/sample');
 
 /**
  * Base URL for the globe layer set (layers.json, tiles, value grids, caves).

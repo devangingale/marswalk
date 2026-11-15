@@ -26,12 +26,15 @@ import { DEFAULT_FILTERS, FilterState, filterSites } from './filters';
 import { formatScore, scoreBucket } from './format';
 import { nearestPlaceName, PlaceFeature } from './nearestPlace';
 import { SitesPanel } from './SitesPanel';
+import { isInSurfaceView } from '../../surface360/SurfaceView';
 import { SiteCard } from './SiteCard';
 import './sites.css';
 
 interface SiteFinderProps {
   viewer: Viewer | null;
   active: boolean;
+  /** Extra action shown on the selected site's card. */
+  siteAction?: (site: Site) => React.ReactNode;
   registerHover: (fn: ((entity: Entity | null) => string[] | null) | null) => void;
   /** Where the selected site card renders; without one, no card is shown. */
   cardHost: HTMLElement | null;
@@ -47,14 +50,17 @@ function cssColour(name: string): Color {
 
 /** Fly the camera straight down onto a site. */
 async function flyToSite(viewer: Viewer, lon: number, lat: number): Promise<void> {
+  if (isInSurfaceView(viewer)) return;
   const [sampled] = await viewer.scene.sampleHeightMostDetailed([Cartographic.fromDegrees(lon, lat)]);
+  // The height sample can resolve after the surface view has been entered.
+  if (isInSurfaceView(viewer)) return;
   const centre = lonLatToCartesian(lon, lat, sampled?.height ?? 0);
   viewer.camera.flyToBoundingSphere(new BoundingSphere(centre, 1), {
     offset: new HeadingPitchRange(0, CesiumMath.toRadians(-75), 60_000),
   });
 }
 
-export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, registerHover, cardHost, onSelectedChange }) => {
+export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, registerHover, cardHost, onSelectedChange, siteAction }) => {
   const [data, setData] = useState<{ sites: Site[]; vetoes: Veto[]; fileWeights: Weights } | null>(null);
   const [places, setPlaces] = useState<PlaceFeature[] | null>(null);
   const [weights, setWeights] = useState<Weights | null>(null);
@@ -273,6 +279,7 @@ export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, register
             placeName={placeNames.get(selected.id) ?? null}
             rank={selectedRank}
             onClose={() => setSelectedId(null)}
+            action={siteAction?.(selected)}
           />,
           cardHost,
         )}

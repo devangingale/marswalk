@@ -51,6 +51,10 @@ import { SiteFinder } from './sites/SiteFinder';
 import { GlobeOverlays } from './overlays';
 import { formatElevation, formatLatLon, graticuleStep, screenSpan, sectionLabel } from './routeLook';
 import type { Theme } from './theme/theme';
+import { EnterSurfacePopover, MOSAIC_RADIUS_M, useSurface360, type EnterCandidate } from '../surface360/Surface360';
+import { formatMetres } from '../surface360/geodesic';
+import { isInSurfaceView } from '../surface360/SurfaceView';
+import type { Site } from './sites/types';
 import { ViewMenu } from './ViewMenu';
 import { ExploreAnnotations, HeatmapButtons, HotspotList, chooseHeatmap, defaultGlobalOn, type AnnotationsSnapshot } from './annotations';
 
@@ -106,10 +110,13 @@ function urlState() {
 }
 
 async function flyTo(viewer: Viewer, lon: number, lat: number, rangeM: number, pitchDeg: number, groundM?: number) {
+  // A site load or crew framing that lands while the 360° view is open must not pull the camera out.
+  if (isInSurfaceView(viewer)) return;
   const [sampled] = groundM === undefined
     ? await viewer.scene.sampleHeightMostDetailed([Cartographic.fromDegrees(lon, lat)])
     : [undefined];
   const centre = lonLatToCartesian(lon, lat, groundM ?? sampled?.height ?? 0);
+  if (isInSurfaceView(viewer)) return;
   viewer.camera.flyToBoundingSphere(new BoundingSphere(centre, 1), {
     offset: new HeadingPitchRange(0, CesiumMath.toRadians(pitchDeg), rangeM),
   });
@@ -269,6 +276,54 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
   const [edges, setEdges] = useState<EdgeLabel[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
+  // 360° surface view: a clicked waypoint or rover mark offers to enter it.
+  const surface = useSurface360(viewer);
+  const surfaceActiveRef = useRef(false);
+  surfaceActiveRef.current = surface.active;
+  const [enterCandidate, setEnterCandidate] = useState<EnterCandidate | null>(null);
+  // Known sites (known_sites.csv via sites.json): the rover's 360° mosaic when one is within
+  // MOSAIC_RADIUS_M, else an eye-level view on the orbital surface. Candidates get neither.
+  const siteAction = useCallback(
+    (site: Site) => {
+      if (site.kind === 'new') return null;
+      const near = surface.nearest({ lon: site.lon, lat: site.lat });
+      if (near && near.distanceM <= MOSAIC_RADIUS_M) {
+        return (
+          <button type="button" className="s48-btn s48-btn--primary" disabled={!surface.ready} onClick={() => surface.enter(near.stop.id)}>
+            Enter 360° Surface View · {near.stop.pia_id}, {formatMetres(near.distanceM)} away
+          </button>
+        );
+      }
+      return (
+        <button
+          type="button"
+          className="s48-btn s48-btn--secondary"
+          disabled={surface.active}
+          onClick={() =>
+            surface.enterRecon({
+              id: site.id,
+              name: site.name,
+              lat: site.lat,
+              lon_east: site.lon,
+              elevation_m: Number.isFinite(site.evidence?.elevation_m) ? site.evidence.elevation_m : null,
+            })
+          }
+        >
+          Surface View (Orbital DEM)
+        </button>
+      );
+    },
+    [surface],
+  );
+  useEffect(() => {
+    if (surface.active) setEnterCandidate(null);
+  }, [surface.active]);
+  useEffect(() => {
+    if (!enterCandidate) return;
+    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && setEnterCandidate(null);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [enterCandidate]);
 
   const statesRef = useRef({ layerStates, globalStates, graticuleOn });
   statesRef.current = { layerStates, globalStates, graticuleOn };
@@ -408,8 +463,18 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
 
       let frame = 0;
       handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
-      removers.push(installGroundPan(viewer, () => false));
+      // Ground pan stands down while the camera is inside a 360° or orbital-recon surface view,
+      // where a drag turns the view instead.
+      removers.push(installGroundPan(viewer, () => surfaceActiveRef.current));
+      handler.setInputAction((event: ScreenSpaceEventHandler.PositionedEvent) => {
+        if (surfaceActiveRef.current) return;
+        const target = overlaysRef.current?.surfaceTarget(viewer.scene.pick(event.position));
+        setEnterCandidate(
+          target ? { x: event.position.x, y: event.position.y, title: target.title, at: { lon: target.lon, lat: target.lat } } : null,
+        );
+      }, ScreenSpaceEventType.LEFT_CLICK);
       handler.setInputAction((event: ScreenSpaceEventHandler.MotionEvent) => {
+        if (surfaceActiveRef.current) return;
         cancelAnimationFrame(frame);
         frame = requestAnimationFrame(() => {
           const at = event.endPosition;
@@ -702,6 +767,7 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
           registerHover={registerSiteHover}
           cardHost={cardHost}
           onSelectedChange={onSiteSelected}
+          siteAction={siteAction}
         />
       </div>
     </div>
@@ -780,6 +846,8 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
       }}
     >
       <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
+      {/* Map labels step aside in the 360° view; display: contents keeps their layout and state. */}
+      <div style={{ display: surface.active ? 'none' : 'contents' }}>
       {edges.map((label) => (
         <span
           key={label.key}
@@ -806,6 +874,11 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
           ))}
         </div>
       )}
+      </div>
+      {enterCandidate && !surface.active && (
+        <EnterSurfacePopover candidate={enterCandidate} surface={surface} onClose={() => setEnterCandidate(null)} />
+      )}
+      {surface.overlay}
     </div>
   );
 
@@ -818,7 +891,10 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
         right={right}
         rightLabel="Details"
         main={main}
-        controls={controls}
+        // The map controls, side panels and their handles would sit over the 360° view's HUD;
+        // they return on exit.
+        controls={surface.active ? undefined : controls}
+        bare={surface.active}
         time={
           dustScene ? (
             <Clock scene={dustScene} onLs={setLs} visible={dustHistoryOn} onPlay={onClockPlay} onLegend={setDustLegend} />

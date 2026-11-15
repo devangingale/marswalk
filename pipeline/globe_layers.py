@@ -39,6 +39,7 @@ OKLAB_RAMPS = {
     "unit_slate_sand": ("#707d87", "#dcc895"),
     "swim_ice": ("#3a7fd0", "#eef7ff"),
     "ice_distance": ("#256fc1", "#dbeeff"),
+    "mineral_teal_green": ("#e0f5ee", "#087f7b"),
 }
 PALETTE_LABELS = {
     "dose_yellow": "OKLab pale yellow to bright yellow (#ffe94d)",
@@ -48,6 +49,8 @@ PALETTE_LABELS = {
     "unit_slate_sand": "OKLab slate to sand",
     "ice_distance": "OKLab strong blue near ice; fades to transparent at 500 km",
     "swim_ice": "OKLab blue at 0+ through light blue to near-white at +1",
+    "mineral_teal_green": "OKLab pale teal-green to deep emerald teal",
+    "geology_muted": "Muted categorical ramp (7 major epoch and terrain groups)",
 }
 
 
@@ -118,6 +121,13 @@ def colour_ramp(values: np.ndarray, minimum: float, maximum: float, cmap_name: s
     """Map values to a perceptual matplotlib sequential ramp with a clear low end."""
     if maximum <= minimum:
         raise ValueError("maximum must be greater than minimum")
+    if cmap_name == "geology_muted":
+        from globe_geology import GEOLOGY_GROUPS
+        rgba = np.zeros((*values.shape, 4), dtype=np.uint8)
+        for grp in GEOLOGY_GROUPS.values():
+            mask = np.rint(values) == grp["id"]
+            rgba[mask] = grp["rgba"]
+        return rgba
     valid = np.isfinite(values)
     t = np.clip((values - minimum) / (maximum - minimum), 0, 1)
     rgba = np.zeros((*values.shape, 4), dtype=np.uint8)
@@ -128,11 +138,15 @@ def colour_ramp(values: np.ndarray, minimum: float, maximum: float, cmap_name: s
         else:
             cmap = colormaps[cmap_name]
             rgb = np.rint(cmap(t[valid])[:, :3] * 255).astype(np.uint8)
+
         if cmap_name == "ice_distance":
             alpha_t = np.clip((500 - values[valid]) / 500, 0, 1)
         elif cmap_name == "swim_ice":
             positive = np.clip(values[valid], 0, 1)
             alpha_t = np.where(positive > 0, 0.35 + 0.65 * np.power(positive, 0.65), 0)
+        elif cmap_name == "mineral_teal_green":
+            above_min = values[valid] >= minimum
+            alpha_t = np.where(above_min, 0.28 + 0.72 * t[valid], 0.0)
         else:
             alpha_t = t[valid]
         alpha = np.rint(np.power(alpha_t, 0.65) * 240).astype(np.uint8)
@@ -210,6 +224,18 @@ def metadata() -> dict[str, dict]:
                          "units": "consistency", "dataset": "swim_ice", "group": "ice",
                          "cmap": "swim_ice", "description": f"SWIM water-ice consistency for the {depth} depth interval.",
                          "bounds": (-1, 1)}
+    configs["geology"] = {
+        "title": "Geologic units (SIM 3292)", "units": "", "dataset": "tanaka2014_geo",
+        "group": "geology", "cmap": "geology_muted",
+        "description": "USGS global geologic map of Mars (Tanaka et al. 2014, SIM 3292) categorized by major epoch and terrain.",
+        "bounds": (1, 7),
+    }
+    configs["tes_olivine"] = {
+        "title": "TES olivine abundance", "units": "%", "dataset": "tes_bandfield2002",
+        "group": "minerals", "cmap": "mineral_teal_green",
+        "description": "Global surface olivine mineral abundance derived from MGS TES thermal infrared spectra (Bandfield 2002).",
+        "bounds": (1.0, 3.5),
+    }
     return configs
 
 
@@ -381,7 +407,14 @@ def build(only: str | list[str] | None = None) -> None:
     manifest_layers = []
     for layer_id in layer_ids:
         cfg = configs[layer_id]
-        layer_manifest, _, _ = make_layer(layer_id, cfg)
+        if layer_id == "geology":
+            from globe_geology import make_geology_layer
+            layer_manifest = make_geology_layer()
+        elif layer_id == "tes_olivine":
+            from globe_geology import make_tes_olivine_layer
+            layer_manifest = make_tes_olivine_layer()
+        else:
+            layer_manifest, _, _ = make_layer(layer_id, cfg)
         manifest_layers.append(layer_manifest)
     manifest_path = OUT / "layers.json"
     if selected and manifest_path.exists():
@@ -393,11 +426,12 @@ def build(only: str | list[str] | None = None) -> None:
         cfg = configs[entry["id"]]
         entry.update(title=cfg["title"], group=cfg["group"], units=cfg["units"], description=cfg["description"])
         legend = entry["legend"]
-        legend.update(
-            min_label=format_legend_number(legend["min"]), max_label=format_legend_number(legend["max"]),
-            units=cfg["units"], palette=cfg["cmap"],
-            palette_label=PALETTE_LABELS.get(cfg["cmap"], cfg["cmap"]),
-        )
+        if entry["id"] != "geology":
+            legend.update(
+                min_label=format_legend_number(legend["min"]), max_label=format_legend_number(legend["max"]),
+                units=cfg["units"], palette=cfg["cmap"],
+                palette_label=PALETTE_LABELS.get(cfg["cmap"], cfg["cmap"]),
+            )
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(json.dumps({"version": 1, "layers": manifest_layers}, indent=2), encoding="utf-8")
     if not selected:
@@ -408,8 +442,20 @@ def build(only: str | list[str] | None = None) -> None:
         vmeta = entry["values"]
         packed = np.fromfile(OUT / vmeta["url"], dtype=np.uint16).reshape(vmeta["height"], vmeta["width"])
         values = dequantise_values(packed, vmeta["scale"], vmeta["offset"])
-        sheet_items.append({"id": entry["id"], "title": cfg["title"], "units": cfg["units"], "data": values,
-                            "range": (entry["legend"]["min"], entry["legend"]["max"]), "cmap": cfg["cmap"]})
+        if entry["id"] == "geology":
+            from globe_geology import GEOLOGY_GROUPS, load_sim3292_catalog_and_shapes
+            catalog, _ = load_sim3292_catalog_and_shapes(DATA / "raw/tanaka2014_geo/sim3292_database.zip")
+            grp_map = np.zeros(max(catalog.keys()) + 1, dtype=np.float32)
+            for uid, cat in catalog.items():
+                grp_map[uid] = GEOLOGY_GROUPS[cat["group"]]["id"]
+            valid_mask = np.isfinite(values) & (values > 0) & (values <= max(catalog.keys()))
+            grp_values = np.full_like(values, np.nan)
+            grp_values[valid_mask] = grp_map[values[valid_mask].astype(int)]
+            sheet_items.append({"id": entry["id"], "title": cfg["title"], "units": cfg["units"], "data": grp_values,
+                                "range": (1.0, 7.0), "cmap": cfg["cmap"]})
+        else:
+            sheet_items.append({"id": entry["id"], "title": cfg["title"], "units": cfg["units"], "data": values,
+                                "range": (entry["legend"]["min"], entry["legend"]["max"]), "cmap": cfg["cmap"]})
     write_contact_sheet(sheet_items)
 
 

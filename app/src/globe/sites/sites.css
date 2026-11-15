@@ -266,3 +266,7 @@
   font-weight: var(--weight-medium);
 }
 
+.sites-card__action {
+  display: grid;
+  margin-top: var(--space-2);
+}

@@ -1,0 +1,8 @@
+# Python packages for the scheduled data refresh (.github/workflows/refresh-data.yml):
+# fetch_spice.py, passes.py --no-plot, build_panoramas.py. Python 3.12.
+# The DEM steps (derive.py, grids.py, walkability.py) need the coordinator's datasets and
+# their own environment (gdal-env); they do not run in CI.
+spiceypy==8.4.0
+numpy==2.5.4
+scipy==1.18.1
+pillow==13.0.0
