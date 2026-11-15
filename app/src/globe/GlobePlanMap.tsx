@@ -15,7 +15,9 @@ import type { RouteGrid } from '../lib/grid';
 import { lonlatToLocalMetres } from '../lib/grid';
 import { ScaleBar } from '../components/ScaleBar';
 import { GlobeOverlays, photoSites, surfaceHeightM } from './overlays';
-import { createMarsViewer, initCesium, surfaceClassification } from './cesiumSetup';
+import { createMarsViewer, initCesium, surfaceClassification, type CesiumFailure } from './cesiumSetup';
+import { useSurfaceMode } from './surfaceMode';
+import { SurfaceNotice } from './SurfaceNotice';
 import { installGroundPan } from './groundPan';
 import { installPlanetView } from './planetView';
 import { cartesianToLonLat, lonLatToCartesian, metresPerPixel as measureMetresPerPixel, siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M } from './frame';
@@ -88,6 +90,8 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
   const roverStateRef = useRef(roverOverlayState);
   const roverDataRef = useRef<{ traverse: GeoJSON.LineString | null; sites: ReturnType<typeof photoSites> } | null>(null);
   const [offline, setOffline] = useState(false);
+  const [failure, setFailure] = useState<CesiumFailure | null>(null);
+  const surfaceMode = useSurfaceMode();
   const [imageryTarget, setImageryTarget] = useState<ImageryLayerCollection | null>(null);
   const globalRef = useRef<GlobeGlobalLayers | null>(null);
   const temperatureRef = useRef<GlobeTemperatureLayer | null>(null);
@@ -109,14 +113,15 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
     let removePlanetView: (() => void) | null = null;
     let resizeObserver: ResizeObserver | null = null;
     const startup = async () => {
-      initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, navigator.onLine);
-      const { viewer, tileset, mode } = await createMarsViewer(container, { interactive: true });
+      initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, surfaceMode === 'online');
+      const { viewer, tileset, mode, failure: loadFailure } = await createMarsViewer(container, { interactive: true });
       if (disposed) { viewer.destroy(); return; }
       viewerRef.current = viewer;
       if (viewer.scene.globe) viewer.scene.globe.depthTestAgainstTerrain = true;
       viewer.scene.screenSpaceCameraController.enableCollisionDetection = false;
       viewer.cesiumWidget.creditContainer.setAttribute('aria-label', 'Cesium ion attribution');
       setOffline(mode === 'offline' || !tileset);
+      setFailure(loadFailure);
 
       const [west, south, east, north] = siteData.bounds_lonlat;
       const mid = { lon: (west + east) / 2, lat: (south + north) / 2 };
@@ -299,7 +304,7 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
     };
   // Viewer lifetime follows site identity; route and controls sync in separate effects.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [siteData.id]);
+  }, [siteData.id, surfaceMode]);
 
   useEffect(() => {
     gridRef.current = grid ?? null;
@@ -390,7 +395,8 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
   // Leaving the map clears the hover dot and tag; a drag in progress keeps them.
   return <div className={`globe-plan-map${placingShelter ? ' is-placing-shelter' : ''}`} onPointerLeave={() => { setHover(null); if (!dragRef.current) onRoutePointHover?.(null); }}>
     <div ref={containerRef} className="globe-plan-canvas" />
-    {offline && <div className="globe-plan-offline">Offline · local terrain</div>}
+    {offline && !failure && <div className="globe-plan-offline">Offline · local terrain</div>}
+    <SurfaceNotice failure={failure} />
     {placingShelter && <div className="globe-plan-placing" role="status">Click the map to place the shelter · Esc cancels</div>}
     {hover && <div className="globe-plan-hover" style={{ left: hover.x, top: hover.y }}>{hover.lines.join('\n')}</div>}
     <ScaleBar metresPerPixel={scale} />
