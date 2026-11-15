@@ -8,6 +8,9 @@ import {
   sunElevationDeg,
   sunEvents,
   calculateMarsParameters,
+  sunPosition,
+  solStartAt,
+  MARS_SOL_MS,
 } from './sun';
 
 describe('Mars24 Solar Times and Coordinates', () => {
@@ -227,5 +230,27 @@ describe('Mars24 Solar Times and Coordinates', () => {
     // Verify sun elevation is 90 deg (overhead at zenith) within 0.5 deg
     const elev = sunElevationDeg(testUtcMs, subsolarLat, subsolarLonEast);
     expect(Math.abs(elev - 90.0)).toBeLessThan(0.5);
+  });
+});
+
+describe('sunPosition (Mars24 Eq. D-5, D-6)', () => {
+  it('gives the GISS worked example A azimuth and elevation (2000-01-06 00:00 UTC, 0 E 0 N)', () => {
+    const p = sunPosition(947116800000, 0, 0);
+    expect(p.azimuthDeg).toBeCloseTo(191.03905, 4);
+    expect(p.elevationDeg).toBeCloseTo(90 - 154.26182, 3);
+  });
+
+  it('gives the GISS worked example B azimuth and elevation (Spirit landing, 184.702 W 14.64 S)', () => {
+    const p = sunPosition(1073137591000, -14.64, 360 - 184.702);
+    expect(p.azimuthDeg).toBeCloseTo(179.99383, 3);
+    expect(p.elevationDeg).toBeCloseTo(90 - 151.93895, 2);
+  });
+
+  it('solStartAt lands on local mean midnight of the same sol', () => {
+    const now = Date.UTC(2026, 7, 25, 15, 0, 0);
+    const start = solStartAt(now, 137.4);
+    expect(localMeanSolarTime(start, 137.4)).toBeCloseTo(0, 6);
+    expect(now - start).toBeGreaterThanOrEqual(0);
+    expect(now - start).toBeLessThan(MARS_SOL_MS);
   });
 });

@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
-import type { Plan, PlanParams, PlanStop } from '../lib/plan';
+import React, { useEffect, useMemo, useState } from 'react';
+import type { Plan, PlanParams, PlanStop, ShelterType } from '../lib/plan';
 import type { RouteGrid } from '../lib/grid';
-import { validatePlan } from '../lib/plan';
-import { budgetFractions, removeStop, reorderStop, updateStop } from './planLogic';
+import { SHELTER_TYPES, SHELTER_TYPE_HINTS, SHELTER_TYPE_NAMES, setShelterType, shelterType, validatePlan } from '../lib/plan';
+import { budgetFractions, removeStop, reorderStop, updateStop, type ShelterMoveState } from './planLogic';
+import { formatLatLon } from '../globe/routeLook';
 import { PlanProfile } from '../globe/plan/PlanProfile';
 import { PlanPace } from '../globe/plan/PlanPace';
 import { MoverPicker, moverBudget, type Mover } from '../globe/plan/MoverPicker';
@@ -16,6 +17,10 @@ interface Props {
   activePoint: { lon: number; lat: number } | null;
   onProfileHover: (point: { lon: number; lat: number } | null) => void;
   stopNotices?: Record<string, string>;
+  /** Move-shelter mode and the last placement's snap notice. */
+  shelterMove?: ShelterMoveState;
+  onMoveShelter?: () => void;
+  onCancelMoveShelter?: () => void;
 }
 
 const fmtDistance = (m: number) => m >= 1000 ? `${(m / 1000).toFixed(1)}\u00a0km` : `${Math.round(m)}\u00a0m`;
@@ -29,7 +34,7 @@ const fmtEnergy = (energy: number) => `${Math.round(energy / 50) * 50}\u00a0kJ`;
 const fmtElevation = (metres: number, sign: '+' | '−') => Math.round(metres) === 0 ? `0\u00a0m` : `${sign}${Math.round(metres)}\u00a0m`;
 const clone = (plan: Plan, patch: Partial<Pick<Plan, 'params' | 'start' | 'stops'>>) => ({ ...plan, ...patch });
 
-export const PlanRail: React.FC<Props> = ({ plan, grid, computing, onChange, onImport, mover, onMoverChange, activePoint, onProfileHover, stopNotices }) => {
+export const PlanRail: React.FC<Props> = ({ plan, grid, computing, onChange, onImport, mover, onMoverChange, activePoint, onProfileHover, stopNotices, shelterMove, onMoveShelter, onCancelMoveShelter }) => {
   const [paramsOpen, setParamsOpen] = useState(false);
   const fractions = budgetFractions(plan.route.totals, plan.params);
   const selectedBudget = moverBudget(plan, mover);
@@ -71,6 +76,8 @@ export const PlanRail: React.FC<Props> = ({ plan, grid, computing, onChange, onI
   };
 
   return <aside className="plan-rail" aria-label="Route plan">
+    <ShelterSection plan={plan} onChange={onChange} move={shelterMove} onMove={onMoveShelter} onCancel={onCancelMoveShelter} />
+
     <section className="plan-section plan-stops" aria-labelledby="plan-stops-heading">
       <div className="plan-rail__head"><h2 id="plan-stops-heading">Stops</h2><span aria-live="polite">{computing ? 'Computing' : ''}</span></div>
       {plan.stops.length === 0
@@ -123,3 +130,35 @@ const Budget: React.FC<{ label: string; value: string; limit?: string; fraction?
   <div className="plan-budget__values"><span>{label}</span><b>{value}</b>{limit && <small>{limit}</small>}</div>
   {fraction !== undefined && <div className="budget-track"><span style={{ width: `${Math.min(100, Math.max(0, fraction * 100))}%` }} /></div>}
 </div>;
+
+/**
+ * The shelter the walk starts from and returns to: its type, name and position, and
+ * "Move shelter" (the next map click places it; Esc cancels). Not a stop.
+ */
+const ShelterSection: React.FC<{ plan: Plan; onChange: (plan: Plan) => void; move?: ShelterMoveState; onMove?: () => void; onCancel?: () => void }> = ({ plan, onChange, move, onMove, onCancel }) => {
+  const active = !!move?.active;
+  useEffect(() => {
+    if (!active || !onCancel) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onCancel(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [active, onCancel]);
+  const kind = shelterType(plan.start);
+  return <section className="plan-section plan-shelter" aria-labelledby="plan-shelter-heading">
+    <div className="plan-rail__head"><h2 id="plan-shelter-heading">Shelter</h2><span>Start and finish of the walk</span></div>
+    <div className="plan-shelter__grid">
+      <label>Type<select aria-label="Shelter type" value={kind} onChange={(e) => onChange({ ...plan, start: setShelterType(plan.start, e.target.value as ShelterType) })}>
+        {SHELTER_TYPES.map((value) => <option key={value} value={value}>{SHELTER_TYPE_NAMES[value]}</option>)}
+      </select></label>
+      <label>Name<input aria-label="Shelter name" value={plan.start.label} onChange={(e) => onChange({ ...plan, start: { ...plan.start, label: e.target.value } })} /></label>
+    </div>
+    <p className="plan-shelter__hint">{SHELTER_TYPE_HINTS[kind]}</p>
+    <div className="plan-shelter__position">
+      <span>Position</span><b>{formatLatLon(plan.start.lon, plan.start.lat)}</b>
+    </div>
+    <button type="button" className={`plan-shelter__move${active ? ' is-active' : ''}`} aria-pressed={active} onClick={onMove} disabled={!onMove}>
+      {active ? 'Click the map to place · Esc cancels' : 'Move shelter'}
+    </button>
+    {move?.notice && <p className="plan-stop-notice">{move.notice}</p>}
+  </section>;
+};

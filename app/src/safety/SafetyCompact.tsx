@@ -58,7 +58,7 @@ export const SafetyVisor: React.FC<{ model: SafetyModel; hazard?: string | null 
       <WarningLadder result={model.ladder} shelter={model.shelter} shelterEtaS={model.shelterEtaS} compact />
       {hazard && <p className="s48-visor-hazard-line" role="alert">{hazard}</p>}
     </div>
-    <div className="s48-safety s48-safety--visor s48-safety--visor-sos" aria-label="SOS">
+    <div className="s48-safety s48-safety--visor s48-safety--visor-sos" aria-label="SOS" data-tour="visor-sos">
       <Sos model={model} />
     </div>
   </>

@@ -25,7 +25,7 @@ export const GLOBE_BASE: string = (import.meta.env.VITE_GLOBE_BASE as string) ||
  * Available sites configured for the mission.
  * Gale (Mount Sharp) is the primary full site; Jezero is the validation site.
  */
-export const AVAILABLE_SITES: string[] = ['gale', 'jezero'];
+export const AVAILABLE_SITES: string[] = ['gale', 'jezero', 'mclaughlin'];
 
 export const DEFAULT_SITE: string = 'gale';
 

@@ -23,8 +23,8 @@ export function groundDistanceM(a: LonLat, b: LonLat): number {
 
 /**
  * Walk map labels, lowest priority first out: the rover's label (its drive time to the
- * crew) is dropped while the rover is parked at the drop-off and the crew is within a
- * label's width of it. The drop-off label already names that point, the crew labels win
+ * crew) is dropped while the rover is parked at the plan shelter and the crew is within a
+ * label's width of it. The shelter label already names that point, the crew labels win
  * over both, and the rover's call and arrival stay in the Safety panel.
  */
 export function declutterCrewLabels(model: CrewMarkerModel | null, dropOff: LonLat): CrewMarkerModel | null {

@@ -1,0 +1,43 @@
+/* Directions block (Walk Stop panel) and the Visor's compact directions line. Tokens only. */
+
+.s48-directions-main {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-3);
+}
+.s48-directions-arrow {
+  width: var(--space-12);
+  height: var(--space-12);
+  fill: var(--color-accent);
+  flex: none;
+}
+.s48-directions-instruction {
+  margin: 0;
+  font: var(--weight-semibold) var(--text-xl) / var(--leading-xl) var(--font-readout);
+  overflow-wrap: anywhere;
+}
+.s48-directions-target,
+.s48-directions-sun p {
+  margin: var(--space-2) 0 0;
+  font: var(--text-md) / var(--leading-md) var(--font-data);
+  font-variant-numeric: var(--numeric);
+}
+.s48-directions-sun p { color: var(--color-text-muted); font-size: var(--text-sm); line-height: var(--leading-sm); }
+.s48-directions-sun p:first-child { color: var(--color-text); }
+.s48-directions-sun .s48-directions-sol { margin-top: 0; }
+
+/* Visor: one line inside the Next stop readout. */
+.s48-visor-directions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font: var(--text-lg) / var(--leading-lg) var(--font-readout);
+  font-variant-numeric: var(--numeric);
+}
+.s48-visor-directions svg {
+  width: var(--space-6);
+  height: var(--space-6);
+  fill: var(--visor-accent);
+  flex: none;
+}

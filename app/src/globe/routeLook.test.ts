@@ -83,28 +83,28 @@ describe('coordinates', () => {
 });
 
 describe('labels', () => {
-  it('names the drop-off and numbers stops in plan order', () => {
-    expect(waypointLabel('start', LOOP)).toBe('Drop-off');
+  it('names the shelter and numbers stops in plan order', () => {
+    expect(waypointLabel('start', LOOP)).toBe('Shelter');
     expect(waypointLabel('c', LOOP)).toBe('3');
   });
 
   it('labels a section with its detours, distance and time', () => {
     const section: Section = { id: 'section-1', fromStopId: 'start', toStopId: 'c', detourStopIds: ['b'], legIndices: [1, 2] };
-    expect(sectionLabel(section, LOOP)).toBe('Drop-off → 3 via 2 · 1.6 km · 38 min');
+    expect(sectionLabel(section, LOOP)).toBe('Shelter → 3 via 2 · 1.6 km · 38 min');
   });
 
   it('labels a section without detours', () => {
     const section: Section = { id: 'section-0', fromStopId: 'start', toStopId: 'a', detourStopIds: [], legIndices: [0] };
-    expect(sectionLabel(section, LOOP)).toBe('Drop-off → 1 · 800 m · 16 min');
+    expect(sectionLabel(section, LOOP)).toBe('Shelter → 1 · 800 m · 16 min');
   });
 
   it('labels the whole route as the chain of stops', () => {
-    expect(routeLabel(LOOP)).toBe('Drop-off → 1 → 2 → 3 → Drop-off · 3.6 km · 1 h 20 min');
+    expect(routeLabel(LOOP)).toBe('Shelter → 1 → 2 → 3 → Shelter · 3.6 km · 1 h 20 min');
   });
 
   it('labels fork branches by destination', () => {
     expect(branchLabel('b', LOOP)).toBe('to Stop 2');
-    expect(branchLabel('drop-off', LOOP)).toBe('back to drop-off');
+    expect(branchLabel('drop-off', LOOP)).toBe('back to shelter');
   });
 
   it('needs a finish marker only when the route ends away from the drop-off', () => {
@@ -185,7 +185,7 @@ describe('gradient', () => {
     expect(slopeLabels(stats, 118)).toEqual({
       high: 'High -4,402 m',
       low: 'Low -4,461 m',
-      steepest: 'Steepest 18° · 118 m from drop-off',
+      steepest: 'Steepest 18° · 118 m from shelter',
     });
   });
 });

@@ -80,16 +80,19 @@ def main() -> None:
     small = img[:, ::step, ::step]
     rgb = np.repeat(small, 3, axis=0) if small.shape[0] == 1 else small[:3]
     pic = Image.fromarray(np.moveaxis(rgb, 0, -1))
-    poses = load_poses(cfg)
-    px = (poses["x"].to_numpy() - itf.c) / itf.a / step
-    py = (poses["y"].to_numpy() - itf.f) / itf.e / step
-    inside = (px >= 0) & (px < pic.width) & (py >= 0) & (py < pic.height)
-    draw = ImageDraw.Draw(pic)
-    pts = list(zip(px[inside].tolist(), py[inside].tolist()))
-    for x, y in pts:
-        draw.point((x, y), fill=(0, 255, 255))
+    if cfg.get("poses") and Path(cfg["poses"]).exists():
+        poses = load_poses(cfg)
+        px = (poses["x"].to_numpy() - itf.c) / itf.a / step
+        py = (poses["y"].to_numpy() - itf.f) / itf.e / step
+        inside = (px >= 0) & (px < pic.width) & (py >= 0) & (py < pic.height)
+        draw = ImageDraw.Draw(pic)
+        pts = list(zip(px[inside].tolist(), py[inside].tolist()))
+        for x, y in pts:
+            draw.point((x, y), fill=(0, 255, 255))
+        print(f"quicklook: {pic.width}x{pic.height}, {int(inside.sum())} of {len(poses)} poses inside the area")
+    else:
+        print(f"quicklook: {pic.width}x{pic.height}, no rover poses configured for site")
     pic.save(out / "quicklook.png")
-    print(f"quicklook: {pic.width}x{pic.height}, {int(inside.sum())} of {len(poses)} poses inside the area")
 
 
 if __name__ == "__main__":

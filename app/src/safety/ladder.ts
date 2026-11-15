@@ -5,7 +5,7 @@
  * "Night contingency").
  *
  * The ladder is a pure function of the clock, the back-by (turn-back) deadline,
- * sunset, and the projected arrival back at the drop-off at the current pace:
+ * sunset, and the projected arrival back at the shelter at the current pace:
  *
  *   ok -> behind-pace -> turn-back -> return-to-shelter
  *
@@ -33,7 +33,7 @@ export interface LadderInput {
   backByMs: number;
   /** Sunset at the crew's site (UTC ms). */
   sunsetMs: number;
-  /** Estimated arrival back at the drop-off at the current pace (UTC ms). */
+  /** Estimated arrival back at the plan shelter at the current pace (UTC ms). */
   projectedArrivalMs: number;
   /** How many minutes slower than the required pace the crew is moving (>= 0). */
   behindPaceMin: number;
@@ -96,7 +96,7 @@ export function ladderLevel(input: LadderInput): LadderResult {
       return {
         level,
         headline: 'On pace',
-        detail: `Back at the drop-off with ${formatDuration(
+        detail: `Back at the shelter with ${formatDuration(
           -arrivalAfterBackByMin * 60000,
         )} to spare. Sunset in ${formatDuration(minutesToSunset * 60000)}.`,
         ...base,
@@ -105,7 +105,7 @@ export function ladderLevel(input: LadderInput): LadderResult {
       return {
         level,
         headline: 'Behind pace',
-        detail: `At this pace you reach the drop-off ${formatSignedMinutes(
+        detail: `At this pace you reach the shelter ${formatSignedMinutes(
           arrivalAfterBackByMin,
         )} after the back-by time. Sunset in ${formatDuration(minutesToSunset * 60000)}.`,
         ...base,
@@ -116,7 +116,7 @@ export function ladderLevel(input: LadderInput): LadderResult {
         headline: 'Turn back now',
         detail: `At this pace you arrive ${formatSignedMinutes(
           arrivalAfterSunsetMin,
-        )} after sunset. Re-plan the route home to the drop-off.`,
+        )} after sunset. Re-plan the route home to the shelter.`,
         ...base,
       };
     case 'return-to-shelter':
@@ -125,7 +125,7 @@ export function ladderLevel(input: LadderInput): LadderResult {
         headline: 'Return to shelter',
         detail:
           minutesToSunset >= 0
-            ? `Too late for the drop-off. Sunset in ${formatDuration(
+            ? `Too late for the plan shelter. Sunset in ${formatDuration(
                 minutesToSunset * 60000,
               )}; head to the nearest shelter.`
             : `Past sunset by ${formatDuration(
@@ -143,7 +143,7 @@ export function ladderLevel(input: LadderInput): LadderResult {
 /** What is driving the crew to shelter (design: "Shelter by hazard"). */
 export type Hazard = 'daylight' | 'pace' | 'radiation' | 'dust';
 
-export type ShelterKind = 'habitat' | 'rover' | 'dropoff' | 'cave' | 'terrain-shield';
+export type ShelterKind = 'habitat' | 'rover' | 'radiation-shelter' | 'cave' | 'terrain-shield';
 
 export interface ShelterCandidate {
   id: string;
@@ -156,6 +156,10 @@ export interface ShelterCandidate {
   skyBlockedFrac?: number;
   /** True when the shelter sits on the planned route (matters for a dust return). */
   onRoute?: boolean;
+  /** The plan's own shelter, where the walk starts and ends: the primary safe haven. */
+  primary?: boolean;
+  /** Name on screen (the plan shelter's label); else the kind's name. */
+  name?: string;
 }
 
 export interface ShelterChoice {
@@ -163,19 +167,24 @@ export interface ShelterChoice {
   reason: string;
 }
 
-/** Nearest candidate, or null for an empty list. */
+/** Nearest candidate (the plan shelter wins a tie), or null for an empty list. */
 function nearest(candidates: ShelterCandidate[]): ShelterCandidate | null {
   let best: ShelterCandidate | null = null;
   for (const c of candidates) {
-    if (best === null || c.distanceM < best.distanceM) best = c;
+    if (best === null || c.distanceM < best.distanceM || (c.distanceM === best.distanceM && c.primary && !best.primary)) best = c;
   }
   return best;
+}
+
+/** Pressurised shelters a crew can walk into: habitat, rover, radiation shelter. */
+function isPressurised(c: ShelterCandidate): boolean {
+  return c.kind === 'habitat' || c.kind === 'rover' || c.kind === 'radiation-shelter';
 }
 
 /**
  * Chooses a shelter for the hazard over the candidate shelters with distances
  * (design: "Shelter by hazard"):
- *  - daylight / pace -> nearest of habitat, drop-off or the pressurised rover.
+ *  - daylight / pace -> nearest of the plan shelter, a habitat, radiation shelter or the pressurised rover.
  *  - radiation -> nearest of habitat, rover, a surveyed accessible cave (none
  *    today), or a terrain-shielded spot (cliff or crater wall).
  *  - dust / low visibility -> the habitat along the planned route.
@@ -183,17 +192,16 @@ function nearest(candidates: ShelterCandidate[]): ShelterCandidate | null {
  */
 export function chooseShelter(hazard: Hazard, candidates: ShelterCandidate[]): ShelterChoice | null {
   if (hazard === 'daylight' || hazard === 'pace') {
-    const eligible = candidates.filter(
-      (c) => c.kind === 'habitat' || c.kind === 'rover' || c.kind === 'dropoff',
-    );
+    const eligible = candidates.filter((c) => c.primary || isPressurised(c));
     const shelter = nearest(eligible);
-    return shelter ? { shelter, reason: 'Nearest habitat, drop-off or pressurised rover.' } : null;
+    if (!shelter) return null;
+    return { shelter, reason: shelter.primary ? 'The plan shelter, where the walk ends.' : 'Nearest pressurised shelter.' };
   }
 
   if (hazard === 'radiation') {
     const eligible = candidates.filter((c) => {
       if (c.kind === 'cave') return c.accessible === true;
-      return c.kind === 'habitat' || c.kind === 'rover' || c.kind === 'terrain-shield';
+      return isPressurised(c) || c.kind === 'terrain-shield';
     });
     const shelter = nearest(eligible);
     if (!shelter) return null;

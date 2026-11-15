@@ -3,10 +3,10 @@
   "layers": [
     {
       "id": "SWIM4MIM_Ci_0_1",
-      "title": "SWIM ice consistency at 0–1 m",
+      "title": "SWIM ice consistency at 0\u20131 m",
       "group": "ice",
       "units": "consistency",
-      "description": "SWIM water-ice consistency for the 0–1 m depth interval.",
+      "description": "SWIM water-ice consistency for the 0\u20131 m depth interval.",
       "tiles": "layers/SWIM4MIM_Ci_0_1/{z}/{x}/{y}.png",
       "tiling": "geographic",
       "min_level": 0,
@@ -36,8 +36,8 @@
             "#eef7fff0"
           ]
         ],
-        "min": -1,
-        "max": 1,
+        "min": -1.0,
+        "max": 1.0,
         "min_label": "-1",
         "max_label": "1",
         "units": "consistency",
@@ -47,26 +47,15 @@
       "source": {
         "dataset": "swim_ice",
         "citation": "Mars Odyssey neutron/THEMIS, MRO SHARAD/CTX/HiRISE, MGS TES/MOLA data, processed by the Subsurface Water Ice Mapping (SWIM) project, PSI (NASA-funded through JPL); Morgan & Putzig et al. (2025), PSJ",
-        "licence": "Not stated on product page — check with PSI before redistribution",
+        "licence": "Not stated on product page \u2014 check with PSI before redistribution",
         "licence_note": "Licence is not stated by the source; retain this credit and check with the provider before redistribution."
-      },
-      "values": {
-        "url": "layers/SWIM4MIM_Ci_0_1/values.bin",
-        "width": 1440,
-        "height": 480,
-        "west": -180,
-        "north": 60,
-        "res_deg": 0.25,
-        "scale": 0.00003051850947599719,
-        "offset": -1,
-        "nodata": 65535
       }
     },
     {
       "id": "dose_ugy_day",
       "title": "Estimated surface radiation dose",
       "group": "radiation",
-      "units": "µGy/day",
+      "units": "\u00b5Gy/day",
       "description": "Pressure-scaled estimate of daily surface radiation dose.",
       "tiles": "layers/dose_ugy_day/{z}/{x}/{y}.png",
       "tiling": "geographic",
@@ -104,13 +93,13 @@
         "max": 332.7230261230469,
         "min_label": "261",
         "max_label": "333",
-        "units": "µGy/day",
+        "units": "\u00b5Gy/day",
         "palette": "dose_yellow",
         "palette_label": "OKLab pale yellow to bright yellow (#ffe94d)"
       },
       "source": {
         "dataset": "msl_rad_dose",
-        "citation": "MSL RAD data (Mars Science Laboratory), processed by Heber & Löwe, 'MSL/RAD Dose rates', Zenodo, doi:10.5281/zenodo.20536564",
+        "citation": "MSL RAD data (Mars Science Laboratory), processed by Heber & L\u00f6we, 'MSL/RAD Dose rates', Zenodo, doi:10.5281/zenodo.20536564",
         "licence": "CC-BY-4.0"
       }
     },
@@ -118,7 +107,7 @@
       "id": "dust_p95",
       "title": "95th-percentile dust opacity",
       "group": "dust",
-      "units": "τIR",
+      "units": "\u03c4IR",
       "description": "95th-percentile total-column infrared dust opacity across the source observations.",
       "tiles": "layers/dust_p95/{z}/{x}/{y}.png",
       "tiling": "geographic",
@@ -137,7 +126,7 @@
         "west": -180,
         "north": 60,
         "res_deg": 0.25,
-        "scale": 0.0000058163287745704615,
+        "scale": 5.8163287745704615e-06,
         "offset": 0.21993328601121903,
         "nodata": 65535
       },
@@ -154,7 +143,7 @@
         ],
         "min": 0.21993328601121903,
         "max": 0.6011005759239196,
-        "units": "τIR",
+        "units": "\u03c4IR",
         "palette": "YlOrBr",
         "min_label": "0.22",
         "max_label": "0.6",
@@ -204,7 +193,7 @@
       "source": {
         "dataset": "tes_ti_2007",
         "citation": "TES data (Mars Global Surveyor), processed by Putzig & Mellon (2007), Icarus 191, 68-94, doi:10.1016/j.icarus.2007.05.013; NASA PDS Geosciences MGS-M-TES-5-TIMAP-V1.0 (MGST_9001)",
-        "licence": "NASA PDS — public domain"
+        "licence": "NASA PDS \u2014 public domain"
       }
     },
     {
@@ -230,8 +219,8 @@
         "west": -180,
         "north": 60,
         "res_deg": 0.25,
-        "scale": 1,
-        "offset": 0,
+        "scale": 1.0,
+        "offset": 0.0,
         "nodata": 65535
       },
       "legend": {
@@ -274,6 +263,51 @@
         "palette_label": "Muted categorical ramp (7 major epoch and terrain groups)"
       },
       "categories": {
+        "31": {
+          "id": 31,
+          "code": "lApc",
+          "name": "Late Amazonian polar cap unit",
+          "age": "Late Amazonian",
+          "group": "polar",
+          "group_label": "Polar deposits & ice",
+          "color": "#b5cbd8"
+        },
+        "14": {
+          "id": 14,
+          "code": "Hpe",
+          "name": "Hesperian polar edifice unit",
+          "age": "Hesperian",
+          "group": "polar",
+          "group_label": "Polar deposits & ice",
+          "color": "#b5cbd8"
+        },
+        "13": {
+          "id": 13,
+          "code": "Hp",
+          "name": "Hesperian polar unit",
+          "age": "Hesperian",
+          "group": "polar",
+          "group_label": "Polar deposits & ice",
+          "color": "#b5cbd8"
+        },
+        "40": {
+          "id": 40,
+          "code": "lNh",
+          "name": "Late Noachian highland unit",
+          "age": "Late Noachian",
+          "group": "noachian_highland",
+          "group_label": "Noachian highland",
+          "color": "#8f7a52"
+        },
+        "43": {
+          "id": 43,
+          "code": "mNh",
+          "name": "Middle Noachian highland unit",
+          "age": "Middle Noachian",
+          "group": "noachian_highland",
+          "group_label": "Noachian highland",
+          "color": "#8f7a52"
+        },
         "1": {
           "id": 1,
           "code": "AHi",
@@ -282,42 +316,6 @@
           "group": "impact",
           "group_label": "Impact units",
           "color": "#7d6f8d"
-        },
-        "2": {
-          "id": 2,
-          "code": "AHtu",
-          "name": "Amazonian and Hesperian transition undivided unit",
-          "age": "Amazonian and Hesperian",
-          "group": "transition_apron",
-          "group_label": "Transition & apron",
-          "color": "#a8a37e"
-        },
-        "3": {
-          "id": 3,
-          "code": "AHv",
-          "name": "Amazonian and Hesperian volcanic",
-          "age": "Amazonian and Hesperian",
-          "group": "amazonian_volcanic",
-          "group_label": "Amazonian volcanic",
-          "color": "#c47d6e"
-        },
-        "4": {
-          "id": 4,
-          "code": "ANa",
-          "name": "Amazonian and Noachian apron unit",
-          "age": "Amazonian and Noachian",
-          "group": "transition_apron",
-          "group_label": "Transition & apron",
-          "color": "#a8a37e"
-        },
-        "5": {
-          "id": 5,
-          "code": "Aa",
-          "name": "Amazonian apron unit",
-          "age": "Amazonian",
-          "group": "transition_apron",
-          "group_label": "Transition & apron",
-          "color": "#a8a37e"
         },
         "6": {
           "id": 6,
@@ -337,113 +335,14 @@
           "group_label": "Polar deposits & ice",
           "color": "#b5cbd8"
         },
-        "8": {
-          "id": 8,
-          "code": "Av",
-          "name": "Amazonian volcanic unit",
-          "age": "Amazonian",
-          "group": "amazonian_volcanic",
-          "group_label": "Amazonian volcanic",
-          "color": "#c47d6e"
-        },
-        "9": {
-          "id": 9,
-          "code": "Ave",
-          "name": "Amazonian volcanic edifice",
-          "age": "Amazonian",
-          "group": "amazonian_volcanic",
-          "group_label": "Amazonian volcanic",
-          "color": "#c47d6e"
-        },
-        "10": {
-          "id": 10,
-          "code": "HNb",
-          "name": "Hesperian and Noachian basin unit",
-          "age": "Hesperian and Noachian",
-          "group": "hesperian_plains",
-          "group_label": "Hesperian plains & lowlands",
-          "color": "#6e8c78"
-        },
-        "11": {
-          "id": 11,
-          "code": "HNhu",
-          "name": "Hesperian and Noachian highland undivided unit",
-          "age": "Hesperian and Noachian",
+        "28": {
+          "id": 28,
+          "code": "eNh",
+          "name": "Early Noachian highland unit",
+          "age": "Early Noachian",
           "group": "noachian_highland",
           "group_label": "Noachian highland",
           "color": "#8f7a52"
-        },
-        "12": {
-          "id": 12,
-          "code": "HNt",
-          "name": "Hesperian and Noachian transition unit",
-          "age": "Hesperian and Noachian",
-          "group": "transition_apron",
-          "group_label": "Transition & apron",
-          "color": "#a8a37e"
-        },
-        "13": {
-          "id": 13,
-          "code": "Hp",
-          "name": "Hesperian polar unit",
-          "age": "Hesperian",
-          "group": "polar",
-          "group_label": "Polar deposits & ice",
-          "color": "#b5cbd8"
-        },
-        "14": {
-          "id": 14,
-          "code": "Hpe",
-          "name": "Hesperian polar edifice unit",
-          "age": "Hesperian",
-          "group": "polar",
-          "group_label": "Polar deposits & ice",
-          "color": "#b5cbd8"
-        },
-        "15": {
-          "id": 15,
-          "code": "Hpu",
-          "name": "Hesperian polar undivided unit",
-          "age": "Hesperian",
-          "group": "polar",
-          "group_label": "Polar deposits & ice",
-          "color": "#b5cbd8"
-        },
-        "16": {
-          "id": 16,
-          "code": "Ht",
-          "name": "Hesperian transition unit",
-          "age": "Hesperian",
-          "group": "transition_apron",
-          "group_label": "Transition & apron",
-          "color": "#a8a37e"
-        },
-        "17": {
-          "id": 17,
-          "code": "Hto",
-          "name": "Hesperian transition outflow unit",
-          "age": "Hesperian",
-          "group": "transition_apron",
-          "group_label": "Transition & apron",
-          "color": "#a8a37e"
-        },
-        "18": {
-          "id": 18,
-          "code": "Htu",
-          "name": "Hesperian transition undivided unit",
-          "age": "Hesperian",
-          "group": "transition_apron",
-          "group_label": "Transition & apron",
-          "color": "#a8a37e"
-        },
-        "19": {
-          "id": 19,
-          "code": "Hve",
-          "name": "Hesperian volcanic edifice unit",
-          "age": "Hesperian",
-          "group": "hesperian_volcanic",
-          "group_label": "Hesperian volcanic",
-          "color": "#bf8b50"
         },
         "20": {
           "id": 20,
@@ -463,6 +362,15 @@
           "group_label": "Noachian highland",
           "color": "#8f7a52"
         },
+        "25": {
+          "id": 25,
+          "code": "eHh",
+          "name": "Early Hesperian highland unit",
+          "age": "Early Hesperian",
+          "group": "noachian_highland",
+          "group_label": "Noachian highland",
+          "color": "#8f7a52"
+        },
         "22": {
           "id": 22,
           "code": "Nve",
@@ -471,15 +379,6 @@
           "group": "noachian_highland",
           "group_label": "Noachian highland",
           "color": "#8f7a52"
-        },
-        "23": {
-          "id": 23,
-          "code": "eAb",
-          "name": "Early Amazonian basin unit",
-          "age": "Early Amazonian",
-          "group": "hesperian_plains",
-          "group_label": "Hesperian plains & lowlands",
-          "color": "#6e8c78"
         },
         "24": {
           "id": 24,
@@ -490,146 +389,11 @@
           "group_label": "Hesperian plains & lowlands",
           "color": "#6e8c78"
         },
-        "25": {
-          "id": 25,
-          "code": "eHh",
-          "name": "Early Hesperian highland unit",
-          "age": "Early Hesperian",
-          "group": "noachian_highland",
-          "group_label": "Noachian highland",
-          "color": "#8f7a52"
-        },
-        "26": {
-          "id": 26,
-          "code": "eHt",
-          "name": "Early Hesperian transition unit",
-          "age": "Early Hesperian",
-          "group": "transition_apron",
-          "group_label": "Transition & apron",
-          "color": "#a8a37e"
-        },
-        "27": {
-          "id": 27,
-          "code": "eHv",
-          "name": "Early Hesperian volcanic unit",
-          "age": "Early Hesperian",
-          "group": "hesperian_volcanic",
-          "group_label": "Hesperian volcanic",
-          "color": "#bf8b50"
-        },
-        "28": {
-          "id": 28,
-          "code": "eNh",
-          "name": "Early Noachian highland unit",
-          "age": "Early Noachian",
-          "group": "noachian_highland",
-          "group_label": "Noachian highland",
-          "color": "#8f7a52"
-        },
-        "29": {
-          "id": 29,
-          "code": "eNhm",
-          "name": "Early Noachian highland massif unit",
-          "age": "Early Noachian",
-          "group": "noachian_highland",
-          "group_label": "Noachian highland",
-          "color": "#8f7a52"
-        },
-        "30": {
-          "id": 30,
-          "code": "lAa",
-          "name": "Late Amazonian apron unit",
-          "age": "Late Amazonian",
-          "group": "transition_apron",
-          "group_label": "Transition & apron",
-          "color": "#a8a37e"
-        },
-        "31": {
-          "id": 31,
-          "code": "lApc",
-          "name": "Late Amazonian polar cap unit",
-          "age": "Late Amazonian",
-          "group": "polar",
-          "group_label": "Polar deposits & ice",
-          "color": "#b5cbd8"
-        },
-        "32": {
-          "id": 32,
-          "code": "lApd",
-          "name": "Late Amazonian polar dunes unit",
-          "age": "Late Amazonian",
-          "group": "polar",
-          "group_label": "Polar deposits & ice",
-          "color": "#b5cbd8"
-        },
-        "33": {
-          "id": 33,
-          "code": "lAv",
-          "name": "Late Amazonian volcanic unit",
-          "age": "Late Amazonian",
-          "group": "amazonian_volcanic",
-          "group_label": "Amazonian volcanic",
-          "color": "#c47d6e"
-        },
-        "34": {
-          "id": 34,
-          "code": "lAvf",
-          "name": "Late Amazonian volcanic field unit",
-          "age": "Late Amazonian",
-          "group": "amazonian_volcanic",
-          "group_label": "Amazonian volcanic",
-          "color": "#c47d6e"
-        },
-        "35": {
-          "id": 35,
-          "code": "lHb",
-          "name": "Late Hesperian basin unit",
-          "age": "Late Hesperian",
-          "group": "hesperian_plains",
-          "group_label": "Hesperian plains & lowlands",
-          "color": "#6e8c78"
-        },
-        "36": {
-          "id": 36,
-          "code": "lHl",
-          "name": "Late Hesperian lowland unit",
-          "age": "Late Hesperian",
-          "group": "hesperian_plains",
-          "group_label": "Hesperian plains & lowlands",
-          "color": "#6e8c78"
-        },
-        "37": {
-          "id": 37,
-          "code": "lHt",
-          "name": "Late Hesperian transition unit",
-          "age": "Late Hesperian",
-          "group": "transition_apron",
-          "group_label": "Transition & apron",
-          "color": "#a8a37e"
-        },
-        "38": {
-          "id": 38,
-          "code": "lHv",
-          "name": "Late Hesperian volcanic unit",
-          "age": "Late Hesperian",
-          "group": "hesperian_volcanic",
-          "group_label": "Hesperian volcanic",
-          "color": "#bf8b50"
-        },
-        "39": {
-          "id": 39,
-          "code": "lHvf",
-          "name": "Late Hesperian volcanic field unit",
-          "age": "Late Hesperian",
-          "group": "hesperian_volcanic",
-          "group_label": "Hesperian volcanic",
-          "color": "#bf8b50"
-        },
-        "40": {
-          "id": 40,
-          "code": "lNh",
-          "name": "Late Noachian highland unit",
-          "age": "Late Noachian",
+        "11": {
+          "id": 11,
+          "code": "HNhu",
+          "name": "Hesperian and Noachian highland undivided unit",
+          "age": "Hesperian and Noachian",
           "group": "noachian_highland",
           "group_label": "Noachian highland",
           "color": "#8f7a52"
@@ -643,23 +407,50 @@
           "group_label": "Noachian highland",
           "color": "#8f7a52"
         },
-        "42": {
-          "id": 42,
-          "code": "mAl",
-          "name": "Middle Amazonian lowland unit",
-          "age": "Middle Amazonian",
+        "4": {
+          "id": 4,
+          "code": "ANa",
+          "name": "Amazonian and Noachian apron unit",
+          "age": "Amazonian and Noachian",
+          "group": "transition_apron",
+          "group_label": "Transition & apron",
+          "color": "#a8a37e"
+        },
+        "10": {
+          "id": 10,
+          "code": "HNb",
+          "name": "Hesperian and Noachian basin unit",
+          "age": "Hesperian and Noachian",
           "group": "hesperian_plains",
           "group_label": "Hesperian plains & lowlands",
           "color": "#6e8c78"
         },
-        "43": {
-          "id": 43,
-          "code": "mNh",
-          "name": "Middle Noachian highland unit",
-          "age": "Middle Noachian",
-          "group": "noachian_highland",
-          "group_label": "Noachian highland",
-          "color": "#8f7a52"
+        "27": {
+          "id": 27,
+          "code": "eHv",
+          "name": "Early Hesperian volcanic unit",
+          "age": "Early Hesperian",
+          "group": "hesperian_volcanic",
+          "group_label": "Hesperian volcanic",
+          "color": "#bf8b50"
+        },
+        "12": {
+          "id": 12,
+          "code": "HNt",
+          "name": "Hesperian and Noachian transition unit",
+          "age": "Hesperian and Noachian",
+          "group": "transition_apron",
+          "group_label": "Transition & apron",
+          "color": "#a8a37e"
+        },
+        "23": {
+          "id": 23,
+          "code": "eAb",
+          "name": "Early Amazonian basin unit",
+          "age": "Early Amazonian",
+          "group": "hesperian_plains",
+          "group_label": "Hesperian plains & lowlands",
+          "color": "#6e8c78"
         },
         "44": {
           "id": 44,
@@ -669,12 +460,210 @@
           "group": "noachian_highland",
           "group_label": "Noachian highland",
           "color": "#8f7a52"
+        },
+        "29": {
+          "id": 29,
+          "code": "eNhm",
+          "name": "Early Noachian highland massif unit",
+          "age": "Early Noachian",
+          "group": "noachian_highland",
+          "group_label": "Noachian highland",
+          "color": "#8f7a52"
+        },
+        "38": {
+          "id": 38,
+          "code": "lHv",
+          "name": "Late Hesperian volcanic unit",
+          "age": "Late Hesperian",
+          "group": "hesperian_volcanic",
+          "group_label": "Hesperian volcanic",
+          "color": "#bf8b50"
+        },
+        "35": {
+          "id": 35,
+          "code": "lHb",
+          "name": "Late Hesperian basin unit",
+          "age": "Late Hesperian",
+          "group": "hesperian_plains",
+          "group_label": "Hesperian plains & lowlands",
+          "color": "#6e8c78"
+        },
+        "19": {
+          "id": 19,
+          "code": "Hve",
+          "name": "Hesperian volcanic edifice unit",
+          "age": "Hesperian",
+          "group": "hesperian_volcanic",
+          "group_label": "Hesperian volcanic",
+          "color": "#bf8b50"
+        },
+        "5": {
+          "id": 5,
+          "code": "Aa",
+          "name": "Amazonian apron unit",
+          "age": "Amazonian",
+          "group": "transition_apron",
+          "group_label": "Transition & apron",
+          "color": "#a8a37e"
+        },
+        "18": {
+          "id": 18,
+          "code": "Htu",
+          "name": "Hesperian transition undivided unit",
+          "age": "Hesperian",
+          "group": "transition_apron",
+          "group_label": "Transition & apron",
+          "color": "#a8a37e"
+        },
+        "37": {
+          "id": 37,
+          "code": "lHt",
+          "name": "Late Hesperian transition unit",
+          "age": "Late Hesperian",
+          "group": "transition_apron",
+          "group_label": "Transition & apron",
+          "color": "#a8a37e"
+        },
+        "16": {
+          "id": 16,
+          "code": "Ht",
+          "name": "Hesperian transition unit",
+          "age": "Hesperian",
+          "group": "transition_apron",
+          "group_label": "Transition & apron",
+          "color": "#a8a37e"
+        },
+        "17": {
+          "id": 17,
+          "code": "Hto",
+          "name": "Hesperian transition outflow unit",
+          "age": "Hesperian",
+          "group": "transition_apron",
+          "group_label": "Transition & apron",
+          "color": "#a8a37e"
+        },
+        "39": {
+          "id": 39,
+          "code": "lHvf",
+          "name": "Late Hesperian volcanic field unit",
+          "age": "Late Hesperian",
+          "group": "hesperian_volcanic",
+          "group_label": "Hesperian volcanic",
+          "color": "#bf8b50"
+        },
+        "34": {
+          "id": 34,
+          "code": "lAvf",
+          "name": "Late Amazonian volcanic field unit",
+          "age": "Late Amazonian",
+          "group": "amazonian_volcanic",
+          "group_label": "Amazonian volcanic",
+          "color": "#c47d6e"
+        },
+        "3": {
+          "id": 3,
+          "code": "AHv",
+          "name": "Amazonian and Hesperian volcanic",
+          "age": "Amazonian and Hesperian",
+          "group": "amazonian_volcanic",
+          "group_label": "Amazonian volcanic",
+          "color": "#c47d6e"
+        },
+        "9": {
+          "id": 9,
+          "code": "Ave",
+          "name": "Amazonian volcanic edifice",
+          "age": "Amazonian",
+          "group": "amazonian_volcanic",
+          "group_label": "Amazonian volcanic",
+          "color": "#c47d6e"
+        },
+        "2": {
+          "id": 2,
+          "code": "AHtu",
+          "name": "Amazonian and Hesperian transition undivided unit",
+          "age": "Amazonian and Hesperian",
+          "group": "transition_apron",
+          "group_label": "Transition & apron",
+          "color": "#a8a37e"
+        },
+        "26": {
+          "id": 26,
+          "code": "eHt",
+          "name": "Early Hesperian transition unit",
+          "age": "Early Hesperian",
+          "group": "transition_apron",
+          "group_label": "Transition & apron",
+          "color": "#a8a37e"
+        },
+        "30": {
+          "id": 30,
+          "code": "lAa",
+          "name": "Late Amazonian apron unit",
+          "age": "Late Amazonian",
+          "group": "transition_apron",
+          "group_label": "Transition & apron",
+          "color": "#a8a37e"
+        },
+        "33": {
+          "id": 33,
+          "code": "lAv",
+          "name": "Late Amazonian volcanic unit",
+          "age": "Late Amazonian",
+          "group": "amazonian_volcanic",
+          "group_label": "Amazonian volcanic",
+          "color": "#c47d6e"
+        },
+        "36": {
+          "id": 36,
+          "code": "lHl",
+          "name": "Late Hesperian lowland unit",
+          "age": "Late Hesperian",
+          "group": "hesperian_plains",
+          "group_label": "Hesperian plains & lowlands",
+          "color": "#6e8c78"
+        },
+        "42": {
+          "id": 42,
+          "code": "mAl",
+          "name": "Middle Amazonian lowland unit",
+          "age": "Middle Amazonian",
+          "group": "hesperian_plains",
+          "group_label": "Hesperian plains & lowlands",
+          "color": "#6e8c78"
+        },
+        "8": {
+          "id": 8,
+          "code": "Av",
+          "name": "Amazonian volcanic unit",
+          "age": "Amazonian",
+          "group": "amazonian_volcanic",
+          "group_label": "Amazonian volcanic",
+          "color": "#c47d6e"
+        },
+        "32": {
+          "id": 32,
+          "code": "lApd",
+          "name": "Late Amazonian polar dunes unit",
+          "age": "Late Amazonian",
+          "group": "polar",
+          "group_label": "Polar deposits & ice",
+          "color": "#b5cbd8"
+        },
+        "15": {
+          "id": 15,
+          "code": "Hpu",
+          "name": "Hesperian polar undivided unit",
+          "age": "Hesperian",
+          "group": "polar",
+          "group_label": "Polar deposits & ice",
+          "color": "#b5cbd8"
         }
       },
       "source": {
         "dataset": "tanaka2014_geo",
         "citation": "Tanaka, K.L., et al., 2014, Geologic map of Mars: USGS Scientific Investigations Map 3292, doi:10.3133/sim3292 (data doi:10.5066/P9PBKSGE)",
-        "licence": "USGS — public domain"
+        "licence": "USGS \u2014 public domain"
       }
     },
     {
@@ -701,7 +690,7 @@
         "north": 60,
         "res_deg": 0.25,
         "scale": 0.00022888882106997894,
-        "offset": 0,
+        "offset": 0.0,
         "nodata": 65535
       },
       "legend": {
@@ -726,498 +715,8 @@
       "source": {
         "dataset": "tes_bandfield2002",
         "citation": "Bandfield, J.L., 2002, Global mineral distributions on Mars: Journal of Geophysical Research: Planets, v. 107, no. E6, p. 5042, doi:10.1029/2001JE001510; NASA PDS / ASU Mars Global Data Sets.",
-        "licence": "NASA PDS — public domain"
+        "licence": "NASA PDS \u2014 public domain"
       }
-    },
-    {
-      "id": "hydrated_all",
-      "title": "All hydrated minerals",
-      "group": "minerals",
-      "units": "km² per 10⁴ km²",
-      "description": "Area of orbital detections of any aqueous-alteration mineral class (clays, sulfates, carbonates, silica) within 150 km, from OMEGA and CRISM in the MOCAAS catalogue. Values below 0.44 are left clear so the hot areas stand out; hover shows the exact value.",
-      "tiles": "layers/hydrated_all/{z}/{x}/{y}.png",
-      "tiling": "geographic",
-      "min_level": 0,
-      "max_level": 1,
-      "rectangle": [
-        -180,
-        -70,
-        180,
-        70
-      ],
-      "values": {
-        "url": "layers/hydrated_all/values.bin",
-        "width": 1440,
-        "height": 560,
-        "west": -180,
-        "north": 70,
-        "res_deg": 0.25,
-        "scale": 0.11214425670262765,
-        "offset": 0,
-        "nodata": 65535
-      },
-      "legend": {
-        "stops": [
-          [
-            0,
-            "#00000000"
-          ],
-          [
-            0.4388960599899292,
-            "#6cc7ad78"
-          ],
-          [
-            790.7384164297622,
-            "#219f83bf"
-          ],
-          [
-            1581.0379367995345,
-            "#147d68d6"
-          ],
-          [
-            3161.636977539079,
-            "#05594cf0"
-          ]
-        ],
-        "min": 0.4388960599899292,
-        "max": 3161.636977539079,
-        "min_label": "0.44",
-        "max_label": "3,162",
-        "units": "km² per 10⁴ km²",
-        "palette": "mineral_teal",
-        "palette_label": "OKLab light teal through green to deep teal-green; low end starts at 47% opacity"
-      },
-      "source": {
-        "dataset": "mocaas",
-        "citation": "Carter, J., et al. (2023). A Mars orbital catalog of aqueous alteration signatures (MOCAAS). Icarus 389, 115164, doi:10.1016/j.icarus.2022.115164. Data: MOCAAS November 2023 release via PSUP WFS (https://ows.psup.univ-lyon1.fr/mocaas); OMEGA (ESA Mars Express, IAS) and CRISM (NASA MRO, JHU-APL).",
-        "licence": "Not stated by MOCAAS or PSUP. Credited in full to Carter et al. (2023), the MOCAAS team (IAS, Universite Paris-Saclay) and PSUP; removed on request.",
-        "licence_note": "Licence is not stated by the source; retain this credit and check with the MOCAAS team before redistribution."
-      },
-      "method": {
-        "classes": [
-          "Fe/Mg-rich phyllosilicates (clays)",
-          "Al-rich phyllosilicates (clays) and hydrated (opaline) silica",
-          "Polyhydrated and hydroxylated sulfate salts (locally zeolites)",
-          "Monohydrated sulfate salts",
-          "Carbonate salts (locally serpentine-group phyllosilicates)"
-        ],
-        "radius_km": 150,
-        "occupancy_res_deg": 0.0625,
-        "coverage_lat": 70,
-        "instrument_merge": "max of OMEGA and CRISM mapped area per occupancy cell",
-        "ramp_percentiles": [
-          10,
-          99
-        ],
-        "polar_detections_excluded_km2": 347799.8
-      },
-      "hotspots": [
-        {
-          "lon": 4.375,
-          "lat": 1.375,
-          "value": 7349.262
-        },
-        {
-          "lon": 161.375,
-          "lat": -69.875,
-          "value": 7280.941
-        },
-        {
-          "lon": -0.625,
-          "lat": 0.125,
-          "value": 6092.214
-        },
-        {
-          "lon": 76.375,
-          "lat": 19.875,
-          "value": 5456.31
-        },
-        {
-          "lon": -70.625,
-          "lat": -68.125,
-          "value": 4796.99
-        },
-        {
-          "lon": -4.625,
-          "lat": -3.125,
-          "value": 4621.517
-        },
-        {
-          "lon": -19.375,
-          "lat": 23.375,
-          "value": 4239.862
-        },
-        {
-          "lon": 132.125,
-          "lat": -69.875,
-          "value": 3846.516
-        }
-      ]
-    },
-    {
-      "id": "hydrated_clays",
-      "title": "Phyllosilicates (clays)",
-      "group": "minerals",
-      "units": "km² per 10⁴ km²",
-      "description": "Area of orbital clay detections (Fe/Mg and Al phyllosilicates; the Al class also includes opaline silica) within 150 km, from OMEGA and CRISM in the MOCAAS catalogue. Values below 0.4 are left clear so the hot areas stand out; hover shows the exact value.",
-      "tiles": "layers/hydrated_clays/{z}/{x}/{y}.png",
-      "tiling": "geographic",
-      "min_level": 0,
-      "max_level": 1,
-      "rectangle": [
-        -180,
-        -70,
-        180,
-        70
-      ],
-      "values": {
-        "url": "layers/hydrated_clays/values.bin",
-        "width": 1440,
-        "height": 560,
-        "west": -180,
-        "north": 70,
-        "res_deg": 0.25,
-        "scale": 0.10056535836836604,
-        "offset": 0,
-        "nodata": 65535
-      },
-      "legend": {
-        "stops": [
-          [
-            0,
-            "#00000000"
-          ],
-          [
-            0.39919358491897583,
-            "#6cc7ad78"
-          ],
-          [
-            540.495519456268,
-            "#219f83bf"
-          ],
-          [
-            1080.591845327617,
-            "#147d68d6"
-          ],
-          [
-            2160.784497070315,
-            "#05594cf0"
-          ]
-        ],
-        "min": 0.39919358491897583,
-        "max": 2160.784497070315,
-        "min_label": "0.4",
-        "max_label": "2,161",
-        "units": "km² per 10⁴ km²",
-        "palette": "mineral_teal",
-        "palette_label": "OKLab light teal through green to deep teal-green; low end starts at 47% opacity"
-      },
-      "source": {
-        "dataset": "mocaas",
-        "citation": "Carter, J., et al. (2023). A Mars orbital catalog of aqueous alteration signatures (MOCAAS). Icarus 389, 115164, doi:10.1016/j.icarus.2022.115164. Data: MOCAAS November 2023 release via PSUP WFS (https://ows.psup.univ-lyon1.fr/mocaas); OMEGA (ESA Mars Express, IAS) and CRISM (NASA MRO, JHU-APL).",
-        "licence": "Not stated by MOCAAS or PSUP. Credited in full to Carter et al. (2023), the MOCAAS team (IAS, Universite Paris-Saclay) and PSUP; removed on request.",
-        "licence_note": "Licence is not stated by the source; retain this credit and check with the MOCAAS team before redistribution."
-      },
-      "method": {
-        "classes": [
-          "Fe/Mg-rich phyllosilicates (clays)",
-          "Al-rich phyllosilicates (clays) and hydrated (opaline) silica"
-        ],
-        "radius_km": 150,
-        "occupancy_res_deg": 0.0625,
-        "coverage_lat": 70,
-        "instrument_merge": "max of OMEGA and CRISM mapped area per occupancy cell",
-        "ramp_percentiles": [
-          10,
-          99
-        ],
-        "polar_detections_excluded_km2": 5235.8
-      },
-      "hotspots": [
-        {
-          "lon": 4.375,
-          "lat": 1.375,
-          "value": 6590.45
-        },
-        {
-          "lon": 76.375,
-          "lat": 19.875,
-          "value": 5351.922
-        },
-        {
-          "lon": -0.625,
-          "lat": 0.125,
-          "value": 4392.042
-        },
-        {
-          "lon": -4.625,
-          "lat": -3.125,
-          "value": 4242.104
-        },
-        {
-          "lon": -19.375,
-          "lat": 23.375,
-          "value": 4239.387
-        },
-        {
-          "lon": -60.125,
-          "lat": -38.375,
-          "value": 3397.567
-        },
-        {
-          "lon": -51.125,
-          "lat": -17.625,
-          "value": 3222.129
-        },
-        {
-          "lon": -47.625,
-          "lat": -21.875,
-          "value": 2523.479
-        }
-      ]
-    },
-    {
-      "id": "hydrated_sulfates",
-      "title": "Sulfates",
-      "group": "minerals",
-      "units": "km² per 10⁴ km²",
-      "description": "Area of orbital sulfate detections (mono- and polyhydrated; locally zeolites) within 150 km, from OMEGA and CRISM in the MOCAAS catalogue. Values below 0.06 are left clear so the hot areas stand out; hover shows the exact value.",
-      "tiles": "layers/hydrated_sulfates/{z}/{x}/{y}.png",
-      "tiling": "geographic",
-      "min_level": 0,
-      "max_level": 1,
-      "rectangle": [
-        -180,
-        -70,
-        180,
-        70
-      ],
-      "values": {
-        "url": "layers/hydrated_sulfates/values.bin",
-        "width": 1440,
-        "height": 560,
-        "west": -180,
-        "north": 70,
-        "res_deg": 0.25,
-        "scale": 0.11110173965041048,
-        "offset": 0,
-        "nodata": 65535
-      },
-      "legend": {
-        "stops": [
-          [
-            0,
-            "#00000000"
-          ],
-          [
-            0.05963339507579807,
-            "#6cc7ad78"
-          ],
-          [
-            884.5680185033382,
-            "#219f83bf"
-          ],
-          [
-            1769.0764036116004,
-            "#147d68d6"
-          ],
-          [
-            3538.093173828125,
-            "#05594cf0"
-          ]
-        ],
-        "min": 0.05963339507579807,
-        "max": 3538.093173828125,
-        "min_label": "0.06",
-        "max_label": "3,538",
-        "units": "km² per 10⁴ km²",
-        "palette": "mineral_teal",
-        "palette_label": "OKLab light teal through green to deep teal-green; low end starts at 47% opacity"
-      },
-      "source": {
-        "dataset": "mocaas",
-        "citation": "Carter, J., et al. (2023). A Mars orbital catalog of aqueous alteration signatures (MOCAAS). Icarus 389, 115164, doi:10.1016/j.icarus.2022.115164. Data: MOCAAS November 2023 release via PSUP WFS (https://ows.psup.univ-lyon1.fr/mocaas); OMEGA (ESA Mars Express, IAS) and CRISM (NASA MRO, JHU-APL).",
-        "licence": "Not stated by MOCAAS or PSUP. Credited in full to Carter et al. (2023), the MOCAAS team (IAS, Universite Paris-Saclay) and PSUP; removed on request.",
-        "licence_note": "Licence is not stated by the source; retain this credit and check with the MOCAAS team before redistribution."
-      },
-      "method": {
-        "classes": [
-          "Polyhydrated and hydroxylated sulfate salts (locally zeolites)",
-          "Monohydrated sulfate salts"
-        ],
-        "radius_km": 150,
-        "occupancy_res_deg": 0.0625,
-        "coverage_lat": 70,
-        "instrument_merge": "max of OMEGA and CRISM mapped area per occupancy cell",
-        "ramp_percentiles": [
-          10,
-          99
-        ],
-        "polar_detections_excluded_km2": 344288.9
-      },
-      "hotspots": [
-        {
-          "lon": 161.375,
-          "lat": -69.875,
-          "value": 7280.941
-        },
-        {
-          "lon": 4.375,
-          "lat": 1.375,
-          "value": 6962.605
-        },
-        {
-          "lon": -0.625,
-          "lat": 0.125,
-          "value": 5451.899
-        },
-        {
-          "lon": 132.125,
-          "lat": -69.875,
-          "value": 3846.516
-        },
-        {
-          "lon": 159.625,
-          "lat": -62.125,
-          "value": 3814.994
-        },
-        {
-          "lon": 135.125,
-          "lat": -63.625,
-          "value": 3734.73
-        },
-        {
-          "lon": -68.375,
-          "lat": -67.875,
-          "value": 3338.503
-        },
-        {
-          "lon": -4.625,
-          "lat": -3.125,
-          "value": 3107.502
-        }
-      ]
-    },
-    {
-      "id": "hydrated_carbonates",
-      "title": "Carbonates",
-      "group": "minerals",
-      "units": "km² per 10⁴ km²",
-      "description": "Area of orbital carbonate detections (locally serpentine) within 150 km, from OMEGA and CRISM in the MOCAAS catalogue. Values below 0.055 are left clear so the hot areas stand out; hover shows the exact value.",
-      "tiles": "layers/hydrated_carbonates/{z}/{x}/{y}.png",
-      "tiling": "geographic",
-      "min_level": 0,
-      "max_level": 1,
-      "rectangle": [
-        -180,
-        -70,
-        180,
-        70
-      ],
-      "values": {
-        "url": "layers/hydrated_carbonates/values.bin",
-        "width": 1440,
-        "height": 560,
-        "west": -180,
-        "north": 70,
-        "res_deg": 0.25,
-        "scale": 0.020731793101314774,
-        "offset": 0,
-        "nodata": 65535
-      },
-      "legend": {
-        "stops": [
-          [
-            0,
-            "#00000000"
-          ],
-          [
-            0.05506952106952667,
-            "#6cc7ad78"
-          ],
-          [
-            211.19014888152466,
-            "#219f83bf"
-          ],
-          [
-            422.3252282419798,
-            "#147d68d6"
-          ],
-          [
-            844.5953869628901,
-            "#05594cf0"
-          ]
-        ],
-        "min": 0.05506952106952667,
-        "max": 844.5953869628901,
-        "min_label": "0.055",
-        "max_label": "845",
-        "units": "km² per 10⁴ km²",
-        "palette": "mineral_teal",
-        "palette_label": "OKLab light teal through green to deep teal-green; low end starts at 47% opacity"
-      },
-      "source": {
-        "dataset": "mocaas",
-        "citation": "Carter, J., et al. (2023). A Mars orbital catalog of aqueous alteration signatures (MOCAAS). Icarus 389, 115164, doi:10.1016/j.icarus.2022.115164. Data: MOCAAS November 2023 release via PSUP WFS (https://ows.psup.univ-lyon1.fr/mocaas); OMEGA (ESA Mars Express, IAS) and CRISM (NASA MRO, JHU-APL).",
-        "licence": "Not stated by MOCAAS or PSUP. Credited in full to Carter et al. (2023), the MOCAAS team (IAS, Universite Paris-Saclay) and PSUP; removed on request.",
-        "licence_note": "Licence is not stated by the source; retain this credit and check with the MOCAAS team before redistribution."
-      },
-      "method": {
-        "classes": [
-          "Carbonate salts (locally serpentine-group phyllosilicates)"
-        ],
-        "radius_km": 150,
-        "occupancy_res_deg": 0.0625,
-        "coverage_lat": 70,
-        "instrument_merge": "max of OMEGA and CRISM mapped area per occupancy cell",
-        "ramp_percentiles": [
-          10,
-          99
-        ],
-        "polar_detections_excluded_km2": 0
-      },
-      "hotspots": [
-        {
-          "lon": 77.375,
-          "lat": 19.875,
-          "value": 1358.637
-        },
-        {
-          "lon": 57.375,
-          "lat": -9.625,
-          "value": 255.971
-        },
-        {
-          "lon": 84.875,
-          "lat": 2.625,
-          "value": 64.232
-        },
-        {
-          "lon": 80.375,
-          "lat": 24.125,
-          "value": 54.525
-        },
-        {
-          "lon": -71.125,
-          "lat": -35.625,
-          "value": 47.846
-        },
-        {
-          "lon": 76.375,
-          "lat": 14.875,
-          "value": 41.542
-        },
-        {
-          "lon": 59.125,
-          "lat": -18.375,
-          "value": 15.747
-        },
-        {
-          "lon": 71.625,
-          "lat": -20.875,
-          "value": 14.23
-        }
-      ]
     }
   ],
   "sample": "Levels 0-1 of four layers for development; full set is built by pipeline/globe_layers.py"

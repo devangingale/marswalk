@@ -139,8 +139,23 @@ export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, register
         }
 
         const swimLayer = manifest.layers.find((l) => l.id === 'SWIM4MIM_Ci_0_1');
-        if (swimLayer?.values) {
-          loadValuesGrid(GLOBE_BASE, swimLayer.values)
+        const swimSpec =
+          swimLayer?.values ??
+          (swimLayer
+            ? {
+                url: 'layers/SWIM4MIM_Ci_0_1/values.bin',
+                width: 1440,
+                height: 480,
+                west: -180,
+                north: 60,
+                res_deg: 0.25,
+                scale: 3.051850947599719e-05,
+                offset: -1.0,
+                nodata: 65535,
+              }
+            : undefined);
+        if (swimSpec) {
+          loadValuesGrid(GLOBE_BASE, swimSpec)
             .then((grid) => {
               if (!cancelled) setSwimGrid(grid);
             })

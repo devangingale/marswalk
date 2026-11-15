@@ -38,12 +38,39 @@
   accent-color: var(--color-accent);
 }
 
-.s48-playback__time,
-.s48-playback__speed {
+.s48-playback__time {
   flex: 0 0 auto;
   white-space: nowrap;
 }
-.s48-playback__speed { color: var(--color-text-muted); }
+
+/* Speed: segmented ×1 … ×60 in Walk; one small cycling button in Visor. */
+.s48-playback__speeds { flex: 0 0 auto; }
+.s48-playback__speeds button {
+  min-height: calc(var(--hit-plan) - 6px);
+  padding: 0 var(--space-2);
+  font: var(--weight-medium) var(--text-sm) / 1 var(--font-data);
+  font-variant-numeric: var(--numeric);
+}
+.s48-playback__speed-cycle {
+  flex: 0 0 auto;
+  min-width: 48px;
+  height: var(--hit-plan);
+  padding: 0 var(--space-2);
+  border: var(--border-width) solid var(--color-control-border);
+  border-radius: var(--radius-2);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font: var(--weight-semibold) var(--text-sm) / 1 var(--font-data);
+  font-variant-numeric: var(--numeric);
+  cursor: pointer;
+}
+.s48-playback__speed-cycle:hover { background: var(--color-surface); }
+.s48-playback__speeds button:focus-visible,
+.s48-playback__speed-cycle:focus-visible {
+  outline: var(--focus-width) solid var(--color-focus-inner);
+  outline-offset: var(--focus-offset);
+  box-shadow: 0 0 0 var(--focus-offset) var(--color-focus-outer);
+}
 
 .s48-playback__readouts {
   flex: 0 0 auto;

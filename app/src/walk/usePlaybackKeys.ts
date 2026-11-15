@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Playback } from './usePlayback';
 import { RouteTrack, START_ID } from './track';
 import { playbackKeyAction, PlaybackKeyTarget, playbackSeekTarget } from './playbackKeys';
+import { stepSpeed } from './playbackSpeed';
 
 function eventTarget(target: EventTarget | null): PlaybackKeyTarget | null {
   if (!(target instanceof HTMLElement)) return null;
@@ -25,6 +26,10 @@ export function usePlaybackKeys(playback: Playback, track: RouteTrack): void {
       event.preventDefault();
       if (action === 'toggle') {
         playback.toggle();
+        return;
+      }
+      if (action === 'slower' || action === 'faster') {
+        playback.setSpeed(stepSpeed(playback.speed, action === 'slower' ? -1 : 1));
         return;
       }
       const target = playbackSeekTarget(action, playback.elapsedS, track.durationS, stopTimes);

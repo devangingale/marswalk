@@ -33,3 +33,22 @@ export function formatHeading(deg: number): string {
   const rounded = Math.round(deg) % 360;
   return `${rounded}° ${COMPASS_POINTS[Math.round(rounded / 45) % 8]}`;
 }
+
+/** The walk is over and the crew is back where it started. */
+export const BACK_AT_SHELTER = 'Back at shelter';
+
+/** Heading over the next waypoint: the shelter on the way home, else the next stop. */
+export function nextWaypointHeading(nextId: string | null | undefined): 'Shelter' | 'Next stop' {
+  return nextId === 'start' ? 'Shelter' : 'Next stop';
+}
+
+/** Status line over a waypoint's details: the shelter reads as the shelter, not a stop. */
+export function waypointStatus(waypointId: string, arrived: boolean): string {
+  if (waypointId === 'start') return arrived ? 'At the shelter' : 'Shelter';
+  return arrived ? 'At this stop' : 'Next stop';
+}
+
+/** "to stop" or "to shelter" after the time to the next waypoint. */
+export function toWaypoint(nextId: string | null | undefined): string {
+  return nextId === 'start' ? 'to shelter' : 'to stop';
+}
