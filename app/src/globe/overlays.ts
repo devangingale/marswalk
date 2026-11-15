@@ -145,7 +145,16 @@ const REGION = new DistanceDisplayCondition(0, 1_500_000);
 /** Crew circles and the night corridor sit this far above the surface, metres. */
 const CREW_LIFT_M = 0.5;
 
-type Meta = { kind: 'route'; stretch: number } | { kind: 'text'; lines: string[] };
+/** A marker that can open the 360° surface view: a waypoint or a rover mark, with its title. */
+export interface SurfaceTarget {
+  title: string;
+  lon: number;
+  lat: number;
+}
+
+type Meta =
+  | { kind: 'route'; stretch: number }
+  | { kind: 'text'; lines: string[]; target?: () => SurfaceTarget | undefined };
 
 interface Stretch extends SharedSegment {
   shared: boolean;
@@ -534,7 +543,7 @@ export class GlobeOverlays {
         billboard: this.billboard(images.dropOff(), REGION),
         label: this.label('Rover drop-off', SITE, [-20, 0], true),
       },
-      { kind: 'text', lines: ['Rover drop-off', formatLatLon(start.lon, start.lat)] },
+      { kind: 'text', lines: ['Rover drop-off', formatLatLon(start.lon, start.lat)], target: () => ({ title: 'Rover drop-off', lon: start.lon, lat: start.lat }) },
     );
     plan.stops.forEach((stop) => {
       const number = waypointLabel(stop.id, plan);
@@ -544,7 +553,11 @@ export class GlobeOverlays {
           position: this.surfacePosition(stop.lon, stop.lat),
           billboard: this.billboard(images.stop(number, false), REGION),
         },
-        { kind: 'text', lines: [`Stop ${number} · ${stop.name}`, formatLatLon(stop.lon, stop.lat)] },
+        {
+          kind: 'text',
+          lines: [`Stop ${number} · ${stop.name}`, formatLatLon(stop.lon, stop.lat)],
+          target: () => ({ title: `Stop ${number} · ${stop.name}`, lon: stop.lon, lat: stop.lat }),
+        },
       );
     });
     if (needsFinish(plan) && plan.route.legs.at(-1)?.line.length) {
@@ -552,7 +565,7 @@ export class GlobeOverlays {
       this.add(
         'plan',
         { position: this.surfacePosition(end[0], end[1]), billboard: this.billboard(images.finish(), REGION) },
-        { kind: 'text', lines: ['Finish', formatLatLon(end[0], end[1])] },
+        { kind: 'text', lines: ['Finish', formatLatLon(end[0], end[1])], target: () => ({ title: 'Finish', lon: end[0], lat: end[1] }) },
       );
     }
   }
@@ -620,7 +633,7 @@ export class GlobeOverlays {
             position: this.surfacePosition(site.lon, site.lat),
             billboard: { ...this.billboard(this.markers().photo(site.count), SITE), scale: 1.5 },
           },
-          { kind: 'text', lines: [photoSiteLabel(site)] },
+          { kind: 'text', lines: [photoSiteLabel(site)], target: () => ({ title: `Rover photos · ${photoSiteLabel(site)}`, lon: site.lon, lat: site.lat }) },
         );
       }
     }
@@ -738,7 +751,14 @@ export class GlobeOverlays {
           billboard: this.billboard(this.markers().dropOff(), REGION),
           label: { ...this.label(rover.label, REGION, [20, 0]), text: live((m) => m.rover?.label ?? '', '') },
         },
-        { kind: 'text', lines: ['Rover', formatLatLon(rover.lon, rover.lat)] },
+        {
+          kind: 'text',
+          lines: ['Rover', formatLatLon(rover.lon, rover.lat)],
+          target: () => {
+            const live = this.crewModel?.rover;
+            return live ? { title: 'Rover', lon: live.lon, lat: live.lat } : undefined;
+          },
+        },
       );
     }
   }
@@ -800,6 +820,12 @@ export class GlobeOverlays {
 
   get sections(): Section[] {
     return this.sectionList;
+  }
+
+  /** The waypoint or rover mark under a pick, for the 360° surface view; null for anything else. */
+  surfaceTarget(picked: unknown): SurfaceTarget | null {
+    const meta = this.metaFor(picked);
+    return meta?.kind === 'text' ? (meta.target?.() ?? null) : null;
   }
 
   private metaFor(picked: unknown): Meta | null {

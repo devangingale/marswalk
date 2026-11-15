@@ -1,0 +1,1112 @@
+{
+ "version": 1,
+ "site": "gale",
+ "lat": -4.5895,
+ "lon_east": 137.4417,
+ "min_elevation_deg": 10.0,
+ "window": {
+  "start": "2026-11-15T00:00:00Z",
+  "end": "2026-12-15T00:00:00Z"
+ },
+ "orbiters": [
+  "MRO",
+  "ODY"
+ ],
+ "passes": [
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-15T05:48:09Z",
+   "set_utc": "2026-11-15T05:56:10Z",
+   "peak_utc": "2026-11-15T05:52:15Z",
+   "peak_elevation_deg": 35.87,
+   "duration_s": 481.0
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-15T07:21:55Z",
+   "set_utc": "2026-11-15T07:27:09Z",
+   "peak_utc": "2026-11-15T07:24:31Z",
+   "peak_elevation_deg": 12.83,
+   "duration_s": 313.9
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-15T09:17:27Z",
+   "set_utc": "2026-11-15T09:26:24Z",
+   "peak_utc": "2026-11-15T09:21:52Z",
+   "peak_elevation_deg": 21.74,
+   "duration_s": 537.2
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-15T17:53:56Z",
+   "set_utc": "2026-11-15T18:02:31Z",
+   "peak_utc": "2026-11-15T17:58:04Z",
+   "peak_elevation_deg": 68.57,
+   "duration_s": 515.1
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-15T20:12:56Z",
+   "set_utc": "2026-11-15T20:23:52Z",
+   "peak_utc": "2026-11-15T20:18:30Z",
+   "peak_elevation_deg": 36.12,
+   "duration_s": 655.1
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-16T06:06:29Z",
+   "set_utc": "2026-11-16T06:15:09Z",
+   "peak_utc": "2026-11-16T06:10:59Z",
+   "peak_elevation_deg": 84.51,
+   "duration_s": 519.9
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-16T08:59:28Z",
+   "set_utc": "2026-11-16T09:11:20Z",
+   "peak_utc": "2026-11-16T09:05:13Z",
+   "peak_elevation_deg": 75.13,
+   "duration_s": 711.6
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-16T18:12:42Z",
+   "set_utc": "2026-11-16T18:21:06Z",
+   "peak_utc": "2026-11-16T18:16:46Z",
+   "peak_elevation_deg": 49.22,
+   "duration_s": 503.6
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-16T21:53:41Z",
+   "set_utc": "2026-11-16T22:04:47Z",
+   "peak_utc": "2026-11-16T21:59:20Z",
+   "peak_elevation_deg": 38.17,
+   "duration_s": 665.3
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-17T06:25:28Z",
+   "set_utc": "2026-11-17T06:33:37Z",
+   "peak_utc": "2026-11-17T06:29:39Z",
+   "peak_elevation_deg": 39.65,
+   "duration_s": 488.5
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-17T08:45:28Z",
+   "set_utc": "2026-11-17T08:52:09Z",
+   "peak_utc": "2026-11-17T08:48:47Z",
+   "peak_elevation_deg": 15.04,
+   "duration_s": 400.5
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-17T10:42:06Z",
+   "set_utc": "2026-11-17T10:50:17Z",
+   "peak_utc": "2026-11-17T10:46:09Z",
+   "peak_elevation_deg": 18.83,
+   "duration_s": 490.2
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-17T18:32:10Z",
+   "set_utc": "2026-11-17T18:39:04Z",
+   "peak_utc": "2026-11-17T18:35:34Z",
+   "peak_elevation_deg": 22.44,
+   "duration_s": 414.5
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-17T21:37:03Z",
+   "set_utc": "2026-11-17T21:48:18Z",
+   "peak_utc": "2026-11-17T21:42:48Z",
+   "peak_elevation_deg": 41.81,
+   "duration_s": 675.1
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-18T06:45:12Z",
+   "set_utc": "2026-11-18T06:51:22Z",
+   "peak_utc": "2026-11-18T06:48:19Z",
+   "peak_elevation_deg": 18.62,
+   "duration_s": 369.9
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-18T10:23:44Z",
+   "set_utc": "2026-11-18T10:35:38Z",
+   "peak_utc": "2026-11-18T10:29:29Z",
+   "peak_elevation_deg": 85.92,
+   "duration_s": 713.9
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-18T18:53:15Z",
+   "set_utc": "2026-11-18T18:55:20Z",
+   "peak_utc": "2026-11-18T18:54:16Z",
+   "peak_elevation_deg": 10.68,
+   "duration_s": 125.2
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-18T20:44:14Z",
+   "set_utc": "2026-11-18T20:46:45Z",
+   "peak_utc": "2026-11-18T20:45:24Z",
+   "peak_elevation_deg": 11.01,
+   "duration_s": 151.0
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-18T23:18:09Z",
+   "set_utc": "2026-11-18T23:28:52Z",
+   "peak_utc": "2026-11-18T23:23:36Z",
+   "peak_elevation_deg": 33.03,
+   "duration_s": 642.7
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-19T08:55:57Z",
+   "set_utc": "2026-11-19T09:00:21Z",
+   "peak_utc": "2026-11-19T08:58:10Z",
+   "peak_elevation_deg": 13.45,
+   "duration_s": 263.4
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-19T10:09:12Z",
+   "set_utc": "2026-11-19T10:16:58Z",
+   "peak_utc": "2026-11-19T10:13:03Z",
+   "peak_elevation_deg": 17.48,
+   "duration_s": 465.7
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-19T12:06:50Z",
+   "set_utc": "2026-11-19T12:14:03Z",
+   "peak_utc": "2026-11-19T12:10:25Z",
+   "peak_elevation_deg": 16.26,
+   "duration_s": 432.5
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-19T21:00:41Z",
+   "set_utc": "2026-11-19T21:07:39Z",
+   "peak_utc": "2026-11-19T21:04:06Z",
+   "peak_elevation_deg": 23.16,
+   "duration_s": 418.0
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-19T23:01:11Z",
+   "set_utc": "2026-11-19T23:12:42Z",
+   "peak_utc": "2026-11-19T23:07:05Z",
+   "peak_elevation_deg": 48.57,
+   "duration_s": 690.9
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-20T09:12:59Z",
+   "set_utc": "2026-11-20T09:20:31Z",
+   "peak_utc": "2026-11-20T09:16:49Z",
+   "peak_elevation_deg": 28.04,
+   "duration_s": 451.8
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-20T11:48:00Z",
+   "set_utc": "2026-11-20T11:59:53Z",
+   "peak_utc": "2026-11-20T11:53:44Z",
+   "peak_elevation_deg": 81.02,
+   "duration_s": 712.9
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-20T21:18:36Z",
+   "set_utc": "2026-11-20T21:27:00Z",
+   "peak_utc": "2026-11-20T21:22:40Z",
+   "peak_elevation_deg": 51.62,
+   "duration_s": 504.7
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-21T00:42:39Z",
+   "set_utc": "2026-11-21T00:52:54Z",
+   "peak_utc": "2026-11-21T00:47:51Z",
+   "peak_elevation_deg": 28.67,
+   "duration_s": 615.3
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-21T09:31:04Z",
+   "set_utc": "2026-11-21T09:39:39Z",
+   "peak_utc": "2026-11-21T09:35:31Z",
+   "peak_elevation_deg": 65.07,
+   "duration_s": 515.4
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-21T11:33:02Z",
+   "set_utc": "2026-11-21T11:41:39Z",
+   "peak_utc": "2026-11-21T11:37:18Z",
+   "peak_elevation_deg": 20.2,
+   "duration_s": 517.8
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-21T13:31:41Z",
+   "set_utc": "2026-11-21T13:37:40Z",
+   "peak_utc": "2026-11-21T13:34:39Z",
+   "peak_elevation_deg": 13.95,
+   "duration_s": 359.4
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-21T21:37:10Z",
+   "set_utc": "2026-11-21T21:45:44Z",
+   "peak_utc": "2026-11-21T21:41:17Z",
+   "peak_elevation_deg": 65.21,
+   "duration_s": 514.6
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-22T00:25:20Z",
+   "set_utc": "2026-11-22T00:37:02Z",
+   "peak_utc": "2026-11-22T00:31:21Z",
+   "peak_elevation_deg": 56.54,
+   "duration_s": 702.9
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-22T09:49:50Z",
+   "set_utc": "2026-11-22T09:58:16Z",
+   "peak_utc": "2026-11-22T09:54:11Z",
+   "peak_elevation_deg": 51.92,
+   "duration_s": 506.1
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-22T13:12:16Z",
+   "set_utc": "2026-11-22T13:24:05Z",
+   "peak_utc": "2026-11-22T13:17:59Z",
+   "peak_elevation_deg": 70.16,
+   "duration_s": 708.9
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-22T21:56:22Z",
+   "set_utc": "2026-11-22T22:03:55Z",
+   "peak_utc": "2026-11-22T22:00:04Z",
+   "peak_elevation_deg": 28.23,
+   "duration_s": 453.0
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-23T00:12:59Z",
+   "set_utc": "2026-11-23T00:16:26Z",
+   "peak_utc": "2026-11-23T00:14:42Z",
+   "peak_elevation_deg": 11.16,
+   "duration_s": 207.7
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-23T02:07:10Z",
+   "set_utc": "2026-11-23T02:16:53Z",
+   "peak_utc": "2026-11-23T02:12:05Z",
+   "peak_elevation_deg": 24.92,
+   "duration_s": 582.4
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-23T10:09:17Z",
+   "set_utc": "2026-11-23T10:16:18Z",
+   "peak_utc": "2026-11-23T10:12:51Z",
+   "peak_elevation_deg": 23.36,
+   "duration_s": 420.1
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-23T12:56:54Z",
+   "set_utc": "2026-11-23T13:06:15Z",
+   "peak_utc": "2026-11-23T13:01:31Z",
+   "peak_elevation_deg": 23.25,
+   "duration_s": 560.5
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-23T14:56:44Z",
+   "set_utc": "2026-11-23T15:01:02Z",
+   "peak_utc": "2026-11-23T14:58:52Z",
+   "peak_elevation_deg": 11.88,
+   "duration_s": 258.3
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-23T22:16:34Z",
+   "set_utc": "2026-11-23T22:21:04Z",
+   "peak_utc": "2026-11-23T22:18:48Z",
+   "peak_elevation_deg": 13.63,
+   "duration_s": 269.7
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-24T01:49:29Z",
+   "set_utc": "2026-11-24T02:01:20Z",
+   "peak_utc": "2026-11-24T01:55:35Z",
+   "peak_elevation_deg": 65.78,
+   "duration_s": 711.2
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-24T10:30:11Z",
+   "set_utc": "2026-11-24T10:32:48Z",
+   "peak_utc": "2026-11-24T10:31:35Z",
+   "peak_elevation_deg": 11.1,
+   "duration_s": 157.1
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-24T12:21:46Z",
+   "set_utc": "2026-11-24T12:23:35Z",
+   "peak_utc": "2026-11-24T12:22:41Z",
+   "peak_elevation_deg": 10.52,
+   "duration_s": 109.5
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-24T14:36:32Z",
+   "set_utc": "2026-11-24T14:48:14Z",
+   "peak_utc": "2026-11-24T14:42:13Z",
+   "peak_elevation_deg": 60.33,
+   "duration_s": 701.8
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-25T00:25:37Z",
+   "set_utc": "2026-11-25T00:31:44Z",
+   "peak_utc": "2026-11-25T00:28:38Z",
+   "peak_elevation_deg": 18.47,
+   "duration_s": 367.4
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-25T01:36:10Z",
+   "set_utc": "2026-11-25T01:41:38Z",
+   "peak_utc": "2026-11-25T01:38:55Z",
+   "peak_elevation_deg": 13.15,
+   "duration_s": 328.3
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-25T03:31:43Z",
+   "set_utc": "2026-11-25T03:40:46Z",
+   "peak_utc": "2026-11-25T03:36:17Z",
+   "peak_elevation_deg": 21.67,
+   "duration_s": 543.1
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-25T12:37:50Z",
+   "set_utc": "2026-11-25T12:44:42Z",
+   "peak_utc": "2026-11-25T12:41:19Z",
+   "peak_elevation_deg": 22.26,
+   "duration_s": 412.5
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-25T14:20:48Z",
+   "set_utc": "2026-11-25T14:30:44Z",
+   "peak_utc": "2026-11-25T14:25:42Z",
+   "peak_elevation_deg": 26.72,
+   "duration_s": 596.0
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-26T00:43:15Z",
+   "set_utc": "2026-11-26T00:51:22Z",
+   "peak_utc": "2026-11-26T00:47:12Z",
+   "peak_elevation_deg": 39.43,
+   "duration_s": 487.0
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-26T03:13:38Z",
+   "set_utc": "2026-11-26T03:25:34Z",
+   "peak_utc": "2026-11-26T03:19:48Z",
+   "peak_elevation_deg": 76.12,
+   "duration_s": 716.1
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-26T12:55:39Z",
+   "set_utc": "2026-11-26T13:04:04Z",
+   "peak_utc": "2026-11-26T12:59:59Z",
+   "peak_elevation_deg": 49.22,
+   "duration_s": 504.4
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-26T16:00:48Z",
+   "set_utc": "2026-11-26T16:12:20Z",
+   "peak_utc": "2026-11-26T16:06:25Z",
+   "peak_elevation_deg": 51.87,
+   "duration_s": 691.7
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-27T01:01:36Z",
+   "set_utc": "2026-11-27T01:10:15Z",
+   "peak_utc": "2026-11-27T01:05:45Z",
+   "peak_elevation_deg": 84.45,
+   "duration_s": 518.6
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-27T02:59:40Z",
+   "set_utc": "2026-11-27T03:06:28Z",
+   "peak_utc": "2026-11-27T03:03:06Z",
+   "peak_elevation_deg": 15.32,
+   "duration_s": 408.3
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-27T04:56:17Z",
+   "set_utc": "2026-11-27T05:04:33Z",
+   "peak_utc": "2026-11-27T05:00:28Z",
+   "peak_elevation_deg": 18.82,
+   "duration_s": 495.9
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-27T13:14:12Z",
+   "set_utc": "2026-11-27T13:22:49Z",
+   "peak_utc": "2026-11-27T13:18:40Z",
+   "peak_elevation_deg": 68.58,
+   "duration_s": 516.5
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-27T15:44:44Z",
+   "set_utc": "2026-11-27T15:55:10Z",
+   "peak_utc": "2026-11-27T15:49:52Z",
+   "peak_elevation_deg": 30.71,
+   "duration_s": 625.7
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-28T01:20:35Z",
+   "set_utc": "2026-11-28T01:28:36Z",
+   "peak_utc": "2026-11-28T01:24:30Z",
+   "peak_elevation_deg": 35.88,
+   "duration_s": 480.6
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-28T04:37:47Z",
+   "set_utc": "2026-11-28T04:49:45Z",
+   "peak_utc": "2026-11-28T04:43:58Z",
+   "peak_elevation_deg": 86.41,
+   "duration_s": 717.7
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-28T13:33:25Z",
+   "set_utc": "2026-11-28T13:41:02Z",
+   "peak_utc": "2026-11-28T13:37:18Z",
+   "peak_elevation_deg": 29.42,
+   "duration_s": 457.0
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-28T17:25:05Z",
+   "set_utc": "2026-11-28T17:36:23Z",
+   "peak_utc": "2026-11-28T17:30:35Z",
+   "peak_elevation_deg": 44.72,
+   "duration_s": 678.2
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-29T01:40:22Z",
+   "set_utc": "2026-11-29T01:46:10Z",
+   "peak_utc": "2026-11-29T01:43:14Z",
+   "peak_elevation_deg": 17.1,
+   "duration_s": 348.7
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-29T04:23:19Z",
+   "set_utc": "2026-11-29T04:31:08Z",
+   "peak_utc": "2026-11-29T04:27:16Z",
+   "peak_elevation_deg": 17.69,
+   "duration_s": 469.4
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-29T06:20:56Z",
+   "set_utc": "2026-11-29T06:28:15Z",
+   "peak_utc": "2026-11-29T06:24:37Z",
+   "peak_elevation_deg": 16.28,
+   "duration_s": 438.2
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-29T13:53:34Z",
+   "set_utc": "2026-11-29T13:58:16Z",
+   "peak_utc": "2026-11-29T13:55:56Z",
+   "peak_elevation_deg": 14.12,
+   "duration_s": 282.3
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-29T17:08:42Z",
+   "set_utc": "2026-11-29T17:19:32Z",
+   "peak_utc": "2026-11-29T17:14:01Z",
+   "peak_elevation_deg": 35.35,
+   "duration_s": 650.6
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-30T03:50:37Z",
+   "set_utc": "2026-11-30T03:55:35Z",
+   "peak_utc": "2026-11-30T03:53:05Z",
+   "peak_elevation_deg": 14.73,
+   "duration_s": 297.8
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-30T06:01:58Z",
+   "set_utc": "2026-11-30T06:13:54Z",
+   "peak_utc": "2026-11-30T06:08:08Z",
+   "peak_elevation_deg": 80.63,
+   "duration_s": 716.3
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-11-30T16:02:43Z",
+   "set_utc": "2026-11-30T16:08:43Z",
+   "peak_utc": "2026-11-30T16:05:45Z",
+   "peak_elevation_deg": 17.81,
+   "duration_s": 360.1
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-11-30T18:49:23Z",
+   "set_utc": "2026-11-30T19:00:24Z",
+   "peak_utc": "2026-11-30T18:54:46Z",
+   "peak_elevation_deg": 38.7,
+   "duration_s": 661.3
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-01T04:07:53Z",
+   "set_utc": "2026-12-01T04:15:35Z",
+   "peak_utc": "2026-12-01T04:11:39Z",
+   "peak_elevation_deg": 30.78,
+   "duration_s": 461.6
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-01T05:47:03Z",
+   "set_utc": "2026-12-01T05:55:42Z",
+   "peak_utc": "2026-12-01T05:51:26Z",
+   "peak_elevation_deg": 20.34,
+   "duration_s": 518.8
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-01T07:45:43Z",
+   "set_utc": "2026-12-01T07:51:48Z",
+   "peak_utc": "2026-12-01T07:48:46Z",
+   "peak_elevation_deg": 13.99,
+   "duration_s": 364.9
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-01T16:20:14Z",
+   "set_utc": "2026-12-01T16:28:20Z",
+   "peak_utc": "2026-12-01T16:24:23Z",
+   "peak_elevation_deg": 37.88,
+   "duration_s": 486.3
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-01T18:32:41Z",
+   "set_utc": "2026-12-01T18:43:52Z",
+   "peak_utc": "2026-12-01T18:38:10Z",
+   "peak_elevation_deg": 40.82,
+   "duration_s": 671.2
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-02T04:26:02Z",
+   "set_utc": "2026-12-02T04:34:38Z",
+   "peak_utc": "2026-12-02T04:30:10Z",
+   "peak_elevation_deg": 72.74,
+   "duration_s": 516.0
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-02T07:26:10Z",
+   "set_utc": "2026-12-02T07:38:02Z",
+   "peak_utc": "2026-12-02T07:32:17Z",
+   "peak_elevation_deg": 69.98,
+   "duration_s": 711.8
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-02T16:38:33Z",
+   "set_utc": "2026-12-02T16:47:14Z",
+   "peak_utc": "2026-12-02T16:43:04Z",
+   "peak_elevation_deg": 86.39,
+   "duration_s": 520.3
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-02T20:13:43Z",
+   "set_utc": "2026-12-02T20:24:23Z",
+   "peak_utc": "2026-12-02T20:18:57Z",
+   "peak_elevation_deg": 33.61,
+   "duration_s": 640.4
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-03T04:44:48Z",
+   "set_utc": "2026-12-03T04:53:08Z",
+   "peak_utc": "2026-12-03T04:48:51Z",
+   "peak_elevation_deg": 46.31,
+   "duration_s": 499.7
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-03T07:10:52Z",
+   "set_utc": "2026-12-03T07:20:12Z",
+   "peak_utc": "2026-12-03T07:15:36Z",
+   "peak_elevation_deg": 23.34,
+   "duration_s": 559.7
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-03T09:10:44Z",
+   "set_utc": "2026-12-03T09:15:07Z",
+   "peak_utc": "2026-12-03T09:12:56Z",
+   "peak_elevation_deg": 11.91,
+   "duration_s": 262.8
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-03T16:57:33Z",
+   "set_utc": "2026-12-03T17:05:37Z",
+   "peak_utc": "2026-12-03T17:01:41Z",
+   "peak_elevation_deg": 37.45,
+   "duration_s": 484.0
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-03T19:56:43Z",
+   "set_utc": "2026-12-03T20:08:11Z",
+   "peak_utc": "2026-12-03T20:02:19Z",
+   "peak_elevation_deg": 47.3,
+   "duration_s": 687.9
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-04T05:04:17Z",
+   "set_utc": "2026-12-04T05:11:00Z",
+   "peak_utc": "2026-12-04T05:07:35Z",
+   "peak_elevation_deg": 21.28,
+   "duration_s": 403.2
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-04T08:50:24Z",
+   "set_utc": "2026-12-04T09:02:09Z",
+   "peak_utc": "2026-12-04T08:56:26Z",
+   "peak_elevation_deg": 60.23,
+   "duration_s": 704.2
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-04T17:17:18Z",
+   "set_utc": "2026-12-04T17:23:15Z",
+   "peak_utc": "2026-12-04T17:20:19Z",
+   "peak_elevation_deg": 17.69,
+   "duration_s": 356.6
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-04T21:38:06Z",
+   "set_utc": "2026-12-04T21:48:21Z",
+   "peak_utc": "2026-12-04T21:43:08Z",
+   "peak_elevation_deg": 29.26,
+   "duration_s": 614.9
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-05T07:15:53Z",
+   "set_utc": "2026-12-05T07:19:03Z",
+   "peak_utc": "2026-12-05T07:17:31Z",
+   "peak_elevation_deg": 11.66,
+   "duration_s": 189.4
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-05T08:34:45Z",
+   "set_utc": "2026-12-05T08:44:39Z",
+   "peak_utc": "2026-12-05T08:39:47Z",
+   "peak_elevation_deg": 26.77,
+   "duration_s": 594.1
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-05T19:27:42Z",
+   "set_utc": "2026-12-05T19:32:29Z",
+   "peak_utc": "2026-12-05T19:30:07Z",
+   "peak_elevation_deg": 14.25,
+   "duration_s": 287.4
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-05T21:20:49Z",
+   "set_utc": "2026-12-05T21:32:30Z",
+   "peak_utc": "2026-12-05T21:26:30Z",
+   "peak_elevation_deg": 55.0,
+   "duration_s": 701.0
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-06T07:32:32Z",
+   "set_utc": "2026-12-06T07:39:39Z",
+   "peak_utc": "2026-12-06T07:36:02Z",
+   "peak_elevation_deg": 24.44,
+   "duration_s": 427.2
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-06T10:14:42Z",
+   "set_utc": "2026-12-06T10:26:15Z",
+   "peak_utc": "2026-12-06T10:20:37Z",
+   "peak_elevation_deg": 51.72,
+   "duration_s": 693.4
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-06T19:44:49Z",
+   "set_utc": "2026-12-06T19:52:29Z",
+   "peak_utc": "2026-12-06T19:48:44Z",
+   "peak_elevation_deg": 29.77,
+   "duration_s": 460.5
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-06T21:08:32Z",
+   "set_utc": "2026-12-06T21:11:30Z",
+   "peak_utc": "2026-12-06T21:10:05Z",
+   "peak_elevation_deg": 10.83,
+   "duration_s": 178.3
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-06T23:02:34Z",
+   "set_utc": "2026-12-06T23:12:18Z",
+   "peak_utc": "2026-12-06T23:07:21Z",
+   "peak_elevation_deg": 25.49,
+   "duration_s": 584.0
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-07T07:50:28Z",
+   "set_utc": "2026-12-07T07:58:55Z",
+   "peak_utc": "2026-12-07T07:54:33Z",
+   "peak_elevation_deg": 55.3,
+   "duration_s": 507.1
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-07T09:58:42Z",
+   "set_utc": "2026-12-07T10:09:06Z",
+   "peak_utc": "2026-12-07T10:04:00Z",
+   "peak_elevation_deg": 30.76,
+   "duration_s": 623.1
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-07T20:02:55Z",
+   "set_utc": "2026-12-07T20:11:33Z",
+   "peak_utc": "2026-12-07T20:07:23Z",
+   "peak_elevation_deg": 69.85,
+   "duration_s": 517.8
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-07T22:44:57Z",
+   "set_utc": "2026-12-07T22:56:47Z",
+   "peak_utc": "2026-12-07T22:50:41Z",
+   "peak_elevation_deg": 64.04,
+   "duration_s": 710.5
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-08T08:09:02Z",
+   "set_utc": "2026-12-08T08:17:34Z",
+   "peak_utc": "2026-12-08T08:13:09Z",
+   "peak_elevation_deg": 60.64,
+   "duration_s": 511.6
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-08T11:39:02Z",
+   "set_utc": "2026-12-08T11:50:21Z",
+   "peak_utc": "2026-12-08T11:44:49Z",
+   "peak_elevation_deg": 44.48,
+   "duration_s": 679.1
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-08T20:21:42Z",
+   "set_utc": "2026-12-08T20:30:05Z",
+   "peak_utc": "2026-12-08T20:26:01Z",
+   "peak_elevation_deg": 48.39,
+   "duration_s": 503.0
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-08T22:31:37Z",
+   "set_utc": "2026-12-08T22:36:52Z",
+   "peak_utc": "2026-12-08T22:34:14Z",
+   "peak_elevation_deg": 12.83,
+   "duration_s": 315.6
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-09T00:27:05Z",
+   "set_utc": "2026-12-09T00:36:12Z",
+   "peak_utc": "2026-12-09T00:31:34Z",
+   "peak_elevation_deg": 22.19,
+   "duration_s": 546.7
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-09T08:28:15Z",
+   "set_utc": "2026-12-09T08:35:38Z",
+   "peak_utc": "2026-12-09T08:31:53Z",
+   "peak_elevation_deg": 26.52,
+   "duration_s": 443.0
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-09T11:22:43Z",
+   "set_utc": "2026-12-09T11:33:30Z",
+   "peak_utc": "2026-12-09T11:28:13Z",
+   "peak_elevation_deg": 35.45,
+   "duration_s": 647.4
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-09T20:41:10Z",
+   "set_utc": "2026-12-09T20:47:59Z",
+   "peak_utc": "2026-12-09T20:44:38Z",
+   "peak_elevation_deg": 22.03,
+   "duration_s": 409.1
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-10T00:09:07Z",
+   "set_utc": "2026-12-10T00:21:04Z",
+   "peak_utc": "2026-12-10T00:14:54Z",
+   "peak_elevation_deg": 74.32,
+   "duration_s": 716.6
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-10T08:48:35Z",
+   "set_utc": "2026-12-10T08:52:35Z",
+   "peak_utc": "2026-12-10T08:50:34Z",
+   "peak_elevation_deg": 12.75,
+   "duration_s": 239.5
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-10T13:03:25Z",
+   "set_utc": "2026-12-10T13:14:26Z",
+   "peak_utc": "2026-12-10T13:09:01Z",
+   "peak_elevation_deg": 38.37,
+   "duration_s": 661.1
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-10T21:02:26Z",
+   "set_utc": "2026-12-10T21:04:01Z",
+   "peak_utc": "2026-12-10T21:03:25Z",
+   "peak_elevation_deg": 10.37,
+   "duration_s": 94.7
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-10T22:52:59Z",
+   "set_utc": "2026-12-10T22:55:50Z",
+   "peak_utc": "2026-12-10T22:54:19Z",
+   "peak_elevation_deg": 11.29,
+   "duration_s": 170.4
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-10T23:55:07Z",
+   "set_utc": "2026-12-11T00:01:50Z",
+   "peak_utc": "2026-12-10T23:58:27Z",
+   "peak_elevation_deg": 15.02,
+   "duration_s": 402.4
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-11T01:51:41Z",
+   "set_utc": "2026-12-11T02:00:02Z",
+   "peak_utc": "2026-12-11T01:55:48Z",
+   "peak_elevation_deg": 19.28,
+   "duration_s": 501.6
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-11T10:57:13Z",
+   "set_utc": "2026-12-11T11:03:34Z",
+   "peak_utc": "2026-12-11T11:00:21Z",
+   "peak_elevation_deg": 19.61,
+   "duration_s": 381.8
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-11T12:46:46Z",
+   "set_utc": "2026-12-11T12:57:54Z",
+   "peak_utc": "2026-12-11T12:52:27Z",
+   "peak_elevation_deg": 41.0,
+   "duration_s": 667.6
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-11T23:09:25Z",
+   "set_utc": "2026-12-11T23:16:30Z",
+   "peak_utc": "2026-12-11T23:13:01Z",
+   "peak_elevation_deg": 23.77,
+   "duration_s": 425.6
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-12T01:33:20Z",
+   "set_utc": "2026-12-12T01:45:19Z",
+   "peak_utc": "2026-12-12T01:39:07Z",
+   "peak_elevation_deg": 85.07,
+   "duration_s": 719.3
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-12T11:14:53Z",
+   "set_utc": "2026-12-12T11:23:05Z",
+   "peak_utc": "2026-12-12T11:18:52Z",
+   "peak_elevation_deg": 42.4,
+   "duration_s": 491.8
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-12T14:27:49Z",
+   "set_utc": "2026-12-12T14:38:28Z",
+   "peak_utc": "2026-12-12T14:33:14Z",
+   "peak_elevation_deg": 33.22,
+   "duration_s": 639.1
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-12T23:27:16Z",
+   "set_utc": "2026-12-12T23:35:45Z",
+   "peak_utc": "2026-12-12T23:31:38Z",
+   "peak_elevation_deg": 53.32,
+   "duration_s": 509.0
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-13T01:18:49Z",
+   "set_utc": "2026-12-13T01:26:36Z",
+   "peak_utc": "2026-12-13T01:22:41Z",
+   "peak_elevation_deg": 17.43,
+   "duration_s": 467.7
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-13T03:16:21Z",
+   "set_utc": "2026-12-13T03:23:47Z",
+   "peak_utc": "2026-12-13T03:20:02Z",
+   "peak_elevation_deg": 16.69,
+   "duration_s": 446.5
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-13T11:33:15Z",
+   "set_utc": "2026-12-13T11:41:52Z",
+   "peak_utc": "2026-12-13T11:37:23Z",
+   "peak_elevation_deg": 78.96,
+   "duration_s": 517.1
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-13T14:10:51Z",
+   "set_utc": "2026-12-13T14:22:15Z",
+   "peak_utc": "2026-12-13T14:16:41Z",
+   "peak_elevation_deg": 47.58,
+   "duration_s": 683.8
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-13T23:45:50Z",
+   "set_utc": "2026-12-13T23:54:25Z",
+   "peak_utc": "2026-12-13T23:50:17Z",
+   "peak_elevation_deg": 63.26,
+   "duration_s": 514.9
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-14T02:57:33Z",
+   "set_utc": "2026-12-14T03:09:32Z",
+   "peak_utc": "2026-12-14T03:03:21Z",
+   "peak_elevation_deg": 82.2,
+   "duration_s": 718.7
+  },
+  {
+   "orbiter": "MRO",
+   "rise_utc": "2026-12-14T11:52:15Z",
+   "set_utc": "2026-12-14T12:00:07Z",
+   "peak_utc": "2026-12-14T11:56:06Z",
+   "peak_elevation_deg": 33.3,
+   "duration_s": 472.3
+  },
+  {
+   "orbiter": "ODY",
+   "rise_utc": "2026-12-14T15:52:16Z",
+   "set_utc": "2026-12-14T16:02:28Z",
+   "peak_utc": "2026-12-14T15:57:26Z",
+   "peak_elevation_deg": 28.86,
+   "duration_s": 612.4
+  }
+ ],
+ "source": {
+  "kernels": [
+   "naif0012.tls",
+   "pck00011.tpc",
+   "de442s.bsp",
+   "mar099s.bsp",
+   "mro_psp.bsp",
+   "m01_map.bsp"
+  ],
+  "coverage": {
+   "MRO": {
+    "start": "2026-10-01T00:00:01Z",
+    "end": "2027-01-11T09:58:51Z"
+   },
+   "ODY": {
+    "start": "2026-10-01T00:00:00Z",
+    "end": "2027-03-10T23:58:51Z"
+   }
+  },
+  "generated_utc": "2026-11-15T09:01:19Z",
+  "notes": "Passes computed using NASA NAIF SPICE (spiceypy 8.4.0) with topocentric elevation above local horizon on a spherical Mars (radius 3396190 m, IAU_MARS body-fixed frame). min_elevation_deg = 10.0 is an assumed communication elevation mask (no published minimum mask found in relay literature). MAVEN excluded (mission ended Dec 2025). Each orbiter's passes stop where its loaded ephemeris coverage ends (source.coverage)."
+ },
+ "copied_from": "data/sites/gale/bundle/passes.json"
+}
