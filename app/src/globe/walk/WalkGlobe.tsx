@@ -1,6 +1,6 @@
 // Written with AI assistance, directed and reviewed by the team.
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   CustomDataSource,
   Matrix4,
@@ -13,7 +13,9 @@ import { loadGrid, type RouteGrid } from '../../lib/grid';
 import type { Plan } from '../../lib/plan';
 import type { SiteData } from '../../types';
 import type { RouteTrack } from '../../walk/track';
-import { createMarsViewer, initCesium, surfaceClassification } from '../cesiumSetup';
+import { createMarsViewer, initCesium, surfaceClassification, type CesiumFailure } from '../cesiumSetup';
+import { useSurfaceMode } from '../surfaceMode';
+import { SurfaceNotice } from '../SurfaceNotice';
 import { attachOfflineSurface, chaseCamera, siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M, type Pose } from '../frame';
 import { GlobeImagery } from '../imageryLayers';
 import type { SiteTerrainMesh } from '../siteTerrain';
@@ -43,6 +45,8 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
   crew = null,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const surfaceMode = useSurfaceMode();
+  const [failure, setFailure] = useState<CesiumFailure | null>(null);
   const viewerRef = useRef<Viewer | null>(null);
   const overlaysRef = useRef<GlobeOverlays | null>(null);
   const imageryRef = useRef<GlobeImagery | null>(null);
@@ -61,14 +65,16 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
 
     let disposed = false;
     heightOffsetRef.current = SPIKE_HEIGHT_OFFSETS_M[siteData.id] ?? 0;
-    initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, navigator.onLine);
+    initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, surfaceMode === 'online');
+    setFailure(null);
 
     void (async () => {
-      const { viewer, tileset } = await createMarsViewer(container, { interactive: false });
+      const { viewer, tileset, failure: loadFailure } = await createMarsViewer(container, { interactive: false });
       if (disposed) {
         viewer.destroy();
         return;
       }
+      setFailure(loadFailure);
 
       viewerRef.current = viewer;
       (container as any)._viewer = viewer;
@@ -140,7 +146,7 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
       viewerRef.current?.destroy();
       viewerRef.current = null;
     };
-  }, [siteData]);
+  }, [siteData, surfaceMode]);
 
   // Plan and route updates
   useEffect(() => {
@@ -207,5 +213,10 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
     }
   }
 
-  return <div ref={containerRef} className="s48-walk-globe" />;
+  return (
+    <>
+      <div ref={containerRef} className="s48-walk-globe" />
+      <SurfaceNotice failure={failure} />
+    </>
+  );
 };

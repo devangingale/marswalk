@@ -1,0 +1,50 @@
+/* Written with AI assistance, directed and reviewed by the team. */
+.s48-surface-notice {
+  position: absolute;
+  /* Below the map's top row of controls (panel handles, site trail, View). */
+  top: calc(var(--space-3) + var(--space-8) + var(--space-3));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: calc(100% - 2 * var(--space-3));
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+  border: var(--border-width) solid var(--color-caution);
+  border-radius: var(--radius-2);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-popover);
+  font: var(--weight-medium) var(--text-md) / var(--leading-md) var(--font-ui);
+}
+.s48-surface-notice__text {
+  min-width: 0;
+  white-space: nowrap;
+}
+.s48-surface-notice__action {
+  flex: none;
+  white-space: nowrap;
+}
+.s48-surface-notice__close {
+  flex: none;
+}
+@media (max-width: 640px) {
+  .s48-surface-notice {
+    flex-wrap: wrap;
+    left: var(--space-3);
+    right: var(--space-3);
+    transform: none;
+  }
+  .s48-surface-notice__text {
+    white-space: normal;
+  }
+}
+.s48-surface-notice--low {
+  top: auto;
+  bottom: var(--space-16);
+}
+.s48-surface-notice--low {
+  top: auto;
+  bottom: var(--space-16);
+}

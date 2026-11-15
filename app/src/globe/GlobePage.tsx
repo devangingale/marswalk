@@ -32,7 +32,9 @@ import { loadGrid, type RouteGrid } from '../lib/grid';
 import type { Plan } from '../lib/plan';
 import { sections as routeSections } from '../lib/routeShape';
 import type { LayerState, SiteData } from '../types';
-import { createMarsViewer, initCesium } from './cesiumSetup';
+import { createMarsViewer, initCesium, type CesiumFailure } from './cesiumSetup';
+import { useSurfaceMode, type SurfaceMode } from './surfaceMode';
+import { SurfaceNotice } from './SurfaceNotice';
 import { installGroundPan } from './groundPan';
 import { installPlanetView } from './planetView';
 import { buildCornerPlan } from './cornerPlan';
@@ -209,7 +211,13 @@ export interface GlobePageProps {
 /** Elements the graticule edge labels keep clear of: map controls, panel handles, sliding panels. */
 const LABEL_BLOCKERS = '[data-over-map], .s48-regions__handle, .s48-regions[data-overlay=\'true\'] .s48-regions__panel:not([hidden])';
 
-export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
+/** Switching Online and Offline rebuilds the whole tab, so the viewer and its layers start clean. */
+export const GlobePage: React.FC<GlobePageProps> = (props) => {
+  const surfaceMode = useSurfaceMode();
+  return <GlobePageView key={surfaceMode} {...props} surfaceMode={surfaceMode} />;
+};
+
+const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = ({ siteId, theme, surfaceMode }) => {
   const initial = useRef(urlState()).current;
   const rootRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -257,6 +265,7 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
   const [annotations, setAnnotations] = useState<AnnotationsSnapshot>({ caveCount: 0, hotspots: [] });
   const [leftView, setLeftView] = useState<'layers' | 'sites'>('layers');
   const [notice, setNotice] = useState<string | null>(null);
+  const [failure, setFailure] = useState<CesiumFailure | null>(null);
   const [hover, setHover] = useState<Hover | null>(null);
   // Set once the Mars scene is ready; gates the clock and site-finder mounts.
   const [dustScene, setDustScene] = useState<Scene | null>(null);
@@ -375,7 +384,7 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
     let disposed = false;
     let handler: ScreenSpaceEventHandler | null = null;
     const removers: (() => void)[] = [];
-    cesiumModeRef.current = initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, navigator.onLine);
+    cesiumModeRef.current = initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, surfaceMode === 'online');
 
     void (async () => {
       const created = await createMarsViewer(container, { interactive: true });
@@ -388,7 +397,8 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
       tilesetRef.current = tileset;
       viewerRef.current = viewer;
       viewer.camera.setView({ destination: lonLatToCartesian(PLANET_VIEW.lon, PLANET_VIEW.lat, PLANET_VIEW.heightM) });
-      if (!tileset) setNotice('Offline, local tiles');
+      setFailure(created.failure);
+      if (!tileset && !created.failure) setNotice('Offline, local tiles');
 
       // Markers clamp to Cesium Mars only when the tileset takes part in height queries.
       if (tileset) tileset.enableCollision = true;
@@ -881,6 +891,7 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
         <EnterSurfacePopover candidate={enterCandidate} surface={surface} onClose={() => setEnterCandidate(null)} />
       )}
       {surface.overlay}
+      {!surface.active && <SurfaceNotice failure={failure} />}
     </div>
   );
 

@@ -17,7 +17,9 @@ import type { SiteData } from '../../types';
 import { formatDistance, formatDuration, formatHeading } from '../../walk/format';
 import { hazardAhead, hazardFlags } from '../../walk/hazard';
 import { budgetRemaining, RouteTrack, walkStateAt, waypointById } from '../../walk/track';
-import { createMarsViewer, initCesium } from '../cesiumSetup';
+import { createMarsViewer, initCesium, type CesiumFailure } from '../cesiumSetup';
+import { useSurfaceMode } from '../surfaceMode';
+import { SurfaceNotice } from '../SurfaceNotice';
 import { attachOfflineSurface, siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M, visorCamera, type Pose } from '../frame';
 import { GlobeImagery } from '../imageryLayers';
 import type { SiteTerrainMesh } from '../siteTerrain';
@@ -49,6 +51,8 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
   children,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const surfaceMode = useSurfaceMode();
+  const [failure, setFailure] = useState<CesiumFailure | null>(null);
   const viewerRef = useRef<Viewer | null>(null);
   const imageryRef = useRef<GlobeImagery | null>(null);
   const gridRef = useRef<RouteGrid | null>(null);
@@ -89,14 +93,16 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
 
     let disposed = false;
     heightOffsetRef.current = SPIKE_HEIGHT_OFFSETS_M[siteData.id] ?? 0;
-    initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, navigator.onLine);
+    initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, surfaceMode === 'online');
+    setFailure(null);
 
     void (async () => {
-      const { viewer, tileset } = await createMarsViewer(container, { interactive: false });
+      const { viewer, tileset, failure: loadFailure } = await createMarsViewer(container, { interactive: false });
       if (disposed) {
         viewer.destroy();
         return;
       }
+      setFailure(loadFailure);
 
       viewerRef.current = viewer;
       (container as any)._viewer = viewer;
@@ -180,7 +186,7 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
       viewerRef.current?.destroy();
       viewerRef.current = null;
     };
-  }, [siteData]);
+  }, [siteData, surfaceMode]);
 
   // Update camera on pose change
   useEffect(() => {
@@ -207,6 +213,7 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
     return (
       <div className="s48-visor s48-visor--empty" data-theme="dark">
         <div ref={containerRef} className="s48-visor-globe" />
+        <SurfaceNotice failure={failure} placement="low" />
         <div className="s48-empty-route">
           <button type="button" onClick={onPlan}>
             Add stops in Plan
@@ -222,6 +229,7 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
   return (
     <div className="s48-visor" data-theme="dark">
       <div ref={containerRef} className="s48-visor-globe" />
+      <SurfaceNotice failure={failure} placement="low" />
       <div className="s48-visor-overlay">
         <div className="s48-visor-readout s48-visor-heading">
           <span>Heading</span>
