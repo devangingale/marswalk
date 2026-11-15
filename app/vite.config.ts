@@ -2,7 +2,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
-import { createReadStream, existsSync, realpathSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, realpathSync, rmSync, statSync } from 'node:fs';
 import { resolve, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseByteRange } from './src/devRange';
@@ -80,11 +80,28 @@ function localBundles() {
   };
 }
 
+// The 8192 px panorama textures (public/panos/hi, git-ignored, ~100 MB) are served from R2 only;
+// a build leaves them out so they never reach the Pages deploy. The 2048 px ones stay as the fallback.
+function dropHiResPanoramas() {
+  let outDir = 'dist';
+  return {
+    name: 'drop-hi-res-panoramas',
+    apply: 'build' as const,
+    configResolved(config: import('vite').ResolvedConfig) {
+      outDir = resolve(config.root, config.build.outDir);
+    },
+    closeBundle() {
+      rmSync(resolve(outDir, 'panos', 'hi'), { recursive: true, force: true });
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
     localBundles(),
+    dropHiResPanoramas(),
     viteStaticCopy({
       targets: ['Workers', 'Assets', 'ThirdParty', 'Widgets'].map((dir) => ({
         src: `node_modules/cesium/Build/Cesium/${dir}`,

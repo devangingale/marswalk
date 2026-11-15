@@ -230,6 +230,18 @@ export function bearingDeg(from: [number, number], to: [number, number], origin:
 
 /** Spacing of direction chevrons along the route, in metres. */
 export const CHEVRON_SPACING_M = 150;
+/** Shortest stretch that still gets a chevron; shorter pieces are joins between stretches. */
+export const MIN_CHEVRON_STRETCH_M = 60;
+
+function lineLengthM(line: [number, number][], origin: GridOrigin): number {
+  let total = 0;
+  for (let i = 1; i < line.length; i++) {
+    const a = lonlatToLocalMetres(line[i - 1][0], line[i - 1][1], origin);
+    const b = lonlatToLocalMetres(line[i][0], line[i][1], origin);
+    total += Math.hypot(b.x_m - a.x_m, b.y_m - a.y_m);
+  }
+  return total;
+}
 
 /**
  * Chevrons for a stretch in every direction it is walked. One way: chevronPositions along the
@@ -244,6 +256,18 @@ export function chevronsFor(
 ): ChevronPosition[] {
   const fwd = directions.includes('fwd');
   const back = directions.includes('back');
+  const lengthM = lineLengthM(line, origin);
+  if (lengthM < spacingM) {
+    // A stretch shorter than the spacing would get none; give it one chevron per direction
+    // (midpoint one way, a third from each end both ways) unless it is only a join.
+    if (lengthM < MIN_CHEVRON_STRETCH_M) return [];
+    const reversed = [...line].reverse();
+    if (fwd && back) {
+      return [...chevronPositions(line, origin, (2 * lengthM) / 3), ...chevronPositions(reversed, origin, (2 * lengthM) / 3)];
+    }
+    if (fwd) return chevronPositions(line, origin, lengthM);
+    return back ? chevronPositions(reversed, origin, lengthM) : [];
+  }
   if (!fwd) return back ? chevronPositions([...line].reverse(), origin, spacingM) : [];
   const out = chevronPositions(line, origin, spacingM);
   if (!back) return out;

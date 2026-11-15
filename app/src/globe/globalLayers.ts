@@ -55,54 +55,70 @@ export interface GlobalLayerState {
 
 /**
  * Global science layers on the tileset, kept below the site layers in manifest order,
- * with value grids fetched the first time a layer is shown.
+ * with value grids fetched the first time a layer is shown. A layer is attached to the
+ * tileset only while shown: each attached layer costs the tileset shader a vertex
+ * attribute, and the full manifest has more layers than many GPUs allow.
  */
 export class GlobeGlobalLayers {
   private readonly imagery = new Map<string, ImageryLayer>();
   private readonly grids = new Map<string, ValuesGrid>();
-  private readonly pending = new Set<string>();
+  private readonly loads = new Map<string, Promise<ValuesGrid>>();
 
   constructor(
     private readonly target: ImageryLayerCollection,
     private readonly base: string,
     readonly layers: GlobeLayer[],
   ) {
-    for (const [order, layer] of layers.entries()) {
-      const imagery = new ImageryLayer(createGlobalImagery(base, layer), { show: false });
-      target.add(imagery);
-      orderImageryLayer(target, imagery, imageryLayerRank('whole-planet', order));
-      this.imagery.set(layer.id, imagery);
-    }
+    for (const layer of layers) this.imagery.set(layer.id, new ImageryLayer(createGlobalImagery(base, layer)));
   }
 
   apply(states: Record<string, GlobalLayerState>): void {
-    for (const layer of this.layers) {
+    for (const [order, layer] of this.layers.entries()) {
       const imagery = this.imagery.get(layer.id)!;
       const state = states[layer.id];
-      imagery.show = !!state?.enabled;
-      imagery.alpha = state?.opacity ?? 1;
-      if (state?.enabled && layer.values && !this.grids.has(layer.id) && !this.pending.has(layer.id)) {
-        this.pending.add(layer.id);
-        loadValuesGrid(this.base, layer.values)
-          .then((grid) => this.grids.set(layer.id, grid))
-          .catch((error) => console.warn(`Values for ${layer.id} did not load`, error))
-          .finally(() => this.pending.delete(layer.id));
+      const attached = this.target.contains(imagery);
+      if (state?.enabled && !attached) {
+        this.target.add(imagery);
+        orderImageryLayer(this.target, imagery, imageryLayerRank('whole-planet', order));
+      } else if (!state?.enabled && attached) {
+        this.target.remove(imagery, false);
       }
+      imagery.alpha = state?.opacity ?? 1;
+      if (state?.enabled && layer.values) this.values(layer.id).catch((error) => console.warn(`Values for ${layer.id} did not load`, error));
     }
+  }
+
+  /** A layer's value grid, fetched once and shared; rejects for a layer without one. */
+  values(id: string): Promise<ValuesGrid> {
+    const loaded = this.loads.get(id);
+    if (loaded) return loaded;
+    const spec = this.layers.find((l) => l.id === id)?.values;
+    if (!spec) return Promise.reject(new Error(`No value grid for ${id}`));
+    const load = loadValuesGrid(this.base, spec).then((grid) => {
+      this.grids.set(id, grid);
+      return grid;
+    });
+    // A failed load can be retried the next time the layer is shown.
+    load.catch(() => this.loads.delete(id));
+    this.loads.set(id, load);
+    return load;
   }
 
   /** Readouts for each shown layer that has a value grid, in manifest order. */
   readouts(lon: number, lat: number): string[] {
     return this.layers.flatMap((layer) => {
       const grid = this.grids.get(layer.id);
-      if (!grid || !this.imagery.get(layer.id)!.show) return [];
+      if (!grid || !this.target.contains(this.imagery.get(layer.id)!)) return [];
       const value = readValue(grid, lon, lat);
       return value === null ? [] : [formatGlobalValue(layer, value)];
     });
   }
 
   destroy(): void {
-    for (const imagery of this.imagery.values()) this.target.remove(imagery, true);
+    for (const imagery of this.imagery.values()) {
+      if (this.target.contains(imagery)) this.target.remove(imagery, true);
+      else imagery.destroy();
+    }
     this.imagery.clear();
   }
 }

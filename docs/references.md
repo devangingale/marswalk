@@ -37,6 +37,7 @@ Not every dataset below ends up in the final product; trim this list to what is 
 | rems | `data/raw/rems` | Public domain / NASA content; credit NASA/JPL-Caltech/CAB(CSIC-INTA) |
 | mcs_ddr_v62 | `data/raw/mcs_ddr_v62` | NASA PDS MRO-M-MCS-5-DDR-V6.2; NASA government data, public domain; no separate product-specific licence text stated |
 | mocaas | `data/raw/mocaas` | Not stated by MOCAAS or PSUP; credit Carter et al. (2023), the MOCAAS team (IAS) and PSUP in full; removed on request |
+| tes_bandfield2002 | `data/raw/tes_bandfield2002` | NASA PDS — public domain |
 
 ## Site-finder criteria
 
@@ -66,6 +67,8 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 | Santee et al. 2003 (USARIEM TN03-3) correction to Pandolf 1977 | Downhill metabolic energy expenditure and eccentric braking correction | Santee, W. R., Blanchard, L. A., Speckman, K. L., Gonzalez, J. A., & Wallace, R. F. (2003). *Load carriage model development and testing with field data.* USARIEM Technical Note TN03-3 (DTIC ADA415788). Form as restated in Potter, A. W., et al. (2013). *Comparative analysis of metabolic cost equations: a review.* Journal of Sport and Human Performance, 1(3), 34–42. doi:10.12922/jshp.0009.2013. The operator before V² is unverified in the review PDF (see `docs/research/eva-limits.md`, row 3). |
 | NASA NAIF SPICE ephemerides | Orbiter pass prediction (MRO, 2001 Mars Odyssey, ExoMars TGO, Mars Express) | Acton, C. H. (1996). *Ancillary Data Services of NASA's Navigation and Ancillary Information Facility.* Planetary and Space Science, 44(1), 65–70; Public domain. |
 | Martian calendar (Clancy / Piqueux) | Martian year and sol to Earth date calculation | Clancy, R. T., et al. (2000). *An intercomparison of ground-based millimeter, MGS TES, and Viking atmospheric temperature measurements: Seasonal and interannual variability of temperatures and dust loading in the global Mars atmosphere.* Journal of Geophysical Research: Planets, 105(E4), 9553–9571. doi:10.1029/1999JE001089. Piqueux, S., et al. (2015). *Calculation of Mars solar longitude (Ls) and Martian calendar.* Icarus, 251, 332–339. doi:10.1016/j.icarus.2014.12.014. |
+| Tanaka et al. 2014 (SIM 3292) | USGS global geologic map of Mars (1:20M scale) unit classifications, ages, and boundaries | Tanaka, K.L., et al. (2014). *Geologic map of Mars.* USGS Scientific Investigations Map 3292, doi:10.3133/sim3292; Public domain. |
+| Bandfield 2002 TES mineral maps | Global olivine and mineral abundance heatmaps | Bandfield, J.L. (2002). *Global mineral distributions on Mars.* Journal of Geophysical Research: Planets, 107(E6), 5042, doi:10.1029/2001JE001510; NASA PDS / ASU Mars Global Data Sets, public domain. |
 
 ## Software and libraries
 
@@ -81,6 +84,7 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 | LightGBM (`lightgbm`) | Gradient-boosted tree walkability classifier | MIT |
 | scikit-learn (`scikit-learn`) | ROC AUC metrics and model interfaces | BSD-3-Clause |
 | spiceypy (`spiceypy==8.4.0`) | Python wrapper for CSPICE (NAIF SPICE toolkit N0067) for orbiter pass prediction | MIT |
+| pyshp (`pyshp==2.3.1`) | Pure-Python ESRI Shapefile reader for SIM 3292 geology rasterisation | MIT |
 
 ## Images, fonts, icons, text
 
@@ -89,6 +93,8 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 | Perseverance Navcam and Mastcam-Z raw images at Jezero stops, hot-linked in `app/public/data/jezero/photos.json` | NASA Mars raw-image RSS feed (`https://mars.nasa.gov/rss/api/?feed=raw_images&category=mars2020&feedtype=json`); positions joined by site and drive to `shared/poses/jezero_poses.csv` | NASA/JPL-Caltech and instrument-team credits retained per image; NASA raw images are not copyrighted |
 | Eight Curiosity Navcam images (sols 4861 and 4865) listed in `app/src/fixtures/photos.sample.json`, hot-linked, not copied | Metadata from NASA's raw-image API, `https://mars.nasa.gov/api/v1/raw_image_items/` (filtered by mission `msl` and sol); positions from joining each image's `site` and `drive` to `shared/poses/gale_poses.csv`; `heading_deg` is the pose heading plus the image's mast azimuth | Shown with the feed's credit line, NASA/JPL-Caltech |
 | Curiosity raw images at Gale stops (Navcam, Hazcam, Mastcam), hot-linked, listed in `app/public/data/gale/photos.json` by `pipeline/fetch_photos.py` | mars.nasa.gov/api/v1/raw_image_items (feed behind mars.nasa.gov/msl/multimedia/raw-images) | NASA raw images, not copyrighted; credit shown with each photo: NASA/JPL-Caltech (Navcam, Hazcam), NASA/JPL-Caltech/MSSS (Mastcam) |
+| 40 NASA Photojournal 360° rover mosaics (Curiosity 31, Perseverance 6, Spirit 2, Opportunity 1), padded to 2:1 at 2048 × 1024 by `pipeline/build_panoramas.py` into `app/public/panos/`; the full list with PIA ids, sols and captions is `app/public/panoramas.json` | Discovered through the NASA Image and Video Library API (`https://images-api.nasa.gov`) and curated in `pipeline/panoramas.sources.json`; captions, titles and images from each PIA's Photojournal page (`https://photojournal.jpl.nasa.gov/catalog/<PIA>`). Positions from `shared/poses/` (PDS PLACES for Curiosity and Perseverance; the PDS Geosciences Spirit traverse below); Opportunity's Eagle Crater stop at the published landing site | Credits as published per image (e.g. NASA/JPL-Caltech/MSSS, NASA/JPL-Caltech/ASU/MSSS, NASA/JPL/Cornell), shown in the app's metadata card; NASA images and captions, not copyrighted |
+| Spirit traverse, `MERA_traverse.csv`, converted to `shared/poses/gusev_poses.csv` by `pipeline/mer_poses.py` | PDS Geosciences Node, MER Analyst's Notebook traverse data (`https://an.rsl.wustl.edu/mera/AN/pages/mer/mer_traverse.htm`); corrected positions provided by science team member Tim Parker | NASA PDS data; equirectangular projection centred at 175.5° E per its label |
 | Barlow, Barlow Semi Condensed, Barlow Condensed | Google Fonts (Jeremy Tribby) | SIL Open Font License 1.1 |
 
 ## AI tools

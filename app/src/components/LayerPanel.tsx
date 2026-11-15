@@ -34,6 +34,8 @@ interface LayerPanelProps {
   globalStates?: Record<string, LayerState>;
   onToggleGlobal?: (layerId: string) => void;
   onGlobalOpacityChange?: (layerId: string, opacity: number) => void;
+  /** Extra content under an enabled whole-planet layer's legend, by layer id. */
+  globalDetail?: Record<string, React.ReactNode>;
   caves?: CaveOverlay;
   /** Whole-planet temperature entry, shown as its own group after the manifest layers. */
   temperature?: { enabled: boolean; row: React.ReactNode; atSite?: string };
@@ -67,6 +69,7 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
   globalStates = {},
   onToggleGlobal,
   onGlobalOpacityChange,
+  globalDetail,
   caves,
   temperature,
   siteValues = {},
@@ -365,6 +368,7 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
                               </span>
                             </div>
                           </div>
+                          {globalDetail?.[layer.id]}
                         </div>
                       )}
                     </div>

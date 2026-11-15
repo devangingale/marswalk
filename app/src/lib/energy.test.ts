@@ -8,6 +8,7 @@ import {
   evaluateStep,
   calculateRadiationDose,
   dwellEnergyKj,
+  SANTEE_MIN_GRADE_PERCENT,
   MARS_GRAVITY,
   GRAVITY_RATIO,
   MARS_SOL_HOURS,
@@ -25,13 +26,30 @@ describe('Mars walking energy model (Pandolf 1977 + Santee et al. 2003 + Mars gr
     expect(GRAVITY_RATIO).toBeCloseTo(3.71 / 9.80665, 5);
   });
 
-  it('computes positive standing power on Mars with suited astronaut', () => {
-    const pStanding = standingMetabolicPower(W, L);
-    expect(pStanding).toBeGreaterThan(0);
-    // Effective Mars total mass = 200 * 0.3783 ~ 75.66 kg
-    // Standing power ~ 385 W
-    expect(pStanding).toBeGreaterThan(300);
-    expect(pStanding).toBeLessThan(500);
+  it('standing power is 1.5 MET for the body mass (NASA MetRate conversion)', () => {
+    // (0.961 + 0.275 * 0.85) * 3.5 ml/min/kg * 1.5 MET * 80 kg = 501.8 BTU/h = 147.06 W
+    expect(standingMetabolicPower(W, L)).toBeCloseTo(147.0616, 3);
+    expect(standingMetabolicPower(W)).toBeCloseTo(147.0616, 3);
+    expect(standingMetabolicPower(60, L)).toBeCloseTo(110.2962, 3);
+  });
+
+  it('walking power is exact on flat ground, uphill and at the -8 % minimum', () => {
+    expect(calculateMetabolicPower(W, L, 0.8, 0)).toBeCloseTo(458.517, 2);
+    expect(calculateMetabolicPower(W, L, 0.6, 8.75)).toBeCloseTo(565.770, 2);
+    expect(calculateMetabolicPower(W, L, 0.62, -8)).toBeCloseTo(390.767, 2);
+  });
+
+  it('holds descents steeper than the Santee data (-12 %) at the bound', () => {
+    expect(SANTEE_MIN_GRADE_PERCENT).toBe(-12);
+    const atBound = calculateMetabolicPower(W, L, 0.4, -12);
+    expect(atBound).toBeCloseTo(445.853, 2);
+    // 10 deg (-17.6 %) and 15 deg (-26.8 %) descents no longer blow up (it was 683 W and 1,420 W)
+    expect(calculateMetabolicPower(W, L, 0.4, -17.63)).toBeCloseTo(atBound, 6);
+    expect(calculateMetabolicPower(W, L, 0.2, -26.79)).toBeCloseTo(443.787, 2);
+  });
+
+  it('never drops below standing power while walking', () => {
+    expect(calculateMetabolicPower(W, L, 0.05, -12)).toBeGreaterThanOrEqual(standingMetabolicPower(W) - 1e-9);
   });
 
   it('calculates higher power for uphill walking compared to level ground', () => {
