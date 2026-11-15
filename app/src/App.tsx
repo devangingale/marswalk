@@ -21,6 +21,7 @@ import { WalkView } from './components/WalkView';
 import { VisorView } from './components/VisorView';
 import { PlanRail } from './plan/PlanRail';
 import { Regions } from './shell/Regions';
+import { TourControls } from './tour/Tour';
 import { useWholePlanet } from './plan/wholePlanet';
 import { TemperatureRow } from './globe/temperature/TemperatureRow';
 import { legendRamp } from './globe/temperature/temperatureManifest';
@@ -425,7 +426,7 @@ export const App: React.FC = () => {
       <header className="mock-top" data-theme={mode === 'walk' && walkNight ? 'night' : undefined}>
         <span className="wordmark">Sol-48</span>
 
-        <nav className="s48-seg s48-tabs" aria-label="Tabs">
+        <nav className="s48-seg s48-tabs" aria-label="Tabs" data-tour="tabs">
           {TABS.map((tab) => (
             <button key={tab.id} type="button" aria-pressed={mode === tab.id} aria-current={mode === tab.id ? 'page' : undefined} onClick={() => setMode(tab.id)}>
               {tab.label}
@@ -450,7 +451,7 @@ export const App: React.FC = () => {
 
         <span className="grow" />
 
-        <div className="s48-seg s48-surface-mode" role="group" aria-label="Map surface">
+        <div className="s48-seg s48-surface-mode" role="group" aria-label="Map surface" data-tour="surface">
           {SURFACE_MODES.map((option) => (
             <button key={option.id} type="button" aria-pressed={surfaceMode === option.id} onClick={() => setSurfaceMode(option.id)}>
               {option.label}
@@ -458,6 +459,7 @@ export const App: React.FC = () => {
           ))}
         </div>
 
+        <TourControls tab={mode} onTab={setMode} />
         <div className="s48-seg s48-theme" role="group" aria-label="Theme">
           {THEMES.map((option) => (
             <button key={option.id} type="button" aria-pressed={override === option.id} onClick={() => setOverride(option.id)}>
