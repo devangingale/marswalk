@@ -35,6 +35,9 @@ export async function createMarsViewer(
     navigationHelpButton: false,
     fullscreenButton: false,
     selectionIndicator: false,
+    // Draw at the screen's real pixel density; Cesium's default draws at CSS pixels and the
+    // browser stretches the result, which blurs the globe on scaled displays (150 % = 1.5x).
+    useBrowserRecommendedResolution: false,
     // Offline draws our tiles on a plain ellipsoid; online, Cesium Mars is the surface
     // (an ellipsoid at datum height would hide terrain below it, such as Gale).
     globe: opts.globe ?? (mode === 'offline' ? new Globe(Ellipsoid.MARS) : false),
@@ -62,6 +65,9 @@ export async function createMarsViewer(
   if (mode === 'offline') return { viewer, tileset: null, mode };
   try {
     const tileset = await Cesium3DTileset.fromIonAssetId(CESIUM_MARS_ASSET_ID);
+    // Draped imagery takes its resolution from the tile it lies on; Cesium's default (16) keeps
+    // tiles coarse, so 0.25 m HiRISE looked smeared. 4 is visibly sharp; 2 adds little more.
+    tileset.maximumScreenSpaceError = 4;
     viewer.scene.primitives.add(tileset);
     return { viewer, tileset, mode };
   } catch (error) {
