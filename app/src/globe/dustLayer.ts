@@ -15,6 +15,10 @@ import {
   type Scene,
   VertexFormat,
 } from 'cesium';
+import { renderFor } from './renderOnDemand';
+
+/** How long a new dust frame keeps the scene drawing while its texture loads, ms. */
+const FRAME_SETTLE_MS = 300;
 
 export interface DustSol {
   sol: number;
@@ -190,6 +194,8 @@ export class DustLayer {
     ctx.restore();
 
     const url = canvas.toDataURL('image/png');
+    // The new frame's texture loads over the next frames; keep drawing until it shows.
+    renderFor(this.scene, FRAME_SETTLE_MS);
     if (this.material) {
       this.material.uniforms.image = url;
       return;
@@ -215,6 +221,7 @@ export class DustLayer {
   setVisible(show: boolean): void {
     this.visible = show;
     if (this.primitive) this.primitive.show = show;
+    renderFor(this.scene);
   }
 
   destroy(): void {

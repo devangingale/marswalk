@@ -1,7 +1,16 @@
 // Written with AI assistance, directed and reviewed by the team.
 import { afterEach, describe, expect, it } from 'vitest';
-import { ClassificationType, Ellipsoid, RequestErrorEvent } from 'cesium';
-import { cesiumFailure, cesiumFailureMessage, initCesium, surfaceClassification } from './cesiumSetup';
+import { ClassificationType, Ellipsoid, Globe, RequestErrorEvent } from 'cesium';
+import {
+  BACKDROP_DEPTH_M,
+  backdropEllipsoid,
+  cesiumFailure,
+  cesiumFailureMessage,
+  groundGlobe,
+  initCesium,
+  isBackdropGlobe,
+  surfaceClassification,
+} from './cesiumSetup';
 
 describe('initCesium', () => {
   afterEach(() => {
@@ -82,5 +91,26 @@ describe('cesiumFailure', () => {
 
   it('names a missing token', () => {
     expect(cesiumFailureMessage('no-token')).toBe('Cesium Mars did not load (no token)');
+  });
+});
+
+describe('online backdrop globe', () => {
+  it('sits below the deepest Mars terrain (Hellas, about 8.2 km) and Gale (3.6 km below the datum)', () => {
+    expect(BACKDROP_DEPTH_M).toBeGreaterThan(8_200);
+    const radii = backdropEllipsoid().radii;
+    expect(Ellipsoid.MARS.radii.x - radii.x).toBe(BACKDROP_DEPTH_M);
+    expect(Ellipsoid.MARS.radii.z - radii.z).toBe(BACKDROP_DEPTH_M);
+  });
+
+  it('is not a ground our layers drape on or picks hit; the datum globe is', () => {
+    const backdrop = { ellipsoid: backdropEllipsoid(), show: true } as unknown as Globe;
+    const datum = { ellipsoid: Ellipsoid.MARS, show: true } as unknown as Globe;
+    expect(isBackdropGlobe(backdrop)).toBe(true);
+    expect(isBackdropGlobe(datum)).toBe(false);
+    expect(isBackdropGlobe(undefined)).toBe(false);
+    expect(groundGlobe({ globe: backdrop } as never)).toBeUndefined();
+    expect(groundGlobe({ globe: datum } as never)).toBe(datum);
+    expect(groundGlobe({ globe: { ...datum, show: false } } as never)).toBeUndefined();
+    expect(groundGlobe({ globe: undefined } as never)).toBeUndefined();
   });
 });

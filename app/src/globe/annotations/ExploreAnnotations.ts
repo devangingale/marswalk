@@ -19,6 +19,7 @@ import {
   VerticalOrigin,
   type Viewer,
 } from 'cesium';
+import { groundGlobe } from '../cesiumSetup';
 import { lonLatToCartesian } from '../frame';
 import { globeAssetUrl, readValue, type GlobeLayer, type ValuesGrid } from '../layerManifest';
 import { readToken } from '../markerImages';
@@ -369,8 +370,8 @@ export class ExploreAnnotations {
     const occluder = new EllipsoidalOccluder(HORIZON_ELLIPSOID, camera.positionWC);
     const toPoint = new Cartesian3();
     // Offline the planet is the plain ellipsoid globe; online it is the Cesium Mars tileset,
-    // whose ground the whole-planet elevation grid approximates.
-    const offline = !!scene.globe?.show;
+    // whose ground the whole-planet elevation grid approximates (the sunken backdrop globe does not count).
+    const offline = !!groundGlobe(scene);
     const project = (lon: number, lat: number): Cartesian2 | null => {
       const ground = !offline && this.elevation ? readValue(this.elevation, lon, lat) ?? 0 : 0;
       const world = lonLatToCartesian(lon, lat, ground);

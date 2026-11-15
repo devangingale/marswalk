@@ -81,6 +81,8 @@ interface LayerPanelProps {
   siteValues?: Record<string, string>;
   onToggleLayer: (layerId: string) => void;
   onOpacityChange: (layerId: string, opacity: number) => void;
+  naturalTint?: boolean;
+  onNaturalTintChange?: (enabled: boolean) => void;
   /** Key for the remembered open groups, one per tab. */
   panelId?: string;
   /** Outside the shared layout the panel hides itself; in a Regions panel it is always shown. */
@@ -147,6 +149,8 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
   siteValues = {},
   onToggleLayer,
   onOpacityChange,
+  naturalTint = true,
+  onNaturalTintChange,
   panelId = 'layers',
   isOpen = true,
   onTogglePanel,
@@ -197,16 +201,24 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
               · {getLayerSourceAgency(layer)}
             </>
           }
+          rowControl={layer.id === 'image' && onNaturalTintChange ? (
+            <label className="s48-tint-toggle">
+              <input type="checkbox" checked={naturalTint} onChange={(event) => onNaturalTintChange(event.target.checked)} />
+              <span>Natural tint</span>
+            </label>
+          ) : undefined}
           info={
             layer.source ? (
               <>
                 <p>{layer.source}</p>
+                {layer.id === 'image' && naturalTint && <p>Tinted for readability, not true colour</p>}
                 {layer.agency && <div className="s48-layer__desc-meta">Agency: {layer.agency}</div>}
               </>
             ) : undefined
           }
         >
           <OpacityControl name={name} value={state.opacity} onChange={setOpacity} />
+          {layer.id === 'image' && naturalTint && <p className="s48-layer__note">Tinted for readability, not true colour</p>}
           {ramp && layer.legend && (
             <div className="s48-legend">
               {rampBar(ramp)}
@@ -532,9 +544,10 @@ const LayerRow: React.FC<{
   checked: boolean;
   onToggle: () => void;
   note?: React.ReactNode;
+  rowControl?: React.ReactNode;
   info?: React.ReactNode;
   children?: React.ReactNode;
-}> = ({ name, checked, onToggle, note, info, children }) => {
+}> = ({ name, checked, onToggle, note, rowControl, info, children }) => {
   const [expanded, setExpanded] = useState(false);
   return (
     <div className="s48-layer">
@@ -546,6 +559,7 @@ const LayerRow: React.FC<{
         {info && <InfoButton expanded={expanded} label={name} onClick={() => setExpanded(!expanded)} />}
       </div>
       {note && <div className="s48-layer__note">{note}</div>}
+      {rowControl && <div className="s48-layer__aux">{rowControl}</div>}
       {expanded && info && <div className="s48-layer__desc">{info}</div>}
       {checked && children && <div className="s48-layer__body">{children}</div>}
     </div>

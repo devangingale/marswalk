@@ -111,6 +111,22 @@
   background: var(--color-accent-subtle);
 }
 
+.s48-tint-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+}
+.s48-layer__aux {
+  margin-left: var(--hit-plan-min);
+  padding-top: var(--space-1);
+}
+.s48-tint-toggle input {
+  accent-color: var(--color-accent);
+}
+
 /* Expanded technical explanation */
 .s48-layer__desc {
   margin: var(--space-1) 0 var(--space-1) 28px;

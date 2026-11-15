@@ -102,6 +102,13 @@
   --motion-base: 200ms;
   --motion-ease: cubic-bezier(0.2, 0, 0, 1);
 
+  /* Map loading and tile streaming. */
+  --map-load-bar-height: 3px;
+  --map-load-spinner-size: 18px;
+  --map-load-spinner-stroke: 2px;
+  --map-load-spinner-duration: 900ms;
+  --map-load-from-opacity: 0;
+
   /* Map styling tokens read by the Cesium globe overlays. */
   --map-route-core: #8ec1f5;            /* sunset blue, planned route ahead */
   --map-route-casing: #0a1828;          /* dark edge: keeps the line readable on bright dust */
@@ -211,6 +218,8 @@
 
   --color-focus-inner: #121820;
   --color-focus-outer: #ffffff;
+  --map-load-scrim: rgba(233, 237, 241, 0.42);
+  --map-load-progress: var(--color-accent);
 }
 
 /* ------------------------------------------------------------------ */
@@ -246,6 +255,8 @@
 
   --color-focus-inner: #e4e9ee;
   --color-focus-outer: #0d1115;
+  --map-load-scrim: rgba(5, 7, 10, 0.42);
+  --map-load-progress: var(--color-accent);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -277,6 +288,8 @@
 
     --color-focus-inner: #e4e9ee;
     --color-focus-outer: #0d1115;
+    --map-load-scrim: rgba(5, 7, 10, 0.42);
+    --map-load-progress: var(--color-accent);
   }
 }
 
@@ -287,5 +300,6 @@
   :root {
     --motion-fast: 0ms;
     --motion-base: 0ms;
+    --map-load-spinner-duration: 0ms;
   }
 }

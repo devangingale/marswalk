@@ -173,6 +173,8 @@ export class GlobeOverlays {
   private readonly classification: ClassificationType;
   private readonly onSectionHover?: (sectionId: string | null) => void;
   private readonly scene?: Scene;
+  /** Where to request a frame after a change Cesium does not see (callback-driven marks). */
+  private readonly renderScene?: Scene;
   private readonly hiddenLabels = new Set<Entity>();
   private readonly removeScreenUpdate?: () => void;
   private readonly meta = new Map<Entity, Meta>();
@@ -211,6 +213,7 @@ export class GlobeOverlays {
     this.classification = options.classification ?? ClassificationType.CESIUM_3D_TILE;
     this.onSectionHover = options.onSectionHover;
     this.scene = options.scene;
+    this.renderScene = options.scene ?? (host as { scene?: Scene }).scene;
     this.removeScreenUpdate = this.scene?.preRender.addEventListener((_scene, time) => this.updateScreenLabels(time));
   }
 
@@ -285,6 +288,7 @@ export class GlobeOverlays {
     const summariesVisible = showSummaryLabels(screenSpan(routePoints));
     const candidates: { id: string; box: Box; priority: number }[] = [];
     const entities: Entity[] = [];
+    const hiddenBefore = new Set(this.hiddenLabels);
     this.hiddenLabels.clear();
     for (const entity of this.groups.plan) {
       if (!entity.label) continue;
@@ -310,6 +314,10 @@ export class GlobeOverlays {
     }
     const visibleIds = new Set(cullScreenLabels(candidates, markerBoxes));
     for (const entity of entities) if (visibleIds.has(entity.id)) this.hiddenLabels.delete(entity);
+    // Label show reads hiddenLabels through a callback on the next frame: draw one more.
+    if (hiddenBefore.size !== this.hiddenLabels.size || [...hiddenBefore].some((e) => !this.hiddenLabels.has(e))) {
+      scene.requestRender();
+    }
   }
 
   private markerPriority(entity: Entity): number | null {
@@ -694,6 +702,8 @@ export class GlobeOverlays {
    */
   setCrew(model: CrewMarkerModel | null): void {
     this.crewModel = model;
+    // Positions follow the model through callbacks, which Cesium does not watch.
+    if (this.renderScene && !this.renderScene.isDestroyed()) this.renderScene.requestRender();
     // Positions, radii and labels follow the latest model through callbacks; the entities are
     // rebuilt only when the set of marks changes, so the circle geometry is not rebuilt every tick.
     const key = model
