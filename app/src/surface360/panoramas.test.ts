@@ -28,6 +28,7 @@ const stop = (id: string, prev: string | null, next: string | null, lon = 0, lat
   mission: 'Mars Science Laboratory',
   sol: 1,
   sol_end: null,
+  sol_source: 'caption',
   pose_sol: 1,
   position_source: 'gale_poses.csv, sol 1',
   lat,

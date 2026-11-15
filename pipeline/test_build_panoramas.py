@@ -168,3 +168,22 @@ def test_spirit_traverse_projection_matches_the_published_landing_site():
     import mer_poses
     lon, lat = mer_poses.to_lonlat(-1432.26, -863385.06)  # MERA_traverse.csv, sol 1
     assert abs(lat - -14.5692) < 0.005 and abs(lon - 175.4729) < 0.005
+
+
+def test_capture_dates_come_from_a_sentence_about_imaging():
+    from datetime import date
+    assert bp.parse_capture_dates("The mosaic was generated using 993 images taken from Nov. 3-6, 2023.") == (date(2023, 11, 3), date(2023, 11, 6))
+    assert bp.parse_capture_dates("The images were taken between April 15 and 26, 2021, or the 53rd and 64th sols.") == (date(2021, 4, 15), date(2021, 4, 26))
+    assert bp.parse_capture_dates("Pancam took the images between Dec. 21, 2011, and May 8, 2012.") == (date(2011, 12, 21), date(2012, 5, 8))
+    # A release or event date in a sentence that is not about taking the images is ignored.
+    assert bp.parse_capture_dates("The rover landed on Feb. 18, 2021. It drove on.") is None
+
+
+def test_mars2020_sol_clock_matches_captions_that_state_both():
+    from datetime import date
+    # (capture date, caption sol): every caption sol falls inside the +-1 window of its date.
+    for day, sol in [((2021, 2, 21), 3), ((2021, 4, 15), 53), ((2021, 4, 26), 64), ((2024, 5, 20), 1155),
+                     ((2024, 6, 12), 1178), ((2024, 11, 23), 1337), ((2025, 5, 26), 1516)]:
+        lo, hi = bp.mars2020_sols(date(*day), date(*day))
+        assert lo <= sol <= hi, (day, sol, lo, hi)
+        assert hi - lo <= 3

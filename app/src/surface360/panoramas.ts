@@ -16,6 +16,8 @@ export interface PanoramaStop {
   sol: number;
   /** Last sol of a mosaic taken over several sols at one parked position, else null. */
   sol_end: number | null;
+  /** "caption" when the caption states the sol; otherwise how it was derived (a stated capture date). */
+  sol_source: string;
   /** Sol of the localized rover pose used for position; null for a cited explicit position. */
   pose_sol: number | null;
   /** Where lat/lon come from: the pose table and sol, or the citation for an explicit position. */
@@ -88,7 +90,7 @@ function isStop(v: unknown): v is PanoramaStop {
   const s = v as Record<string, unknown>;
   return (
     !!s &&
-    [s.id, s.name, s.rover, s.mission, s.image_url, s.pia_id, s.instrument, s.caption, s.credit, s.source_url, s.heading_source, s.position_source].every(isStr) &&
+    [s.id, s.name, s.rover, s.mission, s.image_url, s.pia_id, s.instrument, s.caption, s.credit, s.source_url, s.heading_source, s.position_source, s.sol_source].every(isStr) &&
     isNullable(s.sol_end, isNum) &&
     [s.sol, s.lat, s.lon_east, s.heading, s.pitch, s.roll].every(isNum) &&
     isNullable(s.pose_sol, isNum) &&

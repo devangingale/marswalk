@@ -46,6 +46,7 @@ import struct
 import sys
 import urllib.parse
 import urllib.request
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw, ImageFile, ImageFilter
@@ -67,6 +68,9 @@ USER_AGENT = "marswalk-pipeline"
 OUT_WIDTH = 2048
 JPEG_QUALITY = 85
 MIN_ASPECT = 2.2
+# Socket timeout for every request, in seconds: a server that sends nothing for this long is
+# abandoned. It bounds each read, not a whole transfer, so a 100 MB mosaic still downloads.
+REQUEST_TIMEOUT_S = 15
 # Larger originals are fetched as the Images API's ~large rendition instead.
 MAX_DOWNLOAD_BYTES = 160_000_000
 
@@ -76,6 +80,14 @@ ROVERS = {
     "Spirit": {"site": "gusev", "mission": "Mars Exploration Rover", "credit": "NASA/JPL-Caltech/Cornell", "instrument": "Pancam"},
     "Opportunity": {"site": "meridiani", "mission": "Mars Exploration Rover", "credit": "NASA/JPL-Caltech/Cornell", "instrument": "Pancam"},
 }
+
+# Mars 2020 sol clock. Sol 0 began at local mean solar midnight at the landing site: touchdown was
+# at about 20:43:49 UTC spacecraft time (20:55 UTC is when Earth received it) and 15:53:58 LMST, so
+# local midnight was 15.8994 Mars hours earlier. One sol is 88775.244 s.
+MARS_SOL_S = 88775.244
+MARS2020_SOL0 = datetime(2021, 2, 18, 20, 43, 49, tzinfo=timezone.utc) - timedelta(seconds=(15 + 53 / 60 + 58 / 3600) * MARS_SOL_S / 24)
+# A caption date may be UTC or US Pacific, and some captions round: a date fixes the sol only to +-1.
+DATE_SOL_SLACK = 1
 
 # Mars IAU 2000 ellipsoid, as Cesium's Ellipsoid.MARS.
 MARS_A = 3396190.0
@@ -103,7 +115,7 @@ BLACK_THRESHOLD = 8
 
 # ---------------------------------------------------------------- network and cache
 
-def fetch(url: str, timeout: int = 120, headers: dict | None = None) -> bytes:
+def fetch(url: str, timeout: int = REQUEST_TIMEOUT_S, headers: dict | None = None) -> bytes:
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, **(headers or {})})
     with urllib.request.urlopen(request, timeout=timeout) as response:
         return response.read()
@@ -124,7 +136,7 @@ def download_to(url: str, target: Path) -> None:
     partial = target.with_suffix(target.suffix + ".part")
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(request, timeout=600) as response, open(partial, "wb") as out:
+        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_S) as response, open(partial, "wb") as out:
             while chunk := response.read(1 << 20):
                 out.write(chunk)
     except Exception:
@@ -136,7 +148,7 @@ def download_to(url: str, target: Path) -> None:
 def content_length(url: str) -> int | None:
     request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(request, timeout=60) as response:
+        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_S) as response:
             return int(response.headers.get("Content-Length") or 0) or None
     except Exception:
         return None
@@ -146,7 +158,7 @@ def probe_size(url: str) -> tuple[int, int] | None:
     """Image width and height from the first bytes of the file, without downloading it."""
     for span in (262_144, 2_097_152):
         try:
-            head = fetch(url, 60, {"Range": f"bytes=0-{span - 1}"})
+            head = fetch(url, headers={"Range": f"bytes=0-{span - 1}"})
         except Exception:
             return None
         parser = ImageFile.Parser()
@@ -165,6 +177,7 @@ def search_api(query: str, cache: Path) -> list[dict]:
     """Every result of an Images API search, following the 'next' links page by page."""
     items: list[dict] = []
     url = f"{IMAGES_API}/search?{urllib.parse.urlencode({'q': query, 'media_type': 'image'})}"
+    url += "&page_size=100"
     page = 1
     while url:
         body = json.loads(cached(f"api/search_{re.sub(r'[^a-z0-9]+', '_', query.lower())}_{page}.json", lambda: fetch(url), cache))
@@ -201,7 +214,7 @@ def caption_from_page(page_html: str) -> str | None:
 def photojournal(pia: str, cache: Path) -> dict:
     """Caption, full caption text and full-resolution JPEG URL from the PIA's Photojournal page."""
     try:
-        page = cached(f"pages/{pia}.html", lambda: fetch(PHOTOJOURNAL + pia, 60), cache).decode("utf-8", "replace")
+        page = cached(f"pages/{pia}.html", lambda: fetch(PHOTOJOURNAL + pia), cache).decode("utf-8", "replace")
     except Exception as error:
         print(f"  {pia}: Photojournal page unavailable ({error})", file=sys.stderr)
         return {}
@@ -273,6 +286,49 @@ ROVER_PATTERNS = {
     "Spirit": re.compile(r"\bSpirit\b"),
     "Opportunity": re.compile(r"\bOpportunity\b"),
 }
+
+
+_MONTH = r"(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sept?(?:ember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?"
+_MONTHS = {m: i for i, m in enumerate(["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"], 1)}
+_CAPTURE = re.compile(r"\b(taken|took|acquired|captured|collected|shot|imaged|obtained|between)\b", re.I)
+# "May 20, 2024"; "Nov. 3-6, 2023"; "April 15 and 26, 2021"; "Dec. 21, 2011, and May 8, 2012"
+_DATE_RANGE = re.compile(_MONTH + r"\s+(\d{1,2})\s*(?:-|–|and|to|through)\s*(\d{1,2}),\s*(\d{4})", re.I)
+_DATE_CROSS = re.compile(_MONTH + r"\s+(\d{1,2})(?:,\s*(\d{4}))?,?\s*(?:-|–|and|to|through)\s*" + _MONTH + r"\s+(\d{1,2}),\s*(\d{4})", re.I)
+_DATE_ONE = re.compile(_MONTH + r"\s+(\d{1,2}),\s*(\d{4})", re.I)
+
+
+def _month(name: str) -> int:
+    return _MONTHS[name[:3].lower()]
+
+
+def parse_capture_dates(text: str) -> tuple[date, date] | None:
+    """First and last capture date stated in the first sentence that says when images were taken."""
+    for sentence in re.split(r"(?<=[.!?])\s+(?=[A-Z])", text):
+        if not _CAPTURE.search(sentence):
+            continue
+        found: list[date] = []
+        try:
+            for m in _DATE_CROSS.finditer(sentence):
+                found += [date(int(m.group(3) or m.group(6)), _month(m.group(1)), int(m.group(2))),
+                          date(int(m.group(6)), _month(m.group(4)), int(m.group(5)))]
+            for m in _DATE_RANGE.finditer(sentence):
+                found += [date(int(m.group(4)), _month(m.group(1)), int(m.group(2))),
+                          date(int(m.group(4)), _month(m.group(1)), int(m.group(3)))]
+            for m in _DATE_ONE.finditer(sentence):
+                found.append(date(int(m.group(3)), _month(m.group(1)), int(m.group(2))))
+        except ValueError:
+            continue
+        if found:
+            return min(found), max(found)
+    return None
+
+
+def mars2020_sols(first: date, last: date, slack: int = DATE_SOL_SLACK) -> tuple[int, int]:
+    """Sols spanned by a run of calendar dates on the Mars 2020 clock, widened by `slack` each side."""
+    start = datetime(first.year, first.month, first.day, tzinfo=timezone.utc)
+    end = datetime(last.year, last.month, last.day, tzinfo=timezone.utc) + timedelta(days=1, seconds=-1)
+    sol = lambda t: int((t - MARS2020_SOL0).total_seconds() // MARS_SOL_S)
+    return max(0, sol(start) - slack), sol(end) + slack
 
 
 def rover_of(text: str, title: str = "") -> str | None:
@@ -501,7 +557,7 @@ def load_previous(location: str | None) -> dict[str, dict]:
         return {}
     try:
         if re.match(r"^https?://", location):
-            body = fetch(location, 60).decode("utf-8")
+            body = fetch(location).decode("utf-8")
         else:
             body = Path(location).read_text(encoding="utf-8")
         return {stop["id"]: stop for stop in json.loads(body)["stops"]}
@@ -535,7 +591,7 @@ def candidates(config: dict, cache: Path) -> tuple[list[dict], list[str]]:
         for record in hits:
             pia = record.get("nasa_id", "")
             text = f"{record.get('title', '')} {record.get('description', '')}"
-            if not re.fullmatch(r"PIA\d{5}", pia) or not re.search(r"360|full[- ]circle", text, re.I):
+            if not re.fullmatch(r"PIA\d{5}", pia) or not re.search(r"360|full[- ]circle|panoram|mosaic", text, re.I):
                 continue
             if rover_of(text, record.get("title", "")) != query["rover"]:
                 continue
@@ -559,6 +615,9 @@ def describe(candidate: dict, cache: Path, notes: list[str]) -> dict | None:
     if not caption:
         notes.append(f"{pia}: skipped (no caption on the Photojournal page or in the Images API)")
         return None
+    if not candidate.get("curated") and not re.search(r"360|full[- ]circle", f"{title} {text}", re.I):
+        notes.append(f"{pia}: skipped ('{title}': the caption does not call it 360-degree or full-circle)")
+        return None
     if variant_penalty(title) >= 100:
         notes.append(f"{pia}: skipped ('{title}' is not a panorama)")
         return None
@@ -570,10 +629,28 @@ def describe(candidate: dict, cache: Path, notes: list[str]) -> dict | None:
     if rover not in ROVERS:
         notes.append(f"{pia}: skipped (rover not identified)")
         return None
-    sols = (candidate["sol"], candidate.get("sol_end")) if "sol" in candidate else parse_sols(text)
+    sol_source = "caption"
+    dates = parse_capture_dates(text)
+    if "sol" in candidate:
+        sols = (candidate["sol"], candidate.get("sol_end"))
+        sol_source = "curated from caption"
+    else:
+        sols = parse_sols(text)
+        if not sols and dates and rover == "Perseverance":
+            lo, hi = mars2020_sols(*dates)
+            sols = (lo, hi)
+            sol_source = (
+                f"capture date {dates[0].isoformat()}"
+                + (f" to {dates[1].isoformat()}" if dates[1] != dates[0] else "")
+                + f" in the caption, on the Mars 2020 sol clock (sols {lo}-{hi}, +-{DATE_SOL_SLACK} for UTC or Pacific dates)"
+            )
     if not sols:
-        notes.append(f"{pia}: skipped (no sol stated in the caption)")
+        notes.append(f"{pia}: skipped (no sol or capture date stated in the caption)")
         return None
+    if sol_source == "caption" and dates and rover == "Perseverance":
+        lo, hi = mars2020_sols(*dates)
+        if not (lo <= sols[0] and (sols[1] or sols[0]) <= hi):
+            notes.append(f"{pia}: caption sol {sols[0]} and capture date {dates[0]} disagree on the Mars 2020 clock (sols {lo}-{hi})")
     url = page.get("jpg")
     if url and (content_length(url) or 0) > MAX_DOWNLOAD_BYTES:
         url = api_asset(pia, cache) or url
@@ -593,6 +670,7 @@ def describe(candidate: dict, cache: Path, notes: list[str]) -> dict | None:
         "instrument": instrument_of(f"{title} {text}", rover),
         "sol": sols[0],
         "sol_end": sols[1],
+        "sol_source": sol_source,
         "orientation": stated,
         "image_url": url,
         "penalty": variant_penalty(title),
@@ -619,7 +697,11 @@ def admit(entry: dict, cache: Path, notes: list[str]) -> Path | None:
     if not target.exists():
         target.parent.mkdir(parents=True, exist_ok=True)
         print(f"  downloading {pia} ({size[0]}x{size[1]}) from {entry['image_url']}", flush=True)
-        download_to(entry["image_url"], target)
+        try:
+            download_to(entry["image_url"], target)
+        except Exception as error:  # a stalled or failed download skips this image; the next run retries it
+            notes.append(f"{pia}: skipped (download failed: {error})")
+            return None
     return target
 
 
@@ -675,6 +757,11 @@ def build(
                 continue
             index = pose_index_for_sol(poses, end_sol)
             pose = poses[index]
+            if e["sol_source"].startswith("capture date"):
+                first = poses[pose_index_for_sol(poses, e["sol"])]
+                if segment_m(float(first["lat"]), float(first["lon"]), float(pose["lat"]), float(pose["lon"])) > 1.0:
+                    notes.append(f"{e['pia_id']}: skipped (dated {e['sol_source'][13:36]}; the rover drove during sols {e['sol']}-{end_sol}, so its position when imaging is ambiguous)")
+                    continue
             lat, lon, height, yaw = float(pose["lat"]), float(pose["lon"]), _num(pose["elev_m"]), _num(pose["heading_deg"])
             pose_sol = int(pose["sol"])
             position_source = f"{site}_poses.csv, last localized pose on or before sol {end_sol} (sol {pose_sol})"
@@ -708,6 +795,7 @@ def build(
             "mission": rover["mission"],
             "sol": e["sol"],
             "sol_end": e["sol_end"],
+            "sol_source": e["sol_source"],
             "pose_sol": pose_sol,
             "position_source": position_source,
             "lat": lat7,

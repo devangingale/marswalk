@@ -178,8 +178,9 @@ export const VisorHud: React.FC<VisorHudProps> = ({ stop, manifest, baseUrl, zoo
       <header className="visor-top visor-hideable">
         <CompassTape heading={azimuth} />
         <div className="visor-telemetry num">
-          <span>
-            <b>SOL</b> {stop.sol}
+          <span title={stop.sol_source}>
+            <b>SOL</b> {stop.sol_source.startsWith('capture date') && '≈'}
+            {stop.sol}
             {stop.sol_end !== null && `–${stop.sol_end}`}
             {stop.pose_sol !== null && stop.pose_sol !== stop.sol && <i className="visor-note"> (pose sol {stop.pose_sol})</i>}
           </span>
@@ -271,6 +272,7 @@ export const VisorHud: React.FC<VisorHudProps> = ({ stop, manifest, baseUrl, zoo
               <dd>
                 {stop.sol}
                 {stop.sol_end !== null && `–${stop.sol_end}`}
+                {stop.sol_source !== 'caption' && stop.sol_source !== 'curated from caption' && ` (from the ${stop.sol_source})`}
               </dd>
               <dt>Position</dt>
               <dd>

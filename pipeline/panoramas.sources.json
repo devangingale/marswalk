@@ -1,9 +1,37 @@
 {
-  "_comment": "Inputs for build_panoramas.py. `discovery` queries the NASA Images API for 360-degree Photojournal entries; `curated` adds or overrides entries with values verified against the official caption (sol range, stated orientation, and for rovers without a pose table an explicit, cited position); `exclude` lists entries deliberately left out and why. Positions otherwise come from shared/poses/<site>_poses.csv; captions, credits and image files from each PIA's Photojournal page.",
+  "_comment": "Inputs for build_panoramas.py. `discovery` queries the NASA Images API for 360-degree Photojournal entries; `curated` adds or overrides entries with values verified against the official caption (sol range, stated orientation, and for rovers without a pose table an explicit, cited position); `exclude` lists entries deliberately left out and why. Positions otherwise come from shared/poses/<site>_poses.csv; captions, credits and image files from each PIA's Photojournal page. Discovery keeps an entry only if its full caption calls it 360-degree or full-circle (the renderer wraps every image around 360 degrees, so a partial panorama cannot be shown correctly). A Perseverance entry whose caption gives no sol but states when its images were taken gets the sols that date can mean (plus or minus one, as captions mix UTC and US Pacific dates), and is kept only if the rover did not move during those sols.",
   "discovery": {
     "queries": [
       {
-        "q": "360 Perseverance",
+        "q": "Perseverance 360",
+        "rover": "Perseverance"
+      },
+      {
+        "q": "Perseverance 360-degree",
+        "rover": "Perseverance"
+      },
+      {
+        "q": "Mastcam-Z panorama",
+        "rover": "Perseverance"
+      },
+      {
+        "q": "Perseverance Navcam panorama",
+        "rover": "Perseverance"
+      },
+      {
+        "q": "Jezero panorama",
+        "rover": "Perseverance"
+      },
+      {
+        "q": "Perseverance panorama",
+        "rover": "Perseverance"
+      },
+      {
+        "q": "Perseverance",
+        "rover": "Perseverance"
+      },
+      {
+        "q": "Mars 2020",
         "rover": "Perseverance"
       },
       {
