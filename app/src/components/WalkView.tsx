@@ -12,6 +12,7 @@ import { usePlaybackKeys } from '../walk/usePlaybackKeys';
 import { PlaybackBar } from '../walk/PlaybackBar';
 import { declutterCrewLabels } from '../walk/labelDeclutter';
 import { StopDetails } from './StopDetails';
+import { DirectionsPanel, useDirectionsNow } from './DirectionsPanel';
 import { WalkGlobe } from '../globe/walk/WalkGlobe';
 import { useSafetyModel } from '../safety/useSafetyModel';
 import { SafetyPanel } from '../safety/SafetyCompact';
@@ -53,6 +54,11 @@ export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playb
   }, [night, onNightChange]);
   useEffect(() => () => onNightChange?.(false), [onNightChange]);
 
+  // Directions run before the empty-route return too, so the hook order never changes.
+  const walkState = walkStateAt(plan, track, playback.elapsedS);
+  const directions = useDirectionsNow(plan, track, siteData.origin, walkState);
+  const turnPoint = directions.next && !directions.next.kind.startsWith('arrive') ? directions.next : null;
+
   if (plan.stops.length === 0) {
     return (
       <div className="s48-walk s48-walk--empty" data-theme={theme}>
@@ -73,7 +79,7 @@ export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playb
     );
   }
 
-  const state = walkStateAt(plan, track, playback.elapsedS);
+  const state = walkState;
   const budget = budgetRemaining(plan, state.used);
   const next = state.next ? waypointById(plan, state.next.id) : null;
   const focus = waypointById(plan, state.atWaypointId ?? state.next?.id ?? START_ID);
@@ -86,6 +92,15 @@ export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playb
 
   const stopPanel = (
     <div className="s48-walk-sheet">
+      <DirectionsPanel
+        plan={plan}
+        track={track}
+        origin={siteData.origin}
+        state={state}
+        nowUtcMs={safety?.nowWall}
+        lat={siteData.origin.lat0}
+        lonEast={siteData.origin.lon0}
+      />
       <section className="s48-walk-section s48-walk-headline" aria-label={nextWaypointHeading(state.next?.id)}>
         <h2>{next?.name ?? BACK_AT_SHELTER}</h2>
         {state.next && (
@@ -134,6 +149,7 @@ export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playb
             lat={state.lat}
             alongM={state.alongM}
             crew={crew}
+            turnPoint={turnPoint}
           />
         }
         time={

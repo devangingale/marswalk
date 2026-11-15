@@ -22,6 +22,7 @@ import type { SiteTerrainMesh } from '../siteTerrain';
 import { GlobeOverlays } from '../overlays';
 import type { CrewMarkerModel } from '../../safety/crewMarkers';
 import { groundHeightAt, headingFromTrack, sanitizePlanForOverlays } from './cameraMath';
+import { turnMarkerImage } from './turnMarker';
 import './walkGlobe.css';
 
 export interface WalkMapProps {
@@ -33,6 +34,8 @@ export interface WalkMapProps {
   alongM: number;
   /** Both astronauts, their uncertainty circles and the rover, from the safety layer. */
   crew?: CrewMarkerModel | null;
+  /** The next turn point from the directions, marked on the route; null or omitted for none. */
+  turnPoint?: { lon: number; lat: number } | null;
 }
 
 export const WalkGlobe: React.FC<WalkMapProps> = ({
@@ -43,6 +46,7 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
   lat,
   alongM,
   crew = null,
+  turnPoint = null,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const surfaceMode = useSurfaceMode();
@@ -55,6 +59,8 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
   const heightOffsetRef = useRef<number | null>(SPIKE_HEIGHT_OFFSETS_M[siteData.id] ?? 0);
   const meshRef = useRef<SiteTerrainMesh | null>(null);
 
+  const turnRef = useRef(turnPoint);
+  turnRef.current = turnPoint;
   const poseRef = useRef<{ lon: number; lat: number; alongM: number }>({ lon, lat, alongM });
   poseRef.current = { lon, lat, alongM };
 
@@ -105,6 +111,7 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
         classification: surfaceClassification(tileset),
       });
       overlaysRef.current = overlays;
+      overlays.setTurnPoint(turnRef.current, turnMarkerImage());
 
       try {
         const grid = await loadGrid(getSiteBaseUrl(siteData.id), siteData.origin);
@@ -163,6 +170,16 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
     overlaysRef.current?.setCrew(crew);
     viewer?.scene.requestRender();
   }, [crew]);
+
+  // The next turn point: only re-added when it moves to another turn.
+  const turnLon = turnPoint?.lon;
+  const turnLat = turnPoint?.lat;
+  useEffect(() => {
+    const overlays = overlaysRef.current;
+    if (!overlays) return;
+    overlays.setTurnPoint(turnLon === undefined || turnLat === undefined ? null : { lon: turnLon, lat: turnLat }, turnMarkerImage());
+    viewerRef.current?.scene.requestRender();
+  }, [turnLon, turnLat]);
 
   // Walker pose and camera updates on each playback frame
   useEffect(() => {

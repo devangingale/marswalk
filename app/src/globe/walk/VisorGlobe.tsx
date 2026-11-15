@@ -24,6 +24,7 @@ import { attachOfflineSurface, siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M, visorC
 import { GlobeImagery } from '../imageryLayers';
 import type { SiteTerrainMesh } from '../siteTerrain';
 import { groundHeightAt } from './cameraMath';
+import { compactDirections, TurnArrow, trueNorthTitle, useDirectionsNow } from '../../components/DirectionsPanel';
 import './walkGlobe.css';
 import '../../components/walk.css';
 
@@ -63,6 +64,7 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
   const [hazardData, setHazardData] = useState<HazardData>({ status: 'loading' });
   const state = walkStateAt(plan, track, elapsedS);
   const budget = budgetRemaining(plan, state.used);
+  const directions = useDirectionsNow(plan, track, siteData.origin, state);
   const pose = useMemo(
     () => ({ lon: state.lon, lat: state.lat, headingDeg: state.headingDeg }),
     [state.lon, state.lat, state.headingDeg],
@@ -250,6 +252,15 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
           <span>{nextWaypointHeading(state.next?.id ?? 'start')}</span>
           <strong>{next && state.next ? formatDistance(state.next.distanceM) : 'Back'}</strong>
           <small>{next?.name ?? BACK_AT_SHELTER}</small>
+          {directions.next && (
+            <div
+              className="s48-visor-directions"
+              title={directions.target ? trueNorthTitle(directions.target.bearingDeg, directions.target.compass) : undefined}
+            >
+              <TurnArrow deg={directions.relativeTurnDeg} />
+              <span>{compactDirections(directions)}</span>
+            </div>
+          )}
         </div>
         <div className="s48-visor-readout s48-visor-budget">
           <span>Time remaining</span>
