@@ -203,11 +203,3 @@
   font-variant-numeric: var(--numeric);
 }
 
-/* Below 1200 px an open panel slides over the map and the time bar: keep the clock in the open part. */
-.explore .s48-regions[data-overlay='true'][data-left='open'] .s48-regions__time {
-  padding-left: calc(var(--panel-left-width) + var(--space-4));
-}
-
-.explore .s48-regions[data-overlay='true'][data-right='open'] .s48-regions__time {
-  padding-right: calc(var(--panel-right-width) + var(--space-4));
-}
