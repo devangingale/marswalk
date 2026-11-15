@@ -20,6 +20,9 @@ import { GlobePlanMap } from './globe/GlobePlanMap';
 import { WalkView } from './components/WalkView';
 import { VisorView } from './components/VisorView';
 import { PlanRail } from './plan/PlanRail';
+import { Regions } from './shell/Regions';
+import { useWholePlanet } from './plan/wholePlanet';
+import { TemperatureRow } from './globe/temperature/TemperatureRow';
 import { findWalkableCentre, isLatestPlanRequest, makeInitialPlan, nextStopName } from './plan/planLogic';
 import { loadGrid, type RouteGrid } from './lib/grid';
 import type { PlanStop } from './lib/plan';
@@ -33,6 +36,8 @@ import './styles/visualReview.css';
 
 // Explore loads its own Cesium page only when opened.
 const GlobePage = lazy(() => import('./globe/GlobePage').then((m) => ({ default: m.GlobePage })));
+
+const CAVE_CREDIT = 'Mars Global Cave Candidate Catalog (MGC³), USGS Astrogeology Science Center';
 
 /** The four tabs in the top bar, Explore first. Explore and Plan plan from Earth; Walk and Visor are at the site. */
 export type Tab = 'explore' | AppMode;
@@ -87,7 +92,7 @@ export const App: React.FC = () => {
   const [layerStates, setLayerStates] = useState<Record<string, LayerState>>({});
   const [roverOverlayState, setRoverOverlayState] = useState<RoverOverlayState>({ traverse: true, photos: true });
   const [photosAvailable, setPhotosAvailable] = useState(false);
-  const [isPanelOpen, setIsPanelOpen] = useState<boolean>(() => window.innerWidth >= 1200);
+  const [relief, setRelief] = useState(false);
   // The plan Walk and Visor replay (contracts section 7). The Plan view sets it; until then, the sample plan.
   const [plan, setPlan] = useState<Plan>(() => makeInitialPlan(DEFAULT_SITE, stubSiteSample.default_start));
   const [mover, setMover] = useState<Mover>('walker');
@@ -102,6 +107,11 @@ export const App: React.FC = () => {
   const initializedPlanSite = useRef<string | null>(null);
   const siteLoadId = useRef(0);
   const track = useMemo(() => buildTrack(plan, siteData.origin), [plan, siteData.origin]);
+  const wholePlanet = useWholePlanet({ lon: siteData.origin.lon0, lat: siteData.origin.lat0 });
+  // Night at the site in Walk (the safety model's call) themes the top bar too, not only the tab body.
+  const [walkNight, setWalkNight] = useState(false);
+  // A new route or another tab drops the profile hover point, so no dot is left on the map.
+  useEffect(() => setProfileHover(null), [plan.route, mode]);
   const playback = usePlayback(track.durationS);
 
   const loadSite = useCallback(async (siteId: string) => {
@@ -404,7 +414,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="mock plan-mock" style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <header className="mock-top">
+      <header className="mock-top" data-theme={mode === 'walk' && walkNight ? 'night' : undefined}>
         <span className="wordmark">Sol-48</span>
 
         <nav className="s48-seg s48-tabs" aria-label="Tabs">
@@ -431,22 +441,6 @@ export const App: React.FC = () => {
         </div>
 
         <span className="grow" />
-
-        {mode === 'plan' && !isPanelOpen && (
-          <button
-            type="button"
-            className="s48-btn s48-btn--secondary"
-            onClick={() => setIsPanelOpen(true)}
-            aria-label="Open layer panel"
-          >
-            <svg className="i" viewBox="0 0 16 16" aria-hidden="true">
-              <path d="M8 2l6 3.2-6 3.2-6-3.2z" />
-              <path d="M2 8.4l6 3.2 6-3.2" />
-              <path d="M2 11.4l6 3.2 6-3.2" />
-            </svg>
-            <span>Layers</span>
-          </button>
-        )}
 
         <div className="s48-seg s48-theme" role="group" aria-label="Theme">
           {THEMES.map((option) => (
@@ -475,23 +469,53 @@ export const App: React.FC = () => {
             Loading site...
           </div>
         ) : mode === 'plan' ? (
-          <div className={`plan-body${isPanelOpen ? '' : ' plan-body--layers-closed'}`}>
-            <LayerPanel
-              layers={siteData.layers}
-              layerStates={layerStates}
-              roverOverlayState={roverOverlayState}
-              photosAvailable={photosAvailable}
-              onToggleRoverOverlay={toggleRoverOverlay}
-              onToggleLayer={handleToggleLayer}
-              onOpacityChange={handleOpacityChange}
-              isOpen={isPanelOpen}
-              onTogglePanel={() => setIsPanelOpen(!isPanelOpen)}
-            />
-            <GlobePlanMap siteData={siteData} layerStates={layerStates} roverOverlayState={roverOverlayState} plan={plan} grid={routeGrid} activePoint={profileHover} onMapPoint={addStop} onStartChange={updateStart} onStopChange={updateStop} onRoutePointHover={setProfileHover} />
-            <PlanRail plan={plan} grid={routeGrid} computing={computing} onChange={changePlan} onImport={handleImportPlan} mover={mover} onMoverChange={setMover} activePoint={profileHover} onProfileHover={setProfileHover} stopNotices={stopNotices} />
-          </div>
+          <Regions
+            id="plan"
+            left={
+              <LayerPanel
+                layers={siteData.layers}
+                layerStates={layerStates}
+                roverOverlayState={roverOverlayState}
+                photosAvailable={photosAvailable}
+                onToggleRoverOverlay={toggleRoverOverlay}
+                onToggleLayer={handleToggleLayer}
+                onOpacityChange={handleOpacityChange}
+                globalLayers={wholePlanet.layers}
+                globalStates={wholePlanet.states}
+                onToggleGlobal={wholePlanet.toggle}
+                onGlobalOpacityChange={wholePlanet.setOpacity}
+                siteValues={wholePlanet.siteValues}
+                caves={wholePlanet.caves.length ? { enabled: wholePlanet.cavesOn, count: wholePlanet.caves.length, credit: CAVE_CREDIT, atSite: wholePlanet.cavesAtSite, onToggle: () => wholePlanet.setCavesOn((on) => !on) } : undefined}
+                temperature={wholePlanet.temperatureManifest ? {
+                  enabled: wholePlanet.temperature.enabled,
+                  atSite: wholePlanet.temperatureAtSite,
+                  row: (
+                    <TemperatureRow
+                      manifest={wholePlanet.temperatureManifest}
+                      bin={wholePlanet.bin}
+                      enabled={wholePlanet.temperature.enabled}
+                      opacity={wholePlanet.temperature.opacity}
+                      kind={wholePlanet.temperature.kind}
+                      onToggle={() => wholePlanet.setTemperature((t) => ({ ...t, enabled: !t.enabled }))}
+                      onOpacityChange={(opacity) => wholePlanet.setTemperature((t) => ({ ...t, opacity }))}
+                      onKindChange={(kind) => wholePlanet.setTemperature((t) => ({ ...t, kind }))}
+                    />
+                  ),
+                } : undefined}
+              />
+            }
+            leftLabel="Layers"
+            main={<GlobePlanMap siteData={siteData} layerStates={layerStates} roverOverlayState={roverOverlayState} plan={plan} grid={routeGrid} activePoint={profileHover} relief={relief} wholePlanet={wholePlanet} onMapPoint={addStop} onStartChange={updateStart} onStopChange={updateStop} onRoutePointHover={setProfileHover} />}
+            controls={
+              <button type="button" className="s48-btn s48-btn--secondary" aria-pressed={relief} onClick={() => setRelief((on) => !on)}>
+                3D relief
+              </button>
+            }
+            right={<PlanRail plan={plan} grid={routeGrid} computing={computing} onChange={changePlan} onImport={handleImportPlan} mover={mover} onMoverChange={setMover} activePoint={profileHover} onProfileHover={setProfileHover} stopNotices={stopNotices} />}
+            rightLabel="Plan"
+          />
         ) : mode === 'walk' ? (
-          <WalkView siteData={siteData} plan={plan} track={track} playback={playback} onPlan={() => setMode('plan')} />
+          <WalkView siteData={siteData} plan={plan} track={track} playback={playback} onPlan={() => setMode('plan')} onNightChange={setWalkNight} />
         ) : (
           <VisorView siteData={siteData} plan={plan} track={track} elapsedS={playback.elapsedS} onPlan={() => setMode('plan')} />
         )}

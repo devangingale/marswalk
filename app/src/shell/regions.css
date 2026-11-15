@@ -86,10 +86,12 @@
 .s48-regions__main:has(.s48-regions__controls) .s48-regions__handle--right { top: calc(var(--space-3) + 40px); }
 
 /* Narrow screens: an open panel slides over the map instead of narrowing it. */
+/* It stops at the time bar (height measured in Regions.tsx), so playback and the clock stay reachable. */
 .s48-regions[data-overlay='true'] .s48-regions__panel {
   position: absolute;
   top: 0;
-  bottom: 0;
+  bottom: var(--s48-time-height, 0px);
+  height: auto;
   box-shadow: var(--shadow-drawer);
 }
 .s48-regions[data-overlay='true'] .s48-regions__panel--left { left: 0; }
