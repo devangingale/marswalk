@@ -9,10 +9,10 @@ describe('graticuleLines', () => {
     const parallels = lines.filter((l) => l.axis === 'lat');
     expect(meridians.length).toBe(36);
     expect(parallels.map((l) => l.label)).toEqual([
-      '80Â° S', '70Â° S', '60Â° S', '50Â° S', '40Â° S', '30Â° S', '20Â° S', '10Â° S', '0Â°',
-      '10Â° N', '20Â° N', '30Â° N', '40Â° N', '50Â° N', '60Â° N', '70Â° N', '80Â° N',
+      '80° S', '70° S', '60° S', '50° S', '40° S', '30° S', '20° S', '10° S', '0°',
+      '10° N', '20° N', '30° N', '40° N', '50° N', '60° N', '70° N', '80° N',
     ]);
-    expect(meridians[0].label).toBe('180Â°');
+    expect(meridians[0].label).toBe('180°');
     expect(meridians[0].points[0]).toEqual([-180, -80]);
     expect(meridians[0].points.at(-1)).toEqual([-180, 80]);
   });
@@ -20,17 +20,17 @@ describe('graticuleLines', () => {
   it('draws 0.001 degree lines across the Gale sample corner', () => {
     const lines = graticuleLines({ west: 137.3604, south: -4.7659, east: 137.3689, north: -4.7575 }, 0.001);
     expect(lines.filter((l) => l.axis === 'lon').map((l) => l.label)).toEqual([
-      '137.361Â° E', '137.362Â° E', '137.363Â° E', '137.364Â° E', '137.365Â° E', '137.366Â° E', '137.367Â° E', '137.368Â° E',
+      '137.361° E', '137.362° E', '137.363° E', '137.364° E', '137.365° E', '137.366° E', '137.367° E', '137.368° E',
     ]);
     expect(lines.filter((l) => l.axis === 'lat').map((l) => l.label)).toEqual([
-      '4.765Â° S', '4.764Â° S', '4.763Â° S', '4.762Â° S', '4.761Â° S', '4.760Â° S', '4.759Â° S', '4.758Â° S',
+      '4.765° S', '4.764° S', '4.763° S', '4.762° S', '4.761° S', '4.760° S', '4.759° S', '4.758° S',
     ]);
   });
 
   it('wraps meridians in a view across 180 degrees', () => {
     const lines = graticuleLines({ west: 177.5, south: 0, east: -177.5, north: 2 }, 1);
     expect(lines.filter((l) => l.axis === 'lon').map((l) => l.label)).toEqual([
-      '178Â° E', '179Â° E', '180Â°', '179Â° W', '178Â° W',
+      '178° E', '179° E', '180°', '179° W', '178° W',
     ]);
     const equator = lines.find((l) => l.axis === 'lat' && l.value === 0)!;
     expect(equator.points[0]).toEqual([177.5, 0]);
@@ -45,12 +45,12 @@ describe('graticuleLines', () => {
 describe('cullLabels', () => {
   it('drops labels that overlap one already placed', () => {
     const kept = cullLabels([
-      { text: '120Â° E', x: 100, y: 4, axis: 'lon' as const },
-      { text: '130Â° E', x: 120, y: 6, axis: 'lon' as const },
-      { text: '140Â° E', x: 160, y: 4, axis: 'lon' as const },
-      { text: '10Â° N', x: 4, y: 12, axis: 'lat' as const },
+      { text: '120° E', x: 100, y: 4, axis: 'lon' as const },
+      { text: '130° E', x: 120, y: 6, axis: 'lon' as const },
+      { text: '140° E', x: 160, y: 4, axis: 'lon' as const },
+      { text: '10° N', x: 4, y: 12, axis: 'lat' as const },
     ]);
-    expect(kept.map((l) => l.text)).toEqual(['120Â° E', '140Â° E', '10Â° N']);
+    expect(kept.map((l) => l.text)).toEqual(['120° E', '140° E', '10° N']);
   });
 });
 
@@ -58,12 +58,12 @@ describe('cullLabels with panels', () => {
   it('drops labels under a panel over the map', () => {
     const kept = cullLabels(
       [
-        { text: '137.361Â° E', x: 100, y: 4, axis: 'lon' as const },
-        { text: '137.362Â° E', x: 400, y: 4, axis: 'lon' as const },
+        { text: '137.361° E', x: 100, y: 4, axis: 'lon' as const },
+        { text: '137.362° E', x: 400, y: 4, axis: 'lon' as const },
       ],
       [[16, 16 - 14, 336, 200]],
     );
-    expect(kept.map((l) => l.text)).toEqual(['137.362Â° E']);
+    expect(kept.map((l) => l.text)).toEqual(['137.362° E']);
   });
 });
 
