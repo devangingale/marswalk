@@ -20,7 +20,6 @@ Live application: https://sol48.vercel.app
 - Sites:
   - **Gale Crater (Mount Sharp)**: Primary 4 × 4 km site built from 1 m MRO HiRISE DEM and orthoimagery, aligned with Curiosity exploration routes.
   - **Jezero Crater (Delta)**: Secondary 4 × 4 km validation site built from 1 m MRO HiRISE DEM and orthoimagery, aligned with Perseverance traverses.
-  - *Note*: McLaughlin crater is not included in `AVAILABLE_SITES` on `main` (only `gale` and `jezero` are configured in `app/src/config.ts`).
   - **Site Finder**: Evaluates and ranks candidate landing sites across Mars based on adjustable criteria weights (terrain slope and roughness, climate, solar energy, cave proximity, and radiation protection).
 - Whole-planet layers:
   - Global map datasets including subsurface water ice (SWIM 0–1 m depth), surface radiation dose rate (MSL RAD), dust optical depth (Montabone MY24–MY36 climatology), cave candidates (MGC3), thermal inertia (TES night), mineral distributions (Bandfield TES olivine; MOCAAS hydrated clays, sulfates, and carbonates), regional geology (USGS SIM 3292), and diurnal surface temperatures (MRO MCS).
@@ -104,8 +103,7 @@ flowchart LR
 | `matplotlib` | Trajectory and diagnostic elevation profile plotting | Imported in `pipeline/passes.py`, `features.py` |
 | `PyYAML` (`yaml`) | Site definition and pipeline configuration parsing | Imported in `pipeline/bake.py`, `common.py` |
 | `pytest` | Test runner for pipeline data processing functions | Imported in `pipeline/test_*.py` |
-
-*(Note: `boto3` is not used in the codebase; Cloudflare R2 uploads are handled via Wrangler CLI in `pipeline/upload_r2.py`.)*
+| `boto3` | Uploading site bundles and globe layers to Cloudflare R2 over its S3 API | `pipeline/upload_r2_bulk.py` |
 
 ### Data and services
 
@@ -213,7 +211,7 @@ Team: TBD
 
 ## Use of AI
 
-AI coding assistants (Claude, Codex, Gemini) were used to write code and documentation in this repository, directed and reviewed by the team. Commits made with AI assistance carry a `Co-Authored-By` trailer in git history. No AI-generated images, video, or audio are used in this project.
+AI coding assistants (Claude, Codex, Gemini) were used to write code and documentation in this repository, directed and reviewed by the team. Commits made with AI assistance carry a `Co-Authored-By` trailer in git history. The demo video was assembled with AI assistance from real screen captures of the app; no AI-generated imagery of Mars is used.
 
 ## Licence
 
