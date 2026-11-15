@@ -1,28 +1,8 @@
-.plan-body {
-  display: grid !important;
-  grid-template-columns: var(--panel-left-width) minmax(0, 1fr) var(--panel-right-width);
-  min-width: 0;
-  min-height: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.plan-body--layers-closed {
-  grid-template-columns: 0 minmax(0, 1fr) var(--panel-right-width);
-}
-
-.plan-body > .panel { grid-column: 1; grid-row: 1; min-width: 0; height: 100%; }
-.plan-body > .globe-plan-map { grid-column: 2; grid-row: 1; min-width: 0; min-height: 0; height: 100%; }
-.plan-body > .plan-rail { grid-column: 3; grid-row: 1; }
+.plan-rail { grid-column: 3; grid-row: 1; }
 
 .plan-rail {
   min-width: 0;
-  height: 100%;
-  overflow: auto;
   padding: var(--space-4);
-  background: var(--color-surface);
-  border-left: var(--border-width) solid var(--color-rule);
   color: var(--color-text);
   font: var(--weight-regular) var(--text-md) / var(--leading-md) var(--font-ui);
 }
@@ -46,9 +26,8 @@
 .plan-stop-list__dwell-wrap { display: flex; align-items: center; gap: var(--space-1); }
 .plan-stop-list__dwell-wrap small { color: var(--color-text-muted); font-size: var(--text-xs); }
 .plan-stop-list__dwell { width: 44px; padding: 0 var(--space-1) !important; font-family: var(--font-data) !important; font-variant-numeric: var(--numeric); }
-.plan-stop-list__actions { display: flex; justify-content: flex-end; gap: var(--space-1); opacity: 0; pointer-events: none; }
+.plan-stop-list__actions { display: flex; justify-content: flex-end; gap: var(--space-1); }
 .plan-stop-list__actions button { width: var(--hit-plan-min); min-width: var(--hit-plan-min); border-color: transparent; background: transparent; font-family: var(--font-data); }
-.plan-stop-list li:hover .plan-stop-list__actions, .plan-stop-list li:focus-within .plan-stop-list__actions { opacity: 1; pointer-events: auto; }
 
 .plan-budget { display: grid; gap: var(--space-2); margin-top: var(--space-3); padding: var(--space-3) 0; }
 .plan-budget__row { min-width: 0; }
@@ -103,15 +82,5 @@
 .plan-map-turn span { position: absolute; top: 4px; left: 14px; color: var(--map-label-text); font: var(--weight-medium) var(--text-sm) / var(--leading-sm) var(--font-data); white-space: nowrap; text-shadow: 0 0 2px var(--map-label-halo), 0 0 2px var(--map-label-halo), 0 0 3px var(--map-label-halo); }
 
 @media (max-width: 1199px) {
-  .plan-body { grid-template-columns: 0 minmax(0, 1fr) 340px; }
-  .plan-body--layers-closed { grid-template-columns: 0 minmax(0, 1fr) 340px; }
-  .plan-body > .panel { position: absolute; z-index: 20; top: 0; left: 0; bottom: 0; width: 300px; max-width: 85vw; border-right: var(--border-width) solid var(--color-rule); background: var(--color-surface); }
   .plan-rail { padding: var(--space-3); }
-}
-
-@media (max-width: 767px) {
-  .plan-body { grid-template-columns: minmax(0, 1fr); }
-  .plan-body > .panel { position: absolute; z-index: 20; top: 0; left: 0; bottom: 0; width: var(--panel-left-width); max-width: 85vw; }
-  .plan-body > .mapbox { grid-column: 1; grid-row: 1; }
-  .plan-body > .plan-rail { grid-column: 1; grid-row: 1; position: absolute; top: 0; right: 0; bottom: 0; width: min(var(--panel-right-width), 92vw); }
 }
