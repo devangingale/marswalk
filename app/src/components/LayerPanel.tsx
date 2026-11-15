@@ -19,6 +19,8 @@ export interface CaveOverlay {
   enabled: boolean;
   count: number;
   credit: string;
+  /** Distance to the nearest candidate, shown while the layer is on. */
+  atSite?: string;
   onToggle: () => void;
 }
 
@@ -32,13 +34,18 @@ interface LayerPanelProps {
   globalStates?: Record<string, LayerState>;
   onToggleGlobal?: (layerId: string) => void;
   onGlobalOpacityChange?: (layerId: string, opacity: number) => void;
+  /** Extra content under an enabled whole-planet layer's legend, by layer id. */
+  globalDetail?: Record<string, React.ReactNode>;
   caves?: CaveOverlay;
   /** Whole-planet temperature entry, shown as its own group after the manifest layers. */
-  temperature?: { enabled: boolean; row: React.ReactNode };
+  temperature?: { enabled: boolean; row: React.ReactNode; atSite?: string };
+  /** Value of each shown whole-planet layer at the site, such as 312 µGy/day; keyed by layer id. */
+  siteValues?: Record<string, string>;
   onToggleLayer: (layerId: string) => void;
   onOpacityChange: (layerId: string, opacity: number) => void;
-  isOpen: boolean;
-  onTogglePanel: () => void;
+  /** Outside the shared layout the panel hides itself; in a Regions panel it is always shown. */
+  isOpen?: boolean;
+  onTogglePanel?: () => void;
 }
 
 const KIND_LABELS: Record<SiteKind, string> = {
@@ -62,11 +69,13 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
   globalStates = {},
   onToggleGlobal,
   onGlobalOpacityChange,
+  globalDetail,
   caves,
   temperature,
+  siteValues = {},
   onToggleLayer,
   onOpacityChange,
-  isOpen,
+  isOpen = true,
   onTogglePanel,
 }) => {
   const [expandedInfo, setExpandedInfo] = useState<Record<string, boolean>>({});
@@ -109,14 +118,16 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
           <span>
             Layers <small>{activeCount} on</small>
           </span>
-          <button
-            type="button"
-            className="s48-btn s48-btn--quiet"
-            onClick={onTogglePanel}
-            aria-label="Close layer panel"
-          >
-            Hide
-          </button>
+          {onTogglePanel && (
+            <button
+              type="button"
+              className="s48-btn s48-btn--quiet"
+              onClick={onTogglePanel}
+              aria-label="Close layer panel"
+            >
+              Hide
+            </button>
+          )}
         </h3>
 
         <div className="s48-layers">
@@ -318,6 +329,11 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
 
                       {state.enabled && (
                         <div className="s48-layer__body">
+                          {siteValues[layer.id] && (
+                            <p className="s48-layer__at-site">
+                              At this site: <b>{siteValues[layer.id]}</b>
+                            </p>
+                          )}
                           <div className="s48-opacity">
                             <span>Opacity</span>
                             <input
@@ -352,6 +368,7 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
                               </span>
                             </div>
                           </div>
+                          {globalDetail?.[layer.id]}
                         </div>
                       )}
                     </div>
@@ -364,6 +381,11 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
               <div>
                 <h4>Temperature</h4>
                 {temperature.row}
+                {temperature.enabled && temperature.atSite && (
+                  <p className="s48-layer__at-site s48-layer__at-site--row">
+                    At this site: <b>{temperature.atSite}</b>
+                  </p>
+                )}
               </div>
             )}
             {caveGroupShown && caves && (
@@ -422,6 +444,11 @@ const CaveRow: React.FC<{ caves: CaveOverlay }> = ({ caves }) => {
       )}
       {caves.enabled && (
         <div className="s48-layer__body">
+          {caves.atSite && (
+            <p className="s48-layer__at-site">
+              At this site: <b>{caves.atSite}</b>
+            </p>
+          )}
           <div className="s48-legend s48-legend--points">
             <span className="s48-cave-dot" />
             <span>

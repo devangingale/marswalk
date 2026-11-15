@@ -561,22 +561,3 @@ svg.i.fill {
   font-weight: var(--weight-regular);
 }
 
-/* Tablet responsiveness */
-@media (max-width: 1023px) {
-  .plan-body {
-    grid-template-columns: 1fr;
-    position: relative;
-  }
-  .plan-body > .panel:first-child {
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 300px;
-    max-width: 85vw;
-    z-index: 30;
-    border-right: var(--border-width) solid var(--color-rule);
-    box-shadow: var(--shadow-drawer);
-    background: var(--color-surface);
-  }
-}

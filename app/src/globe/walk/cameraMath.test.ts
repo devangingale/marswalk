@@ -76,6 +76,12 @@ describe('groundHeightAt', () => {
     expect(groundHeightAt(fakeGrid, 130.0, 0.0, 73.76)).toBe(73.76);
     expect(groundHeightAt(fakeGrid, 137.1, -4.9, 73.76)).toBe(73.76);
   });
+
+  it('stands on the bare offline ellipsoid (0 m) when the offset is null', () => {
+    // Gale's floor is about 4.5 km below the datum: Cesium Mars heights there would bury the camera offline.
+    expect(groundHeightAt(fakeGrid, 137.5, -4.5, null)).toBe(0);
+    expect(groundHeightAt(null, 137.5, -4.5, null)).toBe(0);
+  });
 });
 
 describe('sanitizePlanForOverlays', () => {
