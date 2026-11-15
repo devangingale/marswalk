@@ -5,7 +5,7 @@ import './walk.css';
 import { Plan } from '../lib/plan';
 import { SiteData } from '../types';
 import { useSiteFeeds } from '../walk/feeds';
-import { formatDistance, formatDose, formatDuration, formatEnergy } from '../walk/format';
+import { formatDistance, formatDose, formatDuration, formatEnergy, BACK_AT_SHELTER, nextWaypointHeading, toWaypoint } from '../walk/format';
 import { budgetRemaining, RouteTrack, walkStateAt, waypointById, START_ID } from '../walk/track';
 import { Playback } from '../walk/usePlayback';
 import { usePlaybackKeys } from '../walk/usePlaybackKeys';
@@ -86,12 +86,12 @@ export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playb
 
   const stopPanel = (
     <div className="s48-walk-sheet">
-      <section className="s48-walk-section s48-walk-headline" aria-label="Next stop">
-        <h2>{next?.name ?? `Back at ${plan.start.label}`}</h2>
+      <section className="s48-walk-section s48-walk-headline" aria-label={nextWaypointHeading(state.next?.id)}>
+        <h2>{next?.name ?? BACK_AT_SHELTER}</h2>
         {state.next && (
           <div className="s48-walk-distance">
             <strong>{formatDistance(state.next.distanceM)}</strong>
-            <span>{formatDuration(state.next.timeS)} to stop</span>
+            <span>{formatDuration(state.next.timeS)} {toWaypoint(state.next.id)}</span>
           </div>
         )}
       </section>

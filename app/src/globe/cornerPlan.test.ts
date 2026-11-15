@@ -33,16 +33,16 @@ describe('buildCornerPlan', () => {
   it('forks where the way home joins and where the spur leaves', () => {
     const forks = forkPoints(legs, ORIGIN, 3);
     expect(forks.map((f) => f.branches.map((b) => branchLabel(b.toLabel, plan)))).toEqual([
-      ['to Stop 1', 'back to drop-off'],
+      ['to Stop 1', 'back to shelter'],
       ['to Stop 2', 'to Stop 3'],
     ]);
   });
 
   it('makes stop 2 a detour of the middle section', () => {
     expect(sections(plan, ORIGIN).map((s) => sectionLabel(s, plan))).toEqual([
-      'Drop-off → 1 · 216 m · 8 min',
+      'Shelter → 1 · 216 m · 8 min',
       '1 → 3 via 2 · 922 m · 34 min',
-      '3 → Drop-off · 574 m · 21 min',
+      '3 → Shelter · 574 m · 21 min',
     ]);
   });
 });

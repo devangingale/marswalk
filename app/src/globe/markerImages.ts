@@ -2,6 +2,8 @@
 // Marker images for the globe, drawn on canvases so numerals use the app's data font.
 // Every colour comes from a design token. Sizes are CSS pixels; canvases are drawn at 2x.
 
+import type { ShelterType } from '../lib/plan';
+
 export type TokenReader = (name: string) => string;
 
 export const readToken: TokenReader = (name) =>
@@ -16,7 +18,8 @@ export interface MarkerImage {
 /** Everything the overlays draw as a billboard. Swapped for stubs in tests. */
 export interface MarkerImages {
   stop(label: string, selected: boolean): MarkerImage;
-  dropOff(): MarkerImage;
+  /** The plan shelter (start and finish): a hexagon with the type's glyph. Default 'rover'. */
+  dropOff(kind?: ShelterType): MarkerImage;
   finish(): MarkerImage;
   fork(): MarkerImage;
   chevron(): MarkerImage;
@@ -29,6 +32,16 @@ export interface MarkerImages {
 }
 
 const SCALE = 2;
+
+/** Stroked glyphs inside the 30 px shelter hexagon, one per type. */
+export const SHELTER_GLYPHS: Record<ShelterType, string> = {
+  // Pressurised rover: body on a chassis with a mast.
+  rover: 'M10 18.5 12.4 12h5.2l2.4 6.5M9.5 19.5h11M12.4 12l2.6-3 2.6 3M15 9v9.5',
+  // Habitat: a dome with a door.
+  habitat: 'M8.5 19.5h13M10 19.5v-3a5 5 0 0 1 10 0v3M13.5 19.5v-2.6h3v2.6',
+  // Radiation shelter: a doorway under layered berms of regolith.
+  radiation_shelter: 'M8 19.5h14M9 19.5c1.2-6.4 10.8-6.4 12 0M11.2 14.6c1.8-3.4 5.8-3.4 7.6 0M13.6 19.5v-2.4h2.8v2.4',
+};
 
 function canvas(width: number, height: number, draw: (ctx: CanvasRenderingContext2D) => void): MarkerImage {
   const c = document.createElement('canvas');
@@ -92,9 +105,9 @@ export function canvasMarkerImages(token: TokenReader = readToken): MarkerImages
           ctx.fillText(label, size / 2, size / 2 + 1);
         });
       }),
-    // The same hexagon and rover glyph as the Plan map's drop-off marker.
-    dropOff: () =>
-      once('dropOff', () =>
+    // The shelter: a hexagon (stops are circles) with a glyph for its type, all from tokens.
+    dropOff: (kind = 'rover') =>
+      once(`shelter:${kind}`, () =>
         canvas(30, 30, (ctx) => {
           ctx.lineJoin = 'round';
           ctx.lineCap = 'round';
@@ -105,10 +118,10 @@ export function canvasMarkerImages(token: TokenReader = readToken): MarkerImages
           ctx.fill(body);
           ctx.stroke(body);
           ctx.lineWidth = 1.6;
-          ctx.stroke(new Path2D('M10 18.5 12.4 12h5.2l2.4 6.5M9.5 19.5h11M12.4 12l2.6-3 2.6 3M15 9v9.5'));
+          ctx.stroke(new Path2D(SHELTER_GLYPHS[kind] ?? SHELTER_GLYPHS.rover));
         }),
       ),
-    // A square with a dark ring: the end of a route that does not return to the drop-off.
+    // A square with a dark ring: the end of a route that does not return to the shelter.
     finish: () =>
       once('finish', () =>
         canvas(22, 22, (ctx) => {

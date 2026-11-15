@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import { SiteFeeds } from '../walk/feeds';
 import { Waypoint } from '../walk/track';
 import { CHEMISTRY_RADIUS_M, chemistryNear, compositionFields, PHOTO_RADIUS_M, photosNear } from '../walk/nearby';
-import { formatDistance } from '../walk/format';
+import { formatDistance, waypointStatus } from '../walk/format';
 
 interface StopDetailsProps {
   waypoint: Waypoint;
@@ -31,7 +31,7 @@ export const StopDetails: React.FC<StopDetailsProps> = ({ waypoint, arrived, fee
   return (
     <article className="s48-stop" aria-labelledby="s48-stop-name">
       <header className="s48-stop-header">
-        <p className={`s48-stop-status${arrived ? ' is-arrived' : ''}`}>{arrived ? 'At this stop' : 'Next stop'}</p>
+        <p className={`s48-stop-status${arrived ? ' is-arrived' : ''}`}>{waypointStatus(waypoint.id, arrived)}</p>
         <h2 id="s48-stop-name" className="s48-stop-name">{waypoint.name}</h2>
         {waypoint.note && <p className="s48-stop-note">{waypoint.note}</p>}
       </header>

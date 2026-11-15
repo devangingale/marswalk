@@ -94,12 +94,12 @@ describe('chooseShelter', () => {
     { id: 'hab', kind: 'habitat', distanceM: 2400, onRoute: false },
     { id: 'hab-route', kind: 'habitat', distanceM: 3100, onRoute: true },
     { id: 'rover', kind: 'rover', distanceM: 900 },
-    { id: 'dropoff', kind: 'dropoff', distanceM: 1500 },
+    { id: 'plan-shelter', kind: 'habitat', distanceM: 1500, primary: true },
     { id: 'cliff', kind: 'terrain-shield', distanceM: 300, skyBlockedFrac: 0.55 },
     { id: 'cave', kind: 'cave', distanceM: 120, accessible: false },
   ];
 
-  it('daylight and pace pick the nearest habitat, drop-off or rover', () => {
+  it('daylight and pace pick the nearest pressurised shelter or the plan shelter', () => {
     expect(chooseShelter('daylight', candidates)?.shelter.id).toBe('rover');
     expect(chooseShelter('pace', candidates)?.shelter.id).toBe('rover');
   });
@@ -114,6 +114,17 @@ describe('chooseShelter', () => {
     const choice = chooseShelter('dust', candidates);
     expect(choice?.shelter.id).toBe('hab-route');
     expect(choice?.reason).toContain('along the planned route');
+  });
+
+  it('the plan shelter wins a tie and counts whatever its type', () => {
+    const tie: ShelterCandidate[] = [
+      { id: 'rover', kind: 'rover', distanceM: 0 },
+      { id: 'plan-shelter', kind: 'radiation-shelter', distanceM: 0, primary: true, name: 'Shelter · Radiation shelter' },
+    ];
+    const choice = chooseShelter('pace', tie);
+    expect(choice?.shelter.id).toBe('plan-shelter');
+    expect(choice?.reason).toBe('The plan shelter, where the walk ends.');
+    expect(chooseShelter('radiation', [{ id: 'rs', kind: 'radiation-shelter', distanceM: 40 }, { id: 'h', kind: 'habitat', distanceM: 900 }])?.shelter.id).toBe('rs');
   });
 
   it('returns null when no candidate fits the hazard', () => {

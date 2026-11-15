@@ -13,6 +13,18 @@
 .plan-rail__empty { margin: var(--space-2) 0 0; }
 .plan-rail__warning { margin: var(--space-2) 0 0; padding-left: var(--space-2); border-left: 2px solid var(--color-danger); color: var(--color-danger); }
 
+.plan-shelter { display: grid; gap: var(--space-2); margin-bottom: var(--space-3); }
+.plan-shelter__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-2); }
+.plan-shelter__grid label { display: grid; gap: var(--space-1); min-width: 0; color: var(--color-text-muted); font-size: var(--text-sm); }
+.plan-shelter__grid input, .plan-shelter select { width: 100%; }
+.plan-rail select { min-height: var(--hit-plan); min-width: 0; padding: 0 var(--space-1); border: var(--border-width) solid var(--color-control-border); border-radius: var(--radius-1); background: var(--color-surface-raised); color: var(--color-text); font: var(--weight-regular) var(--text-md) / var(--leading-md) var(--font-ui); }
+.plan-shelter__hint { margin: 0; color: var(--color-text-muted); font-size: var(--text-sm); line-height: var(--leading-sm); }
+.plan-shelter__position { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+.plan-shelter__position span { color: var(--color-text-muted); font-size: var(--text-sm); }
+.plan-shelter__position b { font: var(--weight-medium) var(--text-sm) / var(--leading-sm) var(--font-data); font-variant-numeric: var(--numeric); }
+.plan-rail .plan-shelter__move { min-height: var(--hit-plan); padding: 0 var(--space-3); font-weight: var(--weight-medium); }
+.plan-rail .plan-shelter__move.is-active { border-color: var(--color-accent); background: var(--color-accent-subtle); color: var(--color-accent); }
+
 .plan-stop-list { display: grid; gap: var(--space-1); margin: var(--space-2) 0 0; padding: 0; list-style: none; }
 .plan-stop-list li { display: grid; grid-template-columns: 24px minmax(48px, 1fr) 64px 76px; align-items: center; gap: var(--space-1); min-width: 0; }
 .plan-stop-list__number { display: grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-round); background: var(--color-accent-subtle); color: var(--color-accent); font: var(--weight-semibold) var(--text-sm) / 1 var(--font-data); font-variant-numeric: var(--numeric); }

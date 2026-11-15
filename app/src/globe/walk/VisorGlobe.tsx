@@ -14,7 +14,7 @@ import { getSiteBaseUrl } from '../../config';
 import { loadGrid, type RouteGrid } from '../../lib/grid';
 import type { Plan } from '../../lib/plan';
 import type { SiteData } from '../../types';
-import { formatDistance, formatDuration, formatHeading } from '../../walk/format';
+import { formatDistance, formatDuration, formatHeading, BACK_AT_SHELTER, nextWaypointHeading } from '../../walk/format';
 import { hazardAhead, hazardFlags } from '../../walk/hazard';
 import { budgetRemaining, RouteTrack, walkStateAt, waypointById } from '../../walk/track';
 import { createMarsViewer, initCesium } from '../cesiumSetup';
@@ -239,9 +239,9 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
           <strong>{formatHeading(state.headingDeg)}</strong>
         </div>
         <div className="s48-visor-readout s48-visor-next">
-          <span>Next stop</span>
-          <strong>{next && state.next ? formatDistance(state.next.distanceM) : 'Home'}</strong>
-          <small>{next?.name ?? plan.start.label}</small>
+          <span>{nextWaypointHeading(state.next?.id ?? 'start')}</span>
+          <strong>{next && state.next ? formatDistance(state.next.distanceM) : 'Back'}</strong>
+          <small>{next?.name ?? BACK_AT_SHELTER}</small>
         </div>
         <div className="s48-visor-readout s48-visor-budget">
           <span>Time remaining</span>
