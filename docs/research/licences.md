@@ -40,6 +40,7 @@ Researched 2026-11-14. Status tags: **confirmed** = primary page read; **seconda
 | 23 | IAU nomenclature gazetteer | "Everything in the Gazetteer of Planetary Nomenclature is in the public domain." | Suggested citation: International Astronomical Union Working Group for Planetary System Nomenclature. "Gazetteer of Planetary Nomenclature." (access date). http://planetarynames.wr.usgs.gov/ | https://planetarynames.wr.usgs.gov/Page/FAQ | confirmed |
 | 24 | MCD | Not open: "not to transmit … to a third party"; no commercial use | See temperature-sources.md | LMD | confirmed |
 | 25 | NAIF SPICE kernels | NAIF asks for "Acknowledgement in your publications, tools and findings of use of" SPICE | "Ephemerides: NASA NAIF SPICE" | https://naif.jpl.nasa.gov/naif/rules.html | confirmed |
+| 26 | MOCAAS hydrated-mineral catalogue (IAS, served by PSUP) | No licence, terms or reuse statement on the MOCAAS page or in the PSUP WFS capabilities (no Fees or AccessConstraints); the page asks users to cite Carter et al. (2023) | Credit Carter et al. (2023), Icarus 389, 115164, doi:10.1016/j.icarus.2022.115164, "MOCAAS, IAS Universite Paris-Saclay" and "PSUP" in full; remove on request; contact via the MOCAAS page | https://www.ias.u-psud.fr/moccas/ ; https://ows.psup.univ-lyon1.fr/mocaas?SERVICE=WFS&REQUEST=GetCapabilities | confirmed (absence of terms) |
 
 ## Open questions
 
