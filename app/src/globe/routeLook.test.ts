@@ -7,6 +7,7 @@ import {
   branchLabel,
   branchLabelSides,
   chevronsFor,
+  MIN_CHEVRON_STRETCH_M,
   distanceAlong,
   formatElevation,
   formatGraticule,
@@ -263,6 +264,30 @@ describe('chevronsFor', () => {
       [150, 270],
       [300, 270],
     ]);
+  });
+
+  const short = (m: number): [number, number][] => [
+    [ORIGIN.lon0, ORIGIN.lat0],
+    [ORIGIN.lon0 + metresEast(m), ORIGIN.lat0],
+  ];
+
+  it('gives a stretch shorter than the spacing one chevron per direction', () => {
+    expect(MIN_CHEVRON_STRETCH_M).toBe(60);
+    expect(chevronsFor(short(100), ['fwd'], ORIGIN).map((c) => [along(c), Math.round(c.bearingDeg)])).toEqual([[50, 90]]);
+    expect(chevronsFor(short(100), ['back'], ORIGIN).map((c) => [along(c), Math.round(c.bearingDeg)])).toEqual([[50, 270]]);
+    expect(chevronsFor(short(141), ['fwd'], ORIGIN).map((c) => [along(c), Math.round(c.bearingDeg)])).toEqual([[70.5, 90]]);
+  });
+
+  it('places the two directions of a short out-and-back apart, not stacked', () => {
+    expect(chevronsFor(short(90), ['fwd', 'back'], ORIGIN).map((c) => [along(c), Math.round(c.bearingDeg)])).toEqual([
+      [30, 90],
+      [60, 270],
+    ]);
+  });
+
+  it('leaves stretches under 60 m without chevrons', () => {
+    expect(chevronsFor(short(59), ['fwd'], ORIGIN)).toEqual([]);
+    expect(chevronsFor(short(40), ['fwd', 'back'], ORIGIN)).toEqual([]);
   });
 });
 
