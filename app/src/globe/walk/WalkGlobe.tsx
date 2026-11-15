@@ -13,9 +13,10 @@ import { loadGrid, type RouteGrid } from '../../lib/grid';
 import type { Plan } from '../../lib/plan';
 import type { SiteData } from '../../types';
 import type { RouteTrack } from '../../walk/track';
-import { createMarsViewer, initCesium } from '../cesiumSetup';
-import { chaseCamera, siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M, type Pose } from '../frame';
+import { createMarsViewer, initCesium, surfaceClassification } from '../cesiumSetup';
+import { attachOfflineSurface, chaseCamera, siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M, type Pose } from '../frame';
 import { GlobeImagery } from '../imageryLayers';
+import type { SiteTerrainMesh } from '../siteTerrain';
 import { GlobeOverlays } from '../overlays';
 import type { CrewMarkerModel } from '../../safety/crewMarkers';
 import { groundHeightAt, headingFromTrack, sanitizePlanForOverlays } from './cameraMath';
@@ -46,7 +47,9 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
   const overlaysRef = useRef<GlobeOverlays | null>(null);
   const imageryRef = useRef<GlobeImagery | null>(null);
   const gridRef = useRef<RouteGrid | null>(null);
-  const heightOffsetRef = useRef<number>(SPIKE_HEIGHT_OFFSETS_M[siteData.id] ?? 0);
+  /** Null offline without a site mesh: the ground is the bare ellipsoid. */
+  const heightOffsetRef = useRef<number | null>(SPIKE_HEIGHT_OFFSETS_M[siteData.id] ?? 0);
+  const meshRef = useRef<SiteTerrainMesh | null>(null);
 
   const poseRef = useRef<{ lon: number; lat: number; alongM: number }>({ lon, lat, alongM });
   poseRef.current = { lon, lat, alongM };
@@ -58,7 +61,7 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
 
     let disposed = false;
     heightOffsetRef.current = SPIKE_HEIGHT_OFFSETS_M[siteData.id] ?? 0;
-    initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN);
+    initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, navigator.onLine);
 
     void (async () => {
       const { viewer, tileset } = await createMarsViewer(container, { interactive: false });
@@ -78,9 +81,23 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
       await imagery.setSite(siteData);
       if (disposed) return;
 
+      // Offline (or Cesium ion unreachable): stand on our site mesh or the ellipsoid, not Cesium Mars heights.
+      if (!tileset) {
+        const surface = await attachOfflineSurface(viewer, siteData);
+        if (disposed) {
+          surface.mesh?.destroy();
+          return;
+        }
+        meshRef.current = surface.mesh;
+        heightOffsetRef.current = surface.heightOffsetM;
+      }
+
       const crewSource = new CustomDataSource('crew');
       void viewer.dataSources.add(crewSource);
-      const overlays = new GlobeOverlays(viewer, { crewHost: crewSource });
+      const overlays = new GlobeOverlays(viewer, {
+        crewHost: crewSource,
+        classification: surfaceClassification(tileset),
+      });
       overlaysRef.current = overlays;
 
       try {
@@ -96,7 +113,7 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
       updateView(viewer, overlays);
 
       // Refine height offset asynchronously in background without blocking
-      if (gridRef.current) {
+      if (tileset && gridRef.current) {
         void siteHeightOffsetM(viewer, tileset, siteData, gridRef.current)
           .then((offset) => {
             if (disposed) return;
@@ -118,6 +135,8 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
       overlaysRef.current = null;
       imageryRef.current?.clear();
       imageryRef.current = null;
+      meshRef.current?.destroy();
+      meshRef.current = null;
       viewerRef.current?.destroy();
       viewerRef.current = null;
     };

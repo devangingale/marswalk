@@ -33,6 +33,10 @@
  *    where CF = eta * [ (G*(W + L)*V)/3.5 - ((W + L)*(G + 6)^2)/W + (25 - V^2) ]
  *    The implementation uses Mars-scaled masses: its first CF term is scaled by GRAVITY_RATIO;
  *    that factor cancels from the second term because both its numerator and denominator are scaled.
+ *    Santee et al. fitted grades from -12 % to +12 % (docs/research/eva-limits.md row 5). Beyond
+ *    -12 % the (G + 6)^2 term grows without bound (1,420 W at a 15 deg descent), so downhill grades
+ *    are held at SANTEE_MIN_GRADE_PERCENT for both Pandolf and the correction. Steeper descents still
+ *    cost more per metre because walking speed falls with slope.
  *
  * 3. Gravity Scaling Simplification:
  *    Earth standard gravity g_earth = 9.80665 m/s^2; Mars surface gravity g_mars = 3.71 m/s^2.
@@ -40,6 +44,14 @@
  *    Simplification: We scale body mass W and suit mass L by r_g to obtain effective Martian
  *    weights (W_mars = W * r_g, L_mars = L * r_g). This preserves the biomechanical load ratio
  *    (L/W) while scaling the weight and gravitational work (m*g*h) down to Mars surface gravity.
+ *
+ * 4. Standing and stop power:
+ *    Pandolf's standing terms treat the suit as a carried load; with a 120 kg suit on an 80 kg body
+ *    (L/W = 1.5) they give about 386 W while standing still, far above rest. Standing and dwell use
+ *    1.5 MET instead, converted with the NASA suit team's equation
+ *    MetRate(BTU/h) = (0.961 + 0.275*RER) * VO2(ml/min/kg) * mass(kg)
+ *    (Ogilvie et al., Mars Spacesuit Mass Requirements, ICES-2026-127, NTRS 20260005410; research row 22),
+ *    with 1 MET = 3.5 ml/min/kg and RER 0.85: about 147 W for 80 kg. It is also the floor for walking.
  */
 
 export const MARS_GRAVITY = 3.71; // m/s^2
@@ -54,6 +66,14 @@ export const DEFAULT_MAX_SLOPE_DEG = 20.0;
 export const DEFAULT_SURFACE_DOSE_MGY_PER_DAY = 0.21;
 export const DEFAULT_SOLAR_EVENT_MGY_PER_DAY = 1.0;
 export const MARS_SOL_HOURS = 24.66; // Martian sol length in hours
+
+/** Lowest grade in the Santee et al. data (percent); steeper descents are held here. */
+export const SANTEE_MIN_GRADE_PERCENT = -12;
+/** Standing in a suit, in metabolic equivalents (1 MET = 3.5 ml O2 per minute per kg). */
+export const STANDING_MET = 1.5;
+const ML_O2_PER_MIN_PER_KG_PER_MET = 3.5;
+const RESPIRATORY_EXCHANGE_RATIO = 0.85;
+const WATTS_PER_BTU_PER_HOUR = 0.29307107;
 
 export interface EnergyModelParams {
   bodyMassKg?: number;
@@ -111,40 +131,43 @@ export function calculateMetabolicPower(
   const totalMass = W_mars + L_mars;
   const loadRatio = L / W; // Invariant under uniform gravity scaling
 
+  // Santee et al. fitted -12 % to +12 %; hold steeper descents at the bound.
+  const grade = Math.max(G, SANTEE_MIN_GRADE_PERCENT);
+  const floor = standingMetabolicPower(W, L);
+
   // Base Pandolf formula (Watts)
   const standingTerm = 1.5 * W_mars;
   const loadCarriageTerm = 2.0 * totalMass * (loadRatio * loadRatio);
-  const dynamicTerm = eta * totalMass * (1.5 * V * V + 0.35 * V * G);
+  const dynamicTerm = eta * totalMass * (1.5 * V * V + 0.35 * V * grade);
 
   const basePower = standingTerm + loadCarriageTerm + dynamicTerm;
 
   // Level or uphill (G >= 0): standard Pandolf
-  if (G >= 0) {
-    return Math.max(standingTerm, basePower);
+  if (grade >= 0) {
+    return Math.max(floor, basePower);
   }
 
   // Downhill (G < 0): apply Santee et al. (2003, USARIEM TN03-3) correction factor
   // CF = eta * [ (G*(W + L)*V)/3.5 - ((W + L)*(G + 6)^2)/W + (25 - V^2) ]
-  const cfTerm1 = (G * totalMass * V) / 3.5;
-  const cfTerm2 = (totalMass * Math.pow(G + 6.0, 2)) / W_mars;
+  const cfTerm1 = (grade * totalMass * V) / 3.5;
+  const cfTerm2 = (totalMass * Math.pow(grade + 6.0, 2)) / W_mars;
   const cfTerm3 = 25.0 - V * V;
   const correctionFactor = eta * (cfTerm1 - cfTerm2 + cfTerm3);
 
   const correctedPower = basePower - correctionFactor;
 
-  // Never drop below resting/standing power
-  return Math.max(standingTerm, correctedPower);
+  // Never drop below standing power
+  return Math.max(floor, correctedPower);
 }
 
 /**
- * Standing metabolic power (Watts) with suit on Mars.
+ * Standing metabolic power (Watts) in a suit: STANDING_MET for the body mass, converted with the
+ * NASA suit team's MetRate equation. The suit mass does not change oxygen use while standing.
  */
-export function standingMetabolicPower(W: number, L: number): number {
-  const W_mars = W * GRAVITY_RATIO;
-  const L_mars = L * GRAVITY_RATIO;
-  const totalMass = W_mars + L_mars;
-  const loadRatio = L / W;
-  return 1.5 * W_mars + 2.0 * totalMass * (loadRatio * loadRatio);
+export function standingMetabolicPower(W: number, _suitMassKg?: number): number {
+  const btuPerHour =
+    (0.961 + 0.275 * RESPIRATORY_EXCHANGE_RATIO) * ML_O2_PER_MIN_PER_KG_PER_MET * STANDING_MET * W;
+  return btuPerHour * WATTS_PER_BTU_PER_HOUR;
 }
 
 /**

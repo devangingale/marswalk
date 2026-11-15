@@ -10,6 +10,7 @@ import {
 } from 'cesium';
 import { GridOrigin, RouteGrid, lonlatToLocalMetres } from '../lib/grid';
 import type { SiteData } from '../types';
+import { attachSiteTerrain, type SiteTerrainMesh } from './siteTerrain';
 
 export interface LonLatHeight {
   lon: number;
@@ -106,6 +107,22 @@ export function chooseHeightOffset(
     );
   }
   return measuredM;
+}
+
+export interface OfflineSurface {
+  mesh: SiteTerrainMesh | null;
+  /** Add to a bundle elevation to reach the mesh; null when the ground is the bare ellipsoid (0 m). */
+  heightOffsetM: number | null;
+}
+
+/**
+ * The ground Walk and Visor stand on without Cesium Mars: our site terrain mesh, lifted onto the
+ * ellipsoid, when the bundle has one, else the ellipsoid itself. Bundle heights plus a Cesium Mars
+ * offset would put the camera kilometres under the ellipsoid at Gale, where the view is black.
+ */
+export async function attachOfflineSurface(viewer: Viewer, site: SiteData): Promise<OfflineSurface> {
+  const mesh = await attachSiteTerrain(viewer, null, site);
+  return { mesh, heightOffsetM: mesh ? mesh.heightOffsetM : null };
 }
 
 /**

@@ -185,7 +185,8 @@ describe('sample plan replay (app/src/fixtures/plan.sample.json)', () => {
     const end = walkStateAt(plan, track, track.durationS);
     expect(end.lon).toBeCloseTo(plan.start.lon, 7);
     expect(end.lat).toBeCloseTo(plan.start.lat, 7);
-    expect(end.used).toEqual({ time_s: 2636, energy_kj: 1158, dose_mgy: 0.006 });
+    // Legs 695 kJ + 20 min at Boxwork ridge standing at 1.5 MET (147.06 W x 1200 s = 176 kJ).
+    expect(end.used).toEqual({ time_s: 2636, energy_kj: 871, dose_mgy: 0.006 });
     expect(end.turnBackPassed).toBe(true);
   });
 

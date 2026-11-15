@@ -1,6 +1,6 @@
 // Written with AI assistance, directed and reviewed by the team.
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import './walk.css';
 import { Plan } from '../lib/plan';
 import { SiteData } from '../types';
@@ -23,13 +23,15 @@ interface WalkViewProps {
   track: RouteTrack;
   playback: Playback;
   onPlan: () => void;
+  /** Told when night at the site starts or ends, so the top bar can follow the night theme. */
+  onNightChange?: (night: boolean) => void;
 }
 
 /**
  * Walk on the shared layout: Safety panel on the left, the chase-camera map in the
  * middle, the next stop on the right, playback in the time bar under the map.
  */
-export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playback, onPlan }) => {
+export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playback, onPlan, onNightChange }) => {
   // Every hook runs before the empty-route return, so the hook order never changes.
   usePlaybackKeys(playback, track);
   const feeds = useSiteFeeds(siteData);
@@ -45,6 +47,11 @@ export const WalkView: React.FC<WalkViewProps> = ({ siteData, plan, track, playb
   const markers = safety?.markers ?? null;
   const crew = useMemo(() => declutterCrewLabels(markers, plan.start), [markers, plan.start]);
   const theme = safety?.night ? 'night' : undefined;
+  const night = !!safety?.night;
+  useEffect(() => {
+    onNightChange?.(night);
+  }, [night, onNightChange]);
+  useEffect(() => () => onNightChange?.(false), [onNightChange]);
 
   if (plan.stops.length === 0) {
     return (

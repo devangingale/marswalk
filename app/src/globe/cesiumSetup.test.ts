@@ -1,7 +1,7 @@
 // Written with AI assistance, directed and reviewed by the team.
 import { afterEach, describe, expect, it } from 'vitest';
-import { Ellipsoid } from 'cesium';
-import { initCesium } from './cesiumSetup';
+import { ClassificationType, Ellipsoid } from 'cesium';
+import { initCesium, surfaceClassification } from './cesiumSetup';
 
 describe('initCesium', () => {
   afterEach(() => {
@@ -21,5 +21,12 @@ describe('initCesium', () => {
   it('returns ion for a non-empty token', () => {
     expect(initCesium('abc')).toBe('ion');
     expect(Ellipsoid.default.radii.x).toBe(3396190);
+  });
+});
+
+describe('surfaceClassification', () => {
+  it('drapes on Cesium Mars online and on the globe and site mesh offline', () => {
+    expect(surfaceClassification({} as never)).toBe(ClassificationType.CESIUM_3D_TILE);
+    expect(surfaceClassification(null)).toBe(ClassificationType.BOTH);
   });
 });

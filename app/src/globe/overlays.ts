@@ -564,8 +564,10 @@ export class GlobeOverlays {
       stats.steepestAt ? distanceAlong(routeLine(plan), stats.steepestAt, frame) : 0,
     );
     const marks: [number, number, MarkerImage, string][] = [];
-    if (stats.highAt && labels.high) marks.push([stats.highAt[0], stats.highAt[1], images.high(), labels.high]);
-    if (stats.lowAt && labels.low) marks.push([stats.lowAt[0], stats.lowAt[1], images.low(), labels.low]);
+    // A flat or zero-length route has its high and low on one vertex: two labels on one spot, so neither.
+    const samePoint = !!stats.highAt && !!stats.lowAt && stats.highAt[0] === stats.lowAt[0] && stats.highAt[1] === stats.lowAt[1];
+    if (!samePoint && stats.highAt && labels.high) marks.push([stats.highAt[0], stats.highAt[1], images.high(), labels.high]);
+    if (!samePoint && stats.lowAt && labels.low) marks.push([stats.lowAt[0], stats.lowAt[1], images.low(), labels.low]);
     if (stats.steepestAt && labels.steepest) {
       marks.push([stats.steepestAt[0], stats.steepestAt[1], images.steepest(), labels.steepest]);
     }
