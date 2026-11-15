@@ -2,13 +2,12 @@
 //
 // Time slider across the Mars Years in the dust history. Scrubbing or playing
 // moves one sol at a time, driving the dust layer frame and the Gale weather
-// readout for that sol. Mounted with the conditions panel through GlobeTimeTools
-// so the globe page gains both from a single point.
+// readout for that sol. Explore mounts it in the time bar under the map; the
+// conditions panel (Now) sits in the right panel.
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { Scene } from 'cesium';
 import { GLOBE_BASE } from '../config';
-import { ConditionsPanel } from '../components/ConditionsPanel';
 import { decodeFrame, DustGrid, dustGrid, DustIndex, DustLayer, DustYear } from './dustLayer';
 import './clock.css';
 
@@ -125,9 +124,7 @@ export const Clock: React.FC<{ scene: Scene; onLs?: (ls: number) => void }> = ({
   };
 
   return (
-    <>
-      <ConditionsPanel />
-      <div className="s48-clock" data-over-map role="group" aria-label="Mars time slider">
+    <div className="s48-clock" role="group" aria-label="Mars time slider">
         <div className="s48-clock__controls">
           <button
             type="button"
@@ -198,12 +195,6 @@ export const Clock: React.FC<{ scene: Scene; onLs?: (ls: number) => void }> = ({
             <dd>{day && day.pressure_pa !== null ? `${Math.round(day.pressure_pa)} Pa` : '–'}</dd>
           </div>
         </dl>
-      </div>
-    </>
+    </div>
   );
 };
-
-/** Single mount point for the globe page: the clock bar and the conditions panel. */
-export const GlobeTimeTools: React.FC<{ scene: Scene; onLs?: (ls: number) => void }> = ({ scene, onLs }) => (
-  <Clock scene={scene} onLs={onLs} />
-);

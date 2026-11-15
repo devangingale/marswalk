@@ -1,6 +1,6 @@
 // Written with AI assistance, directed and reviewed by the team.
 
-import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { SiteData, LayerState, AppMode, RoverOverlayState } from './types';
 import {
   TILES_BASE,
@@ -14,7 +14,6 @@ import { Plan } from './lib/plan';
 import { buildTrack } from './walk/track';
 import { usePlayback } from './walk/usePlayback';
 import { NoticeBanner } from './components/NoticeBanner';
-import { ModeSwitch } from './components/ModeSwitch';
 import { SiteSwitcher } from './components/SiteSwitcher';
 import { LayerPanel } from './components/LayerPanel';
 import { GlobePlanMap } from './globe/GlobePlanMap';
@@ -27,15 +26,64 @@ import type { PlanStop } from './lib/plan';
 import { reachableMask, snapToReachable, snapToPassable } from './lib/snap';
 import { DEFAULT_SURFACE_DOSE_MGY_PER_DAY, DEFAULT_SOLAR_EVENT_MGY_PER_DAY } from './lib/energy';
 import { type Mover } from './globe/plan/MoverPicker';
+import { useGlobeTheme } from './globe/theme/useGlobeTheme';
+import type { ThemeOverride } from './globe/theme/theme';
 import './plan/plan.css';
 import './styles/visualReview.css';
 
+// Explore loads its own Cesium page only when opened.
+const GlobePage = lazy(() => import('./globe/GlobePage').then((m) => ({ default: m.GlobePage })));
+
+/** The four tabs in the top bar, Explore first. Explore and Plan plan from Earth; Walk and Visor are at the site. */
+export type Tab = 'explore' | AppMode;
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'explore', label: 'Explore' },
+  { id: 'plan', label: 'Plan' },
+  { id: 'walk', label: 'Walk' },
+  { id: 'visor', label: 'Visor' },
+];
+const THEMES: { id: ThemeOverride; label: string }[] = [
+  { id: 'auto', label: 'Auto' },
+  { id: 'day', label: 'Day' },
+  { id: 'night', label: 'Night' },
+];
+
+/** ?tab=explore|plan|walk|visor; Plan when absent. main.tsx maps the older ?globe=1 to Explore. */
+export function tabFromSearch(search: string): Tab {
+  const tab = new URLSearchParams(search).get('tab');
+  return TABS.some((t) => t.id === tab) ? (tab as Tab) : 'plan';
+}
+
+function siteFromSearch(search: string): string {
+  const params = new URLSearchParams(search);
+  const site = params.get('siteId') ?? params.get('site');
+  return site && AVAILABLE_SITES.includes(site) ? site : DEFAULT_SITE;
+}
+
+/** Keeps one tab from taking the whole app down; the header stays usable to switch away. */
+class TabBoundary extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch(error: unknown) {
+    console.error('Tab failed to render', error);
+  }
+  render() {
+    return this.state.failed ? (
+      <div role="alert" style={{ padding: 'var(--space-6)', color: 'var(--color-text-muted)' }}>This view stopped with an error. Switch tabs or reload the page.</div>
+    ) : (
+      this.props.children
+    );
+  }
+}
+
 export const App: React.FC = () => {
-  const [currentSiteId, setCurrentSiteId] = useState<string>(DEFAULT_SITE);
+  const [currentSiteId, setCurrentSiteId] = useState<string>(() => siteFromSearch(window.location.search));
   const [siteData, setSiteData] = useState<SiteData>(stubSiteSample as unknown as SiteData);
   const [isSampleFallback, setIsSampleFallback] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [mode, setMode] = useState<AppMode>('plan');
+  const [mode, setMode] = useState<Tab>(() => tabFromSearch(window.location.search));
   const [layerStates, setLayerStates] = useState<Record<string, LayerState>>({});
   const [roverOverlayState, setRoverOverlayState] = useState<RoverOverlayState>({ traverse: true, photos: true });
   const [photosAvailable, setPhotosAvailable] = useState(false);
@@ -185,6 +233,18 @@ export const App: React.FC = () => {
       }
     };
   }, [routeInputKey, routeGrid, routeGridSite, currentSiteId, doseRates]);
+
+  const { override, setOverride, theme } = useGlobeTheme(
+    { lat: siteData.origin.lat0, lon: siteData.origin.lon0 },
+    mode === 'walk' || mode === 'visor' ? 'mars' : 'earth',
+  );
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    params.set('tab', mode);
+    params.delete('globe');
+    window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}${window.location.hash}`);
+  }, [mode]);
 
   const handleSiteChange = (newSiteId: string) => {
     if (newSiteId !== currentSiteId) {
@@ -347,7 +407,13 @@ export const App: React.FC = () => {
       <header className="mock-top">
         <span className="wordmark">Sol-48</span>
 
-        <ModeSwitch currentMode={mode} onModeChange={setMode} />
+        <nav className="s48-seg s48-tabs" aria-label="Tabs">
+          {TABS.map((tab) => (
+            <button key={tab.id} type="button" aria-pressed={mode === tab.id} aria-current={mode === tab.id ? 'page' : undefined} onClick={() => setMode(tab.id)}>
+              {tab.label}
+            </button>
+          ))}
+        </nav>
 
         <div className="s48-site-identity">
           <SiteSwitcher
@@ -381,6 +447,14 @@ export const App: React.FC = () => {
             <span>Layers</span>
           </button>
         )}
+
+        <div className="s48-seg s48-theme" role="group" aria-label="Theme">
+          {THEMES.map((option) => (
+            <button key={option.id} type="button" aria-pressed={override === option.id} onClick={() => setOverride(option.id)}>
+              {option.label}
+            </button>
+          ))}
+        </div>
       </header>
 
       <NoticeBanner
@@ -390,7 +464,13 @@ export const App: React.FC = () => {
       />
 
       <div style={{ flex: 1, minHeight: 0, position: 'relative', overflow: 'hidden' }}>
-        {isLoading ? (
+        {mode === 'explore' ? (
+          <TabBoundary key="explore">
+            <Suspense fallback={<div style={{ padding: 'var(--space-6)', color: 'var(--color-text-muted)' }}>Loading globe...</div>}>
+              <GlobePage siteId={currentSiteId} theme={theme} />
+            </Suspense>
+          </TabBoundary>
+        ) : isLoading ? (
           <div style={{ padding: 'var(--space-6)', color: 'var(--color-text-muted)' }}>
             Loading site...
           </div>
