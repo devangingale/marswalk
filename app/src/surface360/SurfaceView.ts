@@ -6,6 +6,10 @@
 // Entering hides the orbital scene; exiting restores the camera and everything that was shown.
 import {
   BoundingSphere,
+  CallbackProperty,
+  PolygonHierarchy,
+  PostProcessStage,
+  SceneTransforms,
   Cartesian2,
   Cartesian3,
   CameraEventType,
@@ -29,12 +33,14 @@ import {
   VerticalOrigin,
   type Viewer,
 } from 'cesium';
+import { FadingPanorama } from './fadingPanorama';
+import { GroundOverlay, type GroundShape } from './groundOverlay';
 import { formatMetres, geodesicBearingDeg, geodesicM } from './geodesic';
+import { GLIDE_MAX_M, GROUND_DROP_M, MOTION_BLUR_GLSL, aimAt, glideAt, groundHit, turnToward } from './glide';
 import {
   EYE_HEIGHT_M,
   FOV_DEFAULT_DEG,
   clampFov,
-  enuDirection,
   frameHeadingDeg,
   resolveImageUrl,
   resolveUrl,
@@ -102,15 +108,20 @@ export interface SurfaceViewOptions {
   onStepFade?: (on: boolean) => void;
 }
 
-/** Each half of the 0.6 s step transition, ms. */
-export const STEP_HALF_MS = 300;
-/** The lens pushes in to this fraction of the FOV on the way out and settles from the inverse on arrival. */
-const STEP_PUSH = 0.72;
+/**
+ * Longest step of the glide clock per frame. A slow frame (the swap builds the incoming texture and
+ * the fading sphere) then stretches the transition instead of skipping the crossfade.
+ */
+const MAX_GLIDE_STEP_MS = 50;
 
-const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+const prefersReducedMotion = () => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
-/** Sphere radius: well beyond the markers, well inside the far plane. */
-const PANORAMA_RADIUS_M = 1000;
+/**
+ * Sphere radius. From its centre any radius looks the same; a small sphere makes a glide toward a
+ * stop (the camera translated up to GLIDE_MAX_M through it) warp the ground ahead and sweep the
+ * sides past, like moving through the scene.
+ */
+const PANORAMA_RADIUS_M = 50;
 /** The camera orbits the eye point at this distance, so rotating looks around in place. */
 const LOOK_RANGE_M = 0.01;
 const CHEVRON_DISTANCE_M = 5;
@@ -125,35 +136,6 @@ const TINTS: Record<Tint, [string, string]> = {
   hazard: ['#ff7a45', '#eb3b4f'],
   unknown: ['#e6eef3', '#a9bcc8'],
 };
-
-function chevronImage(walkability: Tint): HTMLCanvasElement {
-  const size = 96;
-  const c = document.createElement('canvas');
-  c.width = size;
-  c.height = size;
-  const ctx = c.getContext('2d')!;
-  const [a, b] = TINTS[walkability];
-  const fill = ctx.createLinearGradient(0, 0, 0, size);
-  fill.addColorStop(0, a);
-  fill.addColorStop(1, b);
-  // Two stacked chevrons pointing up the image; the billboard's aligned axis turns them toward the stop.
-  for (const offset of [0, 26]) {
-    ctx.beginPath();
-    ctx.moveTo(size / 2, 10 + offset);
-    ctx.lineTo(size - 12, 40 + offset);
-    ctx.lineTo(size - 24, 50 + offset);
-    ctx.lineTo(size / 2, 30 + offset);
-    ctx.lineTo(24, 50 + offset);
-    ctx.lineTo(12, 40 + offset);
-    ctx.closePath();
-    ctx.fillStyle = fill;
-    ctx.strokeStyle = 'rgba(10, 18, 28, 0.85)';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    ctx.fill();
-  }
-  return c;
-}
 
 interface SavedScene {
   position: Cartesian3;
@@ -201,7 +183,41 @@ export class SurfaceView {
   private panorama: EquirectangularPanorama | null = null;
   private saved: SavedScene | null = null;
   private targetFov = FOV_DEFAULT_DEG;
-  private step: { phase: 'out' | 'in'; start: number; fov: number; to: PanoramaStop; image: HTMLImageElement } | null = null;
+  private glide: {
+    /** Glide clock, ms: advanced by at most MAX_GLIDE_STEP_MS a frame (see animateGlide). */
+    elapsed: number;
+    lastFrame: number;
+    /** The outgoing stop, drawn as a fading sphere over the incoming one for the whole glide. */
+    from: PanoramaStop;
+    travelDeg: number;
+    fromHeadingDeg: number;
+    fromPitchDeg: number;
+    /** Glide distance through each sphere, metres. */
+    distanceM: number;
+  } | null = null;
+  private blurStage: PostProcessStage | null = null;
+  private blur = 0;
+  private readonly blurFocus = new Cartesian2(0.5, 0.5);
+  /** Photo URLs already decoded, so a walk to them starts on the next frame. */
+  private readonly ready = new Set<string>();
+  private inputsBefore = true;
+  /** The current stop's base image (the 2048 px one), kept for the next crossfade. */
+  private baseImage: HTMLImageElement | null = null;
+  private fade: FadingPanorama | null = null;
+  /** Linked stops from the current one, with their true bearings, for aiming the ground cursor. */
+  private links: { stop: PanoramaStop; bearingDeg: number; legM: number }[] = [];
+  private cursor: {
+    east: number;
+    north: number;
+    distanceM: number;
+    bearingDeg: number;
+    target: { stop: PanoramaStop; bearingDeg: number; legM: number } | null;
+  } | null = null;
+  private readonly cursorSource = new CustomDataSource('surface360-cursor');
+  /** Flat walk arrows for the current stop (one primitive per arrow, picked by stop id). */
+  private arrows: GroundOverlay[] = [];
+  private readonly puck: GroundOverlay;
+  private puckKey = '';
   private pending = false;
   private hiLoad = 0;
   private readonly images = new Map<string, Promise<HTMLImageElement>>();
@@ -209,7 +225,6 @@ export class SurfaceView {
   private readonly telemetry: SurfaceTelemetry = { heading: 0, pitch: 0, fov: FOV_DEFAULT_DEG, stop: null, site: null };
   private recon: ReconSite | null = null;
   private lastTelemetryKey = '';
-  private readonly chevronImages = new Map<Tint, HTMLCanvasElement>();
   private readonly meta = new Map<Entity, { stopId: string }>();
 
   constructor(viewer: Viewer, options: SurfaceViewOptions = {}) {
@@ -217,6 +232,10 @@ export class SurfaceView {
     this.options = options;
     this.source.show = false;
     void viewer.dataSources.add(this.source);
+    this.cursorSource.show = false;
+    void viewer.dataSources.add(this.cursorSource);
+    this.puck = new GroundOverlay(viewer.scene);
+    this.buildCursor();
     this.handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
     this.handler.setInputAction((e: ScreenSpaceEventHandler.PositionedEvent) => this.click(e.position), ScreenSpaceEventType.LEFT_CLICK);
     this.handler.setInputAction((e: ScreenSpaceEventHandler.MotionEvent) => this.hover(e.endPosition), ScreenSpaceEventType.MOUSE_MOVE);
@@ -266,24 +285,56 @@ export class SurfaceView {
   }
 
   /**
-   * Steps to the previous or next stop with a 0.6 s push-in-and-settle: the lens narrows and the
-   * screen dims for the first half, the stop swaps, then the lens settles back as it clears.
-   * The next photo is loaded before the step starts.
+   * Walks to a linked stop in one continuous glide: both panoramas are drawn the whole time. The
+   * camera moves forward through the outgoing one (warping it) while it fades out over the incoming
+   * one, which pulls in from behind its centre to rest; a gentle directional blur peaks mid-glide.
+   * Neighbouring photos are pre-loaded, so a click usually starts the glide on the next frame.
+   * With reduced motion requested, a short fade instead.
    */
   async walk(stopId: string): Promise<void> {
     const to = this.manifest && stopById(this.manifest, stopId);
-    if (!this.active || this.recon || this.step || this.pending || !to) return;
+    if (!this.active || this.recon || this.glide || this.pending || !to || !this.stop) return;
     const image = await this.load(to);
-    if (!image || !this.active) return;
-    this.step = { phase: 'out', start: performance.now(), fov: this.targetFov, to, image };
-    this.options.onStepFade?.(true);
-    this.viewer.scene.requestRender();
+    const from = this.stop;
+    const fromImage = this.baseImage;
+    if (!image || !this.active || !from || !fromImage || this.glide) return;
+    if (prefersReducedMotion()) {
+      this.options.onStepFade?.(true);
+      this.arrive(to, image);
+      window.setTimeout(() => this.options.onStepFade?.(false), 150);
+      return;
+    }
+    const travelDeg = geodesicBearingDeg(from, to) ?? this.telemetry.heading;
+    const fromHeadingDeg = this.telemetry.heading;
+    const fromPitchDeg = this.telemetry.pitch;
+    this.glide = {
+      elapsed: 0,
+      lastFrame: performance.now(),
+      from,
+      travelDeg,
+      fromHeadingDeg,
+      fromPitchDeg,
+      distanceM: Math.min(GLIDE_MAX_M, Math.max(4, geodesicM(from, to))),
+    };
+    this.cursor = null;
+    const controller = this.viewer.scene.screenSpaceCameraController;
+    this.inputsBefore = controller.enableInputs;
+    controller.enableInputs = false;
+    // Both spheres from the first frame: the incoming stop underneath, the outgoing one over it.
+    this.endFade();
+    this.fade = new FadingPanorama(this.viewer.scene, fromImage, PANORAMA_RADIUS_M);
+    this.arrive(to, image);
+    this.source.show = false;
+    this.arrows.forEach((a) => (a.show = false));
+    this.drawPuck();
+    this.ensureBlurStage();
+    this.animateGlide();
   }
 
   /** Jumps to any stop (the mini-map). */
   async goTo(stopId: string): Promise<void> {
     const to = this.manifest && stopById(this.manifest, stopId);
-    if (!this.active || this.recon || this.step || this.pending || !to) return;
+    if (!this.active || this.recon || this.glide || this.pending || !to) return;
     const image = await this.load(to);
     if (image && this.active) this.arrive(to, image);
   }
@@ -359,6 +410,25 @@ export class SurfaceView {
   /** The stop's photo, cached; null (with onError) when it cannot be used. */
   private async load(stop: PanoramaStop): Promise<HTMLImageElement | null> {
     const url = resolveImageUrl(stop, this.baseUrl);
+    const request = this.request(stop);
+    if (this.ready.has(url)) return request;
+    this.pending = true;
+    this.options.onStepFade?.(true);
+    try {
+      return await request;
+    } catch (error) {
+      this.images.delete(url);
+      this.options.onError?.(error instanceof Error ? error.message : String(error));
+      return null;
+    } finally {
+      this.pending = false;
+      if (!this.glide) this.options.onStepFade?.(false);
+    }
+  }
+
+  /** Starts (or reuses) the download of a stop's photo; it is checked to be 2:1. */
+  private request(stop: PanoramaStop): Promise<HTMLImageElement> {
+    const url = resolveImageUrl(stop, this.baseUrl);
     let request = this.images.get(url);
     if (!request) {
       request = new Promise<HTMLImageElement>((resolve, reject) => {
@@ -372,18 +442,17 @@ export class SurfaceView {
         image.src = url;
       });
       this.images.set(url, request);
+      void request.then(() => this.ready.add(url), () => this.images.delete(url));
     }
-    this.pending = true;
-    this.options.onStepFade?.(true);
-    try {
-      return await request;
-    } catch (error) {
-      this.images.delete(url);
-      this.options.onError?.(error instanceof Error ? error.message : String(error));
-      return null;
-    } finally {
-      this.pending = false;
-      if (!this.step) this.options.onStepFade?.(false);
+    return request;
+  }
+
+  /** Downloads the photos of the stops linked to this one, quietly, so walking to them is instant. */
+  private prefetchNeighbours(stop: PanoramaStop): void {
+    if (!this.manifest) return;
+    for (const id of [stop.next_id, stop.prev_id]) {
+      const neighbour = stopById(this.manifest, id);
+      if (neighbour) void this.request(neighbour).catch(() => undefined);
     }
   }
 
@@ -397,11 +466,19 @@ export class SurfaceView {
     if (!saved) return;
     this.loadId++;
     this.hiLoad++;
-    if (this.step) this.options.onStepFade?.(false);
-    this.step = null;
+    if (this.glide) this.viewer.scene.screenSpaceCameraController.enableInputs = this.inputsBefore;
+    this.glide = null;
+    this.endFade();
+    this.setBlur(0);
+    this.cursor = null;
+    this.cursorSource.show = false;
     this.removePanorama();
     this.source.entities.removeAll();
     this.meta.clear();
+    this.arrows.forEach((a) => a.clear());
+    this.arrows = [];
+    this.puckKey = '';
+    this.puck.clear();
     this.source.show = false;
     const { scene, camera } = this.viewer;
     camera.lookAtTransform(Matrix4.IDENTITY);
@@ -436,6 +513,9 @@ export class SurfaceView {
     this.handler.destroy();
     this.removers.forEach((remove) => remove());
     void this.viewer.dataSources.remove(this.source, true);
+    void this.viewer.dataSources.remove(this.cursorSource, true);
+    if (this.blurStage) this.viewer.scene.postProcessStages.remove(this.blurStage);
+    this.blurStage = null;
   }
 
   /** keepSurface (orbital recon) leaves the globe, 3D tiles, imagery and sky; only pins and overlays go. */
@@ -452,7 +532,7 @@ export class SurfaceView {
     const dataSources: SavedScene['dataSources'] = [];
     for (let i = 0; i < this.viewer.dataSources.length; i++) {
       const source = this.viewer.dataSources.get(i);
-      if (source !== this.source) dataSources.push([source, source.show]);
+      if (source !== this.source && source !== this.cursorSource) dataSources.push([source, source.show]);
     }
     this.saved = {
       position: Cartesian3.clone(camera.positionWC),
@@ -493,6 +573,7 @@ export class SurfaceView {
     c.enableCollisionDetection = false;
     c.rotateEventTypes = CameraEventType.LEFT_DRAG;
     this.source.show = true;
+    this.cursorSource.show = !keepSurface;
     lockedViewers.add(this.viewer);
   }
 
@@ -503,7 +584,7 @@ export class SurfaceView {
    */
   private hideable(item: unknown): boolean {
     const display = this.viewer.dataSourceDisplay as unknown as { _primitives?: unknown; _groundPrimitives?: unknown };
-    return item !== this.panorama && item !== display._primitives && item !== display._groundPrimitives;
+    return item !== this.panorama && item !== display._primitives && item !== display._groundPrimitives && !this.fade?.owns(item) && !this.puck.owns(item) && !this.arrows.some((a) => a.owns(item));
   }
 
   /** Hides orbital primitives added while the view is open (a site mesh landing late), and restores them on exit. */
@@ -524,6 +605,7 @@ export class SurfaceView {
     this.telemetry.stop = stop;
     this.telemetry.site = null;
     const eye = this.eye(stop);
+    this.baseImage = image;
     this.setPanorama(stop, image);
     this.options.onStop?.(stop);
     this.options.onTexture?.(stop, image.naturalWidth);
@@ -535,7 +617,8 @@ export class SurfaceView {
       new HeadingPitchRange(CesiumMath.toRadians(headingDeg), CesiumMath.toRadians(pitchDeg), LOOK_RANGE_M),
     );
     this.updateRotateRate();
-    this.drawMarkers(stop, eye);
+    this.drawMarkers(stop);
+    this.prefetchNeighbours(stop);
     this.publishTelemetry(true);
     this.viewer.scene.requestRender();
   }
@@ -579,10 +662,10 @@ export class SurfaceView {
     image.src = resolveUrl(stop.image_url_hi, this.baseUrl);
   }
 
-  private setPanorama(stop: PanoramaStop, image: HTMLImageElement, keepOld = false): void {
-    if (!keepOld) this.removePanorama();
-    const transform = Transforms.headingPitchRollToFixedFrame(
-      this.eye(stop),
+  /** The panorama sphere's frame for a stop, centred at `centre` (its eye by default). */
+  private panoramaFrame(stop: PanoramaStop, centre: Cartesian3 = this.eye(stop)): Matrix4 {
+    return Transforms.headingPitchRollToFixedFrame(
+      centre,
       new HeadingPitchRoll(
         CesiumMath.toRadians(frameHeadingDeg(stop.heading)),
         CesiumMath.toRadians(stop.pitch),
@@ -590,6 +673,11 @@ export class SurfaceView {
       ),
       Ellipsoid.MARS,
     );
+  }
+
+  private setPanorama(stop: PanoramaStop, image: HTMLImageElement, keepOld = false): void {
+    if (!keepOld) this.removePanorama();
+    const transform = this.panoramaFrame(stop);
     this.panorama = this.viewer.scene.primitives.add(
       new EquirectangularPanorama({ transform, image, radius: PANORAMA_RADIUS_M } as EquirectangularPanorama.ConstructorOptions),
     ) as EquirectangularPanorama;
@@ -601,17 +689,12 @@ export class SurfaceView {
     this.panorama = null;
   }
 
-  /** A point at a compass bearing and pitch from the eye, metres away. */
-  private around(eye: Cartesian3, headingDeg: number, pitchDeg: number, metres: number, dropM = 0): Cartesian3 {
-    const [e, n, u] = enuDirection(headingDeg, pitchDeg);
-    const enu = Transforms.eastNorthUpToFixedFrame(eye, Ellipsoid.MARS);
-    return Matrix4.multiplyByPoint(enu, new Cartesian3(e * metres, n * metres, u * metres - dropM), new Cartesian3());
-  }
-
-  private drawMarkers(stop: PanoramaStop, eye: Cartesian3): void {
+  private drawMarkers(stop: PanoramaStop): void {
     const manifest = this.manifest;
     this.source.entities.removeAll();
     this.meta.clear();
+    this.arrows.forEach((a) => a.clear());
+    this.arrows = [];
     if (!manifest) return;
 
     // prev_id / next_id only ever link stops on the same rover traverse (build_panoramas.py).
@@ -619,30 +702,41 @@ export class SurfaceView {
       [stopById(manifest, stop.prev_id), '<'],
       [stopById(manifest, stop.next_id), '>'],
     ];
+    this.links = [];
     for (const [target, glyph] of links) {
       if (!target) continue;
       const bearing = geodesicBearingDeg(stop, target);
       if (bearing === null) continue;
-      const ground = this.around(eye, bearing, 0, CHEVRON_DISTANCE_M, EYE_HEIGHT_M);
-      const ahead = this.around(eye, bearing, 0, CHEVRON_DISTANCE_M + 1, EYE_HEIGHT_M);
-      const axis = Cartesian3.normalize(Cartesian3.subtract(ahead, ground, new Cartesian3()), new Cartesian3());
+      this.links.push({ stop: target, bearingDeg: bearing, legM: geodesicM(stop, target) });
       const tint: Tint = target.walkability ?? 'unknown';
-      let image = this.chevronImages.get(tint);
-      if (!image) this.chevronImages.set(tint, (image = chevronImage(tint)));
       const leg = `SOL ${target.sol} · ${formatMetres(geodesicM(stop, target))} · ${Math.round(bearing)}°`;
       const text = glyph === '<' ? `<  PREV ${leg}` : `NEXT ${leg}  >`;
       const walk = target.walkability
         ? `${target.walkability.toUpperCase()}${target.slope_deg !== null ? ` · ${target.slope_deg}° slope` : ''}`
         : 'NO DEM GRID AT STOP';
+      // A flat white arrow on the ground plane, pointing along the true bearing, over a dark edge.
+      const b = (bearing * Math.PI) / 180;
+      const arrow = (scale: number, liftM: number) => {
+        const at = (fwd: number, side: number) =>
+          this.groundPoint(
+            stop,
+            Math.sin(b) * (CHEVRON_DISTANCE_M + fwd * scale) + Math.cos(b) * side * scale,
+            Math.cos(b) * (CHEVRON_DISTANCE_M + fwd * scale) - Math.sin(b) * side * scale,
+            liftM,
+          );
+        return new PolygonHierarchy([at(0.95, 0), at(0.05, 0.6), at(0.35, 0), at(0.05, -0.6)]);
+      };
+      const overlay = new GroundOverlay(this.viewer.scene);
+      overlay.set(
+        [
+          { hierarchy: arrow(1.18, 0.005), colour: Color.fromCssColorString('#0a1828').withAlpha(0.6) },
+          { hierarchy: arrow(1, 0.012), colour: Color.WHITE.withAlpha(0.95) },
+        ],
+        { stopId: target.id },
+      );
+      this.arrows.push(overlay);
       const entity = this.source.entities.add({
-        position: ground,
-        billboard: {
-          image,
-          width: 72,
-          height: 72,
-          alignedAxis: axis,
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
-        },
+        position: this.groundPoint(stop, Math.sin(b) * (CHEVRON_DISTANCE_M + 1.2), Math.cos(b) * (CHEVRON_DISTANCE_M + 1.2), 0.05),
         label: {
           text: `${text}\n${walk}`,
           font: '600 15px Barlow, "Segoe UI", Arial, sans-serif',
@@ -650,8 +744,8 @@ export class SurfaceView {
           outlineColor: Color.fromCssColorString('#0a1828'),
           outlineWidth: 4,
           style: LabelStyle.FILL_AND_OUTLINE,
-          pixelOffset: new Cartesian2(0, 48),
-          verticalOrigin: VerticalOrigin.TOP,
+          pixelOffset: new Cartesian2(0, -10),
+          verticalOrigin: VerticalOrigin.BOTTOM,
           horizontalOrigin: HorizontalOrigin.CENTER,
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
         },
@@ -660,20 +754,122 @@ export class SurfaceView {
     }
   }
 
-  private picked(position: Cartesian2) {
-    const picked = this.viewer.scene.pick(position) as { id?: unknown } | undefined;
-    return picked?.id instanceof Entity ? this.meta.get(picked.id) : undefined;
+  private picked(position: Cartesian2): { stopId: string } | undefined {
+    const id = (this.viewer.scene.pick(position) as { id?: unknown } | undefined)?.id;
+    if (id instanceof Entity) return this.meta.get(id);
+    return id && typeof id === 'object' && typeof (id as { stopId?: unknown }).stopId === 'string' ? (id as { stopId: string }) : undefined;
   }
 
   private click(position: Cartesian2): void {
-    if (!this.active) return;
+    if (!this.active || this.glide) return;
     const hit = this.picked(position);
     if (hit) void this.walk(hit.stopId);
+    else if (this.cursor?.target) void this.walk(this.cursor.target.stop.id);
   }
 
+  /**
+   * Ground cursor: where the pointer's view ray meets the ground plane under the eye. Aimed
+   * within AIM_TOLERANCE_DEG of a linked stop, it points at that stop and a click walks there.
+   */
   private hover(position: Cartesian2): void {
-    if (!this.active) return;
-    this.viewer.scene.canvas.style.cursor = this.picked(position) ? 'pointer' : '';
+    const canvas = this.viewer.scene.canvas;
+    if (!this.active || this.recon || this.glide || !this.stop) {
+      if (this.cursor) {
+        this.cursor = null;
+        this.drawPuck();
+      }
+      return;
+    }
+    const onMarker = !!this.picked(position);
+    const ray = this.viewer.camera.getPickRay(position);
+    let next: typeof this.cursor = null;
+    if (ray && !onMarker) {
+      const enu = Transforms.eastNorthUpToFixedFrame(this.eye(this.stop), Ellipsoid.MARS);
+      const d = Cartesian3.normalize(
+        Matrix4.multiplyByPointAsVector(Matrix4.inverseTransformation(enu, new Matrix4()), ray.direction, new Cartesian3()),
+        new Cartesian3(),
+      );
+      const hit = groundHit([d.x, d.y, d.z]);
+      if (hit) next = { ...hit, target: aimAt(hit.bearingDeg, this.links) };
+    }
+    this.cursor = next;
+    this.drawPuck();
+    canvas.style.cursor = onMarker || next?.target ? 'pointer' : '';
+    this.viewer.scene.requestRender();
+  }
+
+  /** A ground point at east/north metres from the current stop's eye, on the plane under it. */
+  private groundPoint(stop: PanoramaStop, east: number, north: number, liftM = 0.01): Cartesian3 {
+    const enu = Transforms.eastNorthUpToFixedFrame(this.eye(stop), Ellipsoid.MARS);
+    return Matrix4.multiplyByPoint(enu, new Cartesian3(east, north, -GROUND_DROP_M + liftM), new Cartesian3());
+  }
+
+  /** The cursor puck: a white ring lying flat on the ground, with a chevron when aimed at a stop. */
+  private drawPuck(): void {
+    const c = this.cursor;
+    const stop = this.stop;
+    const key = c && stop && !this.glide
+      ? `${stop.id}|${c.east.toFixed(2)}|${c.north.toFixed(2)}|${c.target?.stop.id ?? ''}`
+      : '';
+    if (key === this.puckKey) return;
+    this.puckKey = key;
+    if (!key || !c || !stop) {
+      this.puck.clear();
+      return;
+    }
+    const k = Math.min(2.2, Math.max(0.6, c.distanceM / 6));
+    const ring = (radius: number) =>
+      Array.from({ length: 40 }, (_, i) => {
+        const a = (i / 40) * Math.PI * 2;
+        return this.groundPoint(stop, c.east + Math.sin(a) * radius, c.north + Math.cos(a) * radius);
+      });
+    const shapes: GroundShape[] = [
+      { hierarchy: new PolygonHierarchy(ring(0.42 * k), [new PolygonHierarchy(ring(0.3 * k))]), colour: Color.WHITE.withAlpha(c.target ? 0.95 : 0.55) },
+    ];
+    if (c.target) {
+      const b = (c.target.bearingDeg * Math.PI) / 180;
+      const at = (fwd: number, side: number) =>
+        this.groundPoint(stop, c.east + (Math.sin(b) * fwd + Math.cos(b) * side) * k, c.north + (Math.cos(b) * fwd - Math.sin(b) * side) * k, 0.02);
+      shapes.push({ hierarchy: new PolygonHierarchy([at(0.62, 0), at(0.14, 0.32), at(0.3, 0), at(0.14, -0.32)]), colour: Color.WHITE.withAlpha(0.95) });
+    }
+    this.puck.set(shapes);
+  }
+
+  /** The label over the cursor puck when it is aimed at a stop. */
+  private buildCursor(): void {
+    const visible = () => !!this.cursor && !!this.stop && !this.glide;
+    this.cursorSource.entities.add({
+      position: new CallbackProperty(() => (visible() ? this.groundPoint(this.stop!, this.cursor!.east, this.cursor!.north, 0.05) : undefined), false) as never,
+      label: {
+        text: new CallbackProperty(() => {
+          const t = this.cursor?.target;
+          return t ? `SOL ${t.stop.sol} · ${formatMetres(t.legM)}` : '';
+        }, false),
+        show: new CallbackProperty(() => visible() && !!this.cursor?.target, false),
+        font: '600 14px Barlow, "Segoe UI", Arial, sans-serif',
+        fillColor: Color.WHITE,
+        outlineColor: Color.fromCssColorString('#0a1828'),
+        outlineWidth: 4,
+        style: LabelStyle.FILL_AND_OUTLINE,
+        pixelOffset: new Cartesian2(0, -28),
+        verticalOrigin: VerticalOrigin.BOTTOM,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      },
+    });
+  }
+
+  /** Puts the camera `offsetM` along the travel bearing from the stop's eye, looking at heading/pitch. */
+  private placeCamera(stop: PanoramaStop, travelDeg: number, offsetM: number, headingDeg: number, pitchDeg: number): void {
+    const t = (travelDeg * Math.PI) / 180;
+    const origin = Matrix4.multiplyByPoint(
+      Transforms.eastNorthUpToFixedFrame(this.eye(stop), Ellipsoid.MARS),
+      new Cartesian3(Math.sin(t) * offsetM, Math.cos(t) * offsetM, 0),
+      new Cartesian3(),
+    );
+    this.viewer.camera.lookAtTransform(
+      Transforms.eastNorthUpToFixedFrame(origin, Ellipsoid.MARS),
+      new HeadingPitchRange(CesiumMath.toRadians(headingDeg), CesiumMath.toRadians(pitchDeg), LOOK_RANGE_M),
+    );
   }
 
   private setFrustumFov(deg: number): void {
@@ -689,8 +885,8 @@ export class SurfaceView {
   /** Eases the lens toward the target FOV, for a smooth optical zoom. */
   private easeFov(): void {
     if (!this.active) return;
-    if (this.step) {
-      this.animateStep();
+    if (this.glide) {
+      this.animateGlide();
       return;
     }
     const fov = this.currentFov();
@@ -700,26 +896,75 @@ export class SurfaceView {
     this.viewer.scene.requestRender();
   }
 
-  private animateStep(): void {
-    const step = this.step!;
-    const t = Math.min(1, (performance.now() - step.start) / STEP_HALF_MS);
-    const e = easeInOut(t);
-    if (step.phase === 'out') {
-      this.setFrustumFov(step.fov * (1 - (1 - STEP_PUSH) * e));
-      if (t >= 1) {
-        this.arrive(step.to, step.image);
-        this.step = { ...step, phase: 'in', start: performance.now() };
-        this.options.onStepFade?.(false);
-      }
-    } else {
-      this.setFrustumFov(step.fov * (1 / STEP_PUSH - (1 / STEP_PUSH - 1) * e));
-      if (t >= 1) {
-        this.setFrustumFov(step.fov);
-        this.step = null;
-      }
+  private animateGlide(): void {
+    const g = this.glide!;
+    const now = performance.now();
+    g.elapsed += Math.min(now - g.lastFrame, MAX_GLIDE_STEP_MS);
+    g.lastFrame = now;
+    const m = glideAt(g.elapsed, g.distanceM, g.distanceM);
+    const stop = this.stop!;
+    const heading = turnToward(g.fromHeadingDeg, g.travelDeg, m.eased);
+    const pitch = g.fromPitchDeg * (1 - m.eased);
+    this.placeCamera(stop, g.travelDeg, m.incomingOffsetM, heading, pitch);
+    if (this.fade) {
+      // The outgoing sphere sits so that the camera is m.outgoingOffsetM along the travel bearing
+      // from its centre: as the camera advances, that panorama warps forward around it.
+      const t = (g.travelDeg * Math.PI) / 180;
+      const back = m.incomingOffsetM - m.outgoingOffsetM;
+      const centre = Matrix4.multiplyByPoint(
+        Transforms.eastNorthUpToFixedFrame(this.eye(stop), Ellipsoid.MARS),
+        new Cartesian3(Math.sin(t) * back, Math.cos(t) * back, 0),
+        new Cartesian3(),
+      );
+      this.fade.transform = this.panoramaFrame(g.from, centre);
+      this.fade.alpha = m.outgoingAlpha;
+    }
+    this.setBlur(m.blur, stop, g.travelDeg, m.incomingOffsetM);
+    if (m.done) {
+      this.placeCamera(stop, g.travelDeg, 0, g.travelDeg, 0);
+      this.endFade();
+      this.setBlur(0);
+      this.glide = null;
+      this.source.show = true;
+      this.arrows.forEach((a) => (a.show = true));
+      this.viewer.scene.screenSpaceCameraController.enableInputs = this.inputsBefore;
     }
     this.updateRotateRate();
     this.viewer.scene.requestRender();
+  }
+
+  private ensureBlurStage(): void {
+    if (this.blurStage) return;
+    const stage = new PostProcessStage({
+      fragmentShader: MOTION_BLUR_GLSL,
+      uniforms: { strength: () => this.blur, focus: () => this.blurFocus },
+    });
+    stage.enabled = false;
+    this.viewer.scene.postProcessStages.add(stage);
+    this.blurStage = stage;
+  }
+
+  /** Motion-blur strength, radiating from the screen point straight ahead along the travel bearing. */
+  private setBlur(strength: number, stop?: PanoramaStop, travelDeg?: number, offsetM = 0): void {
+    this.blur = strength;
+    if (this.blurStage) this.blurStage.enabled = strength > 0.002;
+    if (!stop || travelDeg === undefined || strength <= 0.002) return;
+    const t = (travelDeg * Math.PI) / 180;
+    const ahead = Matrix4.multiplyByPoint(
+      Transforms.eastNorthUpToFixedFrame(this.eye(stop), Ellipsoid.MARS),
+      new Cartesian3(Math.sin(t) * (offsetM + 30), Math.cos(t) * (offsetM + 30), 0),
+      new Cartesian3(),
+    );
+    const p = SceneTransforms.worldToWindowCoordinates(this.viewer.scene, ahead);
+    const canvas = this.viewer.scene.canvas;
+    const onScreen = p && p.x >= 0 && p.y >= 0 && p.x <= canvas.clientWidth && p.y <= canvas.clientHeight;
+    this.blurFocus.x = onScreen ? p.x / canvas.clientWidth : 0.5;
+    this.blurFocus.y = onScreen ? 1 - p.y / canvas.clientHeight : 0.5;
+  }
+
+  private endFade(): void {
+    this.fade?.destroy();
+    this.fade = null;
   }
 
   /**

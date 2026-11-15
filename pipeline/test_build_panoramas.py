@@ -152,9 +152,23 @@ def test_full_circle_strip_keeps_the_photo_and_continues_it_beyond_its_edges():
     assert frame.getpixel((1000, 500)) == STRIP
     # Just above the strip the sky carries on in the photo's colour, not a fixed gradient...
     assert _close(_mean(frame, (0, 200, 2000, 230)), STRIP, 40)
-    # ...and it darkens toward the zenith and the nadir.
-    assert sum(_mean(frame, (0, 0, 2000, 10))) < sum(_mean(frame, (0, 200, 2000, 230))) * 0.5
+    # ...and darkens only gently toward the zenith (it stays sky-coloured), more toward the nadir.
+    near, zenith = sum(_mean(frame, (0, 200, 2000, 230))), sum(_mean(frame, (0, 0, 2000, 10)))
+    assert 0.7 * near < zenith < near
     assert sum(_mean(frame, (0, 990, 2000, 1000))) < sum(_mean(frame, (0, 770, 2000, 800)))
+
+
+def test_sky_gaps_fill_from_sky_not_from_the_terrain_beside_them():
+    # Pale grey sky above the horizon, a rust mountain rising into the sky on the left, rust ground
+    # below; a black gap in the sky next to the mountain. The gap must take the sky's colour.
+    sky, rust = (225, 215, 205), (150, 80, 45)
+    strip = Image.new("RGB", (2000, 500), sky)
+    strip.paste(rust, (0, 250, 2000, 500))      # ground below the horizon (row 250 of the strip)
+    strip.paste(rust, (0, 60, 700, 250))         # mountain on the left, up into the sky
+    strip.paste((0, 0, 0), (700, 0, 1100, 200))  # missing data beside it
+    frame = bp.to_equirectangular(strip, 2000, 360, 0)
+    gap = frame.getpixel((900, 330))             # inside the gap (frame row = 250 + 80)
+    assert _close(gap, sky, 30), gap
 
 
 def test_partial_strip_is_centred_and_its_sides_are_filled_from_it():

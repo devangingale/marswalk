@@ -604,6 +604,44 @@ def estimate_horizon(strip: Image.Image) -> tuple[float, str] | None:
     return from_rows(_skyline_rows(tex, valid, 0.3 * float(np.median(tex[lower]))), "texture")
 
 
+# How much the filled sky darkens at the zenith (0.2 = 20 % darker than the sky at the photo's edge).
+ZENITH_DARKENING = 0.2
+# Half-width of the blend between the sky fill and the ground fill around the horizon, as a
+# fraction of the frame height.
+HORIZON_BLEND = 0.03
+
+
+def sky_ground_fill(rgb: np.ndarray, weight: np.ndarray) -> np.ndarray:
+    """
+    Inpaint a levelled frame (horizon on the middle row) with separate fills: gaps in the sky only
+    from pixels that look like sky (low colour saturation, above the horizon), gaps in the ground
+    only from ground, blended across the horizon. One fill from every pixel would pull mountain and
+    rock colours into the sky, leaving the real (pale) sky frames as bright slabs against it.
+    """
+    h = rgb.shape[0]
+    rows = np.arange(h)[:, None]
+    sat = rgb.max(axis=2) - rgb.min(axis=2)
+    valid = weight > 0.5
+    upper, lower = valid & (rows < h // 2), valid & (rows >= h // 2)
+    sky_like = upper
+    if upper.sum() > 50 and lower.sum() > 50:
+        tops = sat[upper]
+        sky_sat, ground_sat = float(np.percentile(tops, 25)), float(np.median(sat[lower]))
+        if ground_sat - sky_sat >= 10:
+            sky_like = upper & (sat < sky_sat + 0.35 * (ground_sat - sky_sat))
+    sky_weight = weight * sky_like
+    ground_weight = weight * ~sky_like
+    if sky_weight.sum() < 20:  # no sky in the photo: let the ground carry on
+        sky_weight = weight
+    if ground_weight.sum() < 20:
+        ground_weight = weight
+    sky = pull_push(rgb, sky_weight)
+    ground = pull_push(rgb, ground_weight)
+    margin = max(1.0, HORIZON_BLEND * h)
+    a = _smoothstep((h / 2 + margin - (rows + 0.5)) / (2 * margin))[..., None]
+    return a * sky + (1 - a) * ground
+
+
 def _smoothstep(t: np.ndarray) -> np.ndarray:
     t = np.clip(t, 0, 1)
     return t * t * (3 - 2 * t)
@@ -648,14 +686,16 @@ def to_equirectangular(strip: Image.Image, width: int, hfov_deg: float, center_p
     fw, fh = min(FILL_WIDTH, width), min(FILL_WIDTH, width) // 2
     weight = np.asarray(valid.resize((fw, fh), Image.Resampling.BOX), dtype=np.float32) / 255
     premult = np.asarray(ImageChops.multiply(photo, Image.merge("RGB", (valid,) * 3)).resize((fw, fh), Image.Resampling.BOX), dtype=np.float32)
-    fill = pull_push(premult / np.maximum(weight, 1e-6)[..., None], weight)
+    rgb = premult / np.maximum(weight, 1e-6)[..., None]
+    fill = sky_ground_fill(rgb, weight)
 
-    # Beyond the strip, ease toward dark space overhead and darker ground underfoot.
+    # Beyond the strip: the sky darkens a little toward the zenith (it stays sky-coloured) and
+    # the ground toward the nadir.
     rows = (np.arange(fh) + 0.5) * height / fh
     above = _smoothstep((top - rows) / max(top, 1))[:, None, None]
     below = _smoothstep((rows - (top + scaled.height)) / max(height - top - scaled.height, 1))[:, None, None]
-    fill = fill * (1 - 0.75 * above) + np.array(SKY_TOP, np.float32) * 0.75 * above
-    fill = fill * (1 - 0.5 * below) + np.array(GROUND_BOTTOM, np.float32) * 0.5 * below
+    fill = fill * (1 - ZENITH_DARKENING * above)
+    fill = fill * (1 - 0.35 * below) + np.array(GROUND_BOTTOM, np.float32) * 0.35 * below
 
     fill_image = Image.fromarray(np.clip(fill, 0, 255).astype(np.uint8), "RGB").resize((width, height), Image.Resampling.BICUBIC)
     # Blend over a band that scales with the image, so a gap's edge fades rather than steps.
