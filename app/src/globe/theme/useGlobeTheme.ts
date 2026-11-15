@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { sunElevationDeg } from '../../lib/sun';
 import {
   globePreferencesFromSearch,
-  globeSearchWithPreferences,
   marsCandidate,
   nextTheme,
   type DeviceScheme,
@@ -15,14 +14,20 @@ function deviceScheme(): DeviceScheme {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-function writePreferences(mode: GlobeMode, override: ThemeOverride): void {
-  const query = globeSearchWithPreferences(window.location.search, { mode, override });
-  window.history.replaceState(null, '', `${window.location.pathname}?${query}${window.location.hash}`);
+function writeOverride(override: ThemeOverride): void {
+  const params = new URLSearchParams(window.location.search);
+  params.set('theme', override);
+  // The open tab carries the mode now: Explore and Plan plan from Earth, Walk and Visor are at the site.
+  params.delete('mode');
+  window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}${window.location.hash}`);
 }
 
-export function useGlobeTheme(site: { lat: number; lon: number } | null) {
+/**
+ * Day or night token set for the whole app. The mode comes from the open tab: Earth for
+ * Explore and Plan (Auto follows the device), Mars for Walk and Visor (Auto follows the sun at the site).
+ */
+export function useGlobeTheme(site: { lat: number; lon: number } | null, mode: GlobeMode) {
   const initial = globePreferencesFromSearch(window.location.search);
-  const [mode, setModeState] = useState<GlobeMode>(initial.mode);
   const [override, setOverrideState] = useState<ThemeOverride>(initial.override);
   const [scheme, setScheme] = useState<DeviceScheme>(deviceScheme);
   const [theme, setTheme] = useState<Theme>(initial.override === 'night' ? 'night' : initial.override === 'day' ? 'day' : scheme === 'dark' ? 'night' : 'day');
@@ -74,14 +79,10 @@ export function useGlobeTheme(site: { lat: number; lon: number } | null) {
     return () => document.documentElement.removeAttribute('data-theme');
   }, [theme]);
 
-  const setMode = (next: GlobeMode) => {
-    setModeState(next);
-    writePreferences(next, override);
-  };
   const setOverride = (next: ThemeOverride) => {
     setOverrideState(next);
-    writePreferences(mode, next);
+    writeOverride(next);
   };
 
-  return { mode, setMode, override, setOverride, theme };
+  return { override, setOverride, theme };
 }

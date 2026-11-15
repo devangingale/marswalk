@@ -102,7 +102,7 @@
   --motion-base: 200ms;
   --motion-ease: cubic-bezier(0.2, 0, 0, 1);
 
-  /* Map styling. Hex literals so MapLibre can read them with getComputedStyle. */
+  /* Map styling tokens read by the Cesium globe overlays. */
   --map-route-core: #8ec1f5;            /* sunset blue, planned route ahead */
   --map-route-casing: #0a1828;          /* dark edge: keeps the line readable on bright dust */
   --map-route-walked: #98a2ac;          /* part already walked in Walk/Visor */
@@ -169,7 +169,7 @@
   --visor-hazard: #eb517c;
   --visor-hazard-text: #14060c;
   --visor-tick: rgba(242, 245, 247, 0.6);
-  /* MapLibre sky uses literal token values; CSS variables cannot be passed in style JSON. */
+  /* Cesium sky and fog colours use literal values for the scene environment. */
   --visor-sky: #706d68;                /* neutral dusk sky */
   --visor-horizon: #938779;            /* muted horizon */
   --visor-fog: #887d70;                /* distance haze over far terrain */

@@ -1,6 +1,6 @@
 // Written with AI assistance, directed and reviewed by the team.
 import { describe, expect, it } from 'vitest';
-import { defaultPanels, readPanels, togglePanel, writePanels } from './regions';
+import { defaultPanels, readPanels, togglePanel, writePanels } from './panelState';
 
 const memory = () => {
   const data = new Map<string, string>();

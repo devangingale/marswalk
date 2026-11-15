@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "cesium": "1.146.0",
-    "maplibre-gl": "6.18.0",
     "pmtiles": "4.5.0",
     "react": "19.0.0",
     "react-dom": "19.0.0"

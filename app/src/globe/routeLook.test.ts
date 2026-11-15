@@ -23,6 +23,7 @@ import {
   sectionForLegs,
   sectionLabel,
   slopeLabels,
+  showSummaryLabels,
   stretchStyles,
   waypointLabel,
 } from './routeLook';
@@ -145,6 +146,12 @@ describe('hover', () => {
     expect(sectionForLegs(sections, [2, 3])?.id).toBe('section-1');
     expect(sectionForLegs(sections, [3, 0])?.id).toBe('section-0');
     expect(sectionForLegs(sections, [9])).toBeNull();
+  });
+});
+
+describe('summary labels', () => {
+  it('hides route summaries below 150 screen pixels', () => {
+    expect([149, 150, 151].map(showSummaryLabels)).toEqual([false, true, true]);
   });
 });
 

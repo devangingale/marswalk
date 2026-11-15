@@ -15,11 +15,6 @@
   --sites-veto-ring: var(--map-impassable);
 }
 
-/* Tabs in the top bar switch the left panel between Layers and Sites. */
-.globe-tabs {
-  display: inline-flex;
-}
-
 .sites-visually-hidden {
   position: absolute;
   width: 1px;
@@ -192,26 +187,9 @@
   font-size: var(--text-sm);
 }
 
-/* --- Site card --- */
-.sites-card-wrap {
-  position: absolute;
-  right: var(--space-4);
-  bottom: var(--space-6);
-  z-index: 5;
-  display: flex;
-  width: 320px;
-  max-width: calc(100% - 2 * var(--space-4));
-  max-height: min(calc(100% - var(--space-16) - var(--space-4)), 400px);
-}
+/* --- Site card: a section of the Explore right panel, no frame of its own. --- */
 .sites-card {
   width: 100%;
-  max-height: 100%;
-  overflow-y: auto;
-  padding: var(--space-4);
-  background: var(--color-surface);
-  border: var(--border-width) solid var(--color-rule);
-  border-radius: var(--radius-2);
-  box-shadow: var(--shadow-popover);
 }
 .sites-card__head {
   display: flex;
@@ -358,8 +336,3 @@
   font-weight: var(--weight-medium);
 }
 
-@media (max-width: 1024px) {
-  .sites-card-wrap {
-    max-height: min(calc(100% - var(--space-16) - var(--space-4)), 320px);
-  }
-}

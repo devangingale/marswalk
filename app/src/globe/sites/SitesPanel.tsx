@@ -1,5 +1,5 @@
 // Written with AI assistance, directed and reviewed by the team.
-// The "Sites" tab: ranked list, filter chips and adjustable weight sliders.
+// Site finder list for the Explore left panel: ranked list, filter chips and weight sliders.
 
 import React from 'react';
 import { GROUP_KEYS, GROUP_LABELS, GroupKey, Site, Weights } from './types';
@@ -19,7 +19,6 @@ interface SitesPanelProps {
   onWeight: (key: GroupKey, value: number) => void;
   onResetWeights: () => void;
   weightsAreDefault: boolean;
-  onHide: () => void;
 }
 
 const KIND_CHIPS: { key: KindChip; label: string }[] = [
@@ -51,20 +50,16 @@ export const SitesPanel: React.FC<SitesPanelProps> = ({
   onWeight,
   onResetWeights,
   weightsAreDefault,
-  onHide,
 }) => {
   const normalized = normalizeWeights(weights);
 
   return (
-    <aside className="panel sites-panel" data-over-map>
+    <div className="sites-panel">
       <div className="panel-sec sites-controls">
         <h3>
           <span>
             Sites <small>{rows.length} shown</small>
           </span>
-          <button type="button" className="s48-btn s48-btn--quiet" onClick={onHide} aria-label="Close site panel">
-            Hide
-          </button>
         </h3>
 
         <div className="sites-chips" role="group" aria-label="Filter by kind">
@@ -153,6 +148,6 @@ export const SitesPanel: React.FC<SitesPanelProps> = ({
         })}
         {rows.length === 0 && <li className="sites-empty">No sites match these filters.</li>}
       </ol>
-    </aside>
+    </div>
   );
 };
