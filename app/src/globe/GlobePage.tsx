@@ -34,6 +34,7 @@ import { sections as routeSections } from '../lib/routeShape';
 import type { LayerState, SiteData } from '../types';
 import { createMarsViewer, initCesium } from './cesiumSetup';
 import { installGroundPan } from './groundPan';
+import { installPlanetView } from './planetView';
 import { buildCornerPlan } from './cornerPlan';
 import { cartesianToLonLat, lonLatToCartesian, siteHeightOffsetM } from './frame';
 import { GlobeGlobalLayers, GlobeLayer, loadGlobeManifest } from './globalLayers';
@@ -455,6 +456,7 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
       // Ground pan stands down while the camera is inside a 360° or orbital-recon surface view,
       // where a drag turns the view instead.
       removers.push(installGroundPan(viewer, () => surfaceActiveRef.current));
+      removers.push(installPlanetView(viewer));
       handler.setInputAction((event: ScreenSpaceEventHandler.PositionedEvent) => {
         if (surfaceActiveRef.current) return;
         const target = overlaysRef.current?.surfaceTarget(viewer.scene.pick(event.position));
