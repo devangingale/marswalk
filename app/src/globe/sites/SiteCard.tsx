@@ -6,6 +6,8 @@ import { Site, Veto } from './types';
 import { formatCount, formatDistanceKm, formatDose, formatDust, formatElevation, formatLatLon } from './format';
 import { SiteScoreRow } from '../annotations/SiteScoreRow';
 import { vetoLines } from './vetoInfo';
+import type { HiriseView } from './hirise';
+import { HiriseFigure } from './HiriseFigure';
 
 interface SiteCardProps {
   site: Site;
@@ -15,6 +17,8 @@ interface SiteCardProps {
   onClose: () => void;
   /** Extra action for the site, such as entering its surface view. */
   action?: React.ReactNode;
+  /** HiRISE image for a ranked site; null when the site is not a HiRISE target. */
+  hirise?: HiriseView | null;
 }
 
 interface EvidenceRow {
@@ -34,7 +38,7 @@ function evidenceRows(site: Site): EvidenceRow[] {
   ];
 }
 
-export const SiteCard: React.FC<SiteCardProps> = ({ site, vetoes, placeName, rank, onClose, action }) => {
+export const SiteCard: React.FC<SiteCardProps> = ({ site, vetoes, placeName, rank, onClose, action, hirise }) => {
   const isCandidate = site.kind === 'new';
   const vetos = site.vetoed ? vetoLines(site.veto_reason, vetoes) : [];
 
@@ -54,6 +58,8 @@ export const SiteCard: React.FC<SiteCardProps> = ({ site, vetoes, placeName, ran
       {action && <div className="sites-card__action">{action}</div>}
 
       <SiteScoreRow score={site.score} rank={rank} groups={site.groups} />
+
+      {hirise && <HiriseFigure view={hirise} />}
 
       <dl className="sites-evidence">
         {evidenceRows(site).map((row) => (

@@ -28,6 +28,8 @@ import { nearestPlaceName, PlaceFeature } from './nearestPlace';
 import { SitesPanel } from './SitesPanel';
 import { isInSurfaceView } from '../../surface360/SurfaceView';
 import { SiteCard } from './SiteCard';
+import { HiriseIndex, hiriseFootprint, hiriseView } from './hirise';
+import { footprintOutline } from './hiriseFootprint';
 import './sites.css';
 
 interface SiteFinderProps {
@@ -66,6 +68,7 @@ export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, register
   const [weights, setWeights] = useState<Weights | null>(null);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [hirise, setHirise] = useState<HiriseIndex | null>(null);
 
   const sourceRef = useRef<CustomDataSource | null>(null);
   const entitiesRef = useRef<Map<string, Entity>>(new Map());
@@ -89,6 +92,12 @@ export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, register
         if (!cancelled) setPlaces(geo.features);
       })
       .catch((error) => console.warn('IAU place names did not load', error));
+    fetch(`${GLOBE_BASE}/hirise/index.json`)
+      .then((r) => (r.ok ? (r.json() as Promise<HiriseIndex>) : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((index) => {
+        if (!cancelled) setHirise(index);
+      })
+      .catch((error) => console.warn('HiRISE image index did not load', error));
     return () => {
       cancelled = true;
     };
@@ -204,6 +213,19 @@ export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, register
     // are built only after the viewer is ready, which is after the data loads).
   }, [viewer, data, ranked, selectedId, filters.showVetoed]);
 
+  // Outline the selected site's HiRISE footprint while it is selected.
+  useEffect(() => {
+    const source = sourceRef.current;
+    const ring = selectedId ? hiriseFootprint(hirise, selectedId) : null;
+    if (!viewer || !source || !ring) return;
+    const outline = source.entities.add(footprintOutline(ring, cssColour('--sites-hirise-footprint')));
+    viewer.scene.requestRender();
+    return () => {
+      source.entities.remove(outline);
+      if (!viewer.isDestroyed()) viewer.scene.requestRender();
+    };
+  }, [viewer, data, hirise, selectedId]);
+
   // Register the hover-line resolver with the globe page's single tooltip.
   useEffect(() => {
     const fn = (entity: Entity | null): string[] | null => {
@@ -280,6 +302,7 @@ export const SiteFinder: React.FC<SiteFinderProps> = ({ viewer, active, register
             rank={selectedRank}
             onClose={() => setSelectedId(null)}
             action={siteAction?.(selected)}
+            hirise={hiriseView(hirise, selected.id, GLOBE_BASE)}
           />,
           cardHost,
         )}
