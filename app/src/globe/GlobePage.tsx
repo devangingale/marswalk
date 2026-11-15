@@ -51,6 +51,7 @@ import { SiteFinder } from './sites/SiteFinder';
 import { GlobeOverlays } from './overlays';
 import { formatElevation, formatLatLon, graticuleStep, screenSpan, sectionLabel } from './routeLook';
 import type { Theme } from './theme/theme';
+import { ViewMenu } from './ViewMenu';
 import { ExploreAnnotations, HeatmapButtons, HotspotList, chooseHeatmap, defaultGlobalOn, type AnnotationsSnapshot } from './annotations';
 
 const CAVE_CREDIT = 'Mars Global Cave Candidate Catalog (MGC³), USGS Astrogeology Science Center';
@@ -730,14 +731,12 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
           {siteData.title}
         </button>
       )}
-      {siteData && (
-        <button type="button" className="s48-btn s48-btn--secondary" aria-pressed={slopesOn} onClick={() => setSlopesOn((v) => !v)}>
-          Slopes
-        </button>
-      )}
-      <button type="button" className="s48-btn s48-btn--secondary" aria-pressed={graticuleOn} onClick={() => setGraticuleOn((v) => !v)}>
-        Lat/lon grid
-      </button>
+      <ViewMenu
+        toggles={[
+          ...(siteData ? [{ label: 'Slopes', checked: slopesOn, onChange: () => setSlopesOn((v) => !v) }] : []),
+          { label: 'Lat/lon grid', checked: graticuleOn, onChange: () => setGraticuleOn((v) => !v) },
+        ]}
+      />
     </>
   );
 
