@@ -134,18 +134,21 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
         offset: new HeadingPitchRange(0, CesiumMath.toRadians(-90), range),
       });
       flyToSite(0);
+      // Site imagery starts now, not after the height sample below: that waits for Cesium Mars's
+      // most detailed tiles at the site, which took about 10 s on a cold load.
+      const imageryTarget = tileset?.imageryLayers ?? viewer.imageryLayers;
+      const imagery = new GlobeImagery(imageryTarget);
+      imageryRef.current = imagery;
+      imagery.apply(layerStates, true);
+      const imageryReady = imagery.setSite(siteData, mode);
+      imageryReady.catch(() => undefined); // awaited (and so reported) below
       if (tileset) {
         try {
           const [ground] = await viewer.scene.sampleHeightMostDetailed([Cartographic.fromDegrees(mid.lon, mid.lat)]);
           if (ground?.height !== undefined && !disposed) flyToSite(ground.height);
         } catch { /* the tileset may not have sampled the site yet */ }
       }
-
-      const imageryTarget = tileset?.imageryLayers ?? viewer.imageryLayers;
-      const imagery = new GlobeImagery(imageryTarget);
-      imageryRef.current = imagery;
-      imagery.apply(layerStates, true);
-      await imagery.setSite(siteData, mode);
+      await imageryReady;
       if (disposed) return;
       setImageryTarget(imageryTarget);
 
