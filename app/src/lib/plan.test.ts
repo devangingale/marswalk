@@ -4,6 +4,8 @@ import { describe, it, expect } from 'vitest';
 import { createGrid, GridHeader, GridOrigin, lonlatToLocalMetres, localMetresToLonLat } from './grid';
 import { buildPlan, computeTurnBack, densifyLine, validatePlan, PlanParams } from './plan';
 import { MARS_R, degToRad } from './grid';
+import { reachableMask, snapToReachable } from './snap';
+import { buildTrack } from '../walk/track';
 
 describe('Plan builder and validation (Contracts Section 7 and 10)', () => {
   const origin: GridOrigin = {
@@ -302,5 +304,136 @@ describe('Plan builder and validation (Contracts Section 7 and 10)', () => {
     fs.writeFileSync(fixturePath, JSON.stringify(samplePlan, null, 2), 'utf-8');
 
     expect(fs.existsSync(fixturePath)).toBe(true);
+  });
+
+  it('buildPlan with one unreachable stop in the middle keeps the other legs and their totals', () => {
+    // 30x30 grid: start at (15, 5), stop 1 at (15, 10), stop 2 at (15, 15) impassable, stop 3 at (15, 20)
+    const width = 30;
+    const height = 30;
+    const elevData = new Uint16Array(width * height);
+    const costData = new Uint8Array(width * height);
+
+    // Make stop 2 cell (15, 15) impassable
+    costData[15 * width + 15] = 255;
+
+    const testOrigin: GridOrigin = { lon0: 137.36, lat0: -4.82, lat_c: -4.82 };
+    const header: GridHeader = {
+      width,
+      height,
+      cell_x_m: 2.0,
+      cell_y_m: 2.0,
+      elev: { file: 'elev.bin', dtype: 'uint16', scale_m: 0.1, offset_m: 0, nodata: 65535 },
+      cost: { file: 'cost.bin', dtype: 'uint8', impassable: 255 },
+      origin: testOrigin,
+    };
+    const grid = createGrid(header, elevData, costData, testOrigin);
+
+    const startPt = grid.rowColToLonLat(15, 5);
+    const s1Pt = grid.rowColToLonLat(15, 10);
+    const s2Pt = grid.rowColToLonLat(15, 15);
+    const s3Pt = grid.rowColToLonLat(15, 20);
+
+    const plan = buildPlan({
+      site: 'gale',
+      grid,
+      params,
+      start: { lon: startPt.lon, lat: startPt.lat, label: 'Rover drop-off' },
+      stops: [
+        { id: 's1', name: 'Stop 1', lon: s1Pt.lon, lat: s1Pt.lat, dwell_s: 300 },
+        { id: 's2', name: 'Stop 2', lon: s2Pt.lon, lat: s2Pt.lat, dwell_s: 300 },
+        { id: 's3', name: 'Stop 3', lon: s3Pt.lon, lat: s3Pt.lat, dwell_s: 300 },
+      ],
+    });
+
+    // Feasible is false because stop 2 was skipped
+    expect(plan.route.feasible).toBe(false);
+    expect(plan.route.warnings).toContain("Can't reach Stop 2. Move or remove it.");
+
+    // Legs must exist: start -> s1, s1 -> s3 (s2 skipped!), s3 -> start
+    expect(plan.route.legs.length).toBe(3);
+    expect(plan.route.legs[0].from).toBe('start');
+    expect(plan.route.legs[0].to).toBe('s1');
+    expect(plan.route.legs[1].from).toBe('s1');
+    expect(plan.route.legs[1].to).toBe('s3');
+    expect(plan.route.legs[2].from).toBe('s3');
+    expect(plan.route.legs[2].to).toBe('start');
+
+    // Totals come from the legs that exist
+    const sumDist = plan.route.legs[0].distance_m + plan.route.legs[1].distance_m + plan.route.legs[2].distance_m;
+    expect(Math.abs(plan.route.totals.distance_m - sumDist)).toBeLessThanOrEqual(1);
+    expect(plan.route.totals.distance_m).toBeGreaterThan(0);
+
+    // Dwell time includes only reached stops s1 and s3 (300 + 300 = 600 s)
+    const legWalkTime = plan.route.legs[0].time_s + plan.route.legs[1].time_s + plan.route.legs[2].time_s;
+    expect(Math.abs(plan.route.totals.time_s - (legWalkTime + 600))).toBeLessThanOrEqual(1);
+
+    // Walk and Visor play such a plan (buildTrack produces non-empty vertices and duration)
+    const track = buildTrack(plan, testOrigin);
+    expect(track.vertices.length).toBeGreaterThan(0);
+    expect(Math.abs(track.durationS - plan.route.totals.time_s)).toBeLessThanOrEqual(1);
+    expect(track.legs.length).toBe(3);
+  });
+
+  it('sample plan on a synthetic grid where its stop cell is impassable gets snapped', () => {
+    // 50x50 grid
+    const width = 50;
+    const height = 50;
+    const costData = new Uint8Array(width * height);
+    const elevData = new Uint16Array(width * height);
+
+    const testOrigin: GridOrigin = { lon0: 137.36, lat0: -4.82, lat_c: -4.82 };
+    const header: GridHeader = {
+      width,
+      height,
+      cell_x_m: 2.0,
+      cell_y_m: 2.0,
+      elev: { file: 'elev.bin', dtype: 'uint16', scale_m: 0.1, offset_m: 0, nodata: 65535 },
+      cost: { file: 'cost.bin', dtype: 'uint8', impassable: 255 },
+      origin: testOrigin,
+    };
+
+    // Place stop at (25, 25), make (25, 25) impassable
+    costData[25 * width + 25] = 255;
+    const grid = createGrid(header, elevData, costData, testOrigin);
+
+    const startPt = grid.rowColToLonLat(10, 10);
+    const stopPt = grid.rowColToLonLat(25, 25);
+
+    // Initial plan with stop on impassable terrain
+    const initialPlan = {
+      start: { lon: startPt.lon, lat: startPt.lat, label: 'Rover drop-off' },
+      stops: [{ id: 's1', name: 'Boxwork ridge', lon: stopPt.lon, lat: stopPt.lat, dwell_s: 600 }],
+    };
+
+    // Without snap, buildPlan skips the stop because it is impassable
+    const unSnappedPlan = buildPlan({
+      site: 'gale',
+      grid,
+      params,
+      start: initialPlan.start,
+      stops: initialPlan.stops,
+    });
+    expect(unSnappedPlan.route.feasible).toBe(false);
+    expect(unSnappedPlan.route.legs.length).toBe(0);
+
+    // With snapToReachable:
+    const mask = reachableMask(grid, initialPlan.start);
+    const snapped = snapToReachable(grid, mask, initialPlan.stops[0], 100);
+    expect(snapped).not.toBeNull();
+    expect(snapped!.movedM).toBeGreaterThan(0);
+    expect(snapped!.movedM).toBeCloseTo(2.0, 4); // snapped to adjacent cell
+
+    const snappedPlan = buildPlan({
+      site: 'gale',
+      grid,
+      params,
+      start: initialPlan.start,
+      stops: [{ ...initialPlan.stops[0], lon: snapped!.lon, lat: snapped!.lat }],
+    });
+
+    expect(snappedPlan.route.feasible).toBe(true);
+    expect(snappedPlan.route.warnings).toEqual([]);
+    expect(snappedPlan.route.legs.length).toBe(2);
+    expect(snappedPlan.route.totals.distance_m).toBeGreaterThan(0);
   });
 });
