@@ -862,8 +862,10 @@ export const GlobePage: React.FC<GlobePageProps> = ({ siteId, theme }) => {
         right={right}
         rightLabel="Details"
         main={main}
-        // The map controls would sit over the 360° view's HUD; they return on exit.
+        // The map controls, side panels and their handles would sit over the 360° view's HUD;
+        // they return on exit.
         controls={surface.active ? undefined : controls}
+        bare={surface.active}
         time={dustScene ? <Clock scene={dustScene} onLs={setLs} /> : undefined}
       />
     </div>
