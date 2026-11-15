@@ -36,6 +36,7 @@ Not every dataset below ends up in the final product; trim this list to what is 
 | naif_spice | `data/raw/naif_spice` | NASA PDS / ESA — public domain (US Government work / ESA open access) |
 | rems | `data/raw/rems` | Public domain / NASA content; credit NASA/JPL-Caltech/CAB(CSIC-INTA) |
 | mcs_ddr_v62 | `data/raw/mcs_ddr_v62` | NASA PDS MRO-M-MCS-5-DDR-V6.2; NASA government data, public domain; no separate product-specific licence text stated |
+| mocaas | `data/raw/mocaas` | Not stated by MOCAAS or PSUP; credit Carter et al. (2023), the MOCAAS team (IAS) and PSUP in full; removed on request |
 
 ## Site-finder criteria
 
@@ -55,6 +56,7 @@ Also on disk, not in the manifest: Gale 1 m DEM mosaic and HiRISE colour mosaic 
 - Global water-ice consistency: [SWIM4MIM global products](https://swim.psi.edu/SWIM4MIMProducts.php), cached in `data/raw/swim_ice/`. Morgan & Putzig et al. (2025), Planetary Science Journal; the product page does not state a licence, so retain source credit and check with PSI before redistribution.
 - Mars Global Cave Candidate Catalog: [USGS Astrogeology catalog page](https://astrogeology.usgs.gov/search/map/mars_global_cave_candidate_catalog_v1_cushing) and [PDS Imaging Node archive bundle](https://doi.org/10.17189/1519222), cached in `data/raw/mgc3_caves/`. Cushing (2015); public domain per the data.gov listing, though the USGS page does not state a licence.
 - MRO Mars Climate Sounder surface temperature: [PDS Atmospheres Node MCS archive](https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/MARS/mcs.html), subset of DDR V6.2 profiles cached in `data/raw/mcs_ddr_v62/`. McCleese and Schofield, *MRO Mars Climate Sounder Level 5 DDR V6.2*, NASA PDS, doi:10.17189/6khc-s052. The archive page does not state a separate product licence; credit the PDS archive and MCS team.
+- Hydrated minerals (whole-planet layers `hydrated_clays`, `hydrated_all`, `hydrated_sulfates`, `hydrated_carbonates`): MOCAAS, the Mars Orbital Catalog of Aqueous Alteration Signatures, November 2023 release, built from ESA Mars Express OMEGA and NASA MRO CRISM data. Read from the PSUP OGC WFS [`https://ows.psup.univ-lyon1.fr/mocaas`](https://ows.psup.univ-lyon1.fr/mocaas?SERVICE=WFS&REQUEST=GetCapabilities) (10 feature types, OMEGA and CRISM x 5 spectral-mineral classes) by `pipeline/globe_hydrated.py`, cached in `data/raw/mocaas/`. The project page's zip download (https://www.ias.u-psud.fr/moccas/) returned 410 Gone. Cite Carter, J. et al. (2023), A Mars orbital catalog of aqueous alteration signatures (MOCAAS), Icarus 389, 115164, doi:10.1016/j.icarus.2022.115164. No licence is stated; credit Carter et al. (2023), the MOCAAS team (IAS, Universite Paris-Saclay) and PSUP in full, and remove on request.
 
 ## Scientific models and literature
 
