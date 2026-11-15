@@ -37,6 +37,7 @@
 }
 
 /* Cesium credit adjustments: keep visible and compact per attribution rules */
+.s48-walk-map { position: absolute; inset: 0; }
 .s48-walk-globe .cesium-viewer-bottom,
 .s48-visor-globe .cesium-viewer-bottom {
   display: block;

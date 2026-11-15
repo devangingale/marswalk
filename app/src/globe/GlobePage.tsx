@@ -42,6 +42,9 @@ import { cartesianToLonLat, lonLatToCartesian, siteHeightOffsetM } from './frame
 import { GlobeGlobalLayers, GlobeLayer, loadGlobeManifest } from './globalLayers';
 import { GlobeGraticule, cullLabels, graticuleLines, type Box, type GraticuleLine, type ViewBounds } from './graticule';
 import { GlobeImagery } from './imageryLayers';
+import { MapLoadStatus } from './MapLoadStatus';
+import { initialMapLoadState, markFirstFrame, setStreaming, updateLoadSource, type MapLoadState } from './loadProgress';
+import { markMapLoadMilestone } from './loadMilestones';
 import { attachSiteTerrain, measureEdgeSeam, type SiteTerrainMesh } from './siteTerrain';
 import { Clock } from './Clock';
 import { ConditionsPanel } from '../components/ConditionsPanel';
@@ -237,6 +240,9 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
   const viewRef = useRef<HTMLDivElement>(null);
 
   const [siteData, setSiteData] = useState<SiteData | null>(null);
+  const [loadState, setLoadState] = useState<MapLoadState>(initialMapLoadState);
+  const initialReadyRef = useRef({ terrain: false, imagery: false, firstFrame: false });
+  const reportLoad = (source: 'terrain' | 'imagery' | 'bundles' | 'layers', status: 'pending' | 'loading' | 'ready' | 'failed') => setLoadState((current) => updateLoadSource(current, source, status));
   const [siteFailed, setSiteFailed] = useState(false);
   const [layerStates, setLayerStates] = useState<Record<string, LayerState>>({});
   const [globalLayers, setGlobalLayers] = useState<GlobeLayer[]>([]);
@@ -384,6 +390,18 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
     let disposed = false;
     let handler: ScreenSpaceEventHandler | null = null;
     const removers: (() => void)[] = [];
+    let removeTileLoad: (() => void) | null = null;
+    let removeLoadProgress: (() => void) | null = null;
+    let removeGlobeProgress: (() => void) | null = null;
+    let removeFirstRender: (() => void) | null = null;
+    const failSafe = window.setTimeout(() => setLoadState((current) => {
+      let next = current;
+      for (const source of ['terrain', 'imagery', 'bundles', 'layers'] as const) if (next.sources[source].status === 'pending' || next.sources[source].status === 'loading') next = updateLoadSource(next, source, 'failed');
+      return markFirstFrame(next);
+    }), 30000);
+    initialReadyRef.current = { terrain: false, imagery: false, firstFrame: false };
+    setLoadState(initialMapLoadState());
+    reportLoad('terrain', 'loading'); reportLoad('imagery', 'loading'); reportLoad('bundles', 'loading'); reportLoad('layers', 'loading');
     cesiumModeRef.current = initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, surfaceMode === 'online');
 
     void (async () => {
@@ -396,6 +414,47 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
       cesiumModeRef.current = created.mode;
       tilesetRef.current = tileset;
       viewerRef.current = viewer;
+      if (viewer.scene.globe) {
+        const globeProgress = (remaining: number) => setLoadState((current) => setStreaming(current, remaining > 0));
+        viewer.scene.globe.tileLoadProgressEvent.addEventListener(globeProgress);
+        removeGlobeProgress = () => viewer.scene.globe.tileLoadProgressEvent.removeEventListener(globeProgress);
+      }
+      if (tileset) {
+        let terrainActivity = false;
+        const progress = (requests: number, processing: number) => {
+          if (requests + processing > 0) terrainActivity = true;
+          setLoadState((current) => setStreaming(current, requests + processing > 0));
+          if (terrainActivity && requests + processing === 0 && !initialReadyRef.current.terrain) {
+            initialReadyRef.current.terrain = true;
+            markMapLoadMilestone('ground');
+            reportLoad('terrain', 'ready');
+            viewer.scene.requestRender();
+          }
+        };
+        const tileLoad = () => {
+          initialReadyRef.current.terrain = true;
+          markMapLoadMilestone('ground');
+          reportLoad('terrain', 'ready');
+          viewer.scene.requestRender();
+        };
+        tileset.loadProgress.addEventListener(progress); tileset.tileLoad.addEventListener(tileLoad);
+        removeLoadProgress = () => tileset.loadProgress.removeEventListener(progress);
+        removeTileLoad = () => tileset.tileLoad.removeEventListener(tileLoad);
+      } else {
+        initialReadyRef.current.terrain = true;
+        reportLoad('terrain', created.failure ? 'failed' : 'ready');
+      }
+      const firstRender = () => {
+        if (initialReadyRef.current.terrain && initialReadyRef.current.imagery && !initialReadyRef.current.firstFrame) {
+          initialReadyRef.current.firstFrame = true;
+          markMapLoadMilestone('ground');
+          markMapLoadMilestone('frame');
+          setLoadState((current) => markFirstFrame(current));
+          removeFirstRender?.(); removeFirstRender = null;
+        }
+      };
+      viewer.scene.postRender.addEventListener(firstRender);
+      removeFirstRender = () => viewer.scene.postRender.removeEventListener(firstRender);
       viewer.camera.setView({ destination: lonLatToCartesian(PLANET_VIEW.lon, PLANET_VIEW.lat, PLANET_VIEW.heightM) });
       setFailure(created.failure);
       if (!tileset && !created.failure) setNotice('Offline, local tiles');
@@ -444,7 +503,12 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
 
       overlaysRef.current = new GlobeOverlays(viewer, { onSectionHover: setHoveredSection });
       const imageryTarget = tileset?.imageryLayers ?? viewer.imageryLayers;
-      siteImageryRef.current = new GlobeImagery(imageryTarget);
+      siteImageryRef.current = new GlobeImagery(imageryTarget, () => {
+        if (initialReadyRef.current.imagery) return;
+        initialReadyRef.current.imagery = true;
+        reportLoad('imagery', 'ready');
+        viewer.scene.requestRender();
+      });
       setDustScene(viewer.scene);
       // Last, so the site load (keyed on the viewer) finds the imagery and overlays ready.
       setViewer(viewer);
@@ -459,8 +523,9 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
           globalRef.current.apply(states);
           setGlobalStates(states);
           setGlobalLayers(manifest.layers);
+          reportLoad('layers', 'ready');
         })
-        .catch((error) => console.warn('Globe layer manifest did not load', error));
+        .catch((error) => { reportLoad('layers', 'failed'); console.warn('Globe layer manifest did not load', error); });
 
       loadTemperatureManifest(GLOBE_BASE)
         .then((manifest) => {
@@ -537,10 +602,16 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
           ]);
         });
       }, ScreenSpaceEventType.MOUSE_MOVE);
-    })();
+    })().catch(() => setLoadState((current) => {
+      let next = current;
+      for (const source of ['terrain', 'imagery', 'bundles', 'layers'] as const) next = updateLoadSource(next, source, 'failed');
+      return markFirstFrame(next);
+    }));
 
     return () => {
       disposed = true;
+      window.clearTimeout(failSafe);
+      removeTileLoad?.(); removeLoadProgress?.(); removeGlobeProgress?.(); removeFirstRender?.();
       handler?.destroy();
       removers.forEach((remove) => remove());
       overlaysRef.current?.clear();
@@ -573,10 +644,16 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
     siteTerrainRef.current = null;
     gridRef.current = null;
     setGrid(null);
-    fetch(initial.sample ? `${siteBaseUrl}/site.json` : getSiteJsonUrl(siteId))
+    fetch(initial.sample ? `${siteBaseUrl}/site.json` : getSiteJsonUrl(siteId), { signal: AbortSignal.timeout(15000) })
       .then((r) => (r.ok ? (r.json() as Promise<SiteData>) : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then(async (site) => {
         if (cancelled) return;
+        const focusSiteOnOpen = first && !initial.view && (mode === 'offline' || initial.flyToSite);
+        if (focusSiteOnOpen) {
+          const [west, south, east, north] = site.bounds_lonlat;
+          const approximateGround = mode === 'offline' ? 0 : (site.terrain.min_m + site.terrain.max_m) / 2;
+          void flyTo(viewer, (west + east) / 2, (south + north) / 2, Math.max(site.size_m.width, site.size_m.height) * 2, -60, approximateGround);
+        }
         const states = Object.fromEntries(
           site.layers.map((l) => [
             l.id,
@@ -590,8 +667,16 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
         setLayerStates(states);
         siteImageryRef.current?.apply(states);
         await siteImageryRef.current?.setSite(site, mode);
+        // At the whole-planet opening extent the site raster has no visible tile to request;
+        // the planet's first rendered imagery is the useful readiness point for that view.
+        if (first && !initial.view && !initial.flyToSite && mode === 'ion') {
+          initialReadyRef.current.imagery = true;
+          reportLoad('imagery', 'ready');
+        }
+        viewer.scene.requestRender();
         const loaded = await loadGrid(siteBaseUrl, site.origin);
         if (cancelled) return;
+        reportLoad('bundles', 'ready');
         gridRef.current = loaded;
         setGrid(loaded);
         const offset = await siteHeightOffsetM(viewer, tileset, site, loaded);
@@ -607,13 +692,19 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
           return;
         }
         siteTerrainRef.current = mesh;
-        if (!first || (!initial.view && (mode === 'offline' || initial.flyToSite))) {
+        if (!focusSiteOnOpen && (!first || (!initial.view && (mode === 'offline' || initial.flyToSite)))) {
           const [west, south, east, north] = site.bounds_lonlat;
           void flyTo(viewer, (west + east) / 2, (south + north) / 2, Math.max(site.size_m.width, site.size_m.height) * 2, -60, mode === 'offline' ? 0 : undefined);
         }
       })
       .catch((error) => {
         if (cancelled) return;
+        reportLoad('bundles', 'failed');
+        if (!initialReadyRef.current.imagery) {
+          initialReadyRef.current.imagery = true;
+          reportLoad('imagery', 'failed');
+        }
+        reportLoad('imagery', 'failed');
         console.warn('Site did not load', error);
         siteImageryRef.current?.clear();
         overlaysRef.current?.clear();
@@ -858,6 +949,7 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
       }}
     >
       <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
+      <MapLoadStatus state={loadState} />
       {/* Map labels step aside in the 360° view; display: contents keeps their layout and state. */}
       <div style={{ display: surface.active ? 'none' : 'contents' }}>
       {edges.map((label) => (

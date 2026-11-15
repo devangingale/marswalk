@@ -22,6 +22,9 @@ import { installGroundPan } from './groundPan';
 import { installPlanetView } from './planetView';
 import { cartesianToLonLat, lonLatToCartesian, metresPerPixel as measureMetresPerPixel, siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M } from './frame';
 import { GlobeImagery } from './imageryLayers';
+import { MapLoadStatus } from './MapLoadStatus';
+import { initialMapLoadState, markFirstFrame, setStreaming, updateLoadSource, type MapLoadState, type LoadSource } from './loadProgress';
+import { markMapLoadMilestone } from './loadMilestones';
 import { isInsideSite } from './planPick';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import './plan/plan.css';
@@ -96,6 +99,8 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
   const cavesRef = useRef<CustomDataSource | null>(null);
   const [scale, setScale] = useState(1);
   const [hover, setHover] = useState<HoverState | null>(null);
+  const [loadState, setLoadState] = useState<MapLoadState>(initialMapLoadState);
+  const reportLoad = (source: LoadSource, status: 'pending' | 'loading' | 'ready' | 'failed', progress?: number) => setLoadState((current) => updateLoadSource(current, source, status, progress));
 
   planRef.current = plan;
   callbacksRef.current = { onMapPoint, onStartChange, onStopChange, onRoutePointHover };
@@ -109,11 +114,60 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
     let removePan: (() => void) | null = null;
     let removePlanetView: (() => void) | null = null;
     let resizeObserver: ResizeObserver | null = null;
+    let removeProgress: (() => void) | null = null;
+    let removeTileLoad: (() => void) | null = null;
+    let removeGlobeProgress: (() => void) | null = null;
+    let removePostRender: (() => void) | null = null;
+    const failSafe = window.setTimeout(() => setLoadState((current) => {
+      let next = current;
+      for (const source of ['terrain', 'imagery', 'bundles', 'layers'] as const) if (next.sources[source].status === 'pending' || next.sources[source].status === 'loading') next = updateLoadSource(next, source, 'failed');
+      return markFirstFrame(next);
+    }), 30000);
+    let terrainReady = false;
+    let terrainActivity = false;
+    let imageryHasRendered = false;
+    setLoadState(initialMapLoadState());
+    reportLoad('terrain', 'loading'); reportLoad('imagery', 'loading'); reportLoad('bundles', 'loading'); reportLoad('layers', 'loading');
     const startup = async () => {
       initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, surfaceMode === 'online');
       const { viewer, tileset, mode, failure: loadFailure } = await createMarsViewer(container, { interactive: true });
       if (disposed) { viewer.destroy(); return; }
       viewerRef.current = viewer;
+      if (viewer.scene.globe) {
+        const globeProgress = (remaining: number) => setLoadState((current) => setStreaming(current, remaining > 0));
+        viewer.scene.globe.tileLoadProgressEvent.addEventListener(globeProgress);
+        removeGlobeProgress = () => viewer.scene.globe.tileLoadProgressEvent.removeEventListener(globeProgress);
+      }
+      if (tileset) {
+        const progress = (requests: number, processing: number) => {
+          if (requests + processing > 0) terrainActivity = true;
+          setLoadState((current) => setStreaming(current, requests + processing > 0));
+          if (terrainActivity && requests + processing === 0 && !terrainReady) {
+            terrainReady = true;
+            markMapLoadMilestone('ground');
+            reportLoad('terrain', 'ready');
+            viewer.scene.requestRender();
+          }
+        };
+        const tileLoad = () => { terrainReady = true; markMapLoadMilestone('ground'); reportLoad('terrain', 'ready'); viewer.scene.requestRender(); };
+        tileset.loadProgress.addEventListener(progress);
+        tileset.tileLoad.addEventListener(tileLoad);
+        removeProgress = () => tileset.loadProgress.removeEventListener(progress);
+        removeTileLoad = () => tileset.tileLoad.removeEventListener(tileLoad);
+      } else {
+        terrainReady = true;
+        reportLoad('terrain', loadFailure ? 'failed' : 'ready');
+      }
+      const postRender = () => {
+        if (terrainReady && imageryHasRendered) {
+          markMapLoadMilestone('ground');
+          markMapLoadMilestone('frame');
+          setLoadState((current) => markFirstFrame(current));
+          removePostRender?.(); removePostRender = null;
+        }
+      };
+      viewer.scene.postRender.addEventListener(postRender);
+      removePostRender = () => viewer.scene.postRender.removeEventListener(postRender);
       const ground = groundGlobe(viewer.scene);
       if (ground) ground.depthTestAgainstTerrain = true;
       viewer.scene.screenSpaceCameraController.enableCollisionDetection = false;
@@ -137,11 +191,23 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
       // Site imagery starts now, not after the height sample below: that waits for Cesium Mars's
       // most detailed tiles at the site, which took about 10 s on a cold load.
       const imageryTarget = tileset?.imageryLayers ?? viewer.imageryLayers;
-      const imagery = new GlobeImagery(imageryTarget);
+      const imagery = new GlobeImagery(imageryTarget, () => {
+        if (imageryHasRendered) return;
+        imageryHasRendered = true;
+        reportLoad('imagery', 'ready');
+        viewer.scene.requestRender();
+      });
       imageryRef.current = imagery;
       imagery.apply(layerStates, true);
       const imageryReady = imagery.setSite(siteData, mode);
-      imageryReady.catch(() => undefined); // awaited (and so reported) below
+      imageryReady.then(() => {
+        reportLoad('layers', 'ready');
+        viewer.scene.requestRender();
+      }).catch(() => {
+        imageryHasRendered = true;
+        reportLoad('imagery', 'failed'); reportLoad('layers', 'failed');
+        viewer.scene.requestRender();
+      });
       if (tileset) {
         try {
           const [ground] = await viewer.scene.sampleHeightMostDetailed([Cartographic.fromDegrees(mid.lon, mid.lat)]);
@@ -166,17 +232,18 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
       overlays.setGrid(gridRef.current);
       overlays.setPlan(planRef.current, siteData.origin);
       void Promise.all([
-        fetch(resolveSiteAssetUrl(siteData.id, `/data/${siteData.id}/traverse.geojson`))
-          .then((response) => response.ok ? response.json() as Promise<GeoJSON.FeatureCollection<GeoJSON.LineString>> : null)
+        fetch(resolveSiteAssetUrl(siteData.id, `/data/${siteData.id}/traverse.geojson`), { signal: AbortSignal.timeout(15000) })
+          .then((response) => { if (!response.ok) throw new Error('Traverse data unavailable'); return response.json() as Promise<GeoJSON.FeatureCollection<GeoJSON.LineString>>; })
           .then((collection) => collection?.features.find((feature) => feature.geometry.type === 'LineString')?.geometry ?? null),
-        fetch(resolveSiteAssetUrl(siteData.id, siteData.photos_url ?? `/data/${siteData.id}/photos.json`))
-          .then((response) => response.ok && response.headers.get('content-type')?.includes('json') ? response.json() as Promise<{ lon: number; lat: number; sol: number }[]> : []),
+        fetch(resolveSiteAssetUrl(siteData.id, siteData.photos_url ?? `/data/${siteData.id}/photos.json`), { signal: AbortSignal.timeout(15000) })
+          .then((response) => { if (!response.ok || !response.headers.get('content-type')?.includes('json')) throw new Error('Photo data unavailable'); return response.json() as Promise<{ lon: number; lat: number; sol: number }[]>; }),
       ]).then(([traverse, photos]) => {
+        reportLoad('bundles', 'ready');
         if (disposed) return;
         const data = { traverse, sites: photoSites(photos) };
         roverDataRef.current = data;
         overlays.setRover(data.traverse, data.sites, roverStateRef.current);
-      }).catch(() => undefined);
+      }).catch(() => reportLoad('bundles', 'failed'));
 
       if (disposed) return;
       handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
@@ -291,9 +358,18 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
       resizeObserver.observe(container);
       updateScale();
     };
-    void startup().catch(() => setOffline(true));
+    void startup().catch(() => {
+      setOffline(true);
+      setLoadState((current) => {
+        let next = current;
+        for (const source of ['terrain', 'imagery', 'bundles', 'layers'] as const) next = updateLoadSource(next, source, 'failed');
+        return markFirstFrame(next);
+      });
+    });
     return () => {
       disposed = true;
+      window.clearTimeout(failSafe);
+      removeProgress?.(); removeTileLoad?.(); removeGlobeProgress?.(); removePostRender?.();
       handler?.destroy();
       removePan?.();
       removePlanetView?.();
@@ -399,6 +475,7 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
   // Leaving the map clears the hover dot and tag; a drag in progress keeps them.
   return <div className="globe-plan-map" onPointerLeave={() => { setHover(null); if (!dragRef.current) onRoutePointHover?.(null); }}>
     <div ref={containerRef} className="globe-plan-canvas" />
+    <MapLoadStatus state={loadState} />
     {offline && !failure && <div className="globe-plan-offline">Offline · local terrain</div>}
     <SurfaceNotice failure={failure} />
     {hover && <div className="globe-plan-hover" style={{ left: hover.x, top: hover.y }}>{hover.lines.join('\n')}</div>}

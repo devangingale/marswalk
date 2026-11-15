@@ -27,6 +27,7 @@ export class PMTilesImageryProvider extends UrlTemplateImageryProvider {
     maximumLevel: number,
     mimeType: string,
     credit: string | undefined,
+    onTileReady?: () => void,
   ) {
     super({
       url: '',
@@ -38,14 +39,17 @@ export class PMTilesImageryProvider extends UrlTemplateImageryProvider {
     });
     this.archive = archive;
     this.mimeType = mimeType;
+    this.onTileReady = onTileReady;
   }
 
-  static async fromUrl(url: string, credit?: string): Promise<PMTilesImageryProvider> {
+  private readonly onTileReady?: () => void;
+
+  static async fromUrl(url: string, credit?: string, onTileReady?: () => void): Promise<PMTilesImageryProvider> {
     const archive = new PMTiles(url);
     const header = await archive.getHeader();
     const bounds = Rectangle.fromDegrees(header.minLon, header.minLat, header.maxLon, header.maxLat);
     const mimeType = MIME_TYPES[header.tileType] ?? 'image/png';
-    return new PMTilesImageryProvider(archive, bounds, header.minZoom, header.maxZoom, mimeType, credit);
+    return new PMTilesImageryProvider(archive, bounds, header.minZoom, header.maxZoom, mimeType, credit, onTileReady);
   }
 
   override async requestImage(x: number, y: number, level: number): Promise<ImageBitmap | HTMLCanvasElement> {
@@ -57,10 +61,12 @@ export class PMTilesImageryProvider extends UrlTemplateImageryProvider {
       return empty;
     }
     // Cesium uploads imagery bitmaps without flipping, so they must arrive pre-flipped.
-    return createImageBitmap(new Blob([tile.data], { type: this.mimeType }), { imageOrientation: 'flipY' });
+    const image = await createImageBitmap(new Blob([tile.data], { type: this.mimeType }), { imageOrientation: 'flipY' });
+    this.onTileReady?.();
+    return image;
   }
 }
 
-export function createPMTilesImagery(url: string, credit?: string): Promise<ImageryProvider> {
-  return PMTilesImageryProvider.fromUrl(url, credit);
+export function createPMTilesImagery(url: string, credit?: string, onTileReady?: () => void): Promise<ImageryProvider> {
+  return PMTilesImageryProvider.fromUrl(url, credit, onTileReady);
 }
