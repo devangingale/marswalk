@@ -9,6 +9,7 @@ from rasterio.transform import Affine
 from globe_geology import (
     GEOLOGY_GROUPS,
     classify_geology_unit,
+    compute_olivine_ramp_endpoints,
     rasterize_geology_grid,
 )
 from globe_layers import (
@@ -121,17 +122,35 @@ def test_mineral_values_quantisation_exact_round_trip():
     assert np.isnan(decoded[3])
 
 
-def test_mineral_teal_green_colour_ramp_transparency():
-    """Verify mineral_teal_green ramp is transparent at 0% abundance and deep teal at peak."""
-    rgba = colour_ramp(np.array([0.0, 7.5, 15.0], dtype=np.float32), 0.0, 15.0, "mineral_teal_green")
-    assert rgba.shape == (3, 4)
-    # Low end is transparent
+def test_compute_olivine_ramp_endpoints_from_percentiles():
+    """Verify olivine ramp endpoints are computed from the non-zero median and 99th percentile."""
+    # Synthetic array: 100 values, 75 zeros (noise/background) and 25 positive values up to 10.0
+    synth = np.zeros(100, dtype=np.float32)
+    # Positive values: 1.0 to 5.0 (25 values)
+    synth[75:] = np.linspace(1.0, 5.0, 25, dtype=np.float32)
+
+    lo, hi = compute_olivine_ramp_endpoints(synth)
+    # Non-zero median of [1.0..5.0] is 3.0
+    assert lo == pytest.approx(3.0, abs=0.1)
+    # 99th percentile of all 100 values evaluates to approx 4.8
+    assert hi == pytest.approx(4.8, abs=0.1)
+
+
+def test_mineral_teal_green_colour_ramp_transparency_and_low_end_opacity():
+    """Verify mineral_teal_green ramp is transparent below minimum and visible at low end."""
+    rgba = colour_ramp(np.array([0.0, 0.5, 1.0, 2.25, 3.5], dtype=np.float32), 1.0, 3.5, "mineral_teal_green")
+    assert rgba.shape == (5, 4)
+    # Below minimum (noise floor / unmapped) is completely transparent
     assert rgba[0, 3] == 0
-    # High end is near full alpha with deep emerald teal (#087f7b -> RGB 8, 127, 123)
-    assert rgba[2, 3] == 240
-    assert rgba[2, 0] == pytest.approx(8, abs=5)
-    assert rgba[2, 1] == pytest.approx(127, abs=5)
-    assert rgba[2, 2] == pytest.approx(123, abs=5)
+    assert rgba[1, 3] == 0
+    # At minimum (1.0%), starts visibly with low base opacity (around 105 / 240)
+    assert 90 <= rgba[2, 3] <= 120
+    assert rgba[2, :3].tolist() == [224, 245, 238]  # pale mint teal
+    # Intermediate value has intermediate opacity
+    assert rgba[2, 3] < rgba[3, 3] < rgba[4, 3]
+    # At maximum (3.5%), deep emerald teal at full 240 alpha
+    assert rgba[4, 3] == 240
+    assert rgba[4, :3].tolist() == [8, 127, 123]
 
 
 def test_geology_muted_categorical_ramp():

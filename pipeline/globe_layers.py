@@ -138,11 +138,15 @@ def colour_ramp(values: np.ndarray, minimum: float, maximum: float, cmap_name: s
         else:
             cmap = colormaps[cmap_name]
             rgb = np.rint(cmap(t[valid])[:, :3] * 255).astype(np.uint8)
+
         if cmap_name == "ice_distance":
             alpha_t = np.clip((500 - values[valid]) / 500, 0, 1)
         elif cmap_name == "swim_ice":
             positive = np.clip(values[valid], 0, 1)
             alpha_t = np.where(positive > 0, 0.35 + 0.65 * np.power(positive, 0.65), 0)
+        elif cmap_name == "mineral_teal_green":
+            above_min = values[valid] >= minimum
+            alpha_t = np.where(above_min, 0.28 + 0.72 * t[valid], 0.0)
         else:
             alpha_t = t[valid]
         alpha = np.rint(np.power(alpha_t, 0.65) * 240).astype(np.uint8)
@@ -230,7 +234,7 @@ def metadata() -> dict[str, dict]:
         "title": "TES olivine abundance", "units": "%", "dataset": "tes_bandfield2002",
         "group": "minerals", "cmap": "mineral_teal_green",
         "description": "Global surface olivine mineral abundance derived from MGS TES thermal infrared spectra (Bandfield 2002).",
-        "bounds": (0, 15),
+        "bounds": (1.0, 3.5),
     }
     return configs
 

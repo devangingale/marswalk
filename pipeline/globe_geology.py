@@ -291,6 +291,19 @@ def make_geology_layer(out_folder: Path = OUT / "layers/geology") -> dict[str, A
     return manifest
 
 
+def compute_olivine_ramp_endpoints(values: np.ndarray) -> tuple[float, float]:
+    """Compute ramp endpoints from data percentiles: low end above noise floor, high end at p99."""
+    valid = values[np.isfinite(values) & (values >= 0)]
+    nonzero = valid[valid > 0]
+    p_low = float(np.percentile(nonzero, 50))  # median of positive detections (~0.95% -> 1.0%)
+    p_high = float(np.percentile(valid, 99))   # 99th percentile of all mapped data (~3.47% -> 3.5%)
+    lo = round(p_low, 1)
+    hi = round(p_high, 1)
+    if hi <= lo:
+        hi = lo + 1.0
+    return lo, hi
+
+
 def make_tes_olivine_layer(out_folder: Path = OUT / "layers/tes_olivine") -> dict[str, Any]:
     """Build the TES olivine abundance layer from Bandfield (2002) VICAR raster."""
     vic_path = DATA / "raw/tes_bandfield2002/tes_olivine_numeric.vic"
@@ -307,8 +320,8 @@ def make_tes_olivine_layer(out_folder: Path = OUT / "layers/tes_olivine") -> dic
     # Convert abundance fraction (0..1) to percentage (0..100)
     values = arr_sliced * 100.0
 
-    low, high = 0.0, 15.0
-    encoded, scale, offset = quantise_values(values, low, high)
+    low, high = compute_olivine_ramp_endpoints(values)
+    encoded, scale, offset = quantise_values(values, 0.0, 15.0)
 
     if out_folder.exists():
         shutil.rmtree(out_folder)
@@ -340,6 +353,7 @@ def make_tes_olivine_layer(out_folder: Path = OUT / "layers/tes_olivine") -> dic
                 Image.fromarray(rgba, "RGBA").save(target, optimize=True)
 
     ramp = colour_ramp(np.array([low, high], dtype=np.float32), low, high, "mineral_teal_green")
+    legend_start = "#%02x%02x%02x80" % tuple(ramp[0, :3])
     legend_end = "#%02x%02x%02xF0" % tuple(ramp[1, :3])
 
     manifest = {
@@ -365,7 +379,7 @@ def make_tes_olivine_layer(out_folder: Path = OUT / "layers/tes_olivine") -> dic
             "nodata": NODATA,
         },
         "legend": {
-            "stops": [[low, "#00000000"], [high, legend_end]],
+            "stops": [[low, legend_start], [high, legend_end]],
             "min": low,
             "max": high,
             "min_label": format_legend_number(low),
