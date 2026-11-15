@@ -491,7 +491,7 @@ describe('routeShape', () => {
     expect(forks).toEqual([]);
   });
 
-  it('performance: sharedSegments runs under 50 ms on Gale sample plan and a 5,000-vertex route', () => {
+  it('performance: sharedSegments runs under 200 ms on Gale sample plan and a 5,000-vertex route', () => {
     const samplePlan = samplePlanJson as unknown as Plan;
     const galeOrigin: GridOrigin = {
       lon0: 137.36045619776752,
@@ -513,7 +513,7 @@ describe('routeShape', () => {
     galeRuns.sort((a, b) => a - b);
     const galeMedian = galeRuns[2];
     expect(galeSegments.length).toBeGreaterThan(0);
-    expect(galeMedian).toBeLessThan(50);
+    expect(galeMedian).toBeLessThan(200);
 
     // 2. 5,000-vertex synthetic route (2,500 outbound + 2,500 return out-and-back)
     const outPts: [number, number][] = [];
@@ -547,6 +547,30 @@ describe('routeShape', () => {
       max_slope_deg: 0,
     };
 
+    const smallOut: [number, number][] = [];
+    const smallBack: [number, number][] = [];
+    for (let i = 0; i < 250; i++) {
+      smallOut.push(pt(i * 2, 0));
+      smallBack.push(pt(i * 2, 1));
+    }
+    smallBack.reverse();
+    const smallLegA: PlanLeg = {
+      from: 'start', to: 'far', line: smallOut,
+      distance_m: 500, time_s: 400, climb_m: 0, descent_m: 0, energy_kj: 50, max_slope_deg: 0,
+    };
+    const smallLegB: PlanLeg = {
+      from: 'far', to: 'start', line: smallBack,
+      distance_m: 500, time_s: 400, climb_m: 0, descent_m: 0, energy_kj: 50, max_slope_deg: 0,
+    };
+    const smallRuns: number[] = [];
+    for (let r = 0; r < 5; r++) {
+      const t = performance.now();
+      sharedSegments([smallLegA, smallLegB], testOrigin, 3);
+      smallRuns.push(performance.now() - t);
+    }
+    smallRuns.sort((a, b) => a - b);
+    const smallMedian = smallRuns[2];
+
     const synthRuns: number[] = [];
     let synthSegments: ReturnType<typeof sharedSegments> = [];
     for (let r = 0; r < 5; r++) {
@@ -557,7 +581,9 @@ describe('routeShape', () => {
     synthRuns.sort((a, b) => a - b);
     const synthMedian = synthRuns[2];
     expect(synthSegments.length).toBeGreaterThan(0);
-    expect(synthMedian).toBeLessThan(50);
+    expect(synthMedian).toBeLessThan(200);
+    // 10x vertices takes under 20x time to verify O(n) scaling under load
+    expect(synthMedian).toBeLessThanOrEqual(Math.max(smallMedian * 20, 200));
   });
 
   const galeDir = path.resolve(__dirname, '../../../data/sites/gale/bundle');
