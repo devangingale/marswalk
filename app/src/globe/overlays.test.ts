@@ -132,15 +132,15 @@ describe('GlobeOverlays', () => {
     expect(casing?.polyline?.positions?.getValue(undefined as never)).toHaveLength(101);
   });
 
-  it('shows lat and lon in stop and drop-off hover labels', () => {
+  it('shows lat and lon in stop and shelter hover labels', () => {
     const { host, overlays } = setup();
     const plan = buildCornerPlan(ORIGIN);
     overlays.setPlan(plan, ORIGIN);
     const labels = host.entities.values.map((e) => overlays.hoverLabel(pick(e))).filter(Boolean);
-    expect(labels).toContain('Rover drop-off\n4.7617° S, 137.3647° E');
+    expect(labels).toContain('Shelter · Pressurised rover\nShelter: start and finish of the walk\n4.7617° S, 137.3647° E');
     expect(labels).toContain('Stop 2 · East spur\n4.7631° S, 137.3684° E');
     expect(labels).toContain('Fork\nto Stop 2\nto Stop 3');
-    expect(labels).toContain('Fork\nto Stop 1\nback to drop-off');
+    expect(labels).toContain('Fork\nto Stop 1\nback to shelter');
   });
 
   it('highlights the whole route when it is small on screen', () => {
@@ -148,7 +148,7 @@ describe('GlobeOverlays', () => {
     const { host, overlays } = setup(onSectionHover);
     overlays.setPlan(buildCornerPlan(ORIGIN), ORIGIN);
     const route = host.entities.values.find((e) => e.polyline)!;
-    expect(overlays.hover(pick(route), 300)).toEqual(['Drop-off → 1 → 2 → 3 → Drop-off · 1.7 km · 1 h 03 min']);
+    expect(overlays.hover(pick(route), 300)).toEqual(['Shelter → 1 → 2 → 3 → Shelter · 1.7 km · 1 h 03 min']);
     expect(onSectionHover).not.toHaveBeenCalled();
   });
 

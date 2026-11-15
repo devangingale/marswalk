@@ -510,6 +510,26 @@ svg.i.fill {
   color: var(--color-text-muted);
   font-variant-numeric: var(--numeric);
 }
+/* Top bar: wordmark, tabs, site picker, spacer, theme. Nothing in it wraps or shrinks below its text. */
+.mock-top > * {
+  flex: none;
+}
+.mock-top > .grow {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.mock-top .wordmark {
+  white-space: nowrap;
+}
+/* Narrow windows: the site footprint gives way so the bar stays on one line. */
+@media (max-width: 1199px) {
+  .mock-top {
+    gap: var(--space-3);
+  }
+  .mock-top .s48-site-extent {
+    display: none;
+  }
+}
 
 .plan-body {
   display: grid;
@@ -541,22 +561,3 @@ svg.i.fill {
   font-weight: var(--weight-regular);
 }
 
-/* Tablet responsiveness */
-@media (max-width: 1023px) {
-  .plan-body {
-    grid-template-columns: 1fr;
-    position: relative;
-  }
-  .plan-body > .panel:first-child {
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 300px;
-    max-width: 85vw;
-    z-index: 30;
-    border-right: var(--border-width) solid var(--color-rule);
-    box-shadow: var(--shadow-drawer);
-    background: var(--color-surface);
-  }
-}

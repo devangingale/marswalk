@@ -18,8 +18,10 @@ import {
   EntityCollection,
   HeightReference,
   HorizontalOrigin,
+  JulianDate,
   LabelStyle,
   Math as CesiumMath,
+  Scene,
   PolylineDashMaterialProperty,
   Matrix4,
   Transforms,
@@ -27,7 +29,7 @@ import {
 } from 'cesium';
 import type { ChemistryPositionGroup } from '../lib/chemistry';
 import { lonlatToLocalMetres, type GridOrigin, type RouteGrid } from '../lib/grid';
-import type { Plan } from '../lib/plan';
+import { defaultShelterLabel, isDefaultShelterLabel, shelterType, type Plan } from '../lib/plan';
 import {
   forkPoints,
   sections as routeSections,
@@ -38,6 +40,7 @@ import {
   type SlopeStats,
 } from '../lib/routeShape';
 import { lonLatToCartesian, type Pose } from './frame';
+import { cullScreenLabels, type Box } from './graticule';
 import { circleRing, crewLabel, labelOnLeft, type CrewMarkerModel } from '../safety/crewMarkers';
 import { crewRingImage } from '../safety/crewMarkerImage';
 import { canvasMarkerImages, readToken, type MarkerImage, type MarkerImages, type TokenReader } from './markerImages';
@@ -57,8 +60,11 @@ import {
   sectionForLegs,
   sectionLabel,
   slopeLabels,
+  screenSpan,
+  showSummaryLabels,
   stretchStyles,
   waypointLabel,
+  SHELTER_HINT,
   type RouteHover,
   type StretchStyle,
 } from './routeLook';
@@ -117,6 +123,7 @@ export interface OverlayOptions {
   /** CESIUM_3D_TILE on Cesium Mars; TERRAIN on the bare-ellipsoid fallback. */
   classification?: ClassificationType;
   onSectionHover?: (sectionId: string | null) => void;
+  scene?: Scene;
   /** A separate collection (a data source added after the others) for the crew and rover, so they draw on top. */
   crewHost?: OverlayHost;
   /** The astronaut mark; drawn from tokens on a canvas unless a stub is given (tests). */
@@ -139,7 +146,16 @@ const REGION = new DistanceDisplayCondition(0, 1_500_000);
 /** Crew circles and the night corridor sit this far above the surface, metres. */
 const CREW_LIFT_M = 0.5;
 
-type Meta = { kind: 'route'; stretch: number } | { kind: 'text'; lines: string[] };
+/** A marker that can open the 360° surface view: a waypoint or a rover mark, with its title. */
+export interface SurfaceTarget {
+  title: string;
+  lon: number;
+  lat: number;
+}
+
+type Meta =
+  | { kind: 'route'; stretch: number }
+  | { kind: 'text'; lines: string[]; target?: () => SurfaceTarget | undefined; shelter?: true };
 
 interface Stretch extends SharedSegment {
   shared: boolean;
@@ -156,14 +172,18 @@ export class GlobeOverlays {
   private images: MarkerImages | null;
   private readonly classification: ClassificationType;
   private readonly onSectionHover?: (sectionId: string | null) => void;
+  private readonly scene?: Scene;
+  private readonly hiddenLabels = new Set<Entity>();
+  private readonly removeScreenUpdate?: () => void;
   private readonly meta = new Map<Entity, Meta>();
   private readonly owned = new Set<Entity>();
-  private readonly groups: Record<'plan' | 'rover' | 'chemistry' | 'walker' | 'crew', Entity[]> = {
+  private readonly groups: Record<'plan' | 'rover' | 'chemistry' | 'walker' | 'crew' | 'turn', Entity[]> = {
     plan: [],
     rover: [],
     chemistry: [],
     walker: [],
     crew: [],
+    turn: [],
   };
 
   private plan: Plan | undefined;
@@ -190,6 +210,8 @@ export class GlobeOverlays {
     this.images = options.images ?? null;
     this.classification = options.classification ?? ClassificationType.CESIUM_3D_TILE;
     this.onSectionHover = options.onSectionHover;
+    this.scene = options.scene;
+    this.removeScreenUpdate = this.scene?.preRender.addEventListener((_scene, time) => this.updateScreenLabels(time));
   }
 
   private markers(): MarkerImages {
@@ -222,6 +244,7 @@ export class GlobeOverlays {
     this.groups[group].push(entity);
     this.owned.add(entity);
     if (meta) this.meta.set(entity, meta);
+    if (entity.label) entity.label.show = new CallbackProperty(() => !this.hiddenLabels.has(entity), false);
     return entity;
   }
 
@@ -230,8 +253,81 @@ export class GlobeOverlays {
       this.collection(group).remove(entity);
       this.meta.delete(entity);
       this.owned.delete(entity);
+      this.hiddenLabels.delete(entity);
     }
     this.groups[group] = [];
+  }
+
+  private updateScreenLabels(time: JulianDate): void {
+    const scene = this.scene;
+    if (!scene || !this.plan) return;
+    const project = (entity: Entity) => {
+      const position = entity.position?.getValue(time);
+      return position ? scene.cartesianToCanvasCoordinates(position) : undefined;
+    };
+    const markers = this.groups.plan.filter((entity) => entity.billboard && this.markerPriority(entity) !== null);
+    const markerData: { entity: Entity; point: Cartesian2; width: number; height: number; priority: number }[] = [];
+    for (const marker of markers) {
+      const point = project(marker);
+      if (!point) continue;
+      const width = marker.billboard?.width?.getValue(time) ?? 20;
+      const height = marker.billboard?.height?.getValue(time) ?? 20;
+      markerData.push({ entity: marker, point, width, height, priority: this.markerPriority(marker)! });
+    }
+    const markerBoxes: Box[] = markerData.map(({ point, width, height }) => [
+      point.x - width / 2, point.y - height / 2, point.x + width / 2, point.y + height / 2,
+    ]);
+
+    const routePoints = routeLine(this.plan).flatMap(([lon, lat]) => {
+      const point = scene.cartesianToCanvasCoordinates(this.surfacePosition(lon, lat));
+      return point ? [{ x: point.x, y: point.y }] : [];
+    });
+    const summariesVisible = showSummaryLabels(screenSpan(routePoints));
+    const candidates: { id: string; box: Box; priority: number }[] = [];
+    const entities: Entity[] = [];
+    this.hiddenLabels.clear();
+    for (const entity of this.groups.plan) {
+      if (!entity.label) continue;
+      this.hiddenLabels.add(entity);
+      const priority = this.labelPriority(entity);
+      if (priority === null || (priority === 3 && !summariesVisible)) continue;
+      const point = project(entity);
+      const text = entity.label.text?.getValue(time) ?? '';
+      if (!point || !text) continue;
+      const font = entity.label.font?.getValue(time) ?? '13px sans-serif';
+      const fontSize = Number(font.match(/(\d+(?:\.\d+)?)px/)?.[1] ?? 13);
+      const width = [...text].reduce((sum, char) => sum + fontSize * (char === ' ' ? 0.28 : 0.54), 0) + 4;
+      const height = fontSize + 4;
+      const offset = entity.label.pixelOffset?.getValue(time) ?? Cartesian2.ZERO;
+      const horizontal = entity.label.horizontalOrigin?.getValue(time) ?? HorizontalOrigin.CENTER;
+      const vertical = entity.label.verticalOrigin?.getValue(time) ?? VerticalOrigin.CENTER;
+      const x = point.x + offset.x;
+      const y = point.y + offset.y;
+      const left = horizontal === HorizontalOrigin.RIGHT ? x - width : horizontal === HorizontalOrigin.CENTER ? x - width / 2 : x;
+      const top = vertical === VerticalOrigin.BOTTOM ? y - height : vertical === VerticalOrigin.CENTER ? y - height / 2 : y;
+      candidates.push({ id: entity.id, box: [left, top, left + width, top + height], priority });
+      entities.push(entity);
+    }
+    const visibleIds = new Set(cullScreenLabels(candidates, markerBoxes));
+    for (const entity of entities) if (visibleIds.has(entity.id)) this.hiddenLabels.delete(entity);
+  }
+
+  private markerPriority(entity: Entity): number | null {
+    const lines = this.meta.get(entity);
+    if (lines?.kind !== 'text') return null;
+    if (lines.lines[0].startsWith('Stop ')) return 0;
+    if (lines.shelter) return 1;
+    if (lines.lines[0] === 'Fork') return 2;
+    return null;
+  }
+
+  private labelPriority(entity: Entity): number | null {
+    const lines = this.meta.get(entity);
+    if (lines?.kind !== 'text') return null;
+    if (lines.shelter) return 1;
+    if (lines.lines[0] === 'Fork' || lines.lines[0].startsWith('to Stop ') || lines.lines[0] === 'back to shelter') return 2;
+    if (/^(High|Low|Steepest)\b/.test(lines.lines[0])) return 3;
+    return null;
   }
 
   /** Bundle elevation grid for slopes; without it the gradient view and slope markers stay off. */
@@ -256,7 +352,7 @@ export class GlobeOverlays {
 
   /**
    * Draws a plan. Distances use the local-metre frame at origin (the site's), or at the
-   * drop-off when no origin is given.
+   * shelter when no origin is given.
    */
   setPlan(plan: Plan | undefined, origin?: GridOrigin): void {
     this.removeGroup('plan');
@@ -319,7 +415,7 @@ export class GlobeOverlays {
             return style === 'highlight' ? highlighted : colour;
           }, false),
         );
-      // zIndex orders ground lines: casing, then the coloured body, then the dashed core.
+      // Put the A3 route above rover traverses, then order casing, body, and dashed core.
       const polyline = (
         line: [number, number][],
         width: number,
@@ -337,19 +433,19 @@ export class GlobeOverlays {
         },
       });
 
-      this.add('plan', polyline(stretch.line, casingWidth + 2, 10, { material: styleColour(casing, casing) }), meta);
+      this.add('plan', polyline(stretch.line, casingWidth + 2, 400, { material: styleColour(casing, casing) }), meta);
       const grade = this.gradient && this.stats ? this.stretchGrades(stretch) : null;
       if (grade) {
         for (const run of grade) {
           const c = grades[run.bin - 1];
-          this.add('plan', polyline(run.line, coreWidth + 2, 20, { material: styleColour(c, c) }), meta);
+          this.add('plan', polyline(run.line, coreWidth + 2, 410, { material: styleColour(c, c) }), meta);
         }
       } else {
-        this.add('plan', polyline(stretch.line, coreWidth + 2, 20, { material: styleColour(base, highlight) }), meta);
+        this.add('plan', polyline(stretch.line, coreWidth + 2, 410, { material: styleColour(base, highlight) }), meta);
         this.cores[index].push(
           this.add(
             'plan',
-            polyline(stretch.line, 2, 30, {
+            polyline(stretch.line, 2, 420, {
               material: new PolylineDashMaterialProperty({ color: dash, gapColor: Color.TRANSPARENT, dashLength: 12 }),
             }),
             meta,
@@ -364,7 +460,7 @@ export class GlobeOverlays {
           {
             position,
             billboard: {
-              ...this.billboard(this.markers().chevron(), NEAR),
+              ...this.billboard(this.markers().chevron()),
               rotation: -CesiumMath.toRadians(c.bearingDeg),
               alignedAxis: northAt(position),
             },
@@ -381,14 +477,14 @@ export class GlobeOverlays {
     return gradientDeg.every(Number.isFinite) ? gradeRuns(stretch.line, gradientDeg) : null;
   }
 
-  private billboard(image: MarkerImage, show: DistanceDisplayCondition): Entity.ConstructorOptions['billboard'] {
+  private billboard(image: MarkerImage, show?: DistanceDisplayCondition): Entity.ConstructorOptions['billboard'] {
     return {
       image: image.image,
       width: image.width,
       height: image.height,
       heightReference: this.useSurfaceHeights ? HeightReference.NONE : HeightReference.CLAMP_TO_GROUND,
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
-      distanceDisplayCondition: show,
+      ...(show ? { distanceDisplayCondition: show } : {}),
     };
   }
 
@@ -421,7 +517,7 @@ export class GlobeOverlays {
       const lines = fork.branches.map((b) => branchLabel(b.toLabel, plan));
       this.add(
         'plan',
-        { position: this.surfacePosition(fork.lon, fork.lat), billboard: this.billboard(this.markers().fork(), SITE) },
+        { position: this.surfacePosition(fork.lon, fork.lat), billboard: this.billboard(this.markers().fork()) },
         { kind: 'text', lines: ['Fork', ...lines] },
       );
       const at: [number, number] = [fork.lon, fork.lat];
@@ -434,7 +530,7 @@ export class GlobeOverlays {
         this.add('plan', {
           position: this.surfacePosition(lon, lat),
           label: this.label(lines[i], NEAR, [dx, dy], dx < 0),
-        });
+        }, { kind: 'text', lines: [lines[i]] });
       });
     }
   }
@@ -442,14 +538,15 @@ export class GlobeOverlays {
   private drawStops(plan: Plan): void {
     const images = this.markers();
     const start = plan.start;
+    const name = isDefaultShelterLabel(start.label) ? defaultShelterLabel(shelterType(start)) : start.label;
     this.add(
       'plan',
       {
         position: this.surfacePosition(start.lon, start.lat),
-        billboard: this.billboard(images.dropOff(), REGION),
-        label: this.label('Rover drop-off', SITE, [-20, 0], true),
+        billboard: this.billboard(images.dropOff(shelterType(start)), REGION),
+        label: this.label(name, SITE, [-20, 0], true),
       },
-      { kind: 'text', lines: ['Rover drop-off', formatLatLon(start.lon, start.lat)] },
+      { kind: 'text', shelter: true, lines: [name, SHELTER_HINT, formatLatLon(start.lon, start.lat)], target: () => ({ title: name, lon: start.lon, lat: start.lat }) },
     );
     plan.stops.forEach((stop) => {
       const number = waypointLabel(stop.id, plan);
@@ -459,7 +556,11 @@ export class GlobeOverlays {
           position: this.surfacePosition(stop.lon, stop.lat),
           billboard: this.billboard(images.stop(number, false), REGION),
         },
-        { kind: 'text', lines: [`Stop ${number} · ${stop.name}`, formatLatLon(stop.lon, stop.lat)] },
+        {
+          kind: 'text',
+          lines: [`Stop ${number} · ${stop.name}`, formatLatLon(stop.lon, stop.lat)],
+          target: () => ({ title: `Stop ${number} · ${stop.name}`, lon: stop.lon, lat: stop.lat }),
+        },
       );
     });
     if (needsFinish(plan) && plan.route.legs.at(-1)?.line.length) {
@@ -467,7 +568,7 @@ export class GlobeOverlays {
       this.add(
         'plan',
         { position: this.surfacePosition(end[0], end[1]), billboard: this.billboard(images.finish(), REGION) },
-        { kind: 'text', lines: ['Finish', formatLatLon(end[0], end[1])] },
+        { kind: 'text', lines: ['Finish', formatLatLon(end[0], end[1])], target: () => ({ title: 'Finish', lon: end[0], lat: end[1] }) },
       );
     }
   }
@@ -479,8 +580,10 @@ export class GlobeOverlays {
       stats.steepestAt ? distanceAlong(routeLine(plan), stats.steepestAt, frame) : 0,
     );
     const marks: [number, number, MarkerImage, string][] = [];
-    if (stats.highAt && labels.high) marks.push([stats.highAt[0], stats.highAt[1], images.high(), labels.high]);
-    if (stats.lowAt && labels.low) marks.push([stats.lowAt[0], stats.lowAt[1], images.low(), labels.low]);
+    // A flat or zero-length route has its high and low on one vertex: two labels on one spot, so neither.
+    const samePoint = !!stats.highAt && !!stats.lowAt && stats.highAt[0] === stats.lowAt[0] && stats.highAt[1] === stats.lowAt[1];
+    if (!samePoint && stats.highAt && labels.high) marks.push([stats.highAt[0], stats.highAt[1], images.high(), labels.high]);
+    if (!samePoint && stats.lowAt && labels.low) marks.push([stats.lowAt[0], stats.lowAt[1], images.low(), labels.low]);
     if (stats.steepestAt && labels.steepest) {
       marks.push([stats.steepestAt[0], stats.steepestAt[1], images.steepest(), labels.steepest]);
     }
@@ -502,7 +605,7 @@ export class GlobeOverlays {
   setRover(traverse: GeoJSON.LineString | null, sites: PhotoSite[], state: RoverOverlayState): void {
     this.roverData = { traverse, sites, state };
     this.drawRover();
-    // MapLibre kept the planned route above rover overlays; preserve that draw order in Cesium.
+    // Keep the planned route above rover overlays in Cesium.
     this.setPlan(this.plan, this.origin ?? undefined);
   }
 
@@ -533,7 +636,7 @@ export class GlobeOverlays {
             position: this.surfacePosition(site.lon, site.lat),
             billboard: { ...this.billboard(this.markers().photo(site.count), SITE), scale: 1.5 },
           },
-          { kind: 'text', lines: [photoSiteLabel(site)] },
+          { kind: 'text', lines: [photoSiteLabel(site)], target: () => ({ title: `Rover photos · ${photoSiteLabel(site)}`, lon: site.lon, lat: site.lat }) },
         );
       }
     }
@@ -575,6 +678,13 @@ export class GlobeOverlays {
       position: lonLatToCartesian(pose.lon, pose.lat, 0),
       billboard: this.billboard(this.markers().walker(), REGION),
     });
+  }
+
+  /** Walk: the next turn point on the route, drawn with the given marker image. Null clears it. */
+  setTurnPoint(point: { lon: number; lat: number } | null, image?: MarkerImage): void {
+    this.removeGroup('turn');
+    if (!point || !image) return;
+    this.add('turn', { position: lonLatToCartesian(point.lon, point.lat, 0), billboard: this.billboard(image, REGION) });
   }
 
   /**
@@ -648,10 +758,17 @@ export class GlobeOverlays {
         'crew',
         {
           position: live((m) => (m.rover ? this.surfacePosition(m.rover.lon, m.rover.lat) : undefined), undefined) as never,
-          billboard: this.billboard(this.markers().dropOff(), REGION),
+          billboard: this.billboard(this.markers().dropOff('rover'), REGION),
           label: { ...this.label(rover.label, REGION, [20, 0]), text: live((m) => m.rover?.label ?? '', '') },
         },
-        { kind: 'text', lines: ['Rover', formatLatLon(rover.lon, rover.lat)] },
+        {
+          kind: 'text',
+          lines: ['Rover', formatLatLon(rover.lon, rover.lat)],
+          target: () => {
+            const live = this.crewModel?.rover;
+            return live ? { title: 'Rover', lon: live.lon, lat: live.lat } : undefined;
+          },
+        },
       );
     }
   }
@@ -660,7 +777,7 @@ export class GlobeOverlays {
     return this.useSurfaceHeights ? surfaceHeightM(this.grid, lon, lat, this.heightOffsetM) : 0;
   }
 
-  /** Hover text for a picked marker (stop, drop-off, fork, slope point, photo site), else null. */
+  /** Hover text for a picked marker (stop, shelter, fork, slope point, photo site), else null. */
   hoverLabel(picked: unknown): string | null {
     const meta = this.metaFor(picked);
     if (!meta) return null;
@@ -715,12 +832,19 @@ export class GlobeOverlays {
     return this.sectionList;
   }
 
+  /** The waypoint or rover mark under a pick, for the 360° surface view; null for anything else. */
+  surfaceTarget(picked: unknown): SurfaceTarget | null {
+    const meta = this.metaFor(picked);
+    return meta?.kind === 'text' ? (meta.target?.() ?? null) : null;
+  }
+
   private metaFor(picked: unknown): Meta | null {
     const id = (picked as { id?: unknown } | undefined)?.id;
     return id instanceof Entity && this.owned.has(id) ? (this.meta.get(id) ?? null) : null;
   }
 
   clear(): void {
+    this.removeScreenUpdate?.();
     this.crewKey = '';
     this.crewModel = null;
     for (const group of Object.keys(this.groups) as (keyof GlobeOverlays['groups'])[]) this.removeGroup(group);

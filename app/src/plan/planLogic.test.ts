@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createGrid, type GridHeader } from '../lib/grid';
 import type { PlanParams, PlanStop } from '../lib/plan';
-import { budgetFractions, nextStopName, reorderStop, removeStop, sampleProfile, updateStop } from './planLogic';
+import { budgetFractions, isLatestPlanRequest, nextStopName, reorderStop, removeStop, sampleProfile, updateStop } from './planLogic';
 
 const stops: PlanStop[] = [
   { id: 'a', name: 'Stop 1', lon: 0, lat: 0 },
@@ -11,6 +11,9 @@ const stops: PlanStop[] = [
 const params: PlanParams = { crew: 2, time_limit_s: 10_000, suit_mass_kg: 120, body_mass_kg: 80, stop_time_s: 1200, solar_event: false };
 
 describe('plan list and profile logic', () => {
+  it('accepts only the newest route request result', () => {
+    expect([isLatestPlanRequest(1, 2), isLatestPlanRequest(2, 2)]).toEqual([false, true]);
+  });
   it('names the first unused sequential stop', () => expect(nextStopName(stops)).toBe('Stop 2'));
   it('reorders, edits, and removes stops without mutating the source list', () => {
     expect(reorderStop(stops, 2, 0).map((stop) => stop.id)).toEqual(['c', 'a', 'b']);

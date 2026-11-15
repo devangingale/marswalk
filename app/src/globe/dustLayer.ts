@@ -219,7 +219,9 @@ export class DustLayer {
 
   destroy(): void {
     if (this.primitive) {
-      this.scene.primitives.remove(this.primitive);
+      // Explore's cleanup destroys the viewer (and with it every primitive) before the clock's
+      // cleanup reaches here; removing from a destroyed scene throws and blanked the app.
+      if (!this.scene.isDestroyed()) this.scene.primitives.remove(this.primitive);
       this.primitive = null;
     }
     this.material = null;

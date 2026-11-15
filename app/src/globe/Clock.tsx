@@ -2,25 +2,17 @@
 //
 // Time slider across the Mars Years in the dust history. Scrubbing or playing
 // moves one sol at a time, driving the dust layer frame and the Gale weather
-// readout for that sol. Mounted with the conditions panel through GlobeTimeTools
-// so the globe page gains both from a single point.
+// readout for that sol. Explore mounts it in the time bar under the map; the
+// conditions panel (Now) sits in the right panel.
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { Scene } from 'cesium';
 import { GLOBE_BASE } from '../config';
-import { ConditionsPanel } from '../components/ConditionsPanel';
 import { decodeFrame, DustGrid, dustGrid, DustIndex, DustLayer, DustYear } from './dustLayer';
+import { openingYearIndex, type GaleDay } from './clockYear';
 import './clock.css';
 
 const STEP_MS = 280; // play cadence: a few sols per second, steady under the tile rebuild.
-
-interface GaleDay {
-  sol: number;
-  earth_date: string;
-  t_min_c: number | null;
-  t_max_c: number | null;
-  pressure_pa: number | null;
-}
 
 /** Nearest Gale day to a target Earth time, over Earth times sorted ascending. */
 function nearestDay(days: GaleDay[], times: number[], targetMs: number): GaleDay | null {
@@ -41,8 +33,29 @@ function fmtC(v: number | null): string {
   return `${v < 0 ? '−' : ''}${Math.abs(Math.round(v))}`;
 }
 
-export const Clock: React.FC<{ scene: Scene; onLs?: (ls: number) => void }> = ({ scene, onLs }) => {
+export interface ClockProps {
+  scene: Scene;
+  onLs?: (ls: number) => void;
+  /** Whether the dust history shell is drawn; the clock keeps time either way. Default on. */
+  visible?: boolean;
+  /** Called when Play starts, so the page can turn the dust history on. */
+  onPlay?: () => void;
+  /** CSS gradient of the dust palette, for the layer panel legend. */
+  onLegend?: (background: string) => void;
+}
+
+/** CSS gradient across the dust palette stops, positioned by value. */
+export function dustLegend(palette: DustIndex['palette']): string {
+  const stops = palette.stops;
+  const min = stops[0]?.[0] ?? 0;
+  const max = stops[stops.length - 1]?.[0] ?? 1;
+  const span = max - min || 1;
+  return `linear-gradient(to right, ${stops.map(([v, c]) => `${c} ${Number((((v - min) / span) * 100).toFixed(2))}%`).join(', ')})`;
+}
+
+export const Clock: React.FC<ClockProps> = ({ scene, onLs, visible = true, onPlay, onLegend }) => {
   const [index, setIndex] = useState<DustIndex | null>(null);
+  const [yearIndex, setYearIndex] = useState(0);
   const [bytes, setBytes] = useState<Uint8Array | null>(null);
   const [galeDays, setGaleDays] = useState<GaleDay[]>([]);
   const [frame, setFrame] = useState(359); // sol 360 by default: a clear mid-year state.
@@ -50,34 +63,37 @@ export const Clock: React.FC<{ scene: Scene; onLs?: (ls: number) => void }> = ({
 
   const dustRef = useRef<DustLayer | null>(null);
 
-  const year: DustYear | null = index?.years[0] ?? null;
+  const year: DustYear | null = index?.years[yearIndex] ?? null;
   const grid: DustGrid | null = index ? dustGrid(index) : null;
   const frameCount = year?.frames ?? 0;
 
   const galeTimes = useMemo(() => galeDays.map((d) => Date.parse(d.earth_date)), [galeDays]);
 
-  // Load the dust index, the frame stack and the Gale weather history once.
+  // Load the Gale weather history and the dust index once, then the frame stack of the
+  // latest year that has weather readings, so the bar opens with real values.
   useEffect(() => {
     let live = true;
+    const weather = fetch(`${GLOBE_BASE}/weather/gale.json`)
+      .then((res) => (res.ok ? (res.json() as Promise<{ days?: GaleDay[] }>) : { days: [] }))
+      .then((file) => file.days ?? [])
+      .catch((): GaleDay[] => []); // weather readout is optional
+    const dustIndex = fetch(`${GLOBE_BASE}/dust/index.json`).catch(() => null);
     void (async () => {
       try {
-        const res = await fetch(`${GLOBE_BASE}/dust/index.json`);
-        if (!res.ok) return;
-        const idx = (await res.json()) as DustIndex;
+        const days = await weather;
         if (!live) return;
+        setGaleDays(days);
+        const res = await dustIndex;
+        if (!res?.ok) return;
+        const idx = (await res.json()) as DustIndex;
+        if (!live || idx.years.length === 0) return;
+        const opening = openingYearIndex(idx.years, days);
+        setYearIndex(opening);
         setIndex(idx);
-        const binRes = await fetch(`${GLOBE_BASE}/dust/${idx.years[0].url}`);
+        const binRes = await fetch(`${GLOBE_BASE}/dust/${idx.years[opening].url}`);
         if (binRes.ok && live) setBytes(new Uint8Array(await binRes.arrayBuffer()));
       } catch {
         /* dust history is optional; the bar stays hidden if it does not load */
-      }
-    })();
-    void (async () => {
-      try {
-        const res = await fetch(`${GLOBE_BASE}/weather/gale.json`);
-        if (res.ok && live) setGaleDays(((await res.json()) as { days: GaleDay[] }).days ?? []);
-      } catch {
-        /* weather readout is optional */
       }
     })();
     return () => {
@@ -93,6 +109,12 @@ export const Clock: React.FC<{ scene: Scene; onLs?: (ls: number) => void }> = ({
       dustRef.current = null;
     };
   }, [scene]);
+
+  useEffect(() => dustRef.current?.setVisible(visible), [visible, scene]);
+
+  useEffect(() => {
+    if (index) onLegend?.(dustLegend(index.palette));
+  }, [index, onLegend]);
 
   // Draw the current frame whenever it, or the loaded data, changes.
   useEffect(() => {
@@ -125,16 +147,18 @@ export const Clock: React.FC<{ scene: Scene; onLs?: (ls: number) => void }> = ({
   };
 
   return (
-    <>
-      <ConditionsPanel />
-      <div className="s48-clock" data-over-map role="group" aria-label="Mars time slider">
+    <div className="s48-clock" role="group" aria-label="Dust history">
+        <span className="s48-clock__label" aria-hidden="true">Dust history</span>
         <div className="s48-clock__controls">
           <button
             type="button"
             className="s48-clock__btn"
             aria-pressed={playing}
             aria-label={playing ? 'Pause' : 'Play'}
-            onClick={() => setPlaying((p) => !p)}
+            onClick={() => {
+              if (!playing) onPlay?.();
+              setPlaying(!playing);
+            }}
           >
             {playing ? 'Pause' : 'Play'}
           </button>
@@ -198,12 +222,6 @@ export const Clock: React.FC<{ scene: Scene; onLs?: (ls: number) => void }> = ({
             <dd>{day && day.pressure_pa !== null ? `${Math.round(day.pressure_pa)} Pa` : '–'}</dd>
           </div>
         </dl>
-      </div>
-    </>
+    </div>
   );
 };
-
-/** Single mount point for the globe page: the clock bar and the conditions panel. */
-export const GlobeTimeTools: React.FC<{ scene: Scene; onLs?: (ls: number) => void }> = ({ scene, onLs }) => (
-  <Clock scene={scene} onLs={onLs} />
-);

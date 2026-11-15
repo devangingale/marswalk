@@ -2,17 +2,9 @@
 // Detail card for a selected site: coordinates, scores, evidence and veto notes.
 
 import React from 'react';
-import { GROUP_KEYS, GROUP_LABELS, Site, Veto } from './types';
-import {
-  formatCount,
-  formatDistanceKm,
-  formatDose,
-  formatDust,
-  formatElevation,
-  formatLatLon,
-  formatScore,
-  scoreBucket,
-} from './format';
+import { Site, Veto } from './types';
+import { formatCount, formatDistanceKm, formatDose, formatDust, formatElevation, formatLatLon } from './format';
+import { SiteScoreRow } from '../annotations/SiteScoreRow';
 import { vetoLines } from './vetoInfo';
 
 interface SiteCardProps {
@@ -21,6 +13,8 @@ interface SiteCardProps {
   placeName: string | null;
   rank: number | null;
   onClose: () => void;
+  /** Extra action for the site, such as entering its surface view. */
+  action?: React.ReactNode;
 }
 
 interface EvidenceRow {
@@ -40,7 +34,7 @@ function evidenceRows(site: Site): EvidenceRow[] {
   ];
 }
 
-export const SiteCard: React.FC<SiteCardProps> = ({ site, vetoes, placeName, rank, onClose }) => {
+export const SiteCard: React.FC<SiteCardProps> = ({ site, vetoes, placeName, rank, onClose, action }) => {
   const isCandidate = site.kind === 'new';
   const vetos = site.vetoed ? vetoLines(site.veto_reason, vetoes) : [];
 
@@ -57,32 +51,9 @@ export const SiteCard: React.FC<SiteCardProps> = ({ site, vetoes, placeName, ran
         </button>
       </header>
 
-      <div className="sites-card__score">
-        <span className="sites-card__score-label">Score</span>
-        <span className="sites-score-value" aria-hidden="true">
-          <span className={`sites-score-dot sites-dot--${scoreBucket(site.score)}`} />
-          {formatScore(site.score)}
-        </span>
-        <span className="sites-visually-hidden">score {formatScore(site.score)} of 100</span>
-        {rank !== null && <span className="sites-card__rank">rank {rank}</span>}
-      </div>
+      {action && <div className="sites-card__action">{action}</div>}
 
-      <dl className="sites-groups">
-        {GROUP_KEYS.map((key) => {
-          const value = site.groups[key];
-          return (
-            <div key={key} className="sites-group">
-              <dt>{GROUP_LABELS[key]}</dt>
-              <dd>
-                <span className="sites-bar" aria-hidden="true">
-                  <span className="sites-bar__fill" style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
-                </span>
-                <span className="sites-group__val">{formatScore(value)}</span>
-              </dd>
-            </div>
-          );
-        })}
-      </dl>
+      <SiteScoreRow score={site.score} rank={rank} groups={site.groups} />
 
       <dl className="sites-evidence">
         {evidenceRows(site).map((row) => (

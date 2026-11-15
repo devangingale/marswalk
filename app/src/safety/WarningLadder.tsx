@@ -152,7 +152,15 @@ export const LadderDetail: React.FC<{
 );
 
 function shelterName(choice: ShelterChoice): string {
-  return shelterKindName(choice.shelter.kind);
+  return shelterDisplayName(choice.shelter);
+}
+
+/** The plan shelter by its name and type ("Shelter · Habitat", "Base camp · Habitat"); others by kind. */
+export function shelterDisplayName(shelter: { kind: ShelterKind; name?: string; primary?: boolean }): string {
+  const kindName = shelterKindName(shelter.kind);
+  if (!shelter.primary) return kindName;
+  const name = shelter.name?.trim() || 'Shelter';
+  return name.includes(kindName) ? name : `${name} · ${kindName}`;
 }
 
 /** The shelter as named on screen. */
@@ -162,8 +170,8 @@ export function shelterKindName(kind: ShelterKind): string {
       return 'Habitat';
     case 'rover':
       return 'Pressurised rover';
-    case 'dropoff':
-      return 'Rover drop-off';
+    case 'radiation-shelter':
+      return 'Radiation shelter';
     case 'cave':
       return 'Surveyed cave';
     case 'terrain-shield':

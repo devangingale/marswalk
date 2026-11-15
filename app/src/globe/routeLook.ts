@@ -30,9 +30,9 @@ export function formatElevation(m: number): string {
   return `${groupThousands(Math.round(m))} m`;
 }
 
-/** Drop-off for the start, else the stop's 1-based number in plan order. */
+/** Shelter for the start (where the walk begins and ends), else the stop's 1-based number in plan order. */
 export function waypointLabel(id: string, plan: Plan): string {
-  if (id === START_ID) return 'Drop-off';
+  if (id === START_ID) return 'Shelter';
   const index = plan.stops.findIndex((s) => s.id === id);
   return index >= 0 ? String(index + 1) : id;
 }
@@ -45,7 +45,7 @@ function totals(plan: Plan, legIndices: number[]) {
   };
 }
 
-/** For example: Drop-off → 3 via 2 · 2.4 km · 55 min. */
+/** For example: Shelter → 3 via 2 · 2.4 km · 55 min. */
 export function sectionLabel(section: Section, plan: Plan): string {
   const via = section.detourStopIds.length
     ? ` via ${section.detourStopIds.map((id) => waypointLabel(id, plan)).join(', ')}`
@@ -63,9 +63,9 @@ export function routeLabel(plan: Plan): string {
   return `${chain} · ${formatDistance(distance)} · ${formatDuration(time)}`;
 }
 
-/** Fork branch label from forkPoints' toLabel ('drop-off' or a stop id). */
+/** Fork branch label from forkPoints' toLabel (routeShape's 'drop-off' id for the start, or a stop id). */
 export function branchLabel(toLabel: string, plan: Plan): string {
-  if (toLabel === 'drop-off' || toLabel === START_ID) return 'back to drop-off';
+  if (toLabel === 'drop-off' || toLabel === START_ID) return 'back to shelter';
   return `to Stop ${waypointLabel(toLabel, plan)}`;
 }
 
@@ -78,6 +78,11 @@ export type HoverMode = 'route' | 'section';
 
 /** Pixel span under which the route is too small on screen to hover by section. */
 export const SECTION_HOVER_MIN_PX = 400;
+export const SUMMARY_LABEL_MIN_PX = 150;
+
+export function showSummaryLabels(routeSpanPx: number): boolean {
+  return routeSpanPx >= SUMMARY_LABEL_MIN_PX;
+}
 
 export function hoverMode(spanPx: number): HoverMode {
   return spanPx < SECTION_HOVER_MIN_PX ? 'route' : 'section';
@@ -140,7 +145,7 @@ export function slopeLabels(stats: SlopeStats, steepestAlongM: number) {
     steepest:
       stats.steepestDeg === null
         ? ''
-        : `Steepest ${Math.round(stats.steepestDeg)}° · ${formatDistance(steepestAlongM)} from drop-off`,
+        : `Steepest ${Math.round(stats.steepestDeg)}° · ${formatDistance(steepestAlongM)} from shelter`,
   };
 }
 
@@ -225,6 +230,18 @@ export function bearingDeg(from: [number, number], to: [number, number], origin:
 
 /** Spacing of direction chevrons along the route, in metres. */
 export const CHEVRON_SPACING_M = 150;
+/** Shortest stretch that still gets a chevron; shorter pieces are joins between stretches. */
+export const MIN_CHEVRON_STRETCH_M = 60;
+
+function lineLengthM(line: [number, number][], origin: GridOrigin): number {
+  let total = 0;
+  for (let i = 1; i < line.length; i++) {
+    const a = lonlatToLocalMetres(line[i - 1][0], line[i - 1][1], origin);
+    const b = lonlatToLocalMetres(line[i][0], line[i][1], origin);
+    total += Math.hypot(b.x_m - a.x_m, b.y_m - a.y_m);
+  }
+  return total;
+}
 
 /**
  * Chevrons for a stretch in every direction it is walked. One way: chevronPositions along the
@@ -239,6 +256,18 @@ export function chevronsFor(
 ): ChevronPosition[] {
   const fwd = directions.includes('fwd');
   const back = directions.includes('back');
+  const lengthM = lineLengthM(line, origin);
+  if (lengthM < spacingM) {
+    // A stretch shorter than the spacing would get none; give it one chevron per direction
+    // (midpoint one way, a third from each end both ways) unless it is only a join.
+    if (lengthM < MIN_CHEVRON_STRETCH_M) return [];
+    const reversed = [...line].reverse();
+    if (fwd && back) {
+      return [...chevronPositions(line, origin, (2 * lengthM) / 3), ...chevronPositions(reversed, origin, (2 * lengthM) / 3)];
+    }
+    if (fwd) return chevronPositions(line, origin, lengthM);
+    return back ? chevronPositions(reversed, origin, lengthM) : [];
+  }
   if (!fwd) return back ? chevronPositions([...line].reverse(), origin, spacingM) : [];
   const out = chevronPositions(line, origin, spacingM);
   if (!back) return out;
@@ -281,3 +310,6 @@ export function formatGraticule(value: number, axis: 'lat' | 'lon', step: number
   if (axis === 'lat') return `${text} ${value < 0 ? 'S' : 'N'}`;
   return `${text} ${value < 0 ? 'W' : 'E'}`;
 }
+
+/** Hover line on the shelter marker, so nobody takes it for a stop. */
+export const SHELTER_HINT = 'Shelter: start and finish of the walk';

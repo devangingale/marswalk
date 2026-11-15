@@ -7,12 +7,13 @@ Outputs passes.json bundle files and manifest records.
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import brentq, minimize_scalar
 import spiceypy as spice
@@ -36,6 +37,17 @@ SITES = {
         "lat": 18.4447,
         "lon_east": 77.4508,
     },
+}
+
+# Kernels every run needs: leap seconds, planetary constants, planet and Mars-satellite ephemerides.
+BASE_KERNELS = ["naif0012.tls", "pck00011.tpc", "de442s.bsp", "mar099s.bsp"]
+# Spacecraft ephemerides per orbiter. Each is optional: an orbiter whose kernel is missing is
+# skipped. mro_psp.bsp and m01_map.bsp are NAIF's ever-growing, regularly refreshed files.
+ORBITER_KERNELS = {
+    "MRO": ["mro_psp.bsp"],
+    "ODY": ["m01_map.bsp"],
+    "TGO": ["em16_tgo_fsp_463_01_20260706_20261219_v01.bsp"],
+    "MEX": ["ORMF_T19_260611_330101_01965.BSP", "ORMM_T19_261101000000_01981.BSP"],
 }
 
 # Active relay fleet mapping (MAVEN excluded - mission terminated Dec 2025)
@@ -190,30 +202,30 @@ def validate_passes_sorted_and_non_overlapping(passes: list[dict[str, Any]]) -> 
 class SPICEPassPredictor:
     """Predicts orbiter passes over Mars surface locations using NAIF SPICE kernels."""
 
-    def __init__(self, kernels_dir: str | Path):
+    def __init__(self, kernels_dir: str | Path, orbiters: list[str] | None = None):
         self.kernels_dir = Path(kernels_dir)
         self.loaded_kernels: list[str] = []
-        self._load_kernels()
+        self.orbiters: list[str] = []
+        self._load_kernels(orbiters or list(ORBITERS))
 
-    def _load_kernels(self) -> None:
+    def _load_kernels(self, orbiters: list[str]) -> None:
         spice.kclear()
-        required_kernels = [
-            "naif0012.tls",
-            "pck00011.tpc",
-            "de442s.bsp",
-            "mar099s.bsp",
-            "mro_psp.bsp",
-            "m01_map.bsp",
-            "em16_tgo_fsp_463_01_20260706_20261219_v01.bsp",
-            "ORMF_T19_260611_330101_01965.BSP",
-            "ORMM_T19_261101000000_01981.BSP",
-        ]
-        for name in required_kernels:
+        for name in BASE_KERNELS:
             path = self.kernels_dir / name
             if not path.exists():
                 raise FileNotFoundError(f"Missing required SPICE kernel: {path}")
             spice.furnsh(str(path))
             self.loaded_kernels.append(name)
+        for orbiter in orbiters:
+            names = ORBITER_KERNELS[orbiter]
+            missing = [n for n in names if not (self.kernels_dir / n).exists()]
+            if missing:
+                print(f"Skipping {orbiter}: missing kernel(s) {', '.join(missing)}")
+                continue
+            for name in names:
+                spice.furnsh(str(self.kernels_dir / name))
+                self.loaded_kernels.append(name)
+            self.orbiters.append(orbiter)
 
     def close(self) -> None:
         spice.kclear()
@@ -259,8 +271,8 @@ class SPICEPassPredictor:
 
         all_passes: list[dict[str, Any]] = []
 
-        for orb_id, orb_meta in ORBITERS.items():
-            target_id = orb_meta["naif_id"]
+        for orb_id in self.orbiters:
+            target_id = ORBITERS[orb_id]["naif_id"]
             cov_start, cov_end = self.get_orbiter_coverage_et(target_id)
             orb_start_et = max(window_start_et, cov_start)
             orb_end_et = min(window_end_et, cov_end)
@@ -359,11 +371,27 @@ def build_passes_bundle(
     start_utc: str = "2026-11-01T00:00:00Z",
     end_utc: str = "2026-12-31T23:59:59Z",
     min_elevation_deg: float = DEFAULT_MIN_ELEVATION_DEG,
+    orbiters: list[str] | None = None,
 ) -> dict[str, Any]:
-    """Compute passes for a named site and write the bundle passes.json."""
+    """
+    Compute passes for a named site and write the bundle passes.json. The window's end is
+    clamped to the loaded kernels' coverage, so the bundle never claims to cover time it has
+    no ephemeris for.
+    """
     site = SITES[site_id]
-    predictor = SPICEPassPredictor(kernels_dir)
+    predictor = SPICEPassPredictor(kernels_dir, orbiters)
     try:
+        coverage = {}
+        for orbiter in predictor.orbiters:
+            cov_start, cov_end = predictor.get_orbiter_coverage_et(ORBITERS[orbiter]["naif_id"])
+            if np.isfinite(cov_start) and np.isfinite(cov_end):
+                coverage[orbiter] = {
+                    "start": spice.et2utc(cov_start, "ISOC", 0) + "Z",
+                    "end": spice.et2utc(cov_end, "ISOC", 0) + "Z",
+                }
+        if coverage:
+            last = max(c["end"] for c in coverage.values())
+            end_utc = min(end_utc, last)
         passes = predictor.compute_passes(
             lat_deg=site["lat"],
             lon_east_deg=site["lon_east"],
@@ -373,6 +401,7 @@ def build_passes_bundle(
             min_elevation_deg=min_elevation_deg,
         )
         kernel_names = predictor.loaded_kernels.copy()
+        computed = predictor.orbiters.copy()
     finally:
         predictor.close()
 
@@ -386,16 +415,18 @@ def build_passes_bundle(
             "start": start_utc,
             "end": end_utc,
         },
-        "orbiters": list(ORBITERS.keys()),
+        "orbiters": computed,
         "passes": passes,
         "source": {
             "kernels": kernel_names,
+            "coverage": coverage,
+            "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "notes": (
                 "Passes computed using NASA NAIF SPICE (spiceypy 8.4.0) with topocentric "
                 "elevation above local horizon on a spherical Mars (radius 3396190 m, IAU_MARS body-fixed frame). "
                 f"min_elevation_deg = {min_elevation_deg} is an assumed communication elevation mask "
                 "(no published minimum mask found in relay literature). MAVEN excluded (mission ended Dec 2025). "
-                "TGO forward predicted trajectory extends through 2026-12-19 per latest ESA/NAIF publication."
+                "Each orbiter's passes stop where its loaded ephemeris coverage ends (source.coverage)."
             ),
         },
     }
@@ -411,13 +442,12 @@ def build_passes_bundle(
 def generate_gale_timeline_plot(
     gale_bundle: dict[str, Any], output_png: str | Path
 ) -> None:
-    """Generate a timeline PNG in .shots/ for 3 sols at Gale Crater (2026-11-01 to 2026-11-04)."""
+    """Generate a timeline PNG in .shots/ for the first 3 days of the bundle's window at Gale Crater."""
     out_path = Path(output_png)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Filter passes in first 3 sols (2026-11-01T00:00:00Z to 2026-11-04T00:00:00Z)
-    t0_str = "2026-11-01T00:00:00Z"
-    t1_str = "2026-11-04T00:00:00Z"
+    t0_str = gale_bundle["window"]["start"]
+    t1_str = window_end(t0_str, 3)
     passes_3sol = [
         p
         for p in gale_bundle["passes"]
@@ -432,6 +462,11 @@ def generate_gale_timeline_plot(
     }
     orbiter_y = {"MRO": 3, "ODY": 2, "TGO": 1, "MEX": 0}
 
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
     fig, ax = plt.subplots(figsize=(12, 5), dpi=150)
 
     # Plot pass bars
@@ -440,11 +475,8 @@ def generate_gale_timeline_plot(
         color = orbiter_colors.get(orb, "#333333")
         y = orbiter_y[orb]
 
-        # Convert rise/set to hours from 2026-11-01T00:00:00Z
-        # Simple ISO parse
-        from datetime import datetime, timezone
-
-        t_base = datetime(2026, 11, 1, 0, 0, 0, tzinfo=timezone.utc).timestamp()
+        # Convert rise/set to hours from the window start
+        t_base = datetime.fromisoformat(t0_str.replace("Z", "+00:00")).timestamp()
         t_rise = (
             datetime.fromisoformat(p["rise_utc"].replace("Z", "+00:00")).timestamp()
             - t_base
@@ -492,10 +524,10 @@ def generate_gale_timeline_plot(
     ax.set_yticklabels(["MEX", "TGO", "ODY", "MRO"], fontsize=10, fontweight="bold")
     ax.set_xlim(0, 72)
     ax.set_xticks(np.arange(0, 73, 6))
-    ax.set_xlabel("Hours from 2026-11-01T00:00:00 UTC", fontsize=10)
+    ax.set_xlabel(f"Hours from {t0_str.replace('Z', '')} UTC", fontsize=10)
     ax.set_ylabel("Relay Orbiter", fontsize=10)
     ax.set_title(
-        "Gale Crater Relay Orbiter Passes (3 Sols: 2026-11-01 to 2026-11-04, Elevation ≥ 10°)",
+        f"Gale Crater Relay Orbiter Passes (3 days from {t0_str[:10]}, Elevation ≥ 10°)",
         fontsize=11,
         fontweight="bold",
     )
@@ -571,48 +603,66 @@ def compute_evidence_metrics(bundle: dict[str, Any]) -> dict[str, Any]:
     return stats
 
 
-def main() -> None:
-    """Main execution script: generate passes bundles for Gale and Jezero, timeline plot, and report evidence."""
-    kernels_dir = Path("data/raw/naif_spice")
-    if not kernels_dir.exists():
-        raise FileNotFoundError(f"Kernels directory not found: {kernels_dir}")
+def utc_midnight_today() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT00:00:00Z")
 
-    # 1. Gale Crater bundle
-    print("Computing passes for Gale Crater...")
-    gale_bundle = build_passes_bundle(
-        site_id="gale",
-        kernels_dir=kernels_dir,
-        output_path="data/sites/gale/bundle/passes.json",
-    )
-    gale_stats = compute_evidence_metrics(gale_bundle)
 
-    # 2. Jezero Crater bundle
-    print("Computing passes for Jezero Crater...")
-    jezero_bundle = build_passes_bundle(
-        site_id="jezero",
-        kernels_dir=kernels_dir,
-        output_path="data/sites/jezero/bundle/passes.json",
-    )
-    jezero_stats = compute_evidence_metrics(jezero_bundle)
+def window_end(start_utc: str, days: float) -> str:
+    start = datetime.strptime(start_utc, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    return (start + timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    # 3. Timeline plot for Gale (.shots/gale_passes_timeline.png)
-    shots_dir = Path(".shots")
-    timeline_png = shots_dir / "gale_passes_timeline.png"
-    generate_gale_timeline_plot(gale_bundle, timeline_png)
 
-    # 4. Print evidence summary
+def main(argv: list[str] | None = None) -> None:
+    """Generate passes bundles for each site over a rolling window, and report evidence."""
+    parser = argparse.ArgumentParser(description="Orbiter relay passes over Mars sites from NAIF SPICE.")
+    parser.add_argument("--kernels-dir", type=Path, default=Path("data/raw/naif_spice"))
+    parser.add_argument("--sites", default="gale,jezero", help="comma-separated site ids")
+    parser.add_argument("--start", default=None, help="window start, YYYY-MM-DDTHH:MM:SSZ (default: today 00:00 UTC)")
+    parser.add_argument("--days", type=float, default=30.0, help="window length; clamped to kernel coverage")
+    parser.add_argument("--orbiters", default=",".join(ORBITERS), help="comma-separated: MRO,ODY,TGO,MEX")
+    parser.add_argument("--out-root", type=Path, default=Path("data/sites"), help="writes <root>/<site>/bundle/passes.json")
+    parser.add_argument("--no-plot", action="store_true", help="skip the Gale timeline PNG")
+    args = parser.parse_args(argv)
+
+    if not args.kernels_dir.exists():
+        raise FileNotFoundError(f"Kernels directory not found: {args.kernels_dir} (run pipeline/fetch_spice.py)")
+    start = args.start or utc_midnight_today()
+    end = window_end(start, args.days)
+    orbiters = [o.strip().upper() for o in args.orbiters.split(",") if o.strip()]
+    unknown = [o for o in orbiters if o not in ORBITERS]
+    if unknown:
+        parser.error(f"unknown orbiter(s): {', '.join(unknown)}")
+
+    stats = []
+    bundles = {}
+    for site_id in [s.strip() for s in args.sites.split(",") if s.strip()]:
+        print(f"Computing passes for {SITES[site_id]['name']} from {start} for {args.days:g} days...")
+        bundles[site_id] = build_passes_bundle(
+            site_id=site_id,
+            kernels_dir=args.kernels_dir,
+            output_path=args.out_root / site_id / "bundle" / "passes.json",
+            start_utc=start,
+            end_utc=end,
+            orbiters=orbiters,
+        )
+        b = bundles[site_id]
+        print(f"  {len(b['passes'])} passes, window {b['window']['start']} to {b['window']['end']}, orbiters {b['orbiters']}")
+        stats.append(compute_evidence_metrics(b))
+
+    if not args.no_plot and "gale" in bundles:
+        generate_gale_timeline_plot(bundles["gale"], Path(".shots") / "gale_passes_timeline.png")
+
     print("\n" + "=" * 60)
     print("ORBITER PASS PREDICTION EVIDENCE REPORT")
     print("=" * 60)
-    for site_stats in [gale_stats, jezero_stats]:
+    for site_stats in stats:
         print(f"\nSite: {site_stats['site'].upper()} ({site_stats['total_sols']} sols)")
         print(f"{'Orbiter':<10} {'Passes/Sol (Min/Med/Max)':<28} {'Med Duration':<15} {'Total Passes':<12}")
         print("-" * 65)
-        for orb, s in site_stats["orbiters"].items():
-            pps = f"{s['passes_per_sol']['min']} / {s['passes_per_sol']['median']:.1f} / {s['passes_per_sol']['max']}"
-            dur = f"{s['median_duration_min']} min ({s['median_duration_s']}s)"
-            print(f"{orb:<10} {pps:<28} {dur:<15} {s['total_passes']:<12}")
-
+        for orb, st in site_stats["orbiters"].items():
+            pps = f"{st['passes_per_sol']['min']} / {st['passes_per_sol']['median']:.1f} / {st['passes_per_sol']['max']}"
+            dur = f"{st['median_duration_min']} min ({st['median_duration_s']}s)"
+            print(f"{orb:<10} {pps:<28} {dur:<15} {st['total_passes']:<12}")
     print("\n" + "=" * 60)
 
 

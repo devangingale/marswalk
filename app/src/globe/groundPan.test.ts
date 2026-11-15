@@ -1,7 +1,7 @@
 // Written with AI assistance, directed and reviewed by the team.
 import { describe, expect, it } from 'vitest';
 import { Cartesian3, Ray } from 'cesium';
-import { panRotation, raySphereHit } from './groundPan';
+import { GROUND_PAN_MAX_HEIGHT_M, panRotation, raySphereHit, usesGroundPan } from './groundPan';
 
 describe('raySphereHit', () => {
   it('returns the near hit when the ray starts outside the sphere', () => {
@@ -39,5 +39,15 @@ describe('panRotation', () => {
 
   it('returns null when the points are the same direction', () => {
     expect(panRotation(new Cartesian3(2, 0, 0), new Cartesian3(5, 0, 0))).toBeNull();
+  });
+});
+
+describe('usesGroundPan', () => {
+  it('anchors to the ground near the surface and leaves planet scale to Cesium', () => {
+    expect(GROUND_PAN_MAX_HEIGHT_M).toBe(40000);
+    expect(usesGroundPan(-3600)).toBe(true);
+    expect(usesGroundPan(39999)).toBe(true);
+    expect(usesGroundPan(40000)).toBe(false);
+    expect(usesGroundPan(5_000_000)).toBe(false);
   });
 });

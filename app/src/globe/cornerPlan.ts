@@ -2,12 +2,12 @@
 // A synthetic plan inside the 500 m Gale sample corner, drawn by hand so that the route has
 // shared ground walked both ways, two forks and a detour stop. For trying the route look only.
 import { GridOrigin, localMetresToLonLat, lonlatToLocalMetres } from '../lib/grid';
-import { densifyLine, type Plan, type PlanLeg } from '../lib/plan';
+import { defaultShelterLabel, densifyLine, type Plan, type PlanLeg } from '../lib/plan';
 
 type XY = [number, number];
 
 /** Waypoints in local metres from the corner origin (x east, y north). */
-const D: XY = [250, 250]; // drop-off, the sample's default start
+const D: XY = [250, 250]; // the shelter, the sample's default start
 const E: XY = [250, 330]; // where the way out and the way home meet
 const S1: XY = [330, 440];
 const J: XY = [360, 420]; // spur junction
@@ -71,7 +71,7 @@ export function buildCornerPlan(origin: GridOrigin, elevationAt?: (lon: number, 
       stop_time_s: 600,
       solar_event: false,
     },
-    start: { lon: startLon, lat: startLat, label: 'Rover drop-off' },
+    start: { lon: startLon, lat: startLat, label: defaultShelterLabel('rover'), kind: 'rover' },
     stops: [stop('c1', 'North outcrop', S1), stop('c2', 'East spur', S2), stop('c3', 'South bench', S3)],
     route: {
       legs,

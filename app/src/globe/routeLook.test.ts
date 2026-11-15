@@ -7,6 +7,7 @@ import {
   branchLabel,
   branchLabelSides,
   chevronsFor,
+  MIN_CHEVRON_STRETCH_M,
   distanceAlong,
   formatElevation,
   formatGraticule,
@@ -23,6 +24,7 @@ import {
   sectionForLegs,
   sectionLabel,
   slopeLabels,
+  showSummaryLabels,
   stretchStyles,
   waypointLabel,
 } from './routeLook';
@@ -81,28 +83,28 @@ describe('coordinates', () => {
 });
 
 describe('labels', () => {
-  it('names the drop-off and numbers stops in plan order', () => {
-    expect(waypointLabel('start', LOOP)).toBe('Drop-off');
+  it('names the shelter and numbers stops in plan order', () => {
+    expect(waypointLabel('start', LOOP)).toBe('Shelter');
     expect(waypointLabel('c', LOOP)).toBe('3');
   });
 
   it('labels a section with its detours, distance and time', () => {
     const section: Section = { id: 'section-1', fromStopId: 'start', toStopId: 'c', detourStopIds: ['b'], legIndices: [1, 2] };
-    expect(sectionLabel(section, LOOP)).toBe('Drop-off → 3 via 2 · 1.6 km · 38 min');
+    expect(sectionLabel(section, LOOP)).toBe('Shelter → 3 via 2 · 1.6 km · 38 min');
   });
 
   it('labels a section without detours', () => {
     const section: Section = { id: 'section-0', fromStopId: 'start', toStopId: 'a', detourStopIds: [], legIndices: [0] };
-    expect(sectionLabel(section, LOOP)).toBe('Drop-off → 1 · 800 m · 16 min');
+    expect(sectionLabel(section, LOOP)).toBe('Shelter → 1 · 800 m · 16 min');
   });
 
   it('labels the whole route as the chain of stops', () => {
-    expect(routeLabel(LOOP)).toBe('Drop-off → 1 → 2 → 3 → Drop-off · 3.6 km · 1 h 20 min');
+    expect(routeLabel(LOOP)).toBe('Shelter → 1 → 2 → 3 → Shelter · 3.6 km · 1 h 20 min');
   });
 
   it('labels fork branches by destination', () => {
     expect(branchLabel('b', LOOP)).toBe('to Stop 2');
-    expect(branchLabel('drop-off', LOOP)).toBe('back to drop-off');
+    expect(branchLabel('drop-off', LOOP)).toBe('back to shelter');
   });
 
   it('needs a finish marker only when the route ends away from the drop-off', () => {
@@ -148,6 +150,12 @@ describe('hover', () => {
   });
 });
 
+describe('summary labels', () => {
+  it('hides route summaries below 150 screen pixels', () => {
+    expect([149, 150, 151].map(showSummaryLabels)).toEqual([false, true, true]);
+  });
+});
+
 describe('gradient', () => {
   it('bins absolute gradients at 5, 10, 15 and 20 degrees', () => {
     expect([0, 4.99, 5, -9, 10, 14.9, 15, -19.99, 20, 35].map(gradeBin)).toEqual([1, 1, 2, 2, 3, 3, 4, 4, 5, 5]);
@@ -177,7 +185,7 @@ describe('gradient', () => {
     expect(slopeLabels(stats, 118)).toEqual({
       high: 'High -4,402 m',
       low: 'Low -4,461 m',
-      steepest: 'Steepest 18° · 118 m from drop-off',
+      steepest: 'Steepest 18° · 118 m from shelter',
     });
   });
 });
@@ -256,6 +264,30 @@ describe('chevronsFor', () => {
       [150, 270],
       [300, 270],
     ]);
+  });
+
+  const short = (m: number): [number, number][] => [
+    [ORIGIN.lon0, ORIGIN.lat0],
+    [ORIGIN.lon0 + metresEast(m), ORIGIN.lat0],
+  ];
+
+  it('gives a stretch shorter than the spacing one chevron per direction', () => {
+    expect(MIN_CHEVRON_STRETCH_M).toBe(60);
+    expect(chevronsFor(short(100), ['fwd'], ORIGIN).map((c) => [along(c), Math.round(c.bearingDeg)])).toEqual([[50, 90]]);
+    expect(chevronsFor(short(100), ['back'], ORIGIN).map((c) => [along(c), Math.round(c.bearingDeg)])).toEqual([[50, 270]]);
+    expect(chevronsFor(short(141), ['fwd'], ORIGIN).map((c) => [along(c), Math.round(c.bearingDeg)])).toEqual([[70.5, 90]]);
+  });
+
+  it('places the two directions of a short out-and-back apart, not stacked', () => {
+    expect(chevronsFor(short(90), ['fwd', 'back'], ORIGIN).map((c) => [along(c), Math.round(c.bearingDeg)])).toEqual([
+      [30, 90],
+      [60, 270],
+    ]);
+  });
+
+  it('leaves stretches under 60 m without chevrons', () => {
+    expect(chevronsFor(short(59), ['fwd'], ORIGIN)).toEqual([]);
+    expect(chevronsFor(short(40), ['fwd', 'back'], ORIGIN)).toEqual([]);
   });
 });
 

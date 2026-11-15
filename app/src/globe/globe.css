@@ -1,45 +1,15 @@
 /* Written with AI assistance, directed and reviewed by the team. */
+/* Explore tab: the globe on the shared Regions layout (shell/regions.css). Tokens only. */
 
-.globe-body {
-  display: flex;
+.explore {
   width: 100%;
   height: 100%;
   min-height: 0;
-  overflow: hidden;
-  position: relative;
-}
-
-.globe-body > aside.panel {
-  width: var(--panel-left-width);
-  flex: none;
-  border-right: var(--border-width) solid var(--color-rule);
-  background: var(--color-surface);
-  overflow-y: auto;
-  z-index: 10;
-}
-
-@media (max-width: 1024px) {
-  .globe-body > aside.panel {
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    max-width: 85vw;
-    z-index: 30;
-    box-shadow: var(--shadow-drawer);
-  }
-
-  .globe-body:has(> aside.panel[style*='display: block']) .globe-view,
-  .globe-body:has(.sites-panel) .globe-view {
-    margin-left: min(var(--panel-left-width), 85vw);
-  }
 }
 
 .globe-view {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-  height: 100%;
+  position: absolute;
+  inset: 0;
   background: var(--color-bg);
 }
 
@@ -56,34 +26,212 @@
   line-height: var(--leading-xs);
 }
 
-.globe-sites {
-  position: absolute;
-  top: calc(var(--space-16) * 3 + var(--space-4));
-  left: var(--space-4);
+/* Cesium ion logo and data attribution stay at the bottom right, clear of the cursor readout. */
+.globe-view .cesium-viewer-bottom {
+  left: auto;
+  right: var(--space-2);
   display: flex;
-  gap: var(--space-2);
-  z-index: 2;
+  justify-content: flex-end;
 }
 
-.globe-mode,
-.globe-theme,
-.globe-tabs {
+/* --- Map controls (top right): Whole planet, heatmap, the site, View. One row, never
+   wrapping: the row ends clear of the left handle (a chevron when its panel is open, a
+   chevron and label when folded) and the site name gives way first. --- */
+.explore {
+  --explore-handle-open: 32px;
+  --explore-handle-folded: 96px;
+}
+
+.explore .s48-regions__controls {
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  left: calc(var(--space-3) + var(--explore-handle-folded) + var(--space-2));
+}
+
+.explore .s48-regions[data-left='open'] .s48-regions__controls {
+  left: calc(var(--space-3) + var(--explore-handle-open) + var(--space-2));
+}
+
+.explore .s48-regions[data-overlay='true'][data-left='open'] .s48-regions__controls {
+  left: calc(var(--panel-left-width) + var(--space-3) + var(--explore-handle-open) + var(--space-2));
+}
+
+.explore .s48-regions__controls > * {
   flex: none;
+  white-space: nowrap;
 }
 
-@media (max-width: 760px) {
-  .mock-top {
-    gap: var(--space-2);
-    padding-inline: var(--space-2);
-  }
-
-  .globe-mode button,
-  .globe-theme button,
-  .globe-tabs button {
-    padding-inline: var(--space-2);
-  }
+.explore .s48-regions__controls > .explore-site-btn {
+  flex: 0 1 auto;
+  min-width: 64px;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+.explore-view {
+  position: relative;
+}
+
+/* An open View menu draws over the right panel handle below the row. */
+.explore .s48-regions__controls:has(.explore-view__menu:not([hidden])) {
+  z-index: 17;
+}
+
+.explore-view__menu {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: 0;
+  display: grid;
+  gap: var(--space-2);
+  min-width: 160px;
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-rule);
+  border-radius: var(--radius-2);
+  box-shadow: var(--shadow-popover);
+}
+
+.explore-view__menu[hidden] {
+  display: none;
+}
+
+.explore-view__menu label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+/* --- Left panel: Layers or Site finder. --- */
+.explore-left__switch {
+  padding: var(--space-4) var(--space-4) 0;
+}
+
+.explore-left__switch .s48-seg {
+  display: flex;
+}
+
+.explore-left__switch .s48-seg button {
+  flex: 1;
+}
+
+/* The layer list lives in the Regions panel, which scrolls and collapses on its own. */
+.explore-left__layers > aside.panel {
+  overflow: visible !important;
+}
+
+.explore-left__layers .panel-sec > h3 > .s48-btn {
+  display: none;
+}
+
+/* The site finder's sections share the layer panel's section style (shell.css). */
+.explore-left__sites .panel-sec {
+  padding-top: var(--space-3);
+}
+
+.explore-left__sites .panel-sec > h3 {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+
+/* Caves are small triangles on the globe; the layer panel swatch matches. */
+.explore-left .s48-cave-dot {
+  width: 10px;
+  height: 9px;
+  border-radius: 0;
+  box-shadow: none;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+/* --- Right panel sections: status, selected site, Now, sample route. --- */
+.explore-sec {
+  padding: var(--space-4);
+  border-bottom: var(--border-width) solid var(--color-rule);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+}
+
+.explore-sec__title {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0;
+  color: var(--color-text);
+}
+
+.explore-sec__note,
+.explore-sec--status p {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+}
+
+.explore-sec--status p:first-child {
+  margin-top: 0;
+}
+
+/* The conditions panel sits in its section instead of floating over the map. */
+.explore-sec--now .s48-cond {
+  position: static;
+  width: auto;
+  max-width: none;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.explore-sec--now .s48-cond__title {
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  letter-spacing: 0;
+}
+
+.explore-route__choice {
+  display: flex;
+  margin-bottom: var(--space-2);
+}
+
+.explore-route__choice button {
+  flex: 1;
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.explore-route__legs {
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 2px;
+  font-family: var(--font-data);
+  font-variant-numeric: var(--numeric);
+}
+
+.explore-route__legs li {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-1);
+  border-left: 3px solid transparent;
+}
+
+.explore-route__legs li.is-hovered {
+  background: var(--color-surface-raised);
+  border-left-color: var(--map-route-core);
+}
+
+/* --- Map labels: hover readout, graticule edge labels, cursor position. --- */
 .globe-hover {
   position: absolute;
   z-index: 3;
@@ -93,97 +241,6 @@
   white-space: nowrap;
 }
 
-.globe-notice {
-  position: absolute;
-  top: var(--space-4);
-  left: var(--space-4);
-  z-index: 2;
-  max-width: 420px;
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-surface);
-  border: var(--border-width) solid var(--color-rule);
-  border-radius: var(--radius-1);
-  font-size: var(--text-sm);
-  color: var(--color-text);
-}
-
-/* Cesium ion logo and data attribution stay visible at the bottom right, clear of the layer drawer. */
-.globe-view .cesium-viewer-bottom {
-  left: 0;
-  right: var(--space-2);
-  display: flex;
-  justify-content: flex-end;
-}
-
-/* Route card: plan switch, sections (linked to the hover on the globe), view toggles. */
-.globe-route {
-  position: absolute;
-  top: var(--space-4);
-  left: var(--space-4);
-  z-index: 2;
-  width: 320px;
-  max-width: calc(100% - 2 * var(--space-4));
-  display: grid;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  background: var(--color-surface);
-  border: var(--border-width) solid var(--color-rule);
-  border-radius: var(--radius-2);
-  color: var(--color-text);
-  font-size: var(--text-sm);
-}
-
-.globe-route .s48-seg {
-  display: flex;
-}
-
-.globe-route .s48-seg button {
-  flex: 1;
-  padding: 0 var(--space-2);
-  font-size: var(--text-sm);
-}
-
-.globe-route__sections {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 2px;
-  font-family: var(--font-data);
-  font-variant-numeric: var(--numeric);
-}
-
-.globe-route__sections li {
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-1);
-  border-left: 3px solid transparent;
-}
-
-.globe-route__sections li.is-hovered {
-  background: var(--color-surface-raised);
-  border-left-color: var(--map-route-core);
-}
-
-.globe-route__actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-}
-
-.globe-route__actions label {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  cursor: pointer;
-}
-
-.globe-route__note {
-  margin: 0;
-  color: var(--color-text-muted);
-}
-
-/* Graticule edge labels and the cursor readout, in the map label style. */
 .globe-edge {
   position: absolute;
   z-index: 1;
@@ -203,25 +260,11 @@
 
 .globe-cursor {
   position: absolute;
-  left: var(--space-4);
-  bottom: calc(var(--space-12) + var(--space-16));
+  left: var(--space-3);
+  bottom: var(--space-3);
   z-index: 2;
   pointer-events: none;
   white-space: nowrap;
   font-variant-numeric: var(--numeric);
 }
 
-@media (max-width: 1024px) {
-  .globe-cursor {
-    bottom: calc(var(--space-16) + var(--space-16));
-  }
-}
-
-/* Caves are small triangles on the globe; the layer panel swatch matches. */
-.globe-body .s48-cave-dot {
-  width: 10px;
-  height: 9px;
-  border-radius: 0;
-  box-shadow: none;
-  clip-path: polygon(50% 0, 100% 100%, 0 100%);
-}

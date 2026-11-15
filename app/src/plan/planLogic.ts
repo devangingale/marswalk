@@ -1,5 +1,10 @@
 import type { Plan, PlanParams, PlanStart, PlanStop, PlanTotals } from '../lib/plan';
+import { defaultShelterLabel, normalizeShelter } from '../lib/plan';
 import type { RouteGrid } from '../lib/grid';
+
+export function isLatestPlanRequest(requestId: number, latestRequestId: number): boolean {
+  return requestId === latestRequestId;
+}
 
 export const DEFAULT_PARAMS: PlanParams = {
   crew: 2, time_limit_s: 28_800, suit_mass_kg: 120, body_mass_kg: 80,
@@ -67,20 +72,59 @@ export function findWalkableCentre(grid: RouteGrid): PlanStart {
         if (Math.max(Math.abs(r - middle.row), Math.abs(c - middle.col)) !== radius) continue;
         if (grid.isPassable(r, c)) {
           const point = grid.rowColToLonLat(r, c);
-          return { ...point, label: 'Rover drop-off' };
+          return { ...point, kind: 'habitat', label: defaultShelterLabel('habitat') };
         }
       }
     }
   }
   const point = grid.rowColToLonLat(middle.row, middle.col);
-  return { ...point, label: 'Rover drop-off' };
+  return { ...point, kind: 'habitat', label: defaultShelterLabel('habitat') };
 }
 
 export function makeInitialPlan(site: string, start: PlanStart): Plan {
   return {
-    version: 1, site, params: { ...DEFAULT_PARAMS }, start, stops: [],
+    version: 1, site, params: { ...DEFAULT_PARAMS }, start: normalizeShelter(start), stops: [],
     route: { legs: [], returns_to_start: true,
       totals: { distance_m: 0, time_s: 0, climb_m: 0, descent_m: 0, energy_kj: 0, dose_mgy: 0 },
       turn_back: null, feasible: true, warnings: [] },
   };
+}
+
+/** The snap notice the stops use, or null when the point did not move. */
+export function snapNotice(movedM: number): string | null {
+  return movedM > 0 ? `Moved ${Math.round(movedM)} m to walkable ground` : null;
+}
+
+/**
+ * "Move shelter" in the Plan rail: while active, the next map click places the shelter
+ * instead of adding a stop. Esc (or the button again) cancels. The notice is the last
+ * placement's snap notice; it stays until the shelter moves again.
+ */
+export interface ShelterMoveState {
+  active: boolean;
+  notice: string | null;
+}
+
+export type ShelterMoveAction =
+  | { type: 'toggle' }
+  | { type: 'cancel' }
+  /** The shelter landed (a map click in move mode, or a marker drag), movedM from the snap. */
+  | { type: 'placed'; movedM: number };
+
+export const SHELTER_MOVE_IDLE: ShelterMoveState = { active: false, notice: null };
+
+export function shelterMoveReducer(state: ShelterMoveState, action: ShelterMoveAction): ShelterMoveState {
+  switch (action.type) {
+    case 'toggle':
+      return { ...state, active: !state.active };
+    case 'cancel':
+      return state.active ? { ...state, active: false } : state;
+    case 'placed':
+      return { active: false, notice: snapNotice(action.movedM) };
+  }
+}
+
+/** What a click on the Plan map does in this state. */
+export function mapClickAction(state: ShelterMoveState): 'place-shelter' | 'add-stop' {
+  return state.active ? 'place-shelter' : 'add-stop';
 }

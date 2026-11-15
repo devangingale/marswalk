@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { Playback } from './usePlayback';
 import { RouteTrack, START_ID } from './track';
-import { playbackKeyAction, PlaybackKeyTarget } from './playbackKeys';
+import { playbackKeyAction, PlaybackKeyTarget, playbackSeekTarget } from './playbackKeys';
+import { stepSpeed } from './playbackSpeed';
 
 function eventTarget(target: EventTarget | null): PlaybackKeyTarget | null {
   if (!(target instanceof HTMLElement)) return null;
@@ -19,20 +20,20 @@ export function usePlaybackKeys(playback: Playback, track: RouteTrack): void {
       .map(({ leg, startTimeS }) => startTimeS + leg.time_s);
 
     const onKeyDown = (event: KeyboardEvent) => {
-      const action = playbackKeyAction(event.key, eventTarget(event.target), stopTimes.length > 0);
+      if (event.altKey || event.ctrlKey || event.metaKey) return;
+      const action = playbackKeyAction(event.key, eventTarget(event.target), track.durationS > 0);
       if (!action) return;
       event.preventDefault();
       if (action === 'toggle') {
         playback.toggle();
         return;
       }
-
-      const current = playback.elapsedS;
-      const stopTimesWithStart = [0, ...stopTimes];
-      const target = action === 'previous-stop'
-        ? stopTimesWithStart.filter((time) => time < current - 0.01).at(-1)
-        : stopTimes.find((time) => time > current + 0.01);
-      if (target !== undefined) playback.seek(target);
+      if (action === 'slower' || action === 'faster') {
+        playback.setSpeed(stepSpeed(playback.speed, action === 'slower' ? -1 : 1));
+        return;
+      }
+      const target = playbackSeekTarget(action, playback.elapsedS, track.durationS, stopTimes);
+      if (target !== null) playback.seek(target);
     };
 
     window.addEventListener('keydown', onKeyDown);

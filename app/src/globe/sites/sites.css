@@ -15,20 +15,6 @@
   --sites-veto-ring: var(--map-impassable);
 }
 
-/* Tabs in the top bar switch the left panel between Layers and Sites. */
-.globe-tabs {
-  display: inline-flex;
-}
-
-.sites-visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
 /* --- Controls (chips, weights) stay in view while the list scrolls. --- */
 .sites-controls {
   position: sticky;
@@ -192,26 +178,9 @@
   font-size: var(--text-sm);
 }
 
-/* --- Site card --- */
-.sites-card-wrap {
-  position: absolute;
-  right: var(--space-4);
-  bottom: var(--space-6);
-  z-index: 5;
-  display: flex;
-  width: 320px;
-  max-width: calc(100% - 2 * var(--space-4));
-  max-height: min(calc(100% - var(--space-16) - var(--space-4)), 400px);
-}
+/* --- Site card: a section of the Explore right panel, no frame of its own. --- */
 .sites-card {
   width: 100%;
-  max-height: 100%;
-  overflow-y: auto;
-  padding: var(--space-4);
-  background: var(--color-surface);
-  border: var(--border-width) solid var(--color-rule);
-  border-radius: var(--radius-2);
-  box-shadow: var(--shadow-popover);
 }
 .sites-card__head {
   display: flex;
@@ -235,67 +204,6 @@
   font-variant-numeric: var(--numeric);
   color: var(--color-text);
 }
-.sites-card__score {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  margin: var(--space-3) 0;
-}
-.sites-card__score-label {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-.sites-score-value {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-family: var(--font-data);
-  font-size: var(--text-2xl);
-  line-height: var(--leading-2xl);
-  font-weight: var(--weight-semibold);
-  font-variant-numeric: var(--numeric);
-}
-.sites-score-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: var(--radius-round);
-}
-.sites-dot--0 { background: var(--sites-score-0); }
-.sites-dot--1 { background: var(--sites-score-1); }
-.sites-dot--2 { background: var(--sites-score-2); }
-.sites-dot--3 { background: var(--sites-score-3); }
-.sites-dot--4 { background: var(--sites-score-4); }
-.sites-card__rank {
-  font-family: var(--font-data);
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.sites-groups {
-  display: grid;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
-}
-.sites-group {
-  display: grid;
-  grid-template-columns: 72px 1fr 32px;
-  align-items: center;
-  gap: var(--space-2);
-}
-.sites-group dt {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-.sites-group dd {
-  display: contents;
-}
-.sites-group__val {
-  font-family: var(--font-data);
-  font-size: var(--text-sm);
-  font-variant-numeric: var(--numeric);
-  text-align: right;
-}
-
 .sites-evidence {
   display: grid;
   gap: 2px;
@@ -358,8 +266,7 @@
   font-weight: var(--weight-medium);
 }
 
-@media (max-width: 1024px) {
-  .sites-card-wrap {
-    max-height: min(calc(100% - var(--space-16) - var(--space-4)), 320px);
-  }
+.sites-card__action {
+  display: grid;
+  margin-top: var(--space-2);
 }

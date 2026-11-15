@@ -1,0 +1,133 @@
+{
+  "_comment": "Inputs for build_panoramas.py. `discovery` queries the NASA Images API for 360-degree Photojournal entries; `curated` adds or overrides entries with values verified against the official caption (sol range, stated orientation, and for rovers without a pose table an explicit, cited position); `exclude` lists entries deliberately left out and why. Positions otherwise come from shared/poses/<site>_poses.csv; captions, credits and image files from each PIA's Photojournal page. Discovery keeps an entry only if its full caption calls it 360-degree or full-circle (the renderer wraps every image around 360 degrees, so a partial panorama cannot be shown correctly). A Perseverance entry whose caption gives no sol but states when its images were taken gets the sols that date can mean (plus or minus one, as captions mix UTC and US Pacific dates), and is kept only if the rover did not move during those sols.",
+  "discovery": {
+    "queries": [
+      {
+        "q": "Perseverance 360",
+        "rover": "Perseverance"
+      },
+      {
+        "q": "Perseverance 360-degree",
+        "rover": "Perseverance"
+      },
+      {
+        "q": "Mastcam-Z panorama",
+        "rover": "Perseverance"
+      },
+      {
+        "q": "Perseverance Navcam panorama",
+        "rover": "Perseverance"
+      },
+      {
+        "q": "Jezero panorama",
+        "rover": "Perseverance"
+      },
+      {
+        "q": "Perseverance panorama",
+        "rover": "Perseverance"
+      },
+      {
+        "q": "Perseverance",
+        "rover": "Perseverance"
+      },
+      {
+        "q": "Mars 2020",
+        "rover": "Perseverance"
+      },
+      {
+        "q": "360 Curiosity",
+        "rover": "Curiosity"
+      }
+    ]
+  },
+  "curated": [
+    {
+      "pia_id": "PIA24264",
+      "rover": "Perseverance",
+      "sol": 3
+    },
+    {
+      "pia_id": "PIA24643",
+      "rover": "Curiosity",
+      "sol": 3167
+    },
+    {
+      "pia_id": "PIA25366",
+      "rover": "Curiosity",
+      "sol": 3481
+    },
+    {
+      "pia_id": "PIA20765",
+      "rover": "Curiosity",
+      "sol": 1421
+    },
+    {
+      "pia_id": "PIA20840",
+      "rover": "Curiosity",
+      "sol": 1451,
+      "center_heading_deg": 180
+    },
+    {
+      "pia_id": "PIA24269",
+      "rover": "Curiosity",
+      "sol": 3048
+    },
+    {
+      "pia_id": "PIA24663",
+      "rover": "Perseverance",
+      "sol": 53,
+      "sol_end": 64
+    },
+    {
+      "pia_id": "PIA26369",
+      "rover": "Perseverance",
+      "sol": 1178
+    },
+    {
+      "pia_id": "PIA26474",
+      "rover": "Perseverance",
+      "sol": 1337
+    },
+    {
+      "pia_id": "PIA03095",
+      "rover": "Spirit",
+      "sol": 620,
+      "sol_end": 622,
+      "note": "Everest panorama from the summit of Husband Hill; caption: sols 620 to 622"
+    },
+    {
+      "pia_id": "PIA16440",
+      "rover": "Spirit",
+      "sol": 814,
+      "sol_end": 980,
+      "note": "McMurdo panorama from Low Ridge; caption: sol 814 to sol 980"
+    },
+    {
+      "pia_id": "PIA05755",
+      "rover": "Opportunity",
+      "sol": 58,
+      "sol_end": 60,
+      "note": "'Lion King' panorama of Eagle Crater, sols 58 and 60, taken from the crater rim just after the rover left it",
+      "position": {
+        "lat": -1.9462,
+        "lon_east": 354.4734,
+        "height": null,
+        "source": "Opportunity landing site in Eagle Crater (PDS MER mission description, MOLA IAU 2000); the rover was on the crater rim, within about 20 m"
+      }
+    }
+  ],
+  "exclude": [
+    {
+      "pia_id": "PIA15689",
+      "reason": "Opportunity at Greeley Haven (sols 2811-2947): the only published traverse (MERB_traverse_5130.csv) does not state its coordinate frame, so the stop cannot be placed without assuming one"
+    },
+    {
+      "pia_id": "PIA24444",
+      "reason": "how the sol 3 panorama was taken, not a panorama"
+    },
+    {
+      "pia_id": "PIA24445",
+      "reason": "how the sol 3 panorama was taken, not a panorama"
+    }
+  ]
+}

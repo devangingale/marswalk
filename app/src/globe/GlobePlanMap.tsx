@@ -1,16 +1,25 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  BoundingSphere, Cartesian2, Cartographic, ClassificationType, Color, ConstantPositionProperty, Entity, HeadingPitchRange, Math as CesiumMath,
-  ScreenSpaceEventHandler, ScreenSpaceEventType, Viewer,
+  BoundingSphere, Cartesian2, Cartographic, Color, ConstantPositionProperty, Entity, HeadingPitchRange, Math as CesiumMath, ScreenSpaceEventHandler, ScreenSpaceEventType, Viewer, CustomDataSource, HeightReference, DistanceDisplayCondition, ImageryLayerCollection,
 } from 'cesium';
+import { GLOBE_BASE } from '../config';
+import { GlobeGlobalLayers, type GlobeLayer } from './globalLayers';
+import { GlobeTemperatureLayer } from './temperature/temperatureLayer';
+import type { TemperatureManifest } from './temperature/temperatureManifest';
+import { canvasMarkerImages } from './markerImages';
+import type { LayerState } from '../types';
+import type { CavePoint, TemperatureSetting } from '../plan/wholePlanet';
 import type { MapProps } from '../types';
 import { resolveSiteAssetUrl } from '../config';
 import type { RouteGrid } from '../lib/grid';
 import { lonlatToLocalMetres } from '../lib/grid';
 import { ScaleBar } from '../components/ScaleBar';
 import { GlobeOverlays, photoSites, surfaceHeightM } from './overlays';
-import { createMarsViewer, initCesium } from './cesiumSetup';
+import { createMarsViewer, initCesium, surfaceClassification, type CesiumFailure } from './cesiumSetup';
+import { useSurfaceMode } from './surfaceMode';
+import { SurfaceNotice } from './SurfaceNotice';
 import { installGroundPan } from './groundPan';
+import { installPlanetView } from './planetView';
 import { cartesianToLonLat, lonLatToCartesian, metresPerPixel as measureMetresPerPixel, siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M } from './frame';
 import { GlobeImagery } from './imageryLayers';
 import { isInsideSite } from './planPick';
@@ -18,6 +27,34 @@ import 'cesium/Build/Cesium/Widgets/widgets.css';
 import './plan/plan.css';
 
 type DragTarget = { kind: 'start' } | { kind: 'stop'; id: string };
+
+/** Whole-planet layers drawn under the site layers, with the same classes Explore uses. */
+export interface WholePlanetLayers {
+  layers: GlobeLayer[];
+  states: Record<string, LayerState>;
+  temperatureManifest: TemperatureManifest | null;
+  temperature: TemperatureSetting;
+  bin: number;
+  caves: CavePoint[];
+  cavesOn: boolean;
+}
+
+interface GlobePlanMapProps extends MapProps {
+  /** Tilted view showing relief; off is straight down. */
+  relief?: boolean;
+  wholePlanet?: WholePlanetLayers;
+  /** "Move shelter" is on: the next click places the shelter (App routes it), markers do not drag. */
+  placingShelter?: boolean;
+}
+
+/** Caves within 4,000 km of the camera; anything farther at site zoom is through the planet. */
+const CAVE_VISIBLE = new DistanceDisplayCondition(0, 4_000_000);
+
+/** Median of the usable values, or null when there are none. */
+function median(values: number[]): number | null {
+  const usable = values.filter((v) => Number.isFinite(v) && v > 0).sort((a, b) => a - b);
+  return usable.length ? usable[Math.floor(usable.length / 2)] : null;
+}
 interface HoverState { x: number; y: number; lines: string[] }
 
 function pickedGround(viewer: Viewer, point: Cartesian2) {
@@ -34,9 +71,9 @@ function token(value: string, fallback: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(value).trim() || fallback;
 }
 
-export const GlobePlanMap: React.FC<MapProps> = ({
+export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
   siteData, layerStates, roverOverlayState, plan, onMapPoint, onStartChange, onStopChange, onRoutePointHover,
-  grid, activePoint,
+  grid, activePoint, relief = false, wholePlanet, placingShelter = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
@@ -44,6 +81,7 @@ export const GlobePlanMap: React.FC<MapProps> = ({
   const imageryRef = useRef<GlobeImagery | null>(null);
   const gridRef = useRef<RouteGrid | null>(null);
   const planRef = useRef(plan);
+  const placingRef = useRef(placingShelter);
   const callbacksRef = useRef({ onMapPoint, onStartChange, onStopChange, onRoutePointHover });
   const dragRef = useRef<DragTarget | null>(null);
   const dragPointRef = useRef<{ lon: number; lat: number } | null>(null);
@@ -52,11 +90,17 @@ export const GlobePlanMap: React.FC<MapProps> = ({
   const roverStateRef = useRef(roverOverlayState);
   const roverDataRef = useRef<{ traverse: GeoJSON.LineString | null; sites: ReturnType<typeof photoSites> } | null>(null);
   const [offline, setOffline] = useState(false);
-  const [relief, setRelief] = useState(false);
+  const [failure, setFailure] = useState<CesiumFailure | null>(null);
+  const surfaceMode = useSurfaceMode();
+  const [imageryTarget, setImageryTarget] = useState<ImageryLayerCollection | null>(null);
+  const globalRef = useRef<GlobeGlobalLayers | null>(null);
+  const temperatureRef = useRef<GlobeTemperatureLayer | null>(null);
+  const cavesRef = useRef<CustomDataSource | null>(null);
   const [scale, setScale] = useState(1);
   const [hover, setHover] = useState<HoverState | null>(null);
 
   planRef.current = plan;
+  placingRef.current = placingShelter;
   callbacksRef.current = { onMapPoint, onStartChange, onStopChange, onRoutePointHover };
   roverStateRef.current = roverOverlayState;
 
@@ -66,16 +110,18 @@ export const GlobePlanMap: React.FC<MapProps> = ({
     let disposed = false;
     let handler: ScreenSpaceEventHandler | null = null;
     let removePan: (() => void) | null = null;
+    let removePlanetView: (() => void) | null = null;
     let resizeObserver: ResizeObserver | null = null;
     const startup = async () => {
-      initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, navigator.onLine);
-      const { viewer, tileset, mode } = await createMarsViewer(container, { interactive: true });
+      initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, surfaceMode === 'online');
+      const { viewer, tileset, mode, failure: loadFailure } = await createMarsViewer(container, { interactive: true });
       if (disposed) { viewer.destroy(); return; }
       viewerRef.current = viewer;
       if (viewer.scene.globe) viewer.scene.globe.depthTestAgainstTerrain = true;
       viewer.scene.screenSpaceCameraController.enableCollisionDetection = false;
       viewer.cesiumWidget.creditContainer.setAttribute('aria-label', 'Cesium ion attribution');
       setOffline(mode === 'offline' || !tileset);
+      setFailure(loadFailure);
 
       const [west, south, east, north] = siteData.bounds_lonlat;
       const mid = { lon: (west + east) / 2, lat: (south + north) / 2 };
@@ -103,6 +149,7 @@ export const GlobePlanMap: React.FC<MapProps> = ({
       imagery.apply(layerStates, true);
       await imagery.setSite(siteData, mode);
       if (disposed) return;
+      setImageryTarget(imageryTarget);
 
       const heightOffset = mode === 'ion' && tileset
         ? gridRef.current
@@ -112,7 +159,7 @@ export const GlobePlanMap: React.FC<MapProps> = ({
       heightOffsetRef.current = heightOffset;
       if (tileset && gridRef.current) flyToSite(surfaceHeightM(gridRef.current, mid.lon, mid.lat, heightOffset));
 
-      const overlays = new GlobeOverlays(viewer, { classification: tileset ? ClassificationType.CESIUM_3D_TILE : ClassificationType.TERRAIN });
+      const overlays = new GlobeOverlays(viewer, { scene: viewer.scene, classification: surfaceClassification(tileset) });
       overlaysRef.current = overlays;
       if (tileset) overlays.setHeightOffsetM(heightOffset);
       overlays.setGrid(gridRef.current);
@@ -133,6 +180,7 @@ export const GlobePlanMap: React.FC<MapProps> = ({
       if (disposed) return;
       handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
       removePan = installGroundPan(viewer, () => dragRef.current !== null);
+      removePlanetView = installPlanetView(viewer);
       handler.setInputAction((event: ScreenSpaceEventHandler.MotionEvent) => {
         const point = pickedGround(viewer, event.endPosition);
         const lonLat = cartesianToLonLat(point);
@@ -151,6 +199,7 @@ export const GlobePlanMap: React.FC<MapProps> = ({
         else setHover(null);
       }, ScreenSpaceEventType.MOUSE_MOVE);
       const beginDrag = (event: ScreenSpaceEventHandler.PositionedEvent) => {
+        if (placingRef.current) return;
         const picked = viewer.scene.pick(event.position) as { id?: unknown } | undefined;
         const id = picked?.id;
         if (typeof id === 'object' && id && 'position' in id) {
@@ -186,7 +235,8 @@ export const GlobePlanMap: React.FC<MapProps> = ({
         const position = entity?.position?.getValue(viewer.clock.currentTime);
         const location = cartesianToLonLat(position);
         const current = planRef.current;
-        if (location && current) {
+        // Placing the shelter: any click on the site places it, markers included.
+        if (location && current && !placingRef.current) {
           const hitPoint = lonlatToLocalMetres(location.lon, location.lat, siteData.origin);
           const isPlanMarker = [current.start, ...current.stops].some((item) => {
             const marker = lonlatToLocalMetres(item.lon, item.lat, siteData.origin);
@@ -209,20 +259,30 @@ export const GlobePlanMap: React.FC<MapProps> = ({
           }
         }
         if (dragMarkerRef.current) viewer.entities.remove(dragMarkerRef.current);
+        if (active) callbacksRef.current.onRoutePointHover?.(null);
         dragMarkerRef.current = null;
         dragPointRef.current = null;
         dragRef.current = null;
         viewer.scene.screenSpaceCameraController.enableInputs = true;
       }, ScreenSpaceEventType.LEFT_UP);
+      // Ground scale on the canvas centre row: three 100 px spans, median of those that hit the
+      // ground. Failed picks keep the last value; changes under 3 % are ignored.
       const updateScale = () => {
         const width = viewer.scene.canvas.clientWidth;
         const height = viewer.scene.canvas.clientHeight;
-        if (width <= 100 || height <= 60) return;
-        const a = cartesianToLonLat(pickedGround(viewer, new Cartesian2(width / 2 - 50, height - 35)));
-        const b = cartesianToLonLat(pickedGround(viewer, new Cartesian2(width / 2 + 50, height - 35)));
-        if (a && b) setScale(measureMetresPerPixel(a, b, 100, siteData.origin));
+        if (width <= 320 || height <= 60) return;
+        const row = height / 2;
+        const spans = [-150, -50, 50].map((dx) => {
+          const a = cartesianToLonLat(pickedGround(viewer, new Cartesian2(width / 2 + dx, row)));
+          const b = cartesianToLonLat(pickedGround(viewer, new Cartesian2(width / 2 + dx + 100, row)));
+          return a && b ? measureMetresPerPixel(a, b, 100, siteData.origin) : NaN;
+        });
+        const next = median(spans);
+        if (next !== null) setScale((current) => (Math.abs(next - current) / current < 0.03 ? current : next));
       };
+      viewer.camera.percentageChanged = 0.05;
       viewer.camera.changed.addEventListener(updateScale);
+      viewer.camera.moveEnd.addEventListener(updateScale);
       resizeObserver = new ResizeObserver(() => { viewer.cesiumWidget.resize(); updateScale(); });
       resizeObserver.observe(container);
       updateScale();
@@ -232,6 +292,11 @@ export const GlobePlanMap: React.FC<MapProps> = ({
       disposed = true;
       handler?.destroy();
       removePan?.();
+      removePlanetView?.();
+      globalRef.current?.destroy(); globalRef.current = null;
+      temperatureRef.current?.destroy(); temperatureRef.current = null;
+      cavesRef.current = null;
+      setImageryTarget(null);
       resizeObserver?.disconnect();
       overlaysRef.current?.clear(); overlaysRef.current = null;
       imageryRef.current?.clear(); imageryRef.current = null;
@@ -239,7 +304,7 @@ export const GlobePlanMap: React.FC<MapProps> = ({
     };
   // Viewer lifetime follows site identity; route and controls sync in separate effects.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [siteData.id]);
+  }, [siteData.id, surfaceMode]);
 
   useEffect(() => {
     gridRef.current = grid ?? null;
@@ -252,6 +317,62 @@ export const GlobePlanMap: React.FC<MapProps> = ({
     overlays.setPlan(plan, siteData.origin);
   }, [plan, siteData.origin]);
   useEffect(() => { imageryRef.current?.apply(layerStates); }, [layerStates]);
+
+  const globalList = wholePlanet?.layers;
+  const globalStates = wholePlanet?.states;
+  useEffect(() => {
+    if (!imageryTarget || !globalList?.length) return;
+    const layers = new GlobeGlobalLayers(imageryTarget, GLOBE_BASE, globalList);
+    globalRef.current = layers;
+    return () => { layers.destroy(); if (globalRef.current === layers) globalRef.current = null; };
+  }, [imageryTarget, globalList]);
+  useEffect(() => { if (globalStates) globalRef.current?.apply(globalStates); }, [globalStates, imageryTarget, globalList]);
+
+  const temperatureManifest = wholePlanet?.temperatureManifest ?? null;
+  const temperature = wholePlanet?.temperature;
+  const bin = wholePlanet?.bin ?? 0;
+  useEffect(() => {
+    if (!imageryTarget || !temperatureManifest) return;
+    const layer = new GlobeTemperatureLayer(imageryTarget, GLOBE_BASE, temperatureManifest);
+    temperatureRef.current = layer;
+    return () => { layer.destroy(); if (temperatureRef.current === layer) temperatureRef.current = null; };
+  }, [imageryTarget, temperatureManifest]);
+  useEffect(() => { if (temperature) temperatureRef.current?.apply({ ...temperature, bin }); }, [temperature, bin, imageryTarget, temperatureManifest]);
+
+  const caves = wholePlanet?.caves;
+  const cavesOn = !!wholePlanet?.cavesOn;
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer || !imageryTarget || !caves?.length) return;
+    const source = new CustomDataSource('caves');
+    const triangle = canvasMarkerImages().cave();
+    for (const cave of caves) {
+      source.entities.add({
+        id: `cave:${cave.id}`,
+        name: cave.id,
+        position: lonLatToCartesian(cave.lon, cave.lat, 0),
+        // The site view has no globe depth, so caves past the horizon would show through the planet.
+        billboard: { image: triangle.image, width: triangle.width, height: triangle.height, heightReference: HeightReference.CLAMP_TO_GROUND, distanceDisplayCondition: CAVE_VISIBLE },
+      });
+    }
+    source.show = false;
+    cavesRef.current = source;
+    void viewer.dataSources.add(source);
+    return () => {
+      if (!viewer.isDestroyed()) viewer.dataSources.remove(source, true);
+      if (cavesRef.current === source) cavesRef.current = null;
+    };
+  }, [imageryTarget, caves]);
+  useEffect(() => { if (cavesRef.current) cavesRef.current.show = cavesOn; }, [cavesOn, imageryTarget, caves]);
+
+  // Relief tilts the camera to 45 degrees; off looks straight down. The first render keeps the opening view.
+  const reliefApplied = useRef(false);
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer || (!reliefApplied.current && !relief)) return;
+    reliefApplied.current = true;
+    viewer.camera.setView({ destination: viewer.camera.position, orientation: { heading: viewer.camera.heading, pitch: relief ? -Math.PI / 4 : -Math.PI / 2, roll: 0 } });
+  }, [relief]);
   useEffect(() => {
     if (overlaysRef.current && roverDataRef.current) {
       overlaysRef.current.setRover(roverDataRef.current.traverse, roverDataRef.current.sites, roverOverlayState);
@@ -260,11 +381,10 @@ export const GlobePlanMap: React.FC<MapProps> = ({
   useEffect(() => {
     const viewer = viewerRef.current;
     if (!viewer) return;
-    if (!dragMarkerRef.current) {
+    if (!activePoint) {
       const marker = viewer.entities.getById('profile-hover-point');
       if (marker) viewer.entities.remove(marker);
-    }
-    if (activePoint) {
+    } else {
       const point = activePoint;
       let marker = viewer.entities.getById('profile-hover-point');
       if (!marker) marker = viewer.entities.add({ id: 'profile-hover-point', point: { pixelSize: 10, color: Color.fromCssColorString(token('--map-route-highlight', '#c4e0fb')), outlineColor: Color.fromCssColorString(token('--map-route-casing', '#0a1828')), outlineWidth: 2, disableDepthTestDistance: Number.POSITIVE_INFINITY } });
@@ -272,15 +392,12 @@ export const GlobePlanMap: React.FC<MapProps> = ({
     }
   }, [activePoint]);
 
-  return <div className="globe-plan-map">
+  // Leaving the map clears the hover dot and tag; a drag in progress keeps them.
+  return <div className={`globe-plan-map${placingShelter ? ' is-placing-shelter' : ''}`} onPointerLeave={() => { setHover(null); if (!dragRef.current) onRoutePointHover?.(null); }}>
     <div ref={containerRef} className="globe-plan-canvas" />
-    {offline && <div className="globe-plan-offline">Offline · local terrain</div>}
-    <div className="globe-plan-controls"><button type="button" aria-pressed={relief} onClick={() => {
-      const viewer = viewerRef.current;
-      if (!viewer) return;
-      const next = !relief; setRelief(next);
-      viewer.camera.setView({ destination: viewer.camera.position, orientation: { heading: viewer.camera.heading, pitch: next ? -Math.PI / 4 : -Math.PI / 2, roll: 0 } });
-    }}>3D relief {relief ? 'On' : 'Off'}</button></div>
+    {offline && !failure && <div className="globe-plan-offline">Offline · local terrain</div>}
+    <SurfaceNotice failure={failure} />
+    {placingShelter && <div className="globe-plan-placing" role="status">Click the map to place the shelter · Esc cancels</div>}
     {hover && <div className="globe-plan-hover" style={{ left: hover.x, top: hover.y }}>{hover.lines.join('\n')}</div>}
     <ScaleBar metresPerPixel={scale} />
   </div>;

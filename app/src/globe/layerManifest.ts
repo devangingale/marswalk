@@ -29,6 +29,13 @@ export interface GlobeLegend {
   palette_label?: string;
 }
 
+export interface GlobeCategory {
+  name: string;
+  age?: string;
+  group?: string;
+  color?: string;
+}
+
 export interface GlobeLayer {
   id: string;
   title: string;
@@ -43,6 +50,7 @@ export interface GlobeLayer {
   values?: ValuesSpec;
   legend: GlobeLegend;
   source: { dataset: string; citation: string; licence: string; licence_note?: string };
+  categories?: Record<string | number, GlobeCategory>;
 }
 
 export interface GlobeManifest {
@@ -60,6 +68,7 @@ const GROUP_LABELS: Record<string, string> = {
   caves: 'Caves',
   terrain: 'Terrain',
   temperature: 'Temperature',
+  geology: 'Geology',
 };
 
 export function globeAssetUrl(base: string, path: string): string {
@@ -124,8 +133,15 @@ export function legendSteps(stops: [number, string][], min: number, max: number,
   });
 }
 
-/** Hover text such as Radiation 312 µGy/day, rounded to suit the legend range. */
+/** Hover text such as Radiation 312 µGy/day, or unit name and age for categorical layers. */
 export function formatGlobalValue(layer: GlobeLayer, value: number): string {
+  if (layer.categories) {
+    const code = Math.round(value);
+    const cat = layer.categories[code] ?? layer.categories[String(code)];
+    if (cat) {
+      return cat.age ? `${cat.name} (${cat.age})` : cat.name;
+    }
+  }
   const range = Math.abs(layer.legend.max - layer.legend.min);
   const decimals = range > 0 ? Math.max(0, 1 - Math.floor(Math.log10(range))) : 0;
   const text = Math.abs(value).toFixed(decimals);

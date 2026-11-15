@@ -1,23 +1,93 @@
-/* Timeline conditions readouts: compact sunset countdown and temperature */
-.s48-playback-readouts {
+/* Playback bar in the time region under the map (Regions.tsx), Walk and Visor.
+ * A plain bar on the region's surface: no plate, no shadow. Tokens only. */
+
+.s48-playback {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  white-space: nowrap;
-  font: var(--text-sm)/var(--leading-sm) var(--font-data);
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: var(--hit-walk);
+  color: var(--color-text);
+  font: var(--text-sm) / var(--leading-sm) var(--font-data);
   font-variant-numeric: var(--numeric);
 }
 
-.s48-playback-temp {
-  color: var(--visor-accent);
+.s48-playback__play {
+  flex: 0 0 auto;
+  min-width: 72px;
+  height: var(--hit-walk);
+  padding: 0 var(--space-3);
+  border: var(--border-width) solid var(--color-control-border);
+  border-radius: var(--radius-2);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font: var(--weight-semibold) var(--text-md) / 1 var(--font-ui);
+  cursor: pointer;
+}
+.s48-playback__play:hover { background: var(--color-surface); }
+.s48-playback__play:focus-visible,
+.s48-playback__scrub:focus-visible {
+  outline: var(--focus-width) solid var(--color-focus-inner);
+  outline-offset: var(--focus-offset);
+  box-shadow: 0 0 0 var(--focus-offset) var(--color-focus-outer);
 }
 
-.s48-playback-sunset {
-  color: var(--visor-text-muted);
+.s48-playback__scrub {
+  flex: 1 1 auto;
+  min-width: 80px;
+  accent-color: var(--color-accent);
 }
 
-@media (max-width: 640px) {
-  .s48-playback-readouts {
-    display: none;
-  }
+.s48-playback__time {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Speed: segmented ×1 … ×60 in Walk; one small cycling button in Visor. */
+.s48-playback__speeds { flex: 0 0 auto; }
+.s48-playback__speeds button {
+  min-height: calc(var(--hit-plan) - 6px);
+  padding: 0 var(--space-2);
+  font: var(--weight-medium) var(--text-sm) / 1 var(--font-data);
+  font-variant-numeric: var(--numeric);
+}
+.s48-playback__speed-cycle {
+  flex: 0 0 auto;
+  min-width: 48px;
+  height: var(--hit-plan);
+  padding: 0 var(--space-2);
+  border: var(--border-width) solid var(--color-control-border);
+  border-radius: var(--radius-2);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font: var(--weight-semibold) var(--text-sm) / 1 var(--font-data);
+  font-variant-numeric: var(--numeric);
+  cursor: pointer;
+}
+.s48-playback__speed-cycle:hover { background: var(--color-surface); }
+.s48-playback__speeds button:focus-visible,
+.s48-playback__speed-cycle:focus-visible {
+  outline: var(--focus-width) solid var(--color-focus-inner);
+  outline-offset: var(--focus-offset);
+  box-shadow: 0 0 0 var(--focus-offset) var(--color-focus-outer);
+}
+
+.s48-playback__readouts {
+  flex: 0 0 auto;
+  display: flex;
+  gap: var(--space-3);
+  white-space: nowrap;
+  color: var(--color-text-muted);
+}
+
+/* Visor: the same bar, shorter. */
+.s48-playback--compact { min-height: var(--hit-plan); }
+.s48-playback--compact .s48-playback__play { height: var(--hit-plan); min-width: 64px; }
+
+@media (max-width: 1100px) {
+  .s48-playback { gap: var(--space-2); }
+  .s48-playback__readouts { gap: var(--space-2); }
+}
+@media (max-width: 760px) {
+  .s48-playback__readouts { display: none; }
 }

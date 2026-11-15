@@ -76,13 +76,15 @@ export function headingFromTrack(vertices: TrackVertex[], alongM: number): numbe
 /**
  * Ground height on the Cesium surface from the elevation grid and measured site offset.
  * Falls back to heightOffsetM if grid or point elevation is unavailable.
+ * A null offset means the bare offline ellipsoid (no Cesium Mars, no site mesh): ground is at 0 m.
  */
 export function groundHeightAt(
   grid: Pick<RouteGrid, 'lonlatToRowCol' | 'isInside' | 'getElevation'> | null,
   lon: number,
   lat: number,
-  heightOffsetM: number,
+  heightOffsetM: number | null,
 ): number {
+  if (heightOffsetM === null) return 0;
   if (!grid) return heightOffsetM;
   const { row, col } = grid.lonlatToRowCol(lon, lat);
   if (!grid.isInside(row, col)) return heightOffsetM;
