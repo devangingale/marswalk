@@ -60,7 +60,7 @@ export interface GlobalLayerState {
 export class GlobeGlobalLayers {
   private readonly imagery = new Map<string, ImageryLayer>();
   private readonly grids = new Map<string, ValuesGrid>();
-  private readonly pending = new Set<string>();
+  private readonly loads = new Map<string, Promise<ValuesGrid>>();
 
   constructor(
     private readonly target: ImageryLayerCollection,
@@ -81,14 +81,24 @@ export class GlobeGlobalLayers {
       const state = states[layer.id];
       imagery.show = !!state?.enabled;
       imagery.alpha = state?.opacity ?? 1;
-      if (state?.enabled && layer.values && !this.grids.has(layer.id) && !this.pending.has(layer.id)) {
-        this.pending.add(layer.id);
-        loadValuesGrid(this.base, layer.values)
-          .then((grid) => this.grids.set(layer.id, grid))
-          .catch((error) => console.warn(`Values for ${layer.id} did not load`, error))
-          .finally(() => this.pending.delete(layer.id));
-      }
+      if (state?.enabled && layer.values) this.values(layer.id).catch((error) => console.warn(`Values for ${layer.id} did not load`, error));
     }
+  }
+
+  /** A layer's value grid, fetched once and shared; rejects for a layer without one. */
+  values(id: string): Promise<ValuesGrid> {
+    const loaded = this.loads.get(id);
+    if (loaded) return loaded;
+    const spec = this.layers.find((l) => l.id === id)?.values;
+    if (!spec) return Promise.reject(new Error(`No value grid for ${id}`));
+    const load = loadValuesGrid(this.base, spec).then((grid) => {
+      this.grids.set(id, grid);
+      return grid;
+    });
+    // A failed load can be retried the next time the layer is shown.
+    load.catch(() => this.loads.delete(id));
+    this.loads.set(id, load);
+    return load;
   }
 
   /** Readouts for each shown layer that has a value grid, in manifest order. */

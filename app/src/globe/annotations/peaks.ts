@@ -5,7 +5,9 @@
 import type { ValuesGrid } from '../layerManifest';
 import { greatCircleKm } from './geo';
 
-const INDEX_SPAN = 2 ** 24;
+/** Packing spans: cell indices below 2^20, equator distances (in half cells) below 2^10. */
+const INDEX_SPAN = 2 ** 20;
+const TIE_SPAN = 2 ** 10;
 
 export interface Peak {
   lon: number;
@@ -23,16 +25,19 @@ export interface PeakOptions {
 /**
  * Local extremes in a 3 by 3 neighbourhood (columns wrap when the grid spans 360 degrees),
  * best first, picked greedily so each is at least minSeparationKm from those already taken.
- * Ties go to the earlier cell in row order. Positions are cell centres.
+ * Ties (common where values are capped) go to the cell nearer the equator, then the earlier
+ * cell in row order. Positions are cell centres.
  */
 export function findPeaks(grid: ValuesGrid, { count, minSeparationKm, lowest = false }: PeakOptions): Peak[] {
   const { width, height, data, nodata } = grid;
   const wraps = Math.abs(width * grid.res_deg - 360) < 1e-9;
   // Raw integers order the same way as decoded values, reversed when the scale is negative.
   const sign = (lowest ? -1 : 1) * (grid.scale < 0 ? -1 : 1);
+  if (width * height > INDEX_SPAN || height * 2 >= TIE_SPAN) throw new Error('Grid too large for peak finding');
+  const equatorRow = grid.north / grid.res_deg - 0.5;
 
-  // Each candidate packs its rank (best first) above its cell index so one numeric sort
-  // orders by value and breaks ties in row order: raw values are 16-bit, indices under 2^24.
+  // Each candidate packs its rank (best first, 16-bit), its distance from the equator and its
+  // cell index into one number, so a single numeric sort gives the order.
   const order: number[] = [];
   for (let row = 0; row < height; row++) {
     for (let col = 0; col < width; col++) {
@@ -57,7 +62,10 @@ export function findPeaks(grid: ValuesGrid, { count, minSeparationKm, lowest = f
           }
         }
       }
-      if (extreme) order.push((sign > 0 ? 0xffff - raw : raw) * INDEX_SPAN + row * width + col);
+      if (!extreme) continue;
+      const rank = sign > 0 ? 0xffff - raw : raw;
+      const tie = Math.round(Math.abs(row - equatorRow) * 2);
+      order.push((rank * TIE_SPAN + tie) * INDEX_SPAN + row * width + col);
     }
   }
   const sorted = Float64Array.from(order).sort();

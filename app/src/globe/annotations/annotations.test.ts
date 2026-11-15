@@ -88,6 +88,11 @@ describe('findPeaks', () => {
     expect(findPeaks(g, { count: 4, minSeparationKm: 1000, lowest: true }).map((p) => p.lon)).toEqual([-175, -155]);
   });
 
+  it('breaks ties toward the equator before row order', () => {
+    const g = grid([[7], [7], [7]], { north: 15 });
+    expect(findPeaks(g, { count: 3, minSeparationKm: 0 }).map((p) => p.lat)).toEqual([0, 10, -10]);
+  });
+
   it('handles a whole-planet quarter-degree grid in well under 100 ms', () => {
     const width = 1440;
     const height = 480;
