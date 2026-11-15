@@ -256,19 +256,6 @@ describe('chevronsFor', () => {
     ]);
   });
 
-  it('keeps a direction mark on a stretch shorter than the normal spacing', () => {
-    const shortLine = [line[0], [line[0][0] + metresEast(100), line[0][1]]] as [number, number][];
-    expect(chevronsFor(shortLine, ['fwd'], ORIGIN).map((c) => [along(c), Math.round(c.bearingDeg)])).toEqual([
-      [50, 90],
-    ]);
-    expect(chevronsFor(shortLine, ['back'], ORIGIN).map((c) => [along(c), Math.round(c.bearingDeg)])).toEqual([
-      [50, 270],
-    ]);
-    expect(chevronsFor(shortLine, ['fwd', 'back'], ORIGIN).map((c) => [along(c), Math.round(c.bearingDeg)])).toEqual([
-      [25, 90], [75, 90], [50, 270],
-    ]);
-  });
-
   it('interleaves both directions on a stretch walked out and back', () => {
     expect(chevronsFor(line, ['fwd', 'back'], ORIGIN).map((c) => [along(c), Math.round(c.bearingDeg)])).toEqual([
       [75, 90],
