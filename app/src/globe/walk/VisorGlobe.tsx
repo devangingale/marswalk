@@ -181,16 +181,8 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
   }
 
   const hazardM = hazardData.status === 'ready' ? hazardAhead(track.vertices, hazardData.flags, state.alongM) : null;
+  // Derived each frame, not held in state: playback re-renders this view every frame.
   const hasHazard = hazardM !== null && hazardM > 0;
-  const [visibleHazardM, setVisibleHazardM] = useState<number | null>(hasHazard ? hazardM : null);
-  useEffect(() => {
-    if (hazardM !== null && hazardM > 0) {
-      setVisibleHazardM(hazardM);
-      return;
-    }
-    const timeout = window.setTimeout(() => setVisibleHazardM(null), 160);
-    return () => window.clearTimeout(timeout);
-  }, [hazardM]);
 
   const next = state.next ? waypointById(plan, state.next.id) : null;
 
@@ -207,7 +199,7 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
     );
   }
 
-  const hazardText = visibleHazardM !== null && visibleHazardM > 0 ? `Impassable ${formatDistance(visibleHazardM)} ahead` : null;
+  const hazardText = !hasHazard ? null : hazardM < 1 ? 'Impassable ground ahead' : `Impassable ${formatDistance(hazardM)} ahead`;
 
   // Four readouts: heading, next stop, time remaining, and the warning ladder state (children).
   return (
