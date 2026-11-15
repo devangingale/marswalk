@@ -28,7 +28,8 @@ def load_site(name_or_path: str) -> dict:
         p = ROOT / "pipeline" / "sites" / f"{name_or_path}.yaml"
     cfg = yaml.safe_load(p.read_text(encoding="utf-8"))
     for k in ("dem", "image", "poses", "out"):
-        cfg[k] = str(ROOT / cfg[k])
+        if k in cfg and cfg[k]:
+            cfg[k] = str(ROOT / cfg[k])
     return cfg
 
 
