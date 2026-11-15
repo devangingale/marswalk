@@ -279,7 +279,12 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
       viewer.camera.percentageChanged = 0.05;
       viewer.camera.changed.addEventListener(updateScale);
       viewer.camera.moveEnd.addEventListener(updateScale);
-      resizeObserver = new ResizeObserver(() => { viewer.cesiumWidget.resize(); updateScale(); });
+      resizeObserver = new ResizeObserver(() => {
+        // A queued observer callback can run after a site change has destroyed this viewer.
+        if (viewer.isDestroyed()) return;
+        viewer.cesiumWidget.resize();
+        updateScale();
+      });
       resizeObserver.observe(container);
       updateScale();
     };
