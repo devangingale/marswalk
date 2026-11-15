@@ -1,6 +1,7 @@
 // Written with AI assistance, directed and reviewed by the team.
-import { Cesium3DTileset, ClassificationType, Color, Ellipsoid, Globe, Ion, RequestErrorEvent, Viewer } from 'cesium';
+import { Cesium3DTileset, ClassificationType, Color, Ellipsoid, Globe, Ion, RequestErrorEvent, Viewer, type Scene } from 'cesium';
 import { patchAntimeridianImagery } from './antimeridian';
+import { installRenderOnDemand, watchImagery } from './renderOnDemand';
 
 export const CESIUM_MARS_ASSET_ID = 3644333;
 
@@ -40,6 +41,48 @@ export function cesiumFailure(error: unknown, connected = true): CesiumFailure {
 
 function browserConnected(): boolean {
   return typeof navigator === 'undefined' || navigator.onLine !== false;
+}
+
+/**
+ * Online, a plain ground-coloured globe sits this far below the Mars datum, under Cesium Mars,
+ * so the screen shows ground rather than black space while tiles stream in. Mars terrain
+ * reaches about 8 km below the datum (Hellas); a globe at the datum hid Gale's floor (3.6 km
+ * below it), so this one sits deeper than any terrain and only shows where no tile is drawn yet.
+ */
+export const BACKDROP_DEPTH_M = 15_000;
+
+/** The ellipsoid of the online backdrop globe: Mars shrunk by BACKDROP_DEPTH_M. */
+export function backdropEllipsoid(): Ellipsoid {
+  const { x, y, z } = Ellipsoid.MARS.radii;
+  return new Ellipsoid(x - BACKDROP_DEPTH_M, y - BACKDROP_DEPTH_M, z - BACKDROP_DEPTH_M);
+}
+
+/** Is this the online backdrop (not a surface our layers drape on or picks hit)? */
+export function isBackdropGlobe(globe: Globe | undefined): boolean {
+  return !!globe && globe.ellipsoid.maximumRadius < Ellipsoid.MARS.maximumRadius - 1;
+}
+
+/** The globe our layers drape on: the offline datum globe; undefined online. */
+export function groundGlobe(scene: Scene): Globe | undefined {
+  const globe = scene.globe;
+  return globe && globe.show && !isBackdropGlobe(globe) ? globe : undefined;
+}
+
+function cssToken(name: string): Color | undefined {
+  if (typeof document === 'undefined') return undefined;
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return value ? Color.fromCssColorString(value) : undefined;
+}
+
+/** The backdrop globe: flat ground colour, no imagery, atmosphere or lighting. */
+export function createBackdropGlobe(): Globe {
+  const globe = new Globe(backdropEllipsoid());
+  globe.baseColor = cssToken('--map-background') ?? Color.fromCssColorString('#3b2e26');
+  globe.showGroundAtmosphere = false;
+  globe.enableLighting = false;
+  globe.showWaterEffect = false;
+  globe.depthTestAgainstTerrain = false;
+  return globe;
 }
 
 let mode: 'ion' | 'offline' = 'offline';
@@ -89,11 +132,19 @@ export async function createMarsViewer(
     // Draw at the screen's real pixel density; Cesium's default draws at CSS pixels and the
     // browser stretches the result, which blurs the globe on scaled displays (150 % = 1.5x).
     useBrowserRecommendedResolution: false,
-    // Offline draws our tiles on a plain ellipsoid; online, Cesium Mars is the surface
-    // (an ellipsoid at datum height would hide terrain below it, such as Gale).
-    globe: opts.globe ?? (mode === 'offline' ? new Globe(Ellipsoid.MARS) : false),
+    // Offline draws our tiles on a plain ellipsoid; online, Cesium Mars is the surface over a
+    // ground-coloured backdrop sunk below all terrain (see BACKDROP_DEPTH_M).
+    globe: opts.globe ?? (mode === 'offline' ? new Globe(Ellipsoid.MARS) : createBackdropGlobe()),
     ellipsoid: Ellipsoid.MARS,
+    // Draw only when something changes (see renderOnDemand); idle, the map costs nothing.
+    requestRenderMode: true,
+    maximumRenderTimeChange: Number.POSITIVE_INFINITY,
   });
+  // Online, the space behind the planet follows the theme instead of Cesium's black.
+  if (mode === 'ion') {
+    const sky = cssToken('--map-sky');
+    if (sky) viewer.scene.backgroundColor = sky;
+  }
   const setOfflineGlobeColour = () => {
     if (mode !== 'offline' || !viewer.scene.globe) return;
     const styles = getComputedStyle(document.documentElement);
@@ -113,6 +164,8 @@ export async function createMarsViewer(
   controller.zoomFactor = 3;
   controller.minimumZoomDistance = 30;
 
+  installRenderOnDemand(viewer);
+
   if (mode === 'offline') return { viewer, tileset: null, mode, failure };
   try {
     const tileset = await Cesium3DTileset.fromIonAssetId(CESIUM_MARS_ASSET_ID);
@@ -120,14 +173,18 @@ export async function createMarsViewer(
     // tiles coarse, so 0.25 m HiRISE looked smeared. 4 is visibly sharp; 2 adds little more.
     tileset.maximumScreenSpaceError = 4;
     viewer.scene.primitives.add(tileset);
+    watchImagery(viewer, tileset.imageryLayers);
     return { viewer, tileset, mode, failure: null };
   } catch (error) {
     // Reported to the user (the map notice offers the offline view); the plain globe keeps our
     // layers usable meanwhile.
     console.warn('Cesium Mars tileset failed to load', error);
     mode = 'offline';
-    // The viewer was built for Cesium Mars without a globe; offline imagery and overlays need one.
-    if (!viewer.scene.globe && opts.globe !== false) viewer.scene.globe = new Globe(Ellipsoid.MARS);
+    // The viewer was built for Cesium Mars over the sunken backdrop; offline imagery and
+    // overlays need a globe at the datum.
+    if ((!viewer.scene.globe || isBackdropGlobe(viewer.scene.globe)) && opts.globe !== false) {
+      viewer.scene.globe = new Globe(Ellipsoid.MARS);
+    }
     setOfflineGlobeColour();
     viewer.scene.requestRender();
     return { viewer, tileset: null, mode, failure: cesiumFailure(error, browserConnected()) };

@@ -15,7 +15,7 @@ import type { RouteGrid } from '../lib/grid';
 import { lonlatToLocalMetres } from '../lib/grid';
 import { ScaleBar } from '../components/ScaleBar';
 import { GlobeOverlays, photoSites, surfaceHeightM } from './overlays';
-import { createMarsViewer, initCesium, surfaceClassification, type CesiumFailure } from './cesiumSetup';
+import { createMarsViewer, groundGlobe, initCesium, surfaceClassification, type CesiumFailure } from './cesiumSetup';
 import { useSurfaceMode } from './surfaceMode';
 import { SurfaceNotice } from './SurfaceNotice';
 import { installGroundPan } from './groundPan';
@@ -62,7 +62,8 @@ function pickedGround(viewer: Viewer, point: Cartesian2) {
     if (depthPick) return depthPick;
   }
   const ray = viewer.camera.getPickRay(point);
-  return ray ? scene.globe?.pick(ray, scene) ?? undefined : undefined;
+  // Never the sunken online backdrop: it lies 15 km under the ground and would skew the scale.
+  return ray ? groundGlobe(scene)?.pick(ray, scene) ?? undefined : undefined;
 }
 
 function token(value: string, fallback: string): string {
@@ -113,7 +114,8 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
       const { viewer, tileset, mode, failure: loadFailure } = await createMarsViewer(container, { interactive: true });
       if (disposed) { viewer.destroy(); return; }
       viewerRef.current = viewer;
-      if (viewer.scene.globe) viewer.scene.globe.depthTestAgainstTerrain = true;
+      const ground = groundGlobe(viewer.scene);
+      if (ground) ground.depthTestAgainstTerrain = true;
       viewer.scene.screenSpaceCameraController.enableCollisionDetection = false;
       viewer.cesiumWidget.creditContainer.setAttribute('aria-label', 'Cesium ion attribution');
       setOffline(mode === 'offline' || !tileset);
