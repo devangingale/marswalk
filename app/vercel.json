@@ -16,7 +16,7 @@
       ]
     },
     {
-      "source": "/r2/(.*)\\.(png|jpg|webp|glb|bin)",
+      "source": "/r2/(.*)\\.(png|jpg|webp|glb|bin|pmtiles)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" },
         { "key": "Vercel-CDN-Cache-Control", "value": "public, max-age=31536000, immutable" }
