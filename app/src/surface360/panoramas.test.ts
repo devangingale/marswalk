@@ -11,6 +11,7 @@ import {
   frameHeadingDeg,
   loadManifest,
   nearestStop,
+  panoramasUrl,
   parseManifest,
   stopById,
   stopLonLat,
@@ -28,6 +29,7 @@ const stop = (id: string, prev: string | null, next: string | null, lon = 0, lat
   sol: 1,
   sol_end: null,
   pose_sol: 1,
+  position_source: 'gale_poses.csv, sol 1',
   lat,
   lon_east: lon,
   height: 0,
@@ -55,15 +57,18 @@ const real = parseManifest(published)!;
 describe('parseManifest', () => {
   it('accepts the manifest build_panoramas.py published', () => {
     expect(real).not.toBeNull();
-    expect(real.stops.map((s) => s.pia_id).sort()).toEqual([
-      'PIA20765', 'PIA20840', 'PIA24264', 'PIA24269', 'PIA24643', 'PIA24663', 'PIA25366', 'PIA26369', 'PIA26474',
-    ]);
-    // Only PIA20840's caption states its pointing ("south is in the center").
-    expect(real.stops.filter((s) => s.heading_source === 'caption').map((s) => [s.pia_id, s.heading])).toEqual([['PIA20840', 180]]);
+    const rovers = new Set(real.stops.map((s) => s.rover));
+    expect([...rovers].sort()).toEqual(['Curiosity', 'Opportunity', 'Perseverance', 'Spirit']);
+    expect(new Set(real.stops.map((s) => s.pia_id)).size).toBe(real.stops.length);
     for (const s of real.stops) {
-      expect(s.caption.length).toBeGreaterThan(100);
-      expect(s.credit).toMatch(/^NASA\/JPL-Caltech/);
+      expect(s.caption.length).toBeGreaterThan(40);
+      expect(s.credit).toMatch(/^NASA\/JPL/); // e.g. NASA/JPL-Caltech/MSSS, NASA/JPL/Cornell
+      expect(s.source_url).toBe(`https://photojournal.jpl.nasa.gov/catalog/${s.pia_id}`);
     }
+    // PIA20840's caption states its pointing ("south is in the center").
+    expect(stopById(real, 'gale_1451')).toMatchObject({ pia_id: 'PIA20840', heading: 180, heading_source: 'caption' });
+    // Spirit's traverse has no elevation: shown as unknown, never as 0.
+    expect(real.stops.filter((s) => s.rover === 'Spirit').every((s) => s.height === null)).toBe(true);
   });
 
   it('allows null walkability and passes, and rejects bad values, missing fields and duplicate ids', () => {
@@ -75,6 +80,19 @@ describe('parseManifest', () => {
     expect(parseManifest({ stops: [good, good] })).toBeNull();
     expect(parseManifest({ stops: [] })).toBeNull();
     expect(parseManifest('<!doctype html>')).toBeNull();
+  });
+});
+
+describe('panoramasUrl', () => {
+  it('uses the dev server copy in development and the R2 CDN in production', () => {
+    expect(panoramasUrl({ DEV: true }, 'https://cdn.example')).toBe('/panoramas.json');
+    expect(panoramasUrl({ DEV: false }, 'https://cdn.example')).toBe('https://cdn.example/panoramas.json');
+    expect(panoramasUrl({ DEV: false, VITE_PANORAMAS_URL: '/x.json' }, 'https://cdn.example')).toBe('/x.json');
+  });
+
+  it('has no source in a production build without R2, rather than a silent stale copy', async () => {
+    expect(panoramasUrl({ DEV: false }, '')).toBeNull();
+    await expect(loadManifest(null)).rejects.toThrow('VITE_R2_BASE_URL');
   });
 });
 
@@ -97,25 +115,23 @@ describe('loadManifest', () => {
 describe('the published traverse', () => {
   it('links only same-rover stops, in sol order, with the real drive distance', () => {
     const chains = traverses(real);
+    expect(chains.flat()).toHaveLength(real.stops.length);
     for (const chain of chains) {
       expect(new Set(chain.map((s) => s.rover)).size).toBe(1);
       expect(chain.map((s) => s.sol)).toEqual([...chain.map((s) => s.sol)].sort((a, b) => a - b));
+      for (const [a, b] of chain.slice(0, -1).map((s, i) => [s, chain[i + 1]] as const)) {
+        // The rover drove at least the straight line between two stops (allowing rounding).
+        if (a.drive_m_to_next !== null) expect(a.drive_m_to_next).toBeGreaterThanOrEqual(geodesicM(a, b) - 1);
+      }
     }
-    const gale = stopById(real, 'gale_3167')!;
-    const next = stopById(real, gale.next_id)!;
-    expect(next.id).toBe('gale_3481');
-    // The rover drove a winding route: longer than the straight geodesic between the stops.
-    expect(gale.drive_m_to_next!).toBeGreaterThan(geodesicM(gale, next));
-    expect(chains.map((chain) => chain.map((s) => s.sol))).toEqual([
-      [3, 53, 1178, 1337],
-      [1421, 1451, 3048, 3167, 3481],
-    ]);
+    // One chain per rover.
+    expect(chains.map((c) => c[0].rover).sort()).toEqual(['Curiosity', 'Opportunity', 'Perseverance', 'Spirit']);
     expect(stopById(real, 'jezero_53')!.sol_end).toBe(64);
   });
 
   it('points chevrons along the ellipsoidal geodesic, close to the spherical bearing', () => {
     const a = stopById(real, 'gale_3167')!;
-    const b = stopById(real, 'gale_3481')!;
+    const b = stopById(real, a.next_id)!;
     expect(Math.abs(geodesicBearingDeg(a, b)! - bearingDeg(stopLonLat(a), stopLonLat(b)))).toBeLessThan(0.5);
     expect(Math.abs(geodesicM(a, b) - distanceM(stopLonLat(a), stopLonLat(b))) / geodesicM(a, b)).toBeLessThan(0.01);
     expect(geodesicBearingDeg(a, { ...a, id: 'twin' })).toBeNull();

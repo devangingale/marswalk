@@ -522,7 +522,9 @@ export class SurfaceView {
   }
 
   private eye(stop: PanoramaStop): Cartesian3 {
-    return Cartesian3.fromDegrees(stop.lon_east, stop.lat, stop.height + EYE_HEIGHT_M, Ellipsoid.MARS);
+    // Without a published elevation the panorama sits on the ellipsoid: the orbital scene is
+    // hidden inside a panorama, so only the relative eye height matters.
+    return Cartesian3.fromDegrees(stop.lon_east, stop.lat, (stop.height ?? 0) + EYE_HEIGHT_M, Ellipsoid.MARS);
   }
 
   private setPanorama(stop: PanoramaStop, image: HTMLImageElement): void {

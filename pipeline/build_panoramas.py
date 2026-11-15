@@ -1,27 +1,36 @@
-"""Build 2:1 equirectangular panoramas and panoramas.json for the 360-degree surface view.
+"""Discover, download and build the 360-degree surface panoramas from NASA/JPL Photojournal.
 
 Written with AI assistance (Claude), directed and reviewed by the team.
 
-Every value written comes from a NASA source or from this repository's own pipelines; nothing
-is invented:
+Sources, all real:
 
-  - Image, PIA id, title, rover, instrument, credit: the NASA Photojournal entry
-    (pipeline/panoramas.sources.json), with the official caption fetched from its page.
-  - Position, elevation, heading: shared/poses/<site>_poses.csv (PDS PLACES rover
-    localization), last pose of the panorama's sol, or the nearest localized sol.
-  - Drive distance to the next stop: the sum of the localized pose-to-pose segments between
-    the two stops' poses, on the Mars IAU ellipsoid.
-  - Slope and walkability: sampled from a grids.py route-grid bundle (grid.json, elev.bin,
-    cost.bin) that covers the stop. With no covering bundle they are null, never guessed.
-  - Relay passes: the passes.py SPICE bundle for the site, filtered to MRO and Mars Odyssey
-    and copied to app/public/passes/<site>.json. With no bundle, passes_url is null.
+  - Which panoramas: the NASA Images API (images-api.nasa.gov), every page of each discovery
+    query in pipeline/panoramas.sources.json ("360" + rover name), merged with the curated
+    entries there (which win, and may carry caption-verified sols, orientation and a cited
+    position). Entries under "exclude" are skipped, with the reason recorded.
+  - Caption, credit and full-resolution image: each PIA's Photojournal page
+    (photojournal.jpl.nasa.gov/catalog/<PIA>), falling back to the Images API's own asset.
+  - Sol: parsed from the official caption (the first sentence that names sols; the end sol of a
+    multi-sol mosaic is kept as sol_end). Orientation from the caption where NASA states it
+    ("north is at the center", "south is in the center", ...).
+  - Position: the rover's last localized pose on or before the end sol, from
+    shared/poses/<site>_poses.csv (PDS PLACES for Curiosity and Perseverance; the PDS
+    Geosciences corrected traverse for Spirit, via pipeline/mer_poses.py), or a curated,
+    cited position for a rover without a pose table. Elevation and yaw where the table has them.
+  - Drive distance to the next stop: summed pose-to-pose segments on the Mars IAU ellipsoid.
+  - Walkability, slope: a grids.py route grid covering the stop, else carried from --previous,
+    else null. Relay passes: the passes.py SPICE bundle for the site, else null.
 
-Each mosaic is scaled to the same angular resolution across and down and padded into a strict
-2:1 frame (4096 x 2048 by default). Missing-data gaps (near-white or near-black) show a sky or
-regolith gradient. The image's centre column faces the stop's heading.
+Filters: an image narrower than 2.2:1 is rejected (a single frame, not a 360-degree mosaic)
+unless its source is tagged equirectangular; it is measured from the first bytes of the file,
+before any full download. Variants taken on the same sol (false colour, annotated, anaglyph)
+are reduced to one natural-colour panorama per rover stop.
 
-    python pipeline/build_panoramas.py --download     # fetch images and captions, then build
-    python pipeline/build_panoramas.py                # build from what is on disk
+Output: app/public/panos/<site>_<sol>.jpg at 2048 x 1024 (2:1, JPEG quality 85), missing-data
+gaps filled with a sky or regolith gradient, and app/public/panoramas.json. Downloads are
+cached in .cache/nasa_panos/ (git-ignored), so re-runs only fetch what is new.
+
+    python pipeline/build_panoramas.py
 
 Only Pillow is needed beyond the standard library.
 """
@@ -33,17 +42,17 @@ import html
 import json
 import math
 import re
-import shutil
 import struct
 import sys
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFile, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES = ROOT / "pipeline" / "panoramas.sources.json"
-RAW = ROOT / "data" / "raw" / "panos"
+CACHE = ROOT / ".cache" / "nasa_panos"
 APP_PUBLIC = ROOT / "app" / "public"
 OUT_JSON = APP_PUBLIC / "panoramas.json"
 OUT_DIR = APP_PUBLIC / "panos"
@@ -52,6 +61,22 @@ POSES = ROOT / "shared" / "poses"
 # Where grids.py / passes.py bundles live: the coordinator's full bundles first, then the sample.
 BUNDLE_DIRS = (ROOT / "data" / "sites" / "{site}" / "bundle", APP_PUBLIC / "sample" / "{site}")
 
+IMAGES_API = "https://images-api.nasa.gov"
+PHOTOJOURNAL = "https://photojournal.jpl.nasa.gov/catalog/"
+USER_AGENT = "marswalk-pipeline"
+OUT_WIDTH = 2048
+JPEG_QUALITY = 85
+MIN_ASPECT = 2.2
+# Larger originals are fetched as the Images API's ~large rendition instead.
+MAX_DOWNLOAD_BYTES = 160_000_000
+
+ROVERS = {
+    "Perseverance": {"site": "jezero", "mission": "Mars 2020", "credit": "NASA/JPL-Caltech/ASU/MSSS", "instrument": "Mastcam-Z"},
+    "Curiosity": {"site": "gale", "mission": "Mars Science Laboratory", "credit": "NASA/JPL-Caltech/MSSS", "instrument": "Mastcam"},
+    "Spirit": {"site": "gusev", "mission": "Mars Exploration Rover", "credit": "NASA/JPL-Caltech/Cornell", "instrument": "Pancam"},
+    "Opportunity": {"site": "meridiani", "mission": "Mars Exploration Rover", "credit": "NASA/JPL-Caltech/Cornell", "instrument": "Pancam"},
+}
+
 # Mars IAU 2000 ellipsoid, as Cesium's Ellipsoid.MARS.
 MARS_A = 3396190.0
 MARS_B = 3376200.0
@@ -59,7 +84,6 @@ RELAY_ORBITERS = ("MRO", "ODY")
 # Walkability classes from the grids.py cost value (score = 6*slope_deg + 40*roughness_m):
 # 255 is impassable (over 20 degrees or nodata) -> hazard; score >= 100 -> caution; else safe.
 CAUTION_SCORE = 100
-USER_AGENT = "marswalk-pipeline"
 
 # Mosaics are large; these are trusted NASA sources, so lift Pillow's decompression-bomb guard.
 Image.MAX_IMAGE_PIXELS = 2_000_000_000
@@ -69,7 +93,7 @@ SKY_TOP = (0x12, 0x0D, 0x0A)
 SKY_HORIZON = (0x7A, 0x52, 0x38)
 GROUND_HORIZON = (74, 40, 25)
 GROUND_BOTTOM = (20, 11, 8)
-FEATHER_PX = 24
+FEATHER_PX = 12
 # Mosaics leave missing-data gaps where no frame was taken: near-white (Mastcam-Z, along the
 # sky edge) or near-black (Mastcam, ragged blocks at the top and bottom). Daylight Mars
 # scenes have no true pure black or white, so both are treated as gaps.
@@ -77,54 +101,218 @@ WHITE_THRESHOLD = 235
 BLACK_THRESHOLD = 8
 
 
-def fetch(url: str, timeout: int = 300) -> bytes:
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+# ---------------------------------------------------------------- network and cache
+
+def fetch(url: str, timeout: int = 120, headers: dict | None = None) -> bytes:
+    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, **(headers or {})})
     with urllib.request.urlopen(request, timeout=timeout) as response:
         return response.read()
 
 
-def download_image(source: dict, raw: Path) -> None:
-    target = raw / source["file"]
-    if target.exists():
-        return
-    print(f"downloading {source['url']} -> {target}")
+def cached(name: str, produce, cache: Path) -> bytes:
+    """A cached text/bytes artefact in the cache folder, produced once."""
+    path = cache / name
+    if path.exists():
+        return path.read_bytes()
+    data = produce()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    return data
+
+
+def download_to(url: str, target: Path) -> None:
     partial = target.with_suffix(target.suffix + ".part")
-    request = urllib.request.Request(source["url"], headers={"User-Agent": USER_AGENT})
+    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(request, timeout=300) as response, open(partial, "wb") as out:
+        with urllib.request.urlopen(request, timeout=600) as response, open(partial, "wb") as out:
             while chunk := response.read(1 << 20):
                 out.write(chunk)
     except Exception:
         partial.unlink(missing_ok=True)
         raise
-    partial.rename(target)
+    partial.replace(target)
+
+
+def content_length(url: str) -> int | None:
+    request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": USER_AGENT})
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            return int(response.headers.get("Content-Length") or 0) or None
+    except Exception:
+        return None
+
+
+def probe_size(url: str) -> tuple[int, int] | None:
+    """Image width and height from the first bytes of the file, without downloading it."""
+    for span in (262_144, 2_097_152):
+        try:
+            head = fetch(url, 60, {"Range": f"bytes=0-{span - 1}"})
+        except Exception:
+            return None
+        parser = ImageFile.Parser()
+        try:
+            parser.feed(head)
+        except Exception:
+            pass
+        if parser.image is not None:
+            return parser.image.size
+    return None
+
+
+# ---------------------------------------------------------------- discovery and metadata
+
+def search_api(query: str, cache: Path) -> list[dict]:
+    """Every result of an Images API search, following the 'next' links page by page."""
+    items: list[dict] = []
+    url = f"{IMAGES_API}/search?{urllib.parse.urlencode({'q': query, 'media_type': 'image'})}"
+    page = 1
+    while url:
+        body = json.loads(cached(f"api/search_{re.sub(r'[^a-z0-9]+', '_', query.lower())}_{page}.json", lambda: fetch(url), cache))
+        collection = body["collection"]
+        items += [it["data"][0] for it in collection.get("items", []) if it.get("data")]
+        url = next((link["href"] for link in collection.get("links", []) if link.get("rel") == "next"), None)
+        page += 1
+    return items
+
+
+def api_record(pia: str, cache: Path) -> dict | None:
+    body = json.loads(cached(f"api/{pia}.json", lambda: fetch(f"{IMAGES_API}/search?nasa_id={pia}"), cache))
+    items = body["collection"].get("items", [])
+    return items[0]["data"][0] if items else None
+
+
+def paragraphs(page_html: str) -> list[str]:
+    text = re.sub(r"(?is)<(script|style).*?</\1>", "", page_html)
+    out = []
+    for raw in re.findall(r"(?is)<p[^>]*>(.*?)</p>", text):
+        para = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", "", raw))).strip()
+        out.append(re.sub(r"^Description\s+", "", para))
+    return out
 
 
 def caption_from_page(page_html: str) -> str | None:
     """The official caption: the first descriptive paragraph on a Photojournal page."""
-    text = re.sub(r"(?is)<(script|style).*?</\1>", "", page_html)
-    for raw in re.findall(r"(?is)<p[^>]*>(.*?)</p>", text):
-        para = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", "", raw))).strip()
-        para = re.sub(r"^Description\s+", "", para)
-        if 100 <= len(para) <= 2000 and not para.startswith(("Explore", "Photojournal Note")):
+    for para in paragraphs(page_html):
+        if 100 <= len(para) <= 2000 and not para.startswith(("Explore", "Photojournal Note", "Click on the image")):
             return para
     return None
 
 
-def download_caption(source: dict, raw: Path) -> None:
-    target = raw / f"{source['pia_id']}.caption.txt"
-    if target.exists():
-        return
-    caption = caption_from_page(fetch(source["page"], 60).decode("utf-8", "replace"))
-    if not caption:
-        raise RuntimeError(f"no caption found on {source['page']}")
-    target.write_text(caption + "\n", encoding="utf-8")
-    print(f"caption {source['pia_id']}: {caption[:70]}...")
+def photojournal(pia: str, cache: Path) -> dict:
+    """Caption, full caption text and full-resolution JPEG URL from the PIA's Photojournal page."""
+    try:
+        page = cached(f"pages/{pia}.html", lambda: fetch(PHOTOJOURNAL + pia, 60), cache).decode("utf-8", "replace")
+    except Exception as error:
+        print(f"  {pia}: Photojournal page unavailable ({error})", file=sys.stderr)
+        return {}
+    jpgs = sorted(set(re.findall(rf"https://assets\.science\.nasa\.gov/content/dam/science/psd/photojournal/pia/pia\d+/{pia.lower()}/{pia}\.jpg", page)))
+    text = " ".join(p for p in paragraphs(page) if len(p) > 60 and not p.startswith("Explore"))
+    og = re.search(r'<meta[^>]+property="og:title"[^>]+content="([^"]+)"', page) or re.search(r"<title>([^<]+)</title>", page)
+    title = re.sub(r"\s*[-|]\s*NASA Science\s*$", "", html.unescape(og.group(1))).strip() if og else None
+    return {"caption": caption_from_page(page), "text": text, "jpg": jpgs[0] if jpgs else None, "title": title}
 
 
-def load_poses(site: str) -> list[dict]:
-    """Every localized pose for a site, in drive order (the CSV is chronological)."""
-    with open(POSES / f"{site}_poses.csv", newline="", encoding="utf-8") as f:
+def api_asset(pia: str, cache: Path) -> str | None:
+    try:
+        body = json.loads(cached(f"api/asset_{pia}.json", lambda: fetch(f"{IMAGES_API}/asset/{pia}"), cache))
+    except Exception:
+        return None
+    hrefs = [it["href"].replace("http://", "https://") for it in body.get("collection", {}).get("items", [])]
+    for suffix in ("~orig.jpg", "~large.jpg"):
+        for href in hrefs:
+            if href.endswith(suffix):
+                return href
+    return None
+
+
+# ---------------------------------------------------------------- caption parsing
+
+NUM = r"(\d{1,2},\d{3}|\d+)"
+_ORD = NUM + r"(?:st|nd|rd|th)"
+# "the 3,481st Martian day", and lists such as "the 53rd and 64th Martian days".
+_ORDINAL_SOL = re.compile(_ORD + r"(?:\s*(?:,|and|to|through|-|–)\s*" + _ORD + r")*\s+(?:Martian\s+days?|sols?)", re.I)
+_ORD_NUM = re.compile(_ORD, re.I)
+_SOL_WORD = re.compile(r"\bsols?\s+" + NUM, re.I)
+_SOL_AND = re.compile(r"\bsols?\s+" + NUM + r"\s*(?:to|through|and|-|–)\s*(?:sol\s+)?" + NUM, re.I)
+ORIENTATIONS = [
+    (re.compile(r"north\s+is\s+(?:at|in)\s+the\s+cent(?:er|re)", re.I), 0.0),
+    (re.compile(r"east\s+is\s+(?:at|in)\s+the\s+cent(?:er|re)", re.I), 90.0),
+    (re.compile(r"south\s+is\s+(?:at|in)\s+the\s+cent(?:er|re)|north\s+is\s+at\s+both\s+ends", re.I), 180.0),
+    (re.compile(r"west\s+is\s+(?:at|in)\s+the\s+cent(?:er|re)", re.I), 270.0),
+]
+
+
+def _int(text: str) -> int:
+    return int(text.replace(",", ""))
+
+
+def parse_sols(text: str) -> tuple[int, int | None] | None:
+    """(sol, sol_end) from the first sentence of a caption that names sols; sol_end for a range."""
+    for sentence in re.split(r"(?<=[.!?])\s+", text):
+        numbers = [_int(n.group(1)) for m in _ORDINAL_SOL.finditer(sentence) for n in _ORD_NUM.finditer(m.group(0))]
+        for m in _SOL_AND.finditer(sentence):
+            numbers += [_int(m.group(1)), _int(m.group(2))]
+        numbers += [_int(m.group(1)) for m in _SOL_WORD.finditer(sentence)]
+        if numbers:
+            lo, hi = min(numbers), max(numbers)
+            return lo, (hi if hi != lo else None)
+    return None
+
+
+def caption_orientation(text: str) -> float | None:
+    for pattern, heading in ORIENTATIONS:
+        if pattern.search(text):
+            return heading
+    return None
+
+
+# A rover named as a rover, not a place: "Perseverance Valley" is where Opportunity ended its mission.
+ROVER_PATTERNS = {
+    "Perseverance": re.compile(r"\bPerseverance\b(?!\s+Valley)|\bMars 2020\b"),
+    "Curiosity": re.compile(r"\bCuriosity\b"),
+    "Spirit": re.compile(r"\bSpirit\b"),
+    "Opportunity": re.compile(r"\bOpportunity\b"),
+}
+
+
+def rover_of(text: str, title: str = "") -> str | None:
+    """The rover a caption is about: the one its title names, else the one its text names most."""
+    named = [r for r, pattern in ROVER_PATTERNS.items() if pattern.search(title)]
+    if len(named) == 1:
+        return named[0]
+    counts = {r: len(pattern.findall(text)) for r, pattern in ROVER_PATTERNS.items()}
+    best = max(counts, key=counts.get)
+    return best if counts[best] else None
+
+
+def instrument_of(text: str, rover: str) -> str:
+    for name in ("Mastcam-Z", "Navcam", "Mastcam", "Pancam"):
+        if re.search(rf"\b{re.escape(name)}\b", text, re.I):
+            return name
+    return ROVERS[rover]["instrument"]
+
+
+VARIANT_PENALTIES = [
+    (re.compile(r"false[- ]colou?r|enhanced[- ]colou?r", re.I), 30),
+    (re.compile(r"annotated|labeled|labelled|anaglyph|stereo|3-D|figure", re.I), 30),
+    (re.compile(r"\bhow\b.*\btaken\b", re.I), 100),
+    (re.compile(r"\bnavcam", re.I), 10),
+]
+
+
+def variant_penalty(title: str) -> int:
+    """Lower is better: a natural-colour camera panorama beats false colour, annotated or Navcam variants."""
+    return sum(points for pattern, points in VARIANT_PENALTIES if pattern.search(title))
+
+
+# ---------------------------------------------------------------- poses
+
+def load_poses(site: str) -> list[dict] | None:
+    """Every localized pose for a site, in drive order; None for a rover without a pose table."""
+    path = POSES / f"{site}_poses.csv"
+    if not path.exists():
+        return None
+    with open(path, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
@@ -137,6 +325,10 @@ def pose_index_for_sol(poses: list[dict], sol: int) -> int:
     if earlier:
         return earlier[-1]
     return min(range(len(poses)), key=lambda i: (int(poses[i]["sol"]), i))
+
+
+def _num(value: str | None) -> float | None:
+    return float(value) if value not in (None, "") else None
 
 
 def segment_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -303,53 +495,224 @@ def to_equirectangular(strip: Image.Image, width: int, hfov_deg: float, center_p
     return frame
 
 
+def load_previous(location: str | None) -> dict[str, dict]:
+    """Stops of an already-published panoramas.json (path or URL), by id; empty if unavailable."""
+    if not location:
+        return {}
+    try:
+        if re.match(r"^https?://", location):
+            body = fetch(location, 60).decode("utf-8")
+        else:
+            body = Path(location).read_text(encoding="utf-8")
+        return {stop["id"]: stop for stop in json.loads(body)["stops"]}
+    except Exception as error:  # a missing or malformed previous manifest just means nothing to carry
+        print(f"previous manifest unavailable ({error}); nothing carried forward", file=sys.stderr)
+        return {}
+
+
+def carried_walkability(previous: dict[str, dict], stop_id: str, lat: float, lon: float) -> dict | None:
+    """
+    The walkability a coordinator run published for this stop, if the stop has not moved. Lets a
+    run without DEM grids (CI) keep values computed where the grids exist, instead of nulling them.
+    """
+    old = previous.get(stop_id)
+    if not old or old.get("walkability") is None:
+        return None
+    if abs(old["lat"] - lat) > 1e-7 or abs(old["lon_east"] - lon) > 1e-7:
+        return None
+    return {k: old.get(k) for k in ("walkability", "slope_deg", "walkability_source")}
+
+
+# ---------------------------------------------------------------- candidates
+
+def candidates(config: dict, cache: Path) -> tuple[list[dict], list[str]]:
+    """Discovered and curated entries, merged by PIA id (curated wins), minus exclusions."""
+    excluded = {e["pia_id"]: e["reason"] for e in config.get("exclude", [])}
+    found: dict[str, dict] = {}
+    for query in config.get("discovery", {}).get("queries", []):
+        hits = search_api(query["q"], cache)
+        kept = 0
+        for record in hits:
+            pia = record.get("nasa_id", "")
+            text = f"{record.get('title', '')} {record.get('description', '')}"
+            if not re.fullmatch(r"PIA\d{5}", pia) or not re.search(r"360|full[- ]circle", text, re.I):
+                continue
+            if rover_of(text, record.get("title", "")) != query["rover"]:
+                continue
+            found.setdefault(pia, {"pia_id": pia, "rover": query["rover"], "discovered": True})
+            kept += 1
+        print(f"discovery '{query['q']}': {len(hits)} results, {kept} 360-degree {query['rover']} entries")
+    for entry in config.get("curated", []):
+        found[entry["pia_id"]] = {**found.get(entry["pia_id"], {}), **entry, "curated": True}
+    notes = [f"{pia}: excluded ({reason})" for pia, reason in excluded.items() if pia in found]
+    return [c for pia, c in sorted(found.items()) if pia not in excluded], notes
+
+
+def describe(candidate: dict, cache: Path, notes: list[str]) -> dict | None:
+    """Fill in caption, title, sols, orientation and image URL; None (with a note) if unusable."""
+    pia = candidate["pia_id"]
+    record = api_record(pia, cache) or {}
+    page = photojournal(pia, cache)
+    title = record.get("title") or page.get("title") or candidate.get("title") or pia
+    caption = page.get("caption") or record.get("description_508") or record.get("description")
+    text = " ".join(filter(None, [page.get("text"), record.get("description"), record.get("description_508")]))
+    if not caption:
+        notes.append(f"{pia}: skipped (no caption on the Photojournal page or in the Images API)")
+        return None
+    if variant_penalty(title) >= 100:
+        notes.append(f"{pia}: skipped ('{title}' is not a panorama)")
+        return None
+    detected = rover_of(text, title)
+    rover = candidate.get("rover") or detected
+    if not candidate.get("curated") and detected != rover:
+        notes.append(f"{pia}: skipped ('{title}' is about {detected}, not {rover})")
+        return None
+    if rover not in ROVERS:
+        notes.append(f"{pia}: skipped (rover not identified)")
+        return None
+    sols = (candidate["sol"], candidate.get("sol_end")) if "sol" in candidate else parse_sols(text)
+    if not sols:
+        notes.append(f"{pia}: skipped (no sol stated in the caption)")
+        return None
+    url = page.get("jpg")
+    if url and (content_length(url) or 0) > MAX_DOWNLOAD_BYTES:
+        url = api_asset(pia, cache) or url
+    url = url or api_asset(pia, cache)
+    if not url:
+        notes.append(f"{pia}: skipped (no JPEG on the Photojournal page or in the Images API)")
+        return None
+    stated = candidate.get("center_heading_deg")
+    if stated is None:
+        stated = caption_orientation(text)
+    return {
+        **candidate,
+        "rover": rover,
+        "title": title,
+        "caption": caption,
+        "credit": record.get("secondary_creator") or ROVERS[rover]["credit"],
+        "instrument": instrument_of(f"{title} {text}", rover),
+        "sol": sols[0],
+        "sol_end": sols[1],
+        "orientation": stated,
+        "image_url": url,
+        "penalty": variant_penalty(title),
+    }
+
+
+def admit(entry: dict, cache: Path, notes: list[str]) -> Path | None:
+    """Check the image is a 360-degree mosaic by its aspect ratio, then download it (cached)."""
+    pia = entry["pia_id"]
+    target = cache / "images" / f"{pia}.jpg"
+    if target.exists():
+        with Image.open(target) as im:
+            size = im.size
+    else:
+        size = probe_size(entry["image_url"])
+        if size is None:
+            notes.append(f"{pia}: skipped (image size could not be read)")
+            return None
+    aspect = size[0] / size[1]
+    entry["source_size"] = size
+    if aspect < MIN_ASPECT and not entry.get("equirectangular"):
+        notes.append(f"{pia}: skipped (aspect {aspect:.2f}:1 is under {MIN_ASPECT}:1, not a 360-degree mosaic)")
+        return None
+    if not target.exists():
+        target.parent.mkdir(parents=True, exist_ok=True)
+        print(f"  downloading {pia} ({size[0]}x{size[1]}) from {entry['image_url']}", flush=True)
+        download_to(entry["image_url"], target)
+    return target
+
+
+def dedupe(entries: list[dict], notes: list[str]) -> list[dict]:
+    """One panorama per rover stop: the same rover and end sol keep the best natural-colour variant."""
+    best: dict[tuple, dict] = {}
+    for e in entries:
+        key = (e["rover"], e["sol_end"] or e["sol"])
+        rank = (0 if e.get("curated") else 1, e["penalty"], -e["source_size"][0])
+        if key not in best or rank < best[key]["_rank"]:
+            if key in best:
+                notes.append(f"{best[key]['pia_id']}: replaced by {e['pia_id']} for {e['rover']} sol {key[1]}")
+            best[key] = {**e, "_rank": rank}
+        else:
+            notes.append(f"{e['pia_id']}: duplicate of {best[key]['pia_id']} for {e['rover']} sol {key[1]}")
+    return list(best.values())
+
+
+# ---------------------------------------------------------------- build
+
 def build(
-    sources: list[dict], raw: Path, out_dir: Path, out_json: Path, passes_dir: Path, width: int, quality: int
-) -> list[dict]:
-    out_dir.mkdir(parents=True, exist_ok=True)
-    poses_by_site: dict[str, list[dict]] = {}
+    config: dict, cache: Path, out_dir: Path, out_json: Path, passes_dir: Path,
+    width: int = OUT_WIDTH, quality: int = JPEG_QUALITY, previous: dict[str, dict] | None = None,
+) -> tuple[list[dict], list[str]]:
+    found, notes = candidates(config, cache)
+    described = [d for d in (describe(c, cache, notes) for c in found) if d]
+    admitted = []
+    for entry in described:
+        path = admit(entry, cache, notes)
+        if path:
+            admitted.append({**entry, "_path": path})
+    kept = dedupe(admitted, notes)
+
+    poses_by_site: dict[str, list[dict] | None] = {}
     grids: dict[str, GridBundle | None] = {}
     passes: dict[str, str | None] = {}
     stops = []
-    for s in sources:
-        path = raw / s["file"]
-        caption_path = raw / f"{s['pia_id']}.caption.txt"
-        if not path.exists() or not caption_path.exists():
-            print(f"skip {s['id']}: image or caption missing in {raw} (run with --download)", file=sys.stderr)
-            continue
-        site = s["site"]
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for e in sorted(kept, key=lambda e: (e["rover"], e["sol"])):
+        rover = ROVERS[e["rover"]]
+        site = rover["site"]
+        end_sol = e["sol_end"] or e["sol"]
         poses = poses_by_site.setdefault(site, load_poses(site))
-        index = pose_index_for_sol(poses, int(s["sol"]))
-        pose = poses[index]
-        stated = s.get("center_heading_deg")
-        heading = (float(pose["heading_deg"]) if stated is None else float(stated)) % 360
-        heading_source = "caption" if stated is not None else f"rover yaw, sol {pose['sol']}"
+        index = None
+        if e.get("position"):
+            pos = e["position"]
+            lat, lon, height, yaw = pos["lat"], pos["lon_east"], pos.get("height"), None
+            pose_sol, position_source = None, pos["source"]
+        elif poses:
+            last_sol = max(int(p["sol"]) for p in poses)
+            if end_sol > last_sol:
+                notes.append(f"{e['pia_id']}: skipped (sol {end_sol} is after the last localized {e['rover']} pose, sol {last_sol})")
+                continue
+            index = pose_index_for_sol(poses, end_sol)
+            pose = poses[index]
+            lat, lon, height, yaw = float(pose["lat"]), float(pose["lon"]), _num(pose["elev_m"]), _num(pose["heading_deg"])
+            pose_sol = int(pose["sol"])
+            position_source = f"{site}_poses.csv, last localized pose on or before sol {end_sol} (sol {pose_sol})"
+        else:
+            notes.append(f"{e['pia_id']}: skipped ({e['rover']} has no pose table and no cited position)")
+            continue
+        if e["orientation"] is not None:
+            heading, heading_source = e["orientation"] % 360, "caption"
+        elif yaw is not None:
+            heading, heading_source = yaw % 360, f"rover yaw, sol {pose_sol}"
+        else:
+            heading, heading_source = 0.0, "not published; image centre placed at north"
         if site not in grids:
             grids[site] = GridBundle.find(site)
-        sampled = grids[site].sample(float(pose["lat"]), float(pose["lon"])) if grids[site] else None
+        lat7, lon7 = round(lat, 7), round(lon, 7)
+        stop_id = f"{site}_{e['sol']}"
+        sampled = grids[site].sample(lat, lon) if grids[site] else None
+        if sampled is None:
+            sampled = carried_walkability(previous or {}, stop_id, lat7, lon7)
         if site not in passes:
             passes[site] = copy_relay_passes(site, passes_dir)
 
-        with Image.open(path) as strip:
-            frame = to_equirectangular(strip, width, s.get("hfov_deg", 360), s.get("center_pitch_deg", 0))
-        image_path = out_dir / f"{s['id']}.jpg"
+        with Image.open(e["_path"]) as strip:
+            frame = to_equirectangular(strip, width, e.get("hfov_deg", 360), e.get("center_pitch_deg", 0))
+        image_path = out_dir / f"{stop_id}.jpg"
         frame.save(image_path, "JPEG", quality=quality, optimize=True, progressive=True)
-        print(
-            f"{s['id']}: {s['pia_id']} -> {image_path.name}, pose sol {pose['sol']}, heading {heading:.1f}, "
-            f"heading from {heading_source}, walkability {sampled['walkability'] if sampled else 'no grid coverage'}, "
-            f"passes {passes[site] or 'no bundle'}"
-        )
         stops.append({
-            "id": s["id"],
-            "name": s["title"],
-            "rover": s["rover"],
-            "mission": s["mission"],
-            "sol": int(s["sol"]),
-            "sol_end": int(s["sol_end"]) if s.get("sol_end") is not None else None,
-            "pose_sol": int(pose["sol"]),
-            "lat": round(float(pose["lat"]), 7),
-            "lon_east": round(float(pose["lon"]), 7),
-            "height": round(float(pose["elev_m"]), 3),
+            "id": stop_id,
+            "name": e["title"],
+            "rover": e["rover"],
+            "mission": rover["mission"],
+            "sol": e["sol"],
+            "sol_end": e["sol_end"],
+            "pose_sol": pose_sol,
+            "position_source": position_source,
+            "lat": lat7,
+            "lon_east": lon7,
+            "height": round(height, 3) if height is not None else None,
             "heading": round(heading, 2),
             "heading_source": heading_source,
             "pitch": 0.0,
@@ -362,50 +725,64 @@ def build(
             "next_id": None,
             "prev_id": None,
             "drive_m_to_next": None,
-            "pia_id": s["pia_id"],
-            "instrument": s["instrument"],
-            "caption": caption_path.read_text(encoding="utf-8").strip(),
-            "credit": s["credit"],
-            "source_url": s["page"],
+            "pia_id": e["pia_id"],
+            "instrument": e["instrument"],
+            "caption": e["caption"],
+            "credit": e["credit"],
+            "source_url": PHOTOJOURNAL + e["pia_id"],
             "_site": site,
             "_pose_index": index,
         })
 
-    # Link only stops on the same rover traverse, in sol order, with the real drive between them.
-    for site in sorted({stop["_site"] for stop in stops}):
-        chain = sorted((stop for stop in stops if stop["_site"] == site), key=lambda stop: stop["sol"])
+    # Link each rover's stops in sol order, with the drive between their poses where both have one.
+    for site in sorted({s["_site"] for s in stops}):
+        chain = sorted((s for s in stops if s["_site"] == site), key=lambda s: (s["sol"], s["id"]))
         for a, b in zip(chain, chain[1:]):
             a["next_id"], b["prev_id"] = b["id"], a["id"]
-            a["drive_m_to_next"] = round(drive_distance_m(poses_by_site[site], a["_pose_index"], b["_pose_index"]), 1)
-    for stop in stops:
-        del stop["_site"], stop["_pose_index"]
+            if a["_pose_index"] is not None and b["_pose_index"] is not None:
+                a["drive_m_to_next"] = round(drive_distance_m(poses_by_site[site], a["_pose_index"], b["_pose_index"]), 1)
+    for s in stops:
+        del s["_site"], s["_pose_index"]
+
+    # Remove textures of stops that no longer exist.
+    current = {Path(s["image_url"]).name for s in stops}
+    for old in out_dir.glob("*.jpg"):
+        if old.name not in current:
+            old.unlink()
 
     out_json.parent.mkdir(parents=True, exist_ok=True)
     out_json.write_text(json.dumps({"stops": stops}, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"wrote {out_json} with {len(stops)} stops")
-    return stops
+    return stops, notes
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--sources", type=Path, default=SOURCES)
-    parser.add_argument("--raw", type=Path, default=RAW)
+    parser.add_argument("--cache", type=Path, default=CACHE)
     parser.add_argument("--out-dir", type=Path, default=OUT_DIR)
     parser.add_argument("--out-json", type=Path, default=OUT_JSON)
     parser.add_argument("--passes-dir", type=Path, default=PASSES_DIR)
-    parser.add_argument("--width", type=int, default=4096, help="output width; height is half")
-    parser.add_argument("--quality", type=int, default=82)
-    parser.add_argument("--download", action="store_true", help="fetch missing images and captions")
+    parser.add_argument("--width", type=int, default=OUT_WIDTH, help="output width; height is half")
+    parser.add_argument("--quality", type=int, default=JPEG_QUALITY)
+    parser.add_argument(
+        "--previous",
+        help="published panoramas.json (path or URL): keep its walkability for stops no local grid covers",
+    )
+    parser.add_argument("--download", action="store_true", help="accepted for compatibility; downloads are automatic")
     args = parser.parse_args(argv)
     if args.width % 2:
         parser.error("--width must be even for a 2:1 frame")
-    sources = json.loads(args.sources.read_text(encoding="utf-8"))["sources"]
-    if args.download:
-        args.raw.mkdir(parents=True, exist_ok=True)
-        for source in sources:
-            download_image(source, args.raw)
-            download_caption(source, args.raw)
-    stops = build(sources, args.raw, args.out_dir, args.out_json, args.passes_dir, args.width, args.quality)
+    config = json.loads(args.sources.read_text(encoding="utf-8"))
+    stops, notes = build(
+        config, args.cache, args.out_dir, args.out_json, args.passes_dir, args.width, args.quality,
+        previous=load_previous(args.previous),
+    )
+    for note in notes:
+        print(note)
+    counts: dict[str, int] = {}
+    for s in stops:
+        counts[s["rover"]] = counts.get(s["rover"], 0) + 1
+    print(f"wrote {args.out_json} with {len(stops)} stops: " + ", ".join(f"{r} {n}" for r, n in sorted(counts.items())))
     return 0 if stops else 1
 
 

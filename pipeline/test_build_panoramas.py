@@ -110,3 +110,61 @@ def test_relay_passes_keep_only_mro_and_odyssey(tmp_path, monkeypatch=None):
     bundle = json.loads((tmp_path / "gale.json").read_text())
     assert bundle["passes"] and {p["orbiter"] for p in bundle["passes"]} <= {"MRO", "ODY"}
     assert bp.copy_relay_passes("nowhere", tmp_path) is None
+
+
+def test_walkability_carries_forward_only_for_an_unmoved_stop(tmp_path):
+    published = {"stops": [
+        {"id": "a", "lat": -4.75, "lon_east": 137.4, "walkability": "caution", "slope_deg": 12.5, "walkability_source": "grids.py cost grid"},
+        {"id": "b", "lat": -4.75, "lon_east": 137.4, "walkability": None, "slope_deg": None, "walkability_source": None},
+    ]}
+    path = tmp_path / "panoramas.json"
+    path.write_text(json.dumps(published))
+    previous = bp.load_previous(str(path))
+    assert bp.carried_walkability(previous, "a", -4.75, 137.4) == {
+        "walkability": "caution", "slope_deg": 12.5, "walkability_source": "grids.py cost grid",
+    }
+    assert bp.carried_walkability(previous, "a", -4.76, 137.4) is None  # stop moved: recompute, never reuse
+    assert bp.carried_walkability(previous, "b", -4.75, 137.4) is None  # nothing published
+    assert bp.load_previous(str(tmp_path / "missing.json")) == {}
+
+
+def test_sols_come_from_the_first_sentence_that_names_them():
+    assert bp.parse_sols("Taken on May 22, 2022, the 3,481st Martian day, or sol, of the mission.") == (3481, None)
+    assert bp.parse_sols("It took Spirit three days, sols 620 to 622 (Oct. 2005). Later, on sol 700, ...") == (620, 622)
+    assert bp.parse_sols("The images were taken between April 15 and 26, 2021, or the 53rd and 64th Martian days, or sols.") == (53, 64)
+    assert bp.parse_sols("Began during the 814th Martian day, or sol, and completed on Sol 980 (Oct. 2006).") == (814, 980)
+    assert bp.parse_sols("A view of Mount Sharp.") is None
+
+
+def test_orientation_only_when_the_caption_states_it():
+    assert bp.caption_orientation("North is at the center of the image. South is at both ends.") == 0.0
+    assert bp.caption_orientation("North is at both ends and south is in the center.") == 180.0
+    assert bp.caption_orientation("A sweeping view of the crater rim.") is None
+
+
+def test_rover_and_variant_ranking():
+    assert bp.rover_of("NASA's Curiosity Mars rover used its Mastcam") == "Curiosity"
+    assert bp.rover_of("Mars Exploration Rover Spirit") == "Spirit"
+    # Opportunity ended its mission in Perseverance Valley: that is a place, not the rover.
+    assert bp.rover_of("Opportunity's last panorama, from Perseverance Valley. Opportunity ...", "Opportunity Legacy Pan") == "Opportunity"
+    assert bp.rover_of("Unlike Perseverance, ...", "Curiosity's Navcams View the Area Around 'Sequoia'") == "Curiosity"
+    assert bp.variant_penalty("Greeley Panorama (False Color)") > bp.variant_penalty("Greeley Panorama")
+    assert bp.variant_penalty("How Mastcam-Z's 360-Degree Panorama Was Taken") >= 100
+
+
+def test_dedupe_keeps_one_natural_colour_panorama_per_rover_sol():
+    notes: list[str] = []
+    entries = [
+        {"pia_id": "PIA1", "rover": "Curiosity", "sol": 10, "sol_end": None, "penalty": 30, "source_size": (9000, 3000)},
+        {"pia_id": "PIA2", "rover": "Curiosity", "sol": 10, "sol_end": None, "penalty": 0, "source_size": (8000, 3000)},
+        {"pia_id": "PIA3", "rover": "Perseverance", "sol": 10, "sol_end": None, "penalty": 0, "source_size": (8000, 3000)},
+    ]
+    kept = {e["pia_id"] for e in bp.dedupe(entries, notes)}
+    assert kept == {"PIA2", "PIA3"}
+    assert any("PIA1" in n for n in notes)
+
+
+def test_spirit_traverse_projection_matches_the_published_landing_site():
+    import mer_poses
+    lon, lat = mer_poses.to_lonlat(-1432.26, -863385.06)  # MERA_traverse.csv, sol 1
+    assert abs(lat - -14.5692) < 0.005 and abs(lon - 175.4729) < 0.005

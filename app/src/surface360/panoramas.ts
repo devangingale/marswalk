@@ -2,7 +2,7 @@
 // The panoramas.json contract for the 360° surface view, as written by
 // pipeline/build_panoramas.py, and the plain geometry the view needs (bearings, image columns).
 // There is no built-in fallback: if the manifest does not load, the view is unavailable.
-import { MARS_RADIUS_METERS } from '../config';
+import { MARS_RADIUS_METERS, R2_BASE } from '../config';
 
 export type Walkability = 'safe' | 'caution' | 'hazard';
 
@@ -16,13 +16,15 @@ export interface PanoramaStop {
   sol: number;
   /** Last sol of a mosaic taken over several sols at one parked position, else null. */
   sol_end: number | null;
-  /** Sol of the localized rover pose used for position (the same sol, or the nearest localized one). */
-  pose_sol: number;
-  /** Areocentric latitude and east longitude from the rover localization (PDS PLACES). */
+  /** Sol of the localized rover pose used for position; null for a cited explicit position. */
+  pose_sol: number | null;
+  /** Where lat/lon come from: the pose table and sol, or the citation for an explicit position. */
+  position_source: string;
+  /** Areocentric latitude and east longitude. */
   lat: number;
   lon_east: number;
-  /** Rover elevation from the localization, metres; the eye sits 1.8 m above it. */
-  height: number;
+  /** Elevation from the rover localization, metres; null where the source has none (Spirit, Opportunity). */
+  height: number | null;
   /** Compass bearing of the image's centre column, degrees. */
   heading: number;
   /** Where heading comes from: "caption" (stated by NASA) or "rover yaw, sol N" (an approximation). */
@@ -64,8 +66,18 @@ export const FOV_MIN_DEG = 20;
 export const FOV_MAX_DEG = 90;
 export const FOV_DEFAULT_DEG = 75;
 
-export const PANORAMAS_URL: string =
-  (import.meta.env.VITE_PANORAMAS_URL as string | undefined) || '/panoramas.json';
+/**
+ * Where panoramas.json comes from: VITE_PANORAMAS_URL if set; in development the dev server's
+ * copy (app/public); in production the R2 CDN that the data-refresh workflow keeps current.
+ * A production build without VITE_R2_BASE_URL has no source, and the view says so.
+ */
+export function panoramasUrl(env: { DEV: boolean; VITE_PANORAMAS_URL?: string }, r2Base: string): string | null {
+  if (env.VITE_PANORAMAS_URL) return env.VITE_PANORAMAS_URL;
+  if (env.DEV) return '/panoramas.json';
+  return r2Base ? `${r2Base}/panoramas.json` : null;
+}
+
+export const PANORAMAS_URL: string | null = panoramasUrl(import.meta.env, R2_BASE);
 
 const WALKABILITY: readonly Walkability[] = ['safe', 'caution', 'hazard'];
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -76,9 +88,11 @@ function isStop(v: unknown): v is PanoramaStop {
   const s = v as Record<string, unknown>;
   return (
     !!s &&
-    [s.id, s.name, s.rover, s.mission, s.image_url, s.pia_id, s.instrument, s.caption, s.credit, s.source_url, s.heading_source].every(isStr) &&
+    [s.id, s.name, s.rover, s.mission, s.image_url, s.pia_id, s.instrument, s.caption, s.credit, s.source_url, s.heading_source, s.position_source].every(isStr) &&
     isNullable(s.sol_end, isNum) &&
-    [s.sol, s.pose_sol, s.lat, s.lon_east, s.height, s.heading, s.pitch, s.roll].every(isNum) &&
+    [s.sol, s.lat, s.lon_east, s.heading, s.pitch, s.roll].every(isNum) &&
+    isNullable(s.pose_sol, isNum) &&
+    isNullable(s.height, isNum) &&
     (s.walkability === null || WALKABILITY.includes(s.walkability as Walkability)) &&
     isNullable(s.slope_deg, isNum) &&
     isNullable(s.walkability_source, isStr) &&
@@ -101,7 +115,8 @@ export function parseManifest(value: unknown): PanoramaManifest | null {
 const pageUrl = () => globalThis.location?.href ?? 'http://localhost/';
 
 /** Fetches and validates the manifest. Throws with a readable reason on any failure. */
-export async function loadManifest(url = PANORAMAS_URL, fetcher: typeof fetch = fetch): Promise<LoadedManifest> {
+export async function loadManifest(url: string | null = PANORAMAS_URL, fetcher: typeof fetch = fetch): Promise<LoadedManifest> {
+  if (!url) throw new Error('this production build has no VITE_R2_BASE_URL, so there is no panoramas.json source');
   const baseUrl = new URL(url, pageUrl()).href;
   const response = await fetcher(url);
   if (!response.ok) throw new Error(`panoramas.json: HTTP ${response.status}`);

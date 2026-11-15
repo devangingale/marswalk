@@ -181,13 +181,13 @@ export const VisorHud: React.FC<VisorHudProps> = ({ stop, manifest, baseUrl, zoo
           <span>
             <b>SOL</b> {stop.sol}
             {stop.sol_end !== null && `–${stop.sol_end}`}
-            {stop.pose_sol !== stop.sol && <i className="visor-note"> (pose sol {stop.pose_sol})</i>}
+            {stop.pose_sol !== null && stop.pose_sol !== stop.sol && <i className="visor-note"> (pose sol {stop.pose_sol})</i>}
           </span>
           <span>
             <b>POS</b> {formatLatLon(stop.lat, stop.lon_east)}
           </span>
           <span>
-            <b>ELEV</b> {Math.round(stop.height).toLocaleString('en-GB')} m
+            <b>ELEV</b> {stop.height !== null ? `${Math.round(stop.height).toLocaleString('en-GB')} m` : 'not published'}
           </span>
           <span>
             <b>AZ</b> {Math.round(wrap360(azimuth))}° <b>EL</b> {pitch >= 0 ? '+' : ''}
@@ -274,8 +274,7 @@ export const VisorHud: React.FC<VisorHudProps> = ({ stop, manifest, baseUrl, zoo
               </dd>
               <dt>Position</dt>
               <dd>
-                PDS PLACES rover pose, sol {stop.pose_sol}
-                {stop.pose_sol !== stop.sol && ' (nearest localized sol)'}
+                {stop.position_source}
               </dd>
             </dl>
             <p className="visor-meta__caption">{stop.caption}</p>
@@ -283,7 +282,9 @@ export const VisorHud: React.FC<VisorHudProps> = ({ stop, manifest, baseUrl, zoo
             <p className="visor-meta__note">
               {stop.heading_source === 'caption'
                 ? `Orientation from the official caption (image centre faces ${Math.round(stop.heading)}°).`
-                : `Image centre set to the ${stop.heading_source}; the mosaic's own pointing is not published with the image, so the photo may be rotated relative to the compass.`}
+                : stop.heading_source.startsWith('rover yaw')
+                  ? `Image centre set to the ${stop.heading_source}; the mosaic's own pointing is not published with the image, so the photo may be rotated relative to the compass.`
+                  : 'Neither the caption nor the rover position data gives this mosaic\'s pointing: the image centre is placed at north, so the photo may be rotated relative to the compass.'}
             </p>
           </div>
         )}

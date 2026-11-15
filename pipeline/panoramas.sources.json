@@ -1,159 +1,105 @@
 {
-  "_comment": "Inputs for build_panoramas.py: one NASA Photojournal 360-degree mosaic per stop. Every field here is catalogue metadata from the PIA page. Position, elevation and heading come from shared/poses/<site>_poses.csv; walkability, slope and relay passes come from the pipeline's own grid and pass bundles. The official caption is fetched from `page` at build time. hfov_deg is the horizontal span of the mosaic; center_heading_deg is the compass bearing of its centre column, set only when the official caption states it (PIA20840: 'North is at both ends and south is in the center', so 180); null: the rover's yaw at that sol, because the mosaic's own pointing is not published with the JPEG. sol_end marks a mosaic taken over several sols at one parked position.",
-  "sources": [
+  "_comment": "Inputs for build_panoramas.py. `discovery` queries the NASA Images API for 360-degree Photojournal entries; `curated` adds or overrides entries with values verified against the official caption (sol range, stated orientation, and for rovers without a pose table an explicit, cited position); `exclude` lists entries deliberately left out and why. Positions otherwise come from shared/poses/<site>_poses.csv; captions, credits and image files from each PIA's Photojournal page.",
+  "discovery": {
+    "queries": [
+      {
+        "q": "360 Perseverance",
+        "rover": "Perseverance"
+      },
+      {
+        "q": "360 Curiosity",
+        "rover": "Curiosity"
+      }
+    ]
+  },
+  "curated": [
     {
-      "id": "sol_3",
       "pia_id": "PIA24264",
-      "file": "PIA24264.jpg",
-      "url": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia24/pia24264/PIA24264.jpg",
-      "page": "https://science.nasa.gov/photojournal/mastcam-zs-first-360-degree-panorama/",
-      "title": "Mastcam-Z's First 360-Degree Panorama",
       "rover": "Perseverance",
-      "mission": "Mars 2020",
-      "instrument": "Mastcam-Z",
-      "credit": "NASA/JPL-Caltech/ASU/MSSS",
-      "site": "jezero",
-      "sol": 3,
-      "hfov_deg": 360,
-      "center_heading_deg": null,
-      "center_pitch_deg": 0
+      "sol": 3
     },
     {
-      "id": "gale_3167",
       "pia_id": "PIA24643",
-      "file": "PIA24643.jpg",
-      "url": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia24/pia24643/PIA24643.jpg",
-      "page": "https://science.nasa.gov/photojournal/curiosity-looks-uphill-past-rafael-navarro-mountain/",
-      "title": "Curiosity Looks Uphill Past Rafael Navarro Mountain",
       "rover": "Curiosity",
-      "mission": "Mars Science Laboratory",
-      "instrument": "Mastcam",
-      "credit": "NASA/JPL-Caltech/MSSS",
-      "site": "gale",
-      "sol": 3167,
-      "hfov_deg": 360,
-      "center_heading_deg": null,
-      "center_pitch_deg": 0
+      "sol": 3167
     },
     {
-      "id": "gale_3481",
       "pia_id": "PIA25366",
-      "file": "PIA25366.jpg",
-      "url": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia25/pia25366/PIA25366.jpg",
-      "page": "https://science.nasa.gov/photojournal/curiositys-360-degree-panorama-near-sierra-maigualida/",
-      "title": "Curiosity's 360-Degree Panorama Near Sierra Maigualida",
       "rover": "Curiosity",
-      "mission": "Mars Science Laboratory",
-      "instrument": "Mastcam",
-      "credit": "NASA/JPL-Caltech/MSSS",
-      "site": "gale",
-      "sol": 3481,
-      "hfov_deg": 360,
-      "center_heading_deg": null,
-      "center_pitch_deg": 0
+      "sol": 3481
     },
     {
-      "id": "gale_1421",
       "pia_id": "PIA20765",
-      "file": "PIA20765.jpg",
-      "url": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia20/pia20765/PIA20765.jpg",
-      "page": "https://science.nasa.gov/photojournal/rovers-panorama-of-entrance-to-murray-buttes-on-mars/",
-      "title": "Rover's Panorama of Entrance to 'Murray Buttes' on Mars",
       "rover": "Curiosity",
-      "mission": "Mars Science Laboratory",
-      "instrument": "Mastcam",
-      "credit": "NASA/JPL-Caltech/MSSS",
-      "site": "gale",
-      "sol": 1421,
-      "hfov_deg": 360,
-      "center_heading_deg": null,
-      "center_pitch_deg": 0
+      "sol": 1421
     },
     {
-      "id": "gale_1451",
       "pia_id": "PIA20840",
-      "file": "PIA20840.jpg",
-      "url": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia20/pia20840/PIA20840.jpg",
-      "page": "https://science.nasa.gov/photojournal/rovers-panorama-taken-amid-murray-buttes-on-mars/",
-      "title": "Rover's Panorama Taken Amid 'Murray Buttes' on Mars",
       "rover": "Curiosity",
-      "mission": "Mars Science Laboratory",
-      "instrument": "Mastcam",
-      "credit": "NASA/JPL-Caltech/MSSS",
-      "site": "gale",
       "sol": 1451,
-      "hfov_deg": 360,
-      "center_heading_deg": 180,
-      "center_pitch_deg": 0
+      "center_heading_deg": 180
     },
     {
-      "id": "gale_3048",
       "pia_id": "PIA24269",
-      "file": "PIA24269.jpg",
-      "url": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia24/pia24269/PIA24269.jpg",
-      "page": "https://science.nasa.gov/photojournal/curiositys-360-degree-view-approaching-mont-mercou/",
-      "title": "Curiosity's 360-Degree View Approaching Mont Mercou",
       "rover": "Curiosity",
-      "mission": "Mars Science Laboratory",
-      "instrument": "Mastcam",
-      "credit": "NASA/JPL-Caltech/MSSS",
-      "site": "gale",
-      "sol": 3048,
-      "hfov_deg": 360,
-      "center_heading_deg": null,
-      "center_pitch_deg": 0
+      "sol": 3048
     },
     {
-      "id": "jezero_53",
       "pia_id": "PIA24663",
-      "file": "PIA24663.jpg",
-      "url": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia24/pia24663/PIA24663.jpg",
-      "page": "https://science.nasa.gov/photojournal/mastcam-zs-360-degree-view-of-van-zyl-overlook/",
-      "title": "Mastcam-Z's 360-degree View of Van Zyl Overlook",
       "rover": "Perseverance",
-      "mission": "Mars 2020",
-      "instrument": "Mastcam-Z",
-      "credit": "NASA/JPL-Caltech/ASU/MSSS",
-      "site": "jezero",
       "sol": 53,
-      "hfov_deg": 360,
-      "center_heading_deg": null,
-      "center_pitch_deg": 0,
       "sol_end": 64
     },
     {
-      "id": "jezero_1178",
       "pia_id": "PIA26369",
-      "file": "PIA26369.jpg",
-      "url": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia26/pia26369/PIA26369.jpg",
-      "page": "https://science.nasa.gov/photojournal/perseverance-captures-bright-angel-in-360-degrees/",
-      "title": "Perseverance Captures Bright Angel in 360 Degrees",
       "rover": "Perseverance",
-      "mission": "Mars 2020",
-      "instrument": "Mastcam-Z",
-      "credit": "NASA/JPL-Caltech/ASU/MSSS",
-      "site": "jezero",
-      "sol": 1178,
-      "hfov_deg": 360,
-      "center_heading_deg": null,
-      "center_pitch_deg": 0
+      "sol": 1178
     },
     {
-      "id": "jezero_1337",
       "pia_id": "PIA26474",
-      "file": "PIA26474.jpg",
-      "url": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia26/pia26474/PIA26474.jpg",
-      "page": "https://science.nasa.gov/photojournal/perseverance-makes-tracks-at-rio-chiquito/",
-      "title": "Perseverance Makes Tracks at Rio Chiquito",
       "rover": "Perseverance",
-      "mission": "Mars 2020",
-      "instrument": "Mastcam-Z",
-      "credit": "NASA/JPL-Caltech/ASU/MSSS",
-      "site": "jezero",
-      "sol": 1337,
-      "hfov_deg": 360,
-      "center_heading_deg": null,
-      "center_pitch_deg": 0
+      "sol": 1337
+    },
+    {
+      "pia_id": "PIA03095",
+      "rover": "Spirit",
+      "sol": 620,
+      "sol_end": 622,
+      "note": "Everest panorama from the summit of Husband Hill; caption: sols 620 to 622"
+    },
+    {
+      "pia_id": "PIA16440",
+      "rover": "Spirit",
+      "sol": 814,
+      "sol_end": 980,
+      "note": "McMurdo panorama from Low Ridge; caption: sol 814 to sol 980"
+    },
+    {
+      "pia_id": "PIA05755",
+      "rover": "Opportunity",
+      "sol": 58,
+      "sol_end": 60,
+      "note": "'Lion King' panorama of Eagle Crater, sols 58 and 60, taken from the crater rim just after the rover left it",
+      "position": {
+        "lat": -1.9462,
+        "lon_east": 354.4734,
+        "height": null,
+        "source": "Opportunity landing site in Eagle Crater (PDS MER mission description, MOLA IAU 2000); the rover was on the crater rim, within about 20 m"
+      }
+    }
+  ],
+  "exclude": [
+    {
+      "pia_id": "PIA15689",
+      "reason": "Opportunity at Greeley Haven (sols 2811-2947): the only published traverse (MERB_traverse_5130.csv) does not state its coordinate frame, so the stop cannot be placed without assuming one"
+    },
+    {
+      "pia_id": "PIA24444",
+      "reason": "how the sol 3 panorama was taken, not a panorama"
+    },
+    {
+      "pia_id": "PIA24445",
+      "reason": "how the sol 3 panorama was taken, not a panorama"
     }
   ]
 }
