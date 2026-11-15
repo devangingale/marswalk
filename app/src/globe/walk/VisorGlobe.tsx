@@ -18,8 +18,9 @@ import { formatDistance, formatDuration, formatHeading } from '../../walk/format
 import { hazardAhead, hazardFlags } from '../../walk/hazard';
 import { budgetRemaining, RouteTrack, walkStateAt, waypointById } from '../../walk/track';
 import { createMarsViewer, initCesium } from '../cesiumSetup';
-import { siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M, visorCamera, type Pose } from '../frame';
+import { attachOfflineSurface, siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M, visorCamera, type Pose } from '../frame';
 import { GlobeImagery } from '../imageryLayers';
+import type { SiteTerrainMesh } from '../siteTerrain';
 import { groundHeightAt } from './cameraMath';
 import './walkGlobe.css';
 import '../../components/walk.css';
@@ -51,7 +52,9 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
   const viewerRef = useRef<Viewer | null>(null);
   const imageryRef = useRef<GlobeImagery | null>(null);
   const gridRef = useRef<RouteGrid | null>(null);
-  const heightOffsetRef = useRef<number>(SPIKE_HEIGHT_OFFSETS_M[siteData.id] ?? 0);
+  /** Null offline without a site mesh: the ground is the bare ellipsoid. */
+  const heightOffsetRef = useRef<number | null>(SPIKE_HEIGHT_OFFSETS_M[siteData.id] ?? 0);
+  const meshRef = useRef<SiteTerrainMesh | null>(null);
 
   const [hazardData, setHazardData] = useState<HazardData>({ status: 'loading' });
   const state = walkStateAt(plan, track, elapsedS);
@@ -85,7 +88,8 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
     if (!container) return;
 
     let disposed = false;
-    initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN);
+    heightOffsetRef.current = SPIKE_HEIGHT_OFFSETS_M[siteData.id] ?? 0;
+    initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, navigator.onLine);
 
     void (async () => {
       const { viewer, tileset } = await createMarsViewer(container, { interactive: false });
@@ -131,6 +135,17 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
       await imagery.setSite(siteData);
       if (disposed) return;
 
+      // Offline (or Cesium ion unreachable): stand on our site mesh or the ellipsoid, not Cesium Mars heights.
+      if (!tileset) {
+        const surface = await attachOfflineSurface(viewer, siteData);
+        if (disposed) {
+          surface.mesh?.destroy();
+          return;
+        }
+        meshRef.current = surface.mesh;
+        heightOffsetRef.current = surface.heightOffsetM;
+      }
+
       try {
         const grid = await loadGrid(getSiteBaseUrl(siteData.id), siteData.origin);
         if (disposed) return;
@@ -143,7 +158,7 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
       placeVisorCamera(viewer, poseRef.current);
 
       // Measure height offset asynchronously in background without blocking
-      if (gridRef.current) {
+      if (tileset && gridRef.current) {
         void siteHeightOffsetM(viewer, tileset, siteData, gridRef.current)
           .then((offset) => {
             if (disposed) return;
@@ -160,6 +175,8 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
       disposed = true;
       imageryRef.current?.clear();
       imageryRef.current = null;
+      meshRef.current?.destroy();
+      meshRef.current = null;
       viewerRef.current?.destroy();
       viewerRef.current = null;
     };
