@@ -73,6 +73,27 @@ const LABEL_GAP_PX = 4;
 
 export type Box = [left: number, top: number, right: number, bottom: number];
 
+export interface ScreenLabelBox {
+  id: string;
+  box: Box;
+  priority: number;
+}
+
+/** Keep the highest priority screen labels whose measured boxes do not collide. */
+export function cullScreenLabels(labels: ScreenLabelBox[], blocked: Box[] = []): string[] {
+  const ordered = labels.map((label, index) => ({ ...label, index })).sort((a, b) => a.priority - b.priority || a.index - b.index);
+  const kept: Box[] = [...blocked];
+  const visible: string[] = [];
+  for (const label of ordered) {
+    const [left, top, right, bottom] = label.box;
+    const overlaps = (box: Box) => left < box[2] && box[0] < right && top < box[3] && box[1] < bottom;
+    if (kept.some(overlaps)) continue;
+    kept.push(label.box);
+    visible.push(label.id);
+  }
+  return visible;
+}
+
 /**
  * Drops labels that would overlap a blocked box (a panel over the map) or a label already kept,
  * in order. Meridian labels are centred on x, parallel labels start at x; both are centred on y.
