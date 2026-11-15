@@ -127,19 +127,32 @@
 }
 
 /* ------------------------------------------------------------------ */
-/* Compact column for Walk and Visor                                  */
+/* Walk: the Safety panel (left region of Regions.tsx)                */
 /* ------------------------------------------------------------------ */
-.s48-safety--compact {
-  left: var(--space-4);
-  right: auto;
-  top: var(--space-4);
-  width: 320px;
-  /* Clear of the playback bar (its top sits 120 px above the map foot) and the credits under it. */
-  max-height: calc(100% - var(--space-4) - var(--s48-bottom-clear));
-  --s48-bottom-clear: calc(var(--hit-walk) + var(--space-16) + var(--space-1));
+/* Sections in the panel, rules between them: no plates, no shadows, nothing over the map. */
+.s48-safety--panel {
+  position: static;
+  width: auto;
+  max-width: none;
+  max-height: none;
+  gap: 0;
+  z-index: auto;
 }
-.s48-safety--compact > .s48-ladder {
-  flex: none;
+.s48-safety--panel section {
+  background: transparent;
+  border: 0;
+  border-bottom: var(--border-width) solid var(--color-rule);
+  border-radius: 0;
+  padding: var(--space-3) var(--space-4);
+}
+.s48-safety--panel > .s48-ladder {
+  border-left: 3px solid var(--tone);
+  padding-left: calc(var(--space-4) - 3px);
+}
+.s48-safety--panel h3,
+.s48-safety--panel .s48-sos__head h3 {
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
 }
 .s48-safety--compact .s48-ladder__headline {
   font-size: var(--text-readout-md);
@@ -161,26 +174,40 @@
   margin-top: var(--space-1);
 }
 
-/* Visor: solid plates on the always-dark HUD, 24 px from the edges, clear of
-   the heading tape (top centre) and the readouts and playback (bottom). */
+/* ------------------------------------------------------------------ */
+/* Visor: the warning ladder readout (top left) and SOS (top right)   */
+/* ------------------------------------------------------------------ */
+/* Solid plates on the always-dark HUD, clear of the heading tape (top centre). */
 .s48-safety--visor {
-  top: var(--space-6);
-  left: var(--space-6);
-  width: 300px;
-  --s48-bottom-clear: 272px;
+  top: var(--space-4);
+  width: 280px;
+  max-height: none;
   color: var(--visor-text);
+  z-index: 3;
 }
+.s48-safety--visor-ladder { left: var(--space-4); right: auto; }
+.s48-safety--visor-sos { right: var(--space-4); left: auto; }
 .s48-safety--visor section {
   background: var(--visor-plate);
   border-color: var(--color-rule);
 }
+.s48-safety--visor .s48-ladder__headline {
+  font-size: var(--text-readout-md);
+  line-height: var(--leading-readout-md);
+}
+.s48-visor-hazard-line {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 2px solid var(--visor-hazard);
+  border-radius: var(--radius-1);
+  background: var(--visor-plate);
+  color: var(--visor-text);
+  font: var(--weight-semibold) var(--text-md) / var(--leading-md) var(--font-ui);
+}
 
 @media (max-width: 1100px) {
-  .s48-safety--compact {
-    width: 300px;
-  }
   .s48-safety--visor {
-    width: 280px;
+    width: 240px;
   }
 }
 
