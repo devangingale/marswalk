@@ -52,6 +52,12 @@ export const Regions: React.FC<RegionsProps> = ({ id, main, left, leftLabel = 'P
 
   useEffect(() => { setPanels(readPanels(id, window.innerWidth, storage())); }, [id]);
 
+  // Two open panels over a narrow map would cover it: a state remembered from a wide window,
+  // or a window narrowed past OVERLAY_BELOW_PX, keeps the right panel (the task) and folds the left.
+  useEffect(() => {
+    if (overlay) setPanels((current) => (current.left && current.right ? { ...current, left: false } : current));
+  }, [overlay, id]);
+
   const toggle = useCallback((side: Side) => {
     setPanels((current) => {
       const next = togglePanel(current, side, overlay);
