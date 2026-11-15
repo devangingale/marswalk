@@ -15,13 +15,17 @@ import type { RouteGrid } from '../lib/grid';
 import { lonlatToLocalMetres } from '../lib/grid';
 import { ScaleBar } from '../components/ScaleBar';
 import { GlobeOverlays, photoSites, surfaceHeightM } from './overlays';
-import { createMarsViewer, initCesium, surfaceClassification, type CesiumFailure } from './cesiumSetup';
+import { createMarsViewer, groundGlobe, initCesium, surfaceClassification, type CesiumFailure } from './cesiumSetup';
+import { renderFor } from './renderOnDemand';
 import { useSurfaceMode } from './surfaceMode';
 import { SurfaceNotice } from './SurfaceNotice';
 import { installGroundPan } from './groundPan';
 import { installPlanetView } from './planetView';
 import { cartesianToLonLat, lonLatToCartesian, metresPerPixel as measureMetresPerPixel, siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M } from './frame';
 import { GlobeImagery } from './imageryLayers';
+import { MapLoadStatus } from './MapLoadStatus';
+import { initialMapLoadState, markFirstFrame, setStreaming, updateLoadSource, type MapLoadState, type LoadSource } from './loadProgress';
+import { markMapLoadMilestone } from './loadMilestones';
 import { isInsideSite } from './planPick';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import './plan/plan.css';
@@ -64,7 +68,8 @@ function pickedGround(viewer: Viewer, point: Cartesian2) {
     if (depthPick) return depthPick;
   }
   const ray = viewer.camera.getPickRay(point);
-  return ray ? scene.globe?.pick(ray, scene) ?? undefined : undefined;
+  // Never the sunken online backdrop: it lies 15 km under the ground and would skew the scale.
+  return ray ? groundGlobe(scene)?.pick(ray, scene) ?? undefined : undefined;
 }
 
 function token(value: string, fallback: string): string {
@@ -98,6 +103,8 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
   const cavesRef = useRef<CustomDataSource | null>(null);
   const [scale, setScale] = useState(1);
   const [hover, setHover] = useState<HoverState | null>(null);
+  const [loadState, setLoadState] = useState<MapLoadState>(initialMapLoadState);
+  const reportLoad = (source: LoadSource, status: 'pending' | 'loading' | 'ready' | 'failed', progress?: number) => setLoadState((current) => updateLoadSource(current, source, status, progress));
 
   planRef.current = plan;
   placingRef.current = placingShelter;
@@ -112,12 +119,96 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
     let removePan: (() => void) | null = null;
     let removePlanetView: (() => void) | null = null;
     let resizeObserver: ResizeObserver | null = null;
+    let removeProgress: (() => void) | null = null;
+    let removeTileLoad: (() => void) | null = null;
+    let removeGlobeProgress: (() => void) | null = null;
+    let removePostRender: (() => void) | null = null;
+    const failSafe = window.setTimeout(() => setLoadState((current) => {
+      let next = current;
+      for (const source of ['terrain', 'imagery', 'bundles', 'layers'] as const) if (next.sources[source].status === 'pending' || next.sources[source].status === 'loading') next = updateLoadSource(next, source, 'failed');
+      return markFirstFrame(next);
+    }), 30000);
+    let terrainReady = false;
+    let terrainActivity = false;
+    let imageryTilesArrived = false;
+    let imageryDrawn = false;
+    let imageryFailed = false;
+    let imageryDrawnFrames = 0;
+    let maxTerrainTiles = 0;
+    let terrainTilesLoaded = 0;
+    setLoadState(initialMapLoadState());
+    reportLoad('terrain', 'loading', 0.05); reportLoad('imagery', 'loading', 0.05); reportLoad('bundles', 'loading', 0.05); reportLoad('layers', 'loading', 0.05);
     const startup = async () => {
       initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, surfaceMode === 'online');
       const { viewer, tileset, mode, failure: loadFailure } = await createMarsViewer(container, { interactive: true });
       if (disposed) { viewer.destroy(); return; }
       viewerRef.current = viewer;
-      if (viewer.scene.globe) viewer.scene.globe.depthTestAgainstTerrain = true;
+      if (viewer.scene.globe) {
+        let maxGlobeTiles = 0;
+        const globeProgress = (remaining: number) => {
+          setLoadState((current) => setStreaming(current, remaining > 0));
+          maxGlobeTiles = Math.max(maxGlobeTiles, remaining);
+          if (maxGlobeTiles > 0) {
+            const fraction = (maxGlobeTiles - remaining) / maxGlobeTiles;
+            reportLoad('terrain', 'loading', Math.max(0.15, Math.min(0.9, fraction)));
+          }
+          if (!viewer.isDestroyed()) viewer.scene.requestRender();
+        };
+        viewer.scene.globe.tileLoadProgressEvent.addEventListener(globeProgress);
+        removeGlobeProgress = () => viewer.scene.globe.tileLoadProgressEvent.removeEventListener(globeProgress);
+      }
+      if (tileset) {
+        const progress = (requests: number, processing: number) => {
+          const pending = requests + processing;
+          if (pending > 0) terrainActivity = true;
+          setLoadState((current) => setStreaming(current, pending > 0));
+          maxTerrainTiles = Math.max(maxTerrainTiles, terrainTilesLoaded + pending);
+          const ratio = maxTerrainTiles > 0 ? terrainTilesLoaded / maxTerrainTiles : 0;
+          reportLoad('terrain', 'loading', Math.max(0.15, Math.min(0.9, ratio)));
+          if (terrainActivity && pending === 0 && !terrainReady) {
+            terrainReady = true;
+            markMapLoadMilestone('ground');
+            reportLoad('terrain', 'ready');
+            viewer.scene.requestRender();
+          }
+        };
+        const tileLoad = () => {
+          terrainTilesLoaded++;
+          maxTerrainTiles = Math.max(maxTerrainTiles, terrainTilesLoaded);
+          reportLoad('terrain', 'loading', Math.max(0.2, Math.min(0.95, terrainTilesLoaded / maxTerrainTiles)));
+          terrainReady = true;
+          markMapLoadMilestone('ground');
+          reportLoad('terrain', 'ready');
+          viewer.scene.requestRender();
+        };
+        tileset.loadProgress.addEventListener(progress);
+        tileset.tileLoad.addEventListener(tileLoad);
+        removeProgress = () => tileset.loadProgress.removeEventListener(progress);
+        removeTileLoad = () => tileset.tileLoad.removeEventListener(tileLoad);
+      } else {
+        terrainReady = true;
+        reportLoad('terrain', loadFailure ? 'failed' : 'ready');
+      }
+      const postRender = () => {
+        if (imageryTilesArrived && !imageryDrawn) {
+          imageryDrawnFrames++;
+          if (imageryDrawnFrames >= 2) {
+            imageryDrawn = true;
+            markMapLoadMilestone('imagery');
+            reportLoad('imagery', 'ready');
+          }
+        }
+        if (terrainReady && (imageryDrawn || imageryFailed)) {
+          markMapLoadMilestone('ground');
+          markMapLoadMilestone('frame');
+          setLoadState((current) => markFirstFrame(current));
+          removePostRender?.(); removePostRender = null;
+        }
+      };
+      viewer.scene.postRender.addEventListener(postRender);
+      removePostRender = () => viewer.scene.postRender.removeEventListener(postRender);
+      const ground = groundGlobe(viewer.scene);
+      if (ground) ground.depthTestAgainstTerrain = true;
       viewer.scene.screenSpaceCameraController.enableCollisionDetection = false;
       viewer.cesiumWidget.creditContainer.setAttribute('aria-label', 'Cesium ion attribution');
       setOffline(mode === 'offline' || !tileset);
@@ -139,15 +230,30 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
       if (tileset) {
         try {
           const [ground] = await viewer.scene.sampleHeightMostDetailed([Cartographic.fromDegrees(mid.lon, mid.lat)]);
-          if (ground?.height !== undefined && !disposed) flyToSite(ground.height);
+          if (ground?.height !== undefined && !disposed) flyToSite(Math.max(0, ground.height));
         } catch { /* the tileset may not have sampled the site yet */ }
       }
 
       const imageryTarget = tileset?.imageryLayers ?? viewer.imageryLayers;
-      const imagery = new GlobeImagery(imageryTarget);
+      const imagery = new GlobeImagery(imageryTarget, () => {
+        imageryTilesArrived = true;
+        reportLoad('imagery', 'loading', 0.6);
+        if (!viewer.isDestroyed()) renderFor(viewer.scene, 1000);
+      });
       imageryRef.current = imagery;
       imagery.apply(layerStates, true);
-      await imagery.setSite(siteData, mode);
+      reportLoad('imagery', 'loading', 0.2);
+      reportLoad('layers', 'loading', 0.3);
+      const imageryReady = imagery.setSite(siteData, mode);
+      imageryReady.then(() => {
+        reportLoad('layers', 'ready');
+        if (!viewer.isDestroyed()) viewer.scene.requestRender();
+      }).catch(() => {
+        imageryFailed = true;
+        reportLoad('imagery', 'failed'); reportLoad('layers', 'failed');
+        if (!viewer.isDestroyed()) viewer.scene.requestRender();
+      });
+      await imageryReady;
       if (disposed) return;
       setImageryTarget(imageryTarget);
 
@@ -157,7 +263,7 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
           : SPIKE_HEIGHT_OFFSETS_M[siteData.id] ?? 0
         : 0;
       heightOffsetRef.current = heightOffset;
-      if (tileset && gridRef.current) flyToSite(surfaceHeightM(gridRef.current, mid.lon, mid.lat, heightOffset));
+      if (tileset && gridRef.current) flyToSite(Math.max(0, surfaceHeightM(gridRef.current, mid.lon, mid.lat, heightOffset)));
 
       const overlays = new GlobeOverlays(viewer, { scene: viewer.scene, classification: surfaceClassification(tileset) });
       overlaysRef.current = overlays;
@@ -165,17 +271,26 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
       overlays.setGrid(gridRef.current);
       overlays.setPlan(planRef.current, siteData.origin);
       void Promise.all([
-        fetch(resolveSiteAssetUrl(siteData.id, `/data/${siteData.id}/traverse.geojson`))
-          .then((response) => response.ok ? response.json() as Promise<GeoJSON.FeatureCollection<GeoJSON.LineString>> : null)
+        fetch(resolveSiteAssetUrl(siteData.id, `/data/${siteData.id}/traverse.geojson`), { signal: AbortSignal.timeout(15000) })
+          .then((response) => {
+            if (!response.ok) throw new Error('Traverse data unavailable');
+            reportLoad('bundles', 'loading', 0.5);
+            return response.json() as Promise<GeoJSON.FeatureCollection<GeoJSON.LineString>>;
+          })
           .then((collection) => collection?.features.find((feature) => feature.geometry.type === 'LineString')?.geometry ?? null),
-        fetch(resolveSiteAssetUrl(siteData.id, siteData.photos_url ?? `/data/${siteData.id}/photos.json`))
-          .then((response) => response.ok && response.headers.get('content-type')?.includes('json') ? response.json() as Promise<{ lon: number; lat: number; sol: number }[]> : []),
+        fetch(resolveSiteAssetUrl(siteData.id, siteData.photos_url ?? `/data/${siteData.id}/photos.json`), { signal: AbortSignal.timeout(15000) })
+          .then((response) => {
+            if (!response.ok || !response.headers.get('content-type')?.includes('json')) throw new Error('Photo data unavailable');
+            reportLoad('bundles', 'loading', 0.8);
+            return response.json() as Promise<{ lon: number; lat: number; sol: number }[]>;
+          }),
       ]).then(([traverse, photos]) => {
+        reportLoad('bundles', 'ready');
         if (disposed) return;
         const data = { traverse, sites: photoSites(photos) };
         roverDataRef.current = data;
         overlays.setRover(data.traverse, data.sites, roverStateRef.current);
-      }).catch(() => undefined);
+      }).catch(() => reportLoad('bundles', 'failed'));
 
       if (disposed) return;
       handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
@@ -283,13 +398,27 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
       viewer.camera.percentageChanged = 0.05;
       viewer.camera.changed.addEventListener(updateScale);
       viewer.camera.moveEnd.addEventListener(updateScale);
-      resizeObserver = new ResizeObserver(() => { viewer.cesiumWidget.resize(); updateScale(); });
+      resizeObserver = new ResizeObserver(() => {
+        // A queued observer callback can run after a site change has destroyed this viewer.
+        if (viewer.isDestroyed()) return;
+        viewer.cesiumWidget.resize();
+        updateScale();
+      });
       resizeObserver.observe(container);
       updateScale();
     };
-    void startup().catch(() => setOffline(true));
+    void startup().catch(() => {
+      setOffline(true);
+      setLoadState((current) => {
+        let next = current;
+        for (const source of ['terrain', 'imagery', 'bundles', 'layers'] as const) next = updateLoadSource(next, source, 'failed');
+        return markFirstFrame(next);
+      });
+    });
     return () => {
       disposed = true;
+      window.clearTimeout(failSafe);
+      removeProgress?.(); removeTileLoad?.(); removeGlobeProgress?.(); removePostRender?.();
       handler?.destroy();
       removePan?.();
       removePlanetView?.();
@@ -316,7 +445,12 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
     overlays.setGradient(true);
     overlays.setPlan(plan, siteData.origin);
   }, [plan, siteData.origin]);
-  useEffect(() => { imageryRef.current?.apply(layerStates); }, [layerStates]);
+  useEffect(() => {
+    imageryRef.current?.apply(layerStates);
+    if (viewerRef.current && !viewerRef.current.isDestroyed()) {
+      viewerRef.current.scene.requestRender();
+    }
+  }, [layerStates]);
 
   const globalList = wholePlanet?.layers;
   const globalStates = wholePlanet?.states;
@@ -395,6 +529,7 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
   // Leaving the map clears the hover dot and tag; a drag in progress keeps them.
   return <div className={`globe-plan-map${placingShelter ? ' is-placing-shelter' : ''}`} onPointerLeave={() => { setHover(null); if (!dragRef.current) onRoutePointHover?.(null); }}>
     <div ref={containerRef} className="globe-plan-canvas" />
+    <MapLoadStatus state={loadState} />
     {offline && !failure && <div className="globe-plan-offline">Offline · local terrain</div>}
     <SurfaceNotice failure={failure} />
     {placingShelter && <div className="globe-plan-placing" role="status">Click the map to place the shelter · Esc cancels</div>}

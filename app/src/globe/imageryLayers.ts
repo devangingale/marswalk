@@ -5,6 +5,7 @@ import type { LayerState, SiteData, SiteLayer } from '../types';
 import { createPMTilesImagery } from './pmtilesImagery';
 import { offlineImagerySet } from './offline/imagerySet';
 import { imageryLayerRank, orderImageryLayer } from './layerOrder';
+import { markMapLoadMilestone } from './loadMilestones';
 
 export interface ImageryLayerView {
   show: boolean;
@@ -46,14 +47,16 @@ export function syncImageryLayers(
  */
 export class GlobeImagery {
   private readonly target: ImageryLayerCollection;
+  private readonly onTileReady?: () => void;
   private readonly layers = new Map<string, ImageryLayer>();
   private site: SiteData | null = null;
   private states: Record<string, LayerState> = {};
   private generation = 0;
   private basemap: ImageryLayer | null = null;
 
-  constructor(target: ImageryLayerCollection) {
+  constructor(target: ImageryLayerCollection, onTileReady?: () => void) {
     this.target = target;
+    this.onTileReady = onTileReady ? () => { markMapLoadMilestone('imagery'); onTileReady(); } : undefined;
   }
 
   async setSite(site: SiteData, mode: 'ion' | 'offline' = 'ion'): Promise<void> {
@@ -67,6 +70,7 @@ export class GlobeImagery {
         const provider = await createPMTilesImagery(
           resolveSiteAssetUrl(site.id, imagerySet.basemap.url),
           imagerySet.basemap.source,
+          this.onTileReady,
         );
         if (generation !== this.generation) return;
         this.basemap = new ImageryLayer(provider);
@@ -80,7 +84,7 @@ export class GlobeImagery {
       add.map(async (id) => {
         const layer = site.layers.find((l) => l.id === id)!;
         try {
-          return await createPMTilesImagery(resolveSiteAssetUrl(site.id, layer.url), layer.source || undefined);
+          return await createPMTilesImagery(resolveSiteAssetUrl(site.id, layer.url), layer.source || undefined, this.onTileReady);
         } catch (error) {
           console.warn(`Site layer ${id} did not load`, error);
           return null;
@@ -91,7 +95,8 @@ export class GlobeImagery {
     add.forEach((id, i) => {
       const provider = created[i];
       if (!provider) return;
-      const imagery = new ImageryLayer(provider, { show: false });
+      const initialView = viewFor(this.site!.layers.find((layer) => layer.id === id)!, this.states);
+      const imagery = new ImageryLayer(provider, initialView);
       this.target.add(imagery);
       this.layers.set(id, imagery);
       const siteLayerOrder = this.site?.layers.findIndex((layer) => layer.id === id) ?? 0;

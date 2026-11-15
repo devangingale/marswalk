@@ -2,7 +2,7 @@
 // Whole-planet layers for the Plan tab: the same manifest and grids Explore uses, plus the
 // value of each shown layer at the site, since a planet-scale grid is one flat colour there.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { GLOBE_BASE } from '../config';
 import {
   formatGlobalValue,
@@ -146,17 +146,28 @@ export function useWholePlanet(site: { lon: number; lat: number }) {
     return () => { active = false; };
   }, []);
 
-  // Values at the site for every layer, read once per site; shown only while the layer is on.
+  // The value at the site, shown only while a layer is on, is read the first time the layer is
+  // turned on (once per site). Reading every layer up front fetched all the value grids (about
+  // 35 MB) at Plan start, competing with the site imagery.
+  const siteKey = `${site.lon},${site.lat}`;
+  const siteValuesFor = useRef({ key: '', requested: new Set<string>() });
   useEffect(() => {
-    let active = true;
-    setSiteValues({});
-    for (const layer of layers) {
-      valueAtSite(layer, site.lon, site.lat)
-        .then((text) => { if (active) setSiteValues((prev) => ({ ...prev, [layer.id]: text })); })
-        .catch((error) => console.warn(`Value at site for ${layer.id} did not load`, error));
+    if (siteValuesFor.current.key !== siteKey) {
+      siteValuesFor.current = { key: siteKey, requested: new Set() };
+      setSiteValues({});
     }
-    return () => { active = false; };
-  }, [layers, site.lon, site.lat]);
+    const current = siteValuesFor.current;
+    for (const layer of layers) {
+      if (!states[layer.id]?.enabled || current.requested.has(layer.id)) continue;
+      current.requested.add(layer.id);
+      valueAtSite(layer, site.lon, site.lat)
+        .then((text) => { if (siteValuesFor.current === current) setSiteValues((prev) => ({ ...prev, [layer.id]: text })); })
+        .catch((error) => {
+          current.requested.delete(layer.id);
+          console.warn(`Value at site for ${layer.id} did not load`, error);
+        });
+    }
+  }, [layers, states, siteKey, site.lon, site.lat]);
 
   useEffect(() => {
     let active = true;

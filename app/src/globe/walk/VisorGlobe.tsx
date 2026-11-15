@@ -22,6 +22,9 @@ import { useSurfaceMode } from '../surfaceMode';
 import { SurfaceNotice } from '../SurfaceNotice';
 import { attachOfflineSurface, siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M, visorCamera, type Pose } from '../frame';
 import { GlobeImagery } from '../imageryLayers';
+import { MapLoadStatus } from '../MapLoadStatus';
+import { initialMapLoadState, markFirstFrame, setStreaming, updateLoadSource, type MapLoadState, type LoadSource } from '../loadProgress';
+import { markMapLoadMilestone } from '../loadMilestones';
 import type { SiteTerrainMesh } from '../siteTerrain';
 import { groundHeightAt } from './cameraMath';
 import { compactDirections, TurnArrow, trueNorthTitle, useDirectionsNow } from '../../components/DirectionsPanel';
@@ -60,6 +63,8 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
   /** Null offline without a site mesh: the ground is the bare ellipsoid. */
   const heightOffsetRef = useRef<number | null>(SPIKE_HEIGHT_OFFSETS_M[siteData.id] ?? 0);
   const meshRef = useRef<SiteTerrainMesh | null>(null);
+  const [loadState, setLoadState] = useState<MapLoadState>(initialMapLoadState);
+  const reportLoad = (source: LoadSource, status: 'pending' | 'loading' | 'ready' | 'failed', progress?: number) => setLoadState((current) => updateLoadSource(current, source, status, progress));
 
   const [hazardData, setHazardData] = useState<HazardData>({ status: 'loading' });
   const state = walkStateAt(plan, track, elapsedS);
@@ -94,12 +99,29 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
     if (!container) return;
 
     let disposed = false;
+    let removeProgress: (() => void) | null = null;
+    let removeTileLoad: (() => void) | null = null;
+    let removeGlobeProgress: (() => void) | null = null;
+    let removeSiteTerrainLoad: (() => void) | null = null;
+    let removePostRender: (() => void) | null = null;
+    const failSafe = window.setTimeout(() => setLoadState((current) => {
+      let next = current;
+      for (const source of ['terrain', 'imagery', 'bundles', 'layers'] as const) if (next.sources[source].status === 'pending' || next.sources[source].status === 'loading') next = updateLoadSource(next, source, 'failed');
+      return markFirstFrame(next);
+    }), 30000);
+    let terrainReady = false;
+    let terrainActivity = false;
+    let imageryTilesArrived = false;
+    let imageryDrawn = false;
+    let imageryFailed = false;
+    setLoadState(initialMapLoadState());
+    reportLoad('terrain', 'loading', 0.05); reportLoad('imagery', 'loading', 0.05); reportLoad('bundles', 'loading', 0.05); reportLoad('layers', 'loading', 0.05);
     heightOffsetRef.current = SPIKE_HEIGHT_OFFSETS_M[siteData.id] ?? 0;
     initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, surfaceMode === 'online');
     setFailure(null);
 
     void (async () => {
-      const { viewer, tileset, failure: loadFailure } = await createMarsViewer(container, { interactive: false });
+      const { viewer, tileset, mode, failure: loadFailure } = await createMarsViewer(container, { interactive: false });
       if (disposed) {
         viewer.destroy();
         return;
@@ -107,6 +129,45 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
       setFailure(loadFailure);
 
       viewerRef.current = viewer;
+      if (viewer.scene.globe) {
+        const globeProgress = (remaining: number) => {
+          setLoadState((current) => setStreaming(current, remaining > 0));
+          if (!viewer.isDestroyed()) viewer.scene.requestRender();
+        };
+        viewer.scene.globe.tileLoadProgressEvent.addEventListener(globeProgress);
+        removeGlobeProgress = () => viewer.scene.globe.tileLoadProgressEvent.removeEventListener(globeProgress);
+      }
+      if (tileset) {
+        const progress = (requests: number, processing: number) => {
+          if (requests + processing > 0) terrainActivity = true;
+          setLoadState((current) => setStreaming(current, requests + processing > 0));
+          if (terrainActivity && requests + processing === 0 && !terrainReady) {
+            terrainReady = true;
+            markMapLoadMilestone('ground');
+            reportLoad('terrain', 'ready');
+            viewer.scene.requestRender();
+          }
+        };
+        const tileLoad = () => { terrainReady = true; markMapLoadMilestone('ground'); reportLoad('terrain', 'ready'); viewer.scene.requestRender(); };
+        tileset.loadProgress.addEventListener(progress); tileset.tileLoad.addEventListener(tileLoad);
+        removeProgress = () => tileset.loadProgress.removeEventListener(progress);
+        removeTileLoad = () => tileset.tileLoad.removeEventListener(tileLoad);
+      } else { reportLoad('terrain', loadFailure ? 'failed' : 'loading'); }
+      const postRender = () => {
+        if (imageryTilesArrived && !imageryDrawn) {
+          imageryDrawn = true;
+          markMapLoadMilestone('imagery');
+          reportLoad('imagery', 'ready');
+        }
+        if (terrainReady && (imageryDrawn || imageryFailed)) {
+          markMapLoadMilestone('ground');
+          markMapLoadMilestone('frame');
+          setLoadState((current) => markFirstFrame(current));
+          removePostRender?.();
+          removePostRender = null;
+        }
+      };
+      viewer.scene.postRender.addEventListener(postRender); removePostRender = () => viewer.scene.postRender.removeEventListener(postRender);
       (container as any)._viewer = viewer;
       if (tileset) {
         tileset.enableCollision = true;
@@ -138,9 +199,19 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
         (viewer.camera.frustum as PerspectiveFrustum).near = 0.1;
       }
 
-      const imagery = new GlobeImagery(tileset ? tileset.imageryLayers : viewer.imageryLayers);
+      const imagery = new GlobeImagery(tileset ? tileset.imageryLayers : viewer.imageryLayers, () => {
+        imageryTilesArrived = true;
+        if (!viewer.isDestroyed()) viewer.scene.requestRender();
+      });
       imageryRef.current = imagery;
-      await imagery.setSite(siteData);
+      try {
+        await imagery.setSite(siteData, mode);
+        reportLoad('layers', 'ready');
+      } catch {
+        imageryFailed = true;
+        reportLoad('imagery', 'failed'); reportLoad('layers', 'failed');
+        if (!viewer.isDestroyed()) viewer.scene.requestRender();
+      }
       if (disposed) return;
 
       // Offline (or Cesium ion unreachable): stand on our site mesh or the ellipsoid, not Cesium Mars heights.
@@ -152,13 +223,31 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
         }
         meshRef.current = surface.mesh;
         heightOffsetRef.current = surface.heightOffsetM;
+        if (surface.mesh) {
+          const siteTerrainReady = () => {
+            terrainReady = true;
+            markMapLoadMilestone('ground');
+            if (!loadFailure) reportLoad('terrain', 'ready');
+            viewer.scene.requestRender();
+            removeSiteTerrainLoad?.(); removeSiteTerrainLoad = null;
+          };
+          if (surface.mesh.tileset.tilesLoaded) siteTerrainReady();
+          else removeSiteTerrainLoad = surface.mesh.tileset.tileLoad.addEventListener(siteTerrainReady);
+        } else {
+          terrainReady = true;
+          if (!loadFailure) reportLoad('terrain', 'ready');
+        }
+        viewer.scene.requestRender();
       }
+      viewer.scene.requestRender();
 
       try {
         const grid = await loadGrid(getSiteBaseUrl(siteData.id), siteData.origin);
+        reportLoad('bundles', 'ready');
         if (disposed) return;
         gridRef.current = grid;
       } catch (error) {
+        reportLoad('bundles', 'failed');
         console.warn('Grid failed to load for VisorGlobe', error);
       }
 
@@ -177,10 +266,16 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
             console.warn('siteHeightOffsetM failed in VisorGlobe', error);
           });
       }
-    })();
+    })().catch(() => setLoadState((current) => {
+      let next = current;
+      for (const source of ['terrain', 'imagery', 'bundles', 'layers'] as const) next = updateLoadSource(next, source, 'failed');
+      return markFirstFrame(next);
+    }));
 
     return () => {
       disposed = true;
+      window.clearTimeout(failSafe);
+      removeProgress?.(); removeTileLoad?.(); removeGlobeProgress?.(); removeSiteTerrainLoad?.(); removePostRender?.();
       imageryRef.current?.clear();
       imageryRef.current = null;
       meshRef.current?.destroy();
@@ -215,6 +310,7 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
     return (
       <div className="s48-visor s48-visor--empty" data-theme="dark">
         <div ref={containerRef} className="s48-visor-globe" />
+        <MapLoadStatus state={loadState} />
         <SurfaceNotice failure={failure} placement="low" />
         <div className="s48-empty-route">
           <button type="button" onClick={onPlan}>
@@ -231,6 +327,7 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
   return (
     <div className="s48-visor" data-theme="dark">
       <div ref={containerRef} className="s48-visor-globe" />
+      <MapLoadStatus state={loadState} />
       <SurfaceNotice failure={failure} placement="low" />
       <div className="s48-visor-overlay">
         <div className="s48-visor-readout s48-visor-heading" data-tour="visor-readouts">

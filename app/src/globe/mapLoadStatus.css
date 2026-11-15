@@ -1,0 +1,73 @@
+.s48-map-load {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: var(--map-load-scrim);
+  animation: s48-map-load-in var(--motion-base) var(--motion-ease) both;
+  pointer-events: none;
+}
+.s48-map-load.is-fading { animation: s48-map-load-out var(--motion-base) var(--motion-ease) both; }
+
+.s48-map-load__panel {
+  display: grid;
+  gap: var(--space-3);
+  width: min(320px, calc(100% - var(--space-8)));
+  padding: var(--space-4);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-rule);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+}
+
+.s48-map-load__line { font-weight: var(--weight-medium); }
+.s48-map-load__failure { color: var(--color-danger); }
+.s48-map-load-error {
+  position: absolute;
+  z-index: 19;
+  left: var(--space-3);
+  bottom: var(--space-3);
+  padding: var(--space-1) var(--space-2);
+  color: var(--color-danger);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-rule);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  pointer-events: none;
+}
+.s48-map-load__progress {
+  display: block;
+  width: 100%;
+  height: var(--map-load-bar-height);
+  appearance: none;
+  border: 0;
+  background: var(--color-surface-sunken);
+}
+.s48-map-load__progress::-webkit-progress-bar { background: var(--color-surface-sunken); }
+.s48-map-load__progress::-webkit-progress-value { background: var(--map-load-progress); }
+.s48-map-load__progress::-moz-progress-bar { background: var(--map-load-progress); }
+
+.s48-map-stream {
+  position: absolute;
+  z-index: 19;
+  right: var(--space-3);
+  bottom: var(--space-3);
+  width: var(--map-load-spinner-size);
+  height: var(--map-load-spinner-size);
+  border: var(--map-load-spinner-stroke) solid var(--color-rule);
+  border-top-color: var(--map-load-progress);
+  border-radius: var(--radius-round);
+  animation: s48-map-spin var(--map-load-spinner-duration) linear infinite;
+  pointer-events: none;
+}
+
+@keyframes s48-map-spin { to { transform: rotate(360deg); } }
+@keyframes s48-map-load-in { from { opacity: var(--map-load-from-opacity); } to { opacity: 1; } }
+@keyframes s48-map-load-out { to { opacity: var(--map-load-from-opacity); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .s48-map-stream { animation: none; }
+  .s48-map-load { animation-duration: var(--motion-base); }
+}

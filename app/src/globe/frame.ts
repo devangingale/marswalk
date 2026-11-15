@@ -105,6 +105,7 @@ export function chooseHeightOffset(
       `Height offset at ${siteId} measured ${measuredM.toFixed(2)} m, spike value ${spike.toFixed(2)} m ` +
         `(${Math.abs(measuredM - spike).toFixed(2)} m apart)`,
     );
+    if (Math.abs(measuredM - spike) > 100) return spike;
   }
   return measuredM;
 }
