@@ -14,7 +14,7 @@
 .plan-rail__warning { margin: var(--space-2) 0 0; padding-left: var(--space-2); border-left: 2px solid var(--color-danger); color: var(--color-danger); }
 
 .plan-shelter { display: grid; gap: var(--space-2); margin-bottom: var(--space-3); }
-.plan-shelter__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-2); }
+.plan-shelter__grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: var(--space-2); }
 .plan-shelter__grid label { display: grid; gap: var(--space-1); min-width: 0; color: var(--color-text-muted); font-size: var(--text-sm); }
 .plan-shelter__grid input, .plan-shelter select { width: 100%; }
 .plan-rail select { min-height: var(--hit-plan); min-width: 0; padding: 0 var(--space-1); border: var(--border-width) solid var(--color-control-border); border-radius: var(--radius-1); background: var(--color-surface-raised); color: var(--color-text); font: var(--weight-regular) var(--text-md) / var(--leading-md) var(--font-ui); }
