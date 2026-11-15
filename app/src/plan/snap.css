@@ -1,0 +1,18 @@
+/* Stop snap and reachability notice styles */
+.plan-stop-notice {
+  grid-column: 1 / -1;
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-2);
+  border-left: 2px solid var(--color-caution);
+  color: var(--color-caution);
+  font: var(--weight-regular) var(--text-sm) / var(--leading-sm) var(--font-ui);
+}
+
+.plan-stop-warning {
+  grid-column: 1 / -1;
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-2);
+  border-left: 2px solid var(--color-danger);
+  color: var(--color-danger);
+  font: var(--weight-regular) var(--text-sm) / var(--leading-sm) var(--font-ui);
+}

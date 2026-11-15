@@ -1,0 +1,228 @@
+/*
+ * Sol-48 safety layer, field additions: pair tracking, the night return, and the
+ * compact column for Walk and Visor. Tokens only (app/src/styles/tokens.css).
+ * The night return is drawn in whatever theme is active; the globe page and the
+ * Visor put it under the night (dark) token set.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Pair tracking (ladder style)                                       */
+/* ------------------------------------------------------------------ */
+.s48-pair__figs {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: var(--border-width) solid var(--color-rule);
+}
+.s48-pair__figs dt {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+.s48-pair__figs dd {
+  margin: 2px 0 0;
+  font-family: var(--font-data);
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+  font-variant-numeric: var(--numeric);
+  color: var(--color-text-muted);
+}
+.s48-pair__figs strong {
+  font-family: var(--font-readout);
+  font-size: var(--text-2xl);
+  line-height: var(--leading-2xl);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+/* ------------------------------------------------------------------ */
+/* Night return                                                       */
+/* ------------------------------------------------------------------ */
+.s48-night {
+  display: grid;
+  gap: var(--space-2);
+}
+.s48-safety .s48-night__title {
+  font-size: var(--text-lg);
+  line-height: var(--leading-lg);
+}
+.s48-night__nav {
+  display: grid;
+  gap: var(--space-2);
+}
+.s48-night__row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  column-gap: var(--space-3);
+}
+.s48-night__row + .s48-night__row {
+  padding-top: var(--space-2);
+  border-top: var(--border-width) solid var(--color-rule);
+}
+.s48-night__label {
+  grid-column: 1 / -1;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
+.s48-night__dist {
+  font-family: var(--font-readout);
+  font-size: var(--text-readout-lg);
+  line-height: var(--leading-readout-lg);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-readout);
+  font-variant-numeric: var(--numeric);
+  color: var(--color-text);
+}
+.s48-night__bearing {
+  justify-self: end;
+  font-family: var(--font-readout);
+  font-size: var(--text-readout-md);
+  line-height: var(--leading-readout-md);
+  font-weight: var(--weight-medium);
+  font-variant-numeric: var(--numeric);
+  color: var(--color-text);
+}
+.s48-night__none {
+  grid-column: 1 / -1;
+  font-size: var(--text-walk-body);
+  line-height: var(--leading-walk-body);
+  color: var(--color-text-muted);
+}
+.s48-night__figs {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: var(--border-width) solid var(--color-rule);
+}
+.s48-night__figs dt {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+.s48-night__figs dd {
+  margin: 2px 0 0;
+  font-family: var(--font-data);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-variant-numeric: var(--numeric);
+  color: var(--color-text);
+}
+.s48-night__habitat {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-data);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-variant-numeric: var(--numeric);
+  color: var(--color-text-muted);
+}
+.s48-night__habitat.is-received {
+  color: var(--color-ok);
+}
+
+/* ------------------------------------------------------------------ */
+/* Compact column for Walk and Visor                                  */
+/* ------------------------------------------------------------------ */
+.s48-safety--compact {
+  left: var(--space-4);
+  right: auto;
+  top: var(--space-4);
+  width: 320px;
+  /* Clear of the playback bar (its top sits 120 px above the map foot) and the credits under it. */
+  max-height: calc(100% - var(--space-4) - var(--s48-bottom-clear));
+  --s48-bottom-clear: calc(var(--hit-walk) + var(--space-16) + var(--space-1));
+}
+.s48-safety--compact > .s48-ladder {
+  flex: none;
+}
+.s48-safety--compact .s48-ladder__headline {
+  font-size: var(--text-readout-md);
+  line-height: var(--leading-readout-md);
+}
+.s48-safety--compact .s48-night__dist {
+  font-size: var(--text-readout-md);
+  line-height: var(--leading-readout-md);
+}
+.s48-safety--compact .s48-night__bearing {
+  font-size: var(--text-2xl);
+  line-height: var(--leading-2xl);
+}
+.s48-safety--compact .s48-pair__figs strong {
+  font-size: var(--text-xl);
+  line-height: var(--leading-xl);
+}
+.s48-safety--compact .s48-beeper__steps {
+  margin-top: var(--space-1);
+}
+
+/* Visor: solid plates on the always-dark HUD, 24 px from the edges, clear of
+   the heading tape (top centre) and the readouts and playback (bottom). */
+.s48-safety--visor {
+  top: var(--space-6);
+  left: var(--space-6);
+  width: 300px;
+  --s48-bottom-clear: 272px;
+  color: var(--visor-text);
+}
+.s48-safety--visor section {
+  background: var(--visor-plate);
+  border-color: var(--color-rule);
+}
+
+@media (max-width: 1100px) {
+  .s48-safety--compact {
+    width: 300px;
+  }
+  .s48-safety--visor {
+    width: 280px;
+  }
+}
+
+/* Rover call inside the night return. */
+.s48-night__call {
+  display: grid;
+  gap: var(--space-1);
+}
+.s48-safety--compact .s48-night__call .s48-rover__send {
+  min-height: var(--hit-walk);
+  font-size: var(--text-lg);
+}
+.s48-night__effect,
+.s48-night__called {
+  margin: 0;
+  font-family: var(--font-data);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-variant-numeric: var(--numeric);
+  color: var(--color-text-muted);
+}
+.s48-night__called {
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+
+/* Short screens (tablet landscape): the night readouts step down one size. */
+@media (max-height: 860px) {
+  .s48-safety .s48-night__dist {
+    font-size: var(--text-readout-md);
+    line-height: var(--leading-readout-md);
+  }
+  .s48-safety .s48-night__bearing {
+    font-size: var(--text-2xl);
+    line-height: var(--leading-2xl);
+  }
+}
+
+
+/* Walk and Visor: the ladder headline already names the night return. */
+.s48-safety--compact .s48-night__title {
+  display: none;
+}

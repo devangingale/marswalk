@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import {
+  CustomDataSource,
   Matrix4,
   Rectangle,
   type Viewer,
@@ -16,6 +17,7 @@ import { createMarsViewer, initCesium } from '../cesiumSetup';
 import { chaseCamera, siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M, type Pose } from '../frame';
 import { GlobeImagery } from '../imageryLayers';
 import { GlobeOverlays } from '../overlays';
+import type { CrewMarkerModel } from '../../safety/crewMarkers';
 import { groundHeightAt, headingFromTrack, sanitizePlanForOverlays } from './cameraMath';
 import './walkGlobe.css';
 
@@ -26,6 +28,8 @@ export interface WalkMapProps {
   lon: number;
   lat: number;
   alongM: number;
+  /** Both astronauts, their uncertainty circles and the rover, from the safety layer. */
+  crew?: CrewMarkerModel | null;
 }
 
 export const WalkGlobe: React.FC<WalkMapProps> = ({
@@ -35,6 +39,7 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
   lon,
   lat,
   alongM,
+  crew = null,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
@@ -73,7 +78,9 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
       await imagery.setSite(siteData);
       if (disposed) return;
 
-      const overlays = new GlobeOverlays(viewer);
+      const crewSource = new CustomDataSource('crew');
+      void viewer.dataSources.add(crewSource);
+      const overlays = new GlobeOverlays(viewer, { crewHost: crewSource });
       overlaysRef.current = overlays;
 
       try {
@@ -125,6 +132,13 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
     updateView(viewer, overlays);
   }, [plan, track, siteData]);
 
+  // Crew and rover markers from the safety layer.
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    overlaysRef.current?.setCrew(crew);
+    viewer?.scene.requestRender();
+  }, [crew]);
+
   // Walker pose and camera updates on each playback frame
   useEffect(() => {
     const viewer = viewerRef.current;
@@ -157,7 +171,7 @@ export const WalkGlobe: React.FC<WalkMapProps> = ({
       });
       viewer.scene.requestRender();
     } else {
-      overlays.setPlan(sanitizePlanForOverlays(plan, siteData.origin), siteData.origin);
+      overlays.setPlan(sanitizePlanForOverlays(plan), siteData.origin);
 
       const currentPose = poseRef.current;
       const headingDeg = headingFromTrack(track.vertices, currentPose.alongM);

@@ -10,6 +10,7 @@ import { lonlatToLocalMetres } from '../lib/grid';
 import { ScaleBar } from '../components/ScaleBar';
 import { GlobeOverlays, photoSites, surfaceHeightM } from './overlays';
 import { createMarsViewer, initCesium } from './cesiumSetup';
+import { installGroundPan } from './groundPan';
 import { cartesianToLonLat, lonLatToCartesian, metresPerPixel as measureMetresPerPixel, siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M } from './frame';
 import { GlobeImagery } from './imageryLayers';
 import { isInsideSite } from './planPick';
@@ -64,6 +65,7 @@ export const GlobePlanMap: React.FC<MapProps> = ({
     if (!container) return;
     let disposed = false;
     let handler: ScreenSpaceEventHandler | null = null;
+    let removePan: (() => void) | null = null;
     let resizeObserver: ResizeObserver | null = null;
     const startup = async () => {
       initCesium(import.meta.env.VITE_CESIUM_ION_TOKEN, navigator.onLine);
@@ -130,6 +132,7 @@ export const GlobePlanMap: React.FC<MapProps> = ({
 
       if (disposed) return;
       handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
+      removePan = installGroundPan(viewer, () => dragRef.current !== null);
       handler.setInputAction((event: ScreenSpaceEventHandler.MotionEvent) => {
         const point = pickedGround(viewer, event.endPosition);
         const lonLat = cartesianToLonLat(point);
@@ -228,6 +231,7 @@ export const GlobePlanMap: React.FC<MapProps> = ({
     return () => {
       disposed = true;
       handler?.destroy();
+      removePan?.();
       resizeObserver?.disconnect();
       overlaysRef.current?.clear(); overlaysRef.current = null;
       imageryRef.current?.clear(); imageryRef.current = null;

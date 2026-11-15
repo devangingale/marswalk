@@ -24,6 +24,7 @@ import { PlanRail } from './plan/PlanRail';
 import { findWalkableCentre, isLatestPlanRequest, makeInitialPlan, nextStopName } from './plan/planLogic';
 import { loadGrid, type RouteGrid } from './lib/grid';
 import type { PlanStop } from './lib/plan';
+import { reachableMask, snapToReachable, snapToPassable } from './lib/snap';
 import { DEFAULT_SURFACE_DOSE_MGY_PER_DAY, DEFAULT_SOLAR_EVENT_MGY_PER_DAY } from './lib/energy';
 import { type Mover } from './globe/plan/MoverPicker';
 import './plan/plan.css';
@@ -47,6 +48,7 @@ export const App: React.FC = () => {
   const [routeGridSite, setRouteGridSite] = useState<string | null>(null);
   const [computing, setComputing] = useState(false);
   const [doseRates, setDoseRates] = useState({ surface: DEFAULT_SURFACE_DOSE_MGY_PER_DAY, solar: DEFAULT_SOLAR_EVENT_MGY_PER_DAY });
+  const [stopNotices, setStopNotices] = useState<Record<string, string>>({});
   const planWorker = useRef<Worker | null>(null);
   const requestId = useRef(0);
   const initializedPlanSite = useRef<string | null>(null);
@@ -191,14 +193,122 @@ export const App: React.FC = () => {
   };
 
   const addStop = useCallback((point: { lon: number; lat: number }) => {
+    let target = point;
+    let notice: string | null = null;
+    if (routeGrid) {
+      const mask = reachableMask(routeGrid, plan.start);
+      const snapped = snapToReachable(routeGrid, mask, point);
+      if (snapped) {
+        target = { lon: snapped.lon, lat: snapped.lat };
+        if (snapped.movedM > 0) {
+          notice = `Moved ${Math.round(snapped.movedM)} m to walkable ground`;
+        }
+      }
+    }
+    const newId = `s-${Date.now()}`;
+    if (notice) {
+      setStopNotices((prev) => ({ ...prev, [newId]: notice! }));
+    }
     setPlan((current) => {
-      const stop: PlanStop = { id: `s-${Date.now()}`, name: nextStopName(current.stops), ...point, dwell_s: current.params.stop_time_s };
+      const stop: PlanStop = { id: newId, name: nextStopName(current.stops), ...target, dwell_s: current.params.stop_time_s };
       return { ...current, stops: [...current.stops, stop] };
     });
+  }, [routeGrid, plan.start]);
+
+  const updateStart = useCallback((newStart: Plan['start']) => {
+    let resolvedStart = newStart;
+    if (routeGrid) {
+      const startRc = routeGrid.lonlatToRowCol(newStart.lon, newStart.lat);
+      if (!routeGrid.isInside(startRc.row, startRc.col) || !routeGrid.isPassable(startRc.row, startRc.col)) {
+        const snapped = snapToPassable(routeGrid, newStart);
+        if (snapped) {
+          resolvedStart = { ...newStart, lon: snapped.lon, lat: snapped.lat };
+        }
+      }
+      reachableMask(routeGrid, resolvedStart);
+    }
+    setPlan((current) => ({ ...current, start: resolvedStart }));
+  }, [routeGrid]);
+
+  const updateStop = useCallback((changed: PlanStop) => {
+    let target = changed;
+    if (routeGrid) {
+      const mask = reachableMask(routeGrid, plan.start);
+      const snapped = snapToReachable(routeGrid, mask, { lon: changed.lon, lat: changed.lat });
+      if (snapped) {
+        target = { ...changed, lon: snapped.lon, lat: snapped.lat };
+        if (snapped.movedM > 0) {
+          const notice = `Moved ${Math.round(snapped.movedM)} m to walkable ground`;
+          setStopNotices((prev) => ({ ...prev, [changed.id]: notice }));
+        } else {
+          setStopNotices((prev) => {
+            if (!prev[changed.id]) return prev;
+            const next = { ...prev };
+            delete next[changed.id];
+            return next;
+          });
+        }
+      } else {
+        setStopNotices((prev) => {
+          if (!prev[changed.id]) return prev;
+          const next = { ...prev };
+          delete next[changed.id];
+          return next;
+        });
+      }
+    }
+    setPlan((current) => ({
+      ...current,
+      stops: current.stops.map((stop) => (stop.id === target.id ? target : stop)),
+    }));
+  }, [routeGrid, plan.start]);
+
+  const handleImportPlan = useCallback((imported: Plan) => {
+    let resolvedStart = imported.start;
+    const newNotices: Record<string, string> = {};
+    let resolvedStops = imported.stops;
+
+    if (routeGrid) {
+      const startRc = routeGrid.lonlatToRowCol(resolvedStart.lon, resolvedStart.lat);
+      if (!routeGrid.isInside(startRc.row, startRc.col) || !routeGrid.isPassable(startRc.row, startRc.col)) {
+        const snappedStart = snapToPassable(routeGrid, resolvedStart);
+        if (snappedStart) {
+          resolvedStart = { ...resolvedStart, lon: snappedStart.lon, lat: snappedStart.lat };
+        }
+      }
+      const mask = reachableMask(routeGrid, resolvedStart);
+      resolvedStops = imported.stops.map((stop) => {
+        const snap = snapToReachable(routeGrid, mask, { lon: stop.lon, lat: stop.lat });
+        if (snap) {
+          if (snap.movedM > 0) {
+            newNotices[stop.id] = `Moved ${Math.round(snap.movedM)} m to walkable ground`;
+          }
+          return { ...stop, lon: snap.lon, lat: snap.lat };
+        }
+        return stop;
+      });
+    }
+
+    setStopNotices(newNotices);
+    setPlan({ ...imported, start: resolvedStart, stops: resolvedStops });
+  }, [routeGrid]);
+
+  const changePlan = useCallback((next: Plan) => {
+    setStopNotices((prev) => {
+      const currentIds = new Set(next.stops.map((s) => s.id));
+      let changed = false;
+      const filtered: Record<string, string> = {};
+      for (const [id, msg] of Object.entries(prev)) {
+        if (currentIds.has(id)) {
+          filtered[id] = msg;
+        } else {
+          changed = true;
+        }
+      }
+      return changed ? filtered : prev;
+    });
+    setPlan(next);
   }, []);
-  const updateStart = useCallback((start: Plan['start']) => { setPlan((current) => ({ ...current, start })); }, []);
-  const updateStop = useCallback((changed: PlanStop) => { setPlan((current) => ({ ...current, stops: current.stops.map((stop) => stop.id === changed.id ? changed : stop) })); }, []);
-  const changePlan = useCallback((next: Plan) => { setPlan(next); }, []);
 
   const handleToggleLayer = (layerId: string) => {
     setLayerStates((prev) => {
@@ -298,7 +408,7 @@ export const App: React.FC = () => {
               onTogglePanel={() => setIsPanelOpen(!isPanelOpen)}
             />
             <GlobePlanMap siteData={siteData} layerStates={layerStates} roverOverlayState={roverOverlayState} plan={plan} grid={routeGrid} activePoint={profileHover} onMapPoint={addStop} onStartChange={updateStart} onStopChange={updateStop} onRoutePointHover={setProfileHover} />
-            <PlanRail plan={plan} grid={routeGrid} computing={computing} onChange={changePlan} onImport={setPlan} mover={mover} onMoverChange={setMover} activePoint={profileHover} onProfileHover={setProfileHover} />
+            <PlanRail plan={plan} grid={routeGrid} computing={computing} onChange={changePlan} onImport={handleImportPlan} mover={mover} onMoverChange={setMover} activePoint={profileHover} onProfileHover={setProfileHover} stopNotices={stopNotices} />
           </div>
         ) : mode === 'walk' ? (
           <WalkView siteData={siteData} plan={plan} track={track} playback={playback} onPlan={() => setMode('plan')} />

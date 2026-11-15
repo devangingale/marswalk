@@ -1,6 +1,6 @@
 // Written with AI assistance, directed and reviewed by the team.
 import React from 'react';
-import type { LadderLevel, LadderResult, ShelterChoice, Hazard } from './ladder';
+import type { LadderLevel, LadderResult, ShelterChoice, ShelterKind, Hazard } from './ladder';
 import { formatDuration, formatSignedDuration, formatDistance, NBSP } from './format';
 import { CheckCircle, Notch, Alert } from './glyphs';
 import { DisclosureButton } from './Disclosure';
@@ -41,13 +41,18 @@ export const WarningLadder: React.FC<{
   result: LadderResult;
   shelter: ShelterChoice | null;
   shelterEtaS: number | null;
-  detailOpen: boolean;
-  detailId: string;
-  onDetailToggle: () => void;
-}> = ({ result, shelter, shelterEtaS, detailOpen, detailId, onDetailToggle }) => {
+  detailOpen?: boolean;
+  detailId?: string;
+  onDetailToggle?: () => void;
+  /** Walk and Visor: the headline and the shelter only. */
+  compact?: boolean;
+}> = ({ result, shelter, shelterEtaS, detailOpen, detailId, onDetailToggle, compact }) => {
   const rank = RUNGS.findIndex((r) => r.level === result.level);
   return (
-    <section className={`s48-ladder ${TONE_CLASS[result.level]}`} aria-label="Warning ladder">
+    <section
+      className={`s48-ladder ${TONE_CLASS[result.level]} ${compact ? 's48-ladder--compact' : ''}`}
+      aria-label="Warning ladder"
+    >
       <div className="s48-ladder__head">
         <span className="s48-ladder__glyph">
           <LevelGlyph level={result.level} />
@@ -55,20 +60,22 @@ export const WarningLadder: React.FC<{
         <h2 className="s48-ladder__headline">{result.headline}</h2>
       </div>
 
-      <ol className="s48-ladder__rungs" aria-label="Escalation">
-        {RUNGS.map((r, i) => (
-          <li
-            key={r.level}
-            className={`${TONE_CLASS[r.level]} ${i === rank ? 'is-current' : ''} ${
-              i < rank ? 'is-passed' : ''
-            }`}
-            aria-current={i === rank ? 'step' : undefined}
-          >
-            <span className="s48-ladder__rung-dot" />
-            {r.label}
-          </li>
-        ))}
-      </ol>
+      {!compact && (
+        <ol className="s48-ladder__rungs" aria-label="Escalation">
+          {RUNGS.map((r, i) => (
+            <li
+              key={r.level}
+              className={`${TONE_CLASS[r.level]} ${i === rank ? 'is-current' : ''} ${
+                i < rank ? 'is-passed' : ''
+              }`}
+              aria-current={i === rank ? 'step' : undefined}
+            >
+              <span className="s48-ladder__rung-dot" />
+              {r.label}
+            </li>
+          ))}
+        </ol>
+      )}
 
       {shelter ? (
         <p className="s48-ladder__shelter-line">
@@ -89,9 +96,11 @@ export const WarningLadder: React.FC<{
         </p>
       )}
 
-      <DisclosureButton open={detailOpen} onToggle={onDetailToggle} controls={detailId}>
-        Details
-      </DisclosureButton>
+      {!compact && onDetailToggle && detailId && (
+        <DisclosureButton open={detailOpen ?? false} onToggle={onDetailToggle} controls={detailId}>
+          Details
+        </DisclosureButton>
+      )}
     </section>
   );
 };
@@ -143,7 +152,12 @@ export const LadderDetail: React.FC<{
 );
 
 function shelterName(choice: ShelterChoice): string {
-  switch (choice.shelter.kind) {
+  return shelterKindName(choice.shelter.kind);
+}
+
+/** The shelter as named on screen. */
+export function shelterKindName(kind: ShelterKind): string {
+  switch (kind) {
     case 'habitat':
       return 'Habitat';
     case 'rover':

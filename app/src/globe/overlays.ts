@@ -41,6 +41,8 @@ import {
 } from '../lib/routeShape';
 import { lonLatToCartesian, type Pose } from './frame';
 import { cullScreenLabels, type Box } from './graticule';
+import { circleRing, crewLabel, labelOnLeft, type CrewMarkerModel } from '../safety/crewMarkers';
+import { crewRingImage } from '../safety/crewMarkerImage';
 import { canvasMarkerImages, readToken, type MarkerImage, type MarkerImages, type TokenReader } from './markerImages';
 import {
   bearingDeg,
@@ -121,10 +123,12 @@ export interface OverlayOptions {
   classification?: ClassificationType;
   onSectionHover?: (sectionId: string | null) => void;
   scene?: Scene;
+  /** A separate collection (a data source added after the others) for the crew and rover, so they draw on top. */
+  crewHost?: OverlayHost;
+  /** The astronaut mark; drawn from tokens on a canvas unless a stub is given (tests). */
+  crewImage?: () => MarkerImage;
 }
 
-/** Keep vertex clustering below the bundle grid's 2 m spacing. */
-const SHARED_TOLERANCE_M = 0.5;
 /** Forks closer than this are one fork on screen. */
 const FORK_MERGE_M = 15;
 /** A split that rejoins within this distance is a planner wobble, not a fork worth marking. */
@@ -138,6 +142,8 @@ const BRANCH_LABEL_GAP_PX = 10;
 const NEAR = new DistanceDisplayCondition(0, 15_000);
 const SITE = new DistanceDisplayCondition(0, 60_000);
 const REGION = new DistanceDisplayCondition(0, 1_500_000);
+/** Crew circles and the night corridor sit this far above the surface, metres. */
+const CREW_LIFT_M = 0.5;
 
 type Meta = { kind: 'route'; stretch: number } | { kind: 'text'; lines: string[] };
 
@@ -147,6 +153,11 @@ interface Stretch extends SharedSegment {
 
 export class GlobeOverlays {
   private readonly entities: EntityCollection;
+  private readonly crewEntities: EntityCollection;
+  private readonly crewImage: () => MarkerImage;
+  private crewImageCache: MarkerImage | null = null;
+  private crewModel: CrewMarkerModel | null = null;
+  private crewKey = '';
   private readonly token: TokenReader;
   private images: MarkerImages | null;
   private readonly classification: ClassificationType;
@@ -156,11 +167,12 @@ export class GlobeOverlays {
   private readonly removeScreenUpdate?: () => void;
   private readonly meta = new Map<Entity, Meta>();
   private readonly owned = new Set<Entity>();
-  private readonly groups: Record<'plan' | 'rover' | 'chemistry' | 'walker', Entity[]> = {
+  private readonly groups: Record<'plan' | 'rover' | 'chemistry' | 'walker' | 'crew', Entity[]> = {
     plan: [],
     rover: [],
     chemistry: [],
     walker: [],
+    crew: [],
   };
 
   private plan: Plan | undefined;
@@ -181,6 +193,8 @@ export class GlobeOverlays {
 
   constructor(host: OverlayHost, options: OverlayOptions = {}) {
     this.entities = host.entities;
+    this.crewEntities = options.crewHost?.entities ?? host.entities;
+    this.crewImage = options.crewImage ?? (() => (this.crewImageCache ??= crewRingImage(this.token)));
     this.token = options.token ?? readToken;
     this.images = options.images ?? null;
     this.classification = options.classification ?? ClassificationType.CESIUM_3D_TILE;
@@ -209,8 +223,13 @@ export class GlobeOverlays {
     this.useSurfaceHeights = true;
   }
 
+  /** Crew marks go to their own collection when one is given, so they draw above the plan. */
+  private collection(group: keyof GlobeOverlays['groups']): EntityCollection {
+    return group === 'crew' ? this.crewEntities : this.entities;
+  }
+
   private add(group: keyof GlobeOverlays['groups'], options: Entity.ConstructorOptions, meta?: Meta): Entity {
-    const entity = this.entities.add(options);
+    const entity = this.collection(group).add(options);
     this.groups[group].push(entity);
     this.owned.add(entity);
     if (meta) this.meta.set(entity, meta);
@@ -220,7 +239,7 @@ export class GlobeOverlays {
 
   private removeGroup(group: keyof GlobeOverlays['groups']): void {
     for (const entity of this.groups[group]) {
-      this.entities.remove(entity);
+      this.collection(group).remove(entity);
       this.meta.delete(entity);
       this.owned.delete(entity);
       this.hiddenLabels.delete(entity);
@@ -342,7 +361,7 @@ export class GlobeOverlays {
     }
 
     const legs = plan.route.legs;
-    this.stretches = sharedSegments(legs, frame, SHARED_TOLERANCE_M).map((s) => ({ ...s, shared: s.legs.length > 1 }));
+    this.stretches = sharedSegments(legs, frame).map((s) => ({ ...s, shared: s.legs.length > 1 }));
     this.sectionList = routeSections(plan, frame);
     this.styles = this.stretches.map(() => 'normal');
     this.cores = this.stretches.map(() => []);
@@ -482,7 +501,7 @@ export class GlobeOverlays {
   }
 
   private drawForks(plan: Plan, frame: GridOrigin): void {
-    const forks = dropBubbles(mergeForks(forkPoints(plan.route.legs, frame, SHARED_TOLERANCE_M), frame), frame);
+    const forks = dropBubbles(mergeForks(forkPoints(plan.route.legs, frame), frame), frame);
     for (const fork of forks) {
       const lines = fork.branches.map((b) => branchLabel(b.toLabel, plan));
       this.add(
@@ -643,6 +662,89 @@ export class GlobeOverlays {
     });
   }
 
+  /**
+   * Both astronauts with their position uncertainty circles, the pressurised rover with
+   * its arrival time, and the night way back as a corridor (Mars mode and Walk). Null
+   * clears them.
+   */
+  setCrew(model: CrewMarkerModel | null): void {
+    this.crewModel = model;
+    // Positions, radii and labels follow the latest model through callbacks; the entities are
+    // rebuilt only when the set of marks changes, so the circle geometry is not rebuilt every tick.
+    const key = model
+      ? `${model.crew.map((c) => c.id).join(',')}|${model.rover ? 1 : 0}|${model.returnLine && model.returnLine.length > 1 ? 1 : 0}`
+      : '';
+    if (key === this.crewKey) return;
+    this.crewKey = key;
+    this.removeGroup('crew');
+    if (!model) return;
+    const ring = this.colour('--map-position-ring');
+    const live = <T,>(read: (m: CrewMarkerModel) => T, fallback: T) =>
+      new CallbackProperty(() => (this.crewModel ? read(this.crewModel) : fallback), false);
+    // Lines and circles sit just above the surface rather than clamped, so they also draw on the
+    // bare ellipsoid; the depth-fail material keeps them visible behind terrain.
+    const lifted = (p: { lon: number; lat: number }) =>
+      lonLatToCartesian(p.lon, p.lat, this.surfaceHeight(p.lon, p.lat) + CREW_LIFT_M);
+    const line = (positions: CallbackProperty, width: number, colour: Color) =>
+      this.add('crew', {
+        polyline: { positions, width, arcType: ArcType.NONE, material: colour, depthFailMaterial: colour },
+      });
+    if (model.returnLine && model.returnLine.length > 1) {
+      const positions = live((m) => (m.returnLine ?? []).map(lifted), []);
+      line(positions, 12, this.colour('--map-route-casing'));
+      line(positions, 6, this.colour('--map-route-highlight'));
+    }
+    model.crew.forEach((first, i) => {
+      const member = (m: CrewMarkerModel) => m.crew[i] ?? first;
+      const radius = live((m) => Math.max(member(m).uncertaintyM, 0.1), 0.1);
+      this.add('crew', {
+        position: live((m) => lifted(member(m)), lifted(first)) as never,
+        ellipse: {
+          semiMajorAxis: radius,
+          semiMinorAxis: radius,
+          height: live((m) => this.surfaceHeight(member(m).lon, member(m).lat) + CREW_LIFT_M, 0),
+          material: ring.withAlpha(0.18),
+          show: live((m) => member(m).uncertaintyM > 0, false),
+        },
+      });
+      line(live((m) => (member(m).uncertaintyM > 0 ? circleRing(member(m), member(m).uncertaintyM).map(lifted) : []), []), 2, ring);
+      this.add(
+        'crew',
+        {
+          position: live((m) => this.surfacePosition(member(m).lon, member(m).lat), this.surfacePosition(first.lon, first.lat)) as never,
+          billboard: this.billboard(this.crewImage(), REGION),
+          // Each label faces away from the rest of the crew, so a separated pair's labels never meet.
+          label: {
+            ...this.label(crewLabel(first), REGION, [24, 0]),
+            text: live((m) => crewLabel(member(m)), ''),
+            pixelOffset: live((m) => new Cartesian2(labelOnLeft(m.crew)[i] ? -24 : 24, 0), new Cartesian2(24, 0)),
+            horizontalOrigin: live(
+              (m) => (labelOnLeft(m.crew)[i] ? HorizontalOrigin.RIGHT : HorizontalOrigin.LEFT),
+              HorizontalOrigin.LEFT,
+            ),
+          },
+        },
+        { kind: 'text', lines: [first.id, formatLatLon(first.lon, first.lat)] },
+      );
+    });
+    if (model.rover) {
+      const rover = model.rover;
+      this.add(
+        'crew',
+        {
+          position: live((m) => (m.rover ? this.surfacePosition(m.rover.lon, m.rover.lat) : undefined), undefined) as never,
+          billboard: this.billboard(this.markers().dropOff(), REGION),
+          label: { ...this.label(rover.label, REGION, [20, 0]), text: live((m) => m.rover?.label ?? '', '') },
+        },
+        { kind: 'text', lines: ['Rover', formatLatLon(rover.lon, rover.lat)] },
+      );
+    }
+  }
+
+  private surfaceHeight(lon: number, lat: number): number {
+    return this.useSurfaceHeights ? surfaceHeightM(this.grid, lon, lat, this.heightOffsetM) : 0;
+  }
+
   /** Hover text for a picked marker (stop, drop-off, fork, slope point, photo site), else null. */
   hoverLabel(picked: unknown): string | null {
     const meta = this.metaFor(picked);
@@ -705,6 +807,8 @@ export class GlobeOverlays {
 
   clear(): void {
     this.removeScreenUpdate?.();
+    this.crewKey = '';
+    this.crewModel = null;
     for (const group of Object.keys(this.groups) as (keyof GlobeOverlays['groups'])[]) this.removeGroup(group);
     this.plan = undefined;
     this.stretches = [];

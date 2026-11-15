@@ -24,7 +24,7 @@ import {
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import '../shell/shell.css';
 import './globe.css';
-import { DEFAULT_SITE, GLOBE_BASE, getSiteBaseUrl, getSiteJsonUrl } from '../config';
+import { AVAILABLE_SITES, DEFAULT_SITE, GLOBE_BASE, getSiteBaseUrl, getSiteJsonUrl } from '../config';
 import { LayerPanel } from '../components/LayerPanel';
 import samplePlanJson from '../fixtures/plan.sample.json';
 import { loadGrid, type RouteGrid } from '../lib/grid';
@@ -32,11 +32,13 @@ import type { Plan } from '../lib/plan';
 import { sections as routeSections } from '../lib/routeShape';
 import type { LayerState, SiteData } from '../types';
 import { createMarsViewer, initCesium } from './cesiumSetup';
+import { installGroundPan } from './groundPan';
 import { buildCornerPlan } from './cornerPlan';
 import { cartesianToLonLat, lonLatToCartesian, siteHeightOffsetM } from './frame';
 import { GlobeGlobalLayers, GlobeLayer, globeAssetUrl, loadGlobeManifest } from './globalLayers';
 import { GlobeGraticule, cullLabels, graticuleLines, type Box, type GraticuleLine, type ViewBounds } from './graticule';
 import { GlobeImagery } from './imageryLayers';
+import { attachSiteTerrain, measureEdgeSeam, type SiteTerrainMesh } from './siteTerrain';
 import { GlobeTimeTools } from './Clock';
 import { marsSolarLongitude } from '../lib/sun';
 import { GlobeTemperatureLayer, loadTemperatureManifest } from './temperature/temperatureLayer';
@@ -48,6 +50,7 @@ import { GlobeOverlays } from './overlays';
 import { formatElevation, formatLatLon, graticuleStep, screenSpan, sectionLabel } from './routeLook';
 import { useGlobeTheme } from './theme/useGlobeTheme';
 import { SafetyLayer } from '../safety/SafetyLayer';
+import { offsetLonLat, type CrewMarkerModel } from '../safety/crewMarkers';
 
 const CAVE_CREDIT = 'Mars Global Cave Candidate Catalog (MGC³), USGS Astrogeology Science Center';
 /** Data overlays start at the --map-overlay-opacity token value. */
@@ -56,6 +59,8 @@ const OVERLAY_OPACITY = 0.7;
 /** Opening view: the whole disc, centred on the Gale longitude. */
 const PLANET_VIEW = { lon: 137.4, lat: -4.7, heightM: 9_000_000 };
 const CAVE_HOVER = 'unexplored, from orbit';
+/** Mars mode opens this close to the crew, so the uncertainty circles read. */
+const MARS_FRAME_MIN_M = 500;
 
 const SAMPLE_PLAN = samplePlanJson as unknown as Plan;
 type PlanChoice = 'corner' | 'sample';
@@ -89,14 +94,19 @@ function urlState() {
   const params = new URLSearchParams(window.location.search);
   const list = (key: string) => params.get(key)?.split(',').filter(Boolean) ?? [];
   const view = params.get('view')?.split(',').map(Number);
+  const siteParam = params.get('siteId') || (params.get('site') && AVAILABLE_SITES.includes(params.get('site')!) ? params.get('site')! : null);
+  const siteId = siteParam && AVAILABLE_SITES.includes(siteParam) ? siteParam : DEFAULT_SITE;
   return {
+    siteId,
+    flyToSite: params.get('fly') === '1' || params.has('siteId') || (params.has('site') && AVAILABLE_SITES.includes(params.get('site')!)),
     globalOn: list('layers'),
-    siteOn: params.has('site') ? list('site') : null,
+    siteOn: params.has('site') && !AVAILABLE_SITES.includes(params.get('site')!) ? list('site') : (params.has('siteLayers') ? list('siteLayers') : null),
     caves: params.get('caves') === '1',
     view: view?.length === 3 && view.every(Number.isFinite) ? (view as [number, number, number]) : null,
     plan: (params.get('plan') === 'sample' ? 'sample' : 'corner') as PlanChoice,
     slopes: params.get('slopes') === '1',
     grid: params.get('grid') === '1',
+    sample: params.get('sample') === '1',
   };
 }
 
@@ -191,6 +201,7 @@ export const GlobePage: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
   const siteImageryRef = useRef<GlobeImagery | null>(null);
+  const siteTerrainRef = useRef<SiteTerrainMesh | null>(null);
   const globalRef = useRef<GlobeGlobalLayers | null>(null);
   const temperatureRef = useRef<GlobeTemperatureLayer | null>(null);
   const cavesRef = useRef<CustomDataSource | null>(null);
@@ -239,6 +250,43 @@ export const GlobePage: React.FC = () => {
   const [edges, setEdges] = useState<EdgeLabel[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
+  // Mars mode: the night contingency switches the page to the night theme.
+  const [nightContingency, setNightContingency] = useState(false);
+  const marsFramedRef = useRef(false);
+  const siteSettledRef = useRef(false);
+
+  // Mars mode shows the globe, the safety column and the markers only: the layer panel
+  // collapses to its header button. Earth mode reopens it.
+  useEffect(() => {
+    setPanelOpen(mode !== 'mars');
+    if (mode !== 'mars') marsFramedRef.current = false;
+  }, [mode]);
+
+  // Crew, rover and night corridor from the safety layer; the first set frames the crew.
+  const onCrewMarkers = useCallback((model: CrewMarkerModel | null) => {
+    const viewer = viewerRef.current;
+    overlaysRef.current?.setCrew(model);
+    if (!viewer || viewer.isDestroyed()) return;
+    if (model && siteSettledRef.current && !marsFramedRef.current && model.crew.length > 0) {
+      marsFramedRef.current = true;
+      const points = [...model.crew, ...(model.rover ? [model.rover] : [])];
+      const sphere = BoundingSphere.fromPoints(points.map((p) => lonLatToCartesian(p.lon, p.lat, 0)));
+      const centre = Cartographic.fromCartesian(sphere.center, Ellipsoid.MARS);
+      const rangeM = Math.max(sphere.radius * 4, MARS_FRAME_MIN_M);
+      // Shift the view east by half the safety column so the crew sits in the open map.
+      const fov = (viewer.camera.frustum as { fov?: number }).fov ?? CesiumMath.PI_OVER_THREE;
+      const metresPerPx = (2 * rangeM * Math.tan(fov / 2)) / Math.max(1, viewer.scene.canvas.clientWidth);
+      const column = viewRef.current?.querySelector('.s48-safety')?.getBoundingClientRect().width ?? 0;
+      const target = offsetLonLat(
+        { lon: CesiumMath.toDegrees(centre.longitude), lat: CesiumMath.toDegrees(centre.latitude) },
+        (column / 2) * metresPerPx,
+        90,
+      );
+      // On the plain ellipsoid (offline) the ground is at 0 m; on Cesium Mars it is sampled.
+      void flyTo(viewer, target.lon, target.lat, rangeM, -90, viewer.scene.globe.show ? 0 : undefined);
+    }
+    viewer.scene.requestRender();
+  }, []);
 
   const statesRef = useRef({ layerStates, globalStates, cavesOn, graticuleOn });
   statesRef.current = { layerStates, globalStates, cavesOn, graticuleOn };
@@ -341,7 +389,10 @@ export const GlobePage: React.FC = () => {
       );
       refreshGraticule();
 
-      overlaysRef.current = new GlobeOverlays(viewer, { onSectionHover: setHoveredSection });
+      // Crew and rover marks (Mars mode) in their own source, added last so they draw above the plan.
+      const crewSource = new CustomDataSource('crew');
+      void viewer.dataSources.add(crewSource);
+      overlaysRef.current = new GlobeOverlays(viewer, { onSectionHover: setHoveredSection, crewHost: crewSource });
       const imageryTarget = tileset?.imageryLayers ?? viewer.imageryLayers;
       siteImageryRef.current = new GlobeImagery(imageryTarget);
       setDustScene(viewer.scene);
@@ -390,7 +441,8 @@ export const GlobePage: React.FC = () => {
         })
         .catch((error) => console.warn('Cave candidates did not load', error));
 
-      fetch(getSiteJsonUrl(DEFAULT_SITE))
+      const siteBaseUrl = initial.sample ? `/sample/${initial.siteId}` : getSiteBaseUrl(initial.siteId);
+      fetch(initial.sample ? `${siteBaseUrl}/site.json` : getSiteJsonUrl(initial.siteId))
         .then((r) => (r.ok ? (r.json() as Promise<SiteData>) : Promise.reject(new Error(`HTTP ${r.status}`))))
         .then(async (site) => {
           if (disposed) return;
@@ -407,18 +459,25 @@ export const GlobePage: React.FC = () => {
           setLayerStates(states);
           siteImageryRef.current!.apply(states);
           await siteImageryRef.current!.setSite(site, mode);
-          const loaded = await loadGrid(getSiteBaseUrl(site.id), site.origin);
+          const loaded = await loadGrid(siteBaseUrl, site.origin);
           if (disposed) return;
           gridRef.current = loaded;
           setGrid(loaded);
           const offset = await siteHeightOffsetM(viewer, tileset, site, loaded);
           console.info(`Height offset at ${site.id}: ${offset.toFixed(2)} m`);
-          if (mode === 'offline' && !initial.view) {
+          const seam = await measureEdgeSeam(viewer, tileset, site, loaded, offset);
+          if (seam) {
+            console.info(`Site terrain seam at ${site.id}: mean ${seam.meanM.toFixed(2)} m, max ${seam.maxM.toFixed(2)} m (${seam.samples} edge points)`);
+          }
+          siteTerrainRef.current = await attachSiteTerrain(viewer, tileset, site, offset, siteBaseUrl);
+          if (!initial.view && (mode === 'offline' || initial.flyToSite)) {
             const [west, south, east, north] = site.bounds_lonlat;
             const lon = (west + east) / 2;
             const lat = (south + north) / 2;
-            void flyTo(viewer, lon, lat, Math.max(site.size_m.width, site.size_m.height) * 2, -60, 0);
+            void flyTo(viewer, lon, lat, Math.max(site.size_m.width, site.size_m.height) * 2, -60, mode === 'offline' ? 0 : undefined);
           }
+          // Mars mode frames the crew only after the site's opening view.
+          siteSettledRef.current = true;
         })
         .catch((error) => console.warn('Site did not load', error));
 
@@ -426,6 +485,7 @@ export const GlobePage: React.FC = () => {
 
       let frame = 0;
       handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
+      removers.push(installGroundPan(viewer, () => false));
       handler.setInputAction((event: ScreenSpaceEventHandler.MotionEvent) => {
         cancelAnimationFrame(frame);
         frame = requestAnimationFrame(() => {
@@ -485,6 +545,7 @@ export const GlobePage: React.FC = () => {
       overlaysRef.current?.clear();
       graticuleRef.current?.clear();
       siteImageryRef.current?.clear();
+      siteTerrainRef.current?.destroy();
       globalRef.current?.destroy();
       temperatureRef.current?.destroy();
       viewerRef.current?.destroy();
@@ -571,7 +632,7 @@ export const GlobePage: React.FC = () => {
   }, [shownPlan]);
 
   return (
-    <div className="mock plan-mock">
+    <div className="mock plan-mock" data-theme={mode === 'mars' && nightContingency ? 'night' : undefined}>
       <header className="mock-top">
         <span className="wordmark">Sol-48</span>
         <div className="s48-seg globe-mode" role="group" aria-label="Globe mode">
@@ -684,7 +745,7 @@ export const GlobePage: React.FC = () => {
             <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
             {/* The clock, dust history and conditions are Earth-mode planning chrome; Mars mode stays minimal. */}
             {mode === 'earth' && dustScene && <GlobeTimeTools scene={dustScene} onLs={setLs} />}
-            {siteData && (
+            {siteData && mode !== 'mars' && (
               <div className="globe-sites" data-over-map>
                 <button type="button" className="s48-btn s48-btn--secondary" onClick={flyToPlanet}>
                   Whole planet
@@ -694,7 +755,7 @@ export const GlobePage: React.FC = () => {
                 </button>
               </div>
             )}
-            {siteData && shownPlan && (
+            {mode === 'earth' && siteData && shownPlan && (
               <section className="globe-route" aria-label="Route" data-over-map>
                 <div className="s48-seg" role="group" aria-label="Plan">
                   {(Object.keys(PLAN_TITLES) as PlanChoice[]).map((choice) => (
@@ -750,9 +811,11 @@ export const GlobePage: React.FC = () => {
                 siteId={siteData.id}
                 lat={siteData.origin.lat0}
                 lonEast={siteData.origin.lon0}
+                onMarkers={onCrewMarkers}
+                onNight={setNightContingency}
               />
             )}
-            {notice && <div className="globe-notice" style={{ top: 'calc(var(--space-16) * 4)' }}>{notice}</div>}
+            {mode === 'earth' && notice && <div className="globe-notice" style={{ top: 'calc(var(--space-16) * 4)' }}>{notice}</div>}
             {edges.map((label) => (
               <span
                 key={label.key}

@@ -12,6 +12,7 @@ const contentTypes: Record<string, string> = {
   '.json': 'application/json',
   '.pmtiles': 'application/vnd.pmtiles',
   '.bin': 'application/octet-stream',
+  '.glb': 'model/gltf-binary',
 };
 
 function localBundles() {
@@ -29,7 +30,7 @@ function localBundles() {
           res.end();
           return;
         }
-        const match = /^\/(gale|jezero)\/([\w.-]+)$/.exec(req.url?.split('?')[0] ?? '');
+        const match = /^\/(gale|jezero)\/(.+)$/.exec(req.url?.split('?')[0] ?? '');
         if (!match) {
           next();
           return;

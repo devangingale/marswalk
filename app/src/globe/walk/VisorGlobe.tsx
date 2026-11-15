@@ -33,6 +33,8 @@ export interface VisorViewProps {
   track: RouteTrack;
   elapsedS: number;
   onPlan: () => void;
+  /** Overlays mounted inside the visor, above the HUD readouts (the safety layer). */
+  children?: React.ReactNode;
 }
 
 type HazardData = { status: 'loading' } | { status: 'ready'; flags: boolean[] } | { status: 'error' };
@@ -43,6 +45,7 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
   track,
   elapsedS,
   onPlan,
+  children,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
@@ -245,6 +248,7 @@ export const VisorGlobe: React.FC<VisorViewProps> = ({
           {visibleHazardM !== null && visibleHazardM > 0 && `Impassable ${formatDistance(visibleHazardM)} ahead`}
         </div>
       </div>
+      {children}
       <div className="s48-visor-controls">
         <PlaybackBar
           playback={playback}

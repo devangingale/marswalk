@@ -82,3 +82,20 @@ export function formatDistance(metres: number): string {
   if (metres < 1000) return `${Math.round(metres)}${NBSP}m`;
   return `${(metres / 1000).toFixed(1)}${NBSP}km`;
 }
+
+const CARDINALS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+
+/** Bearing as three digits plus the cardinal, "214° SW" (design: Heading). */
+export function formatBearing(deg: number): string {
+  const whole = ((Math.round(deg) % 360) + 360) % 360;
+  return `${String(whole).padStart(3, '0')}°${NBSP}${CARDINALS[Math.round(whole / 45) % 8]}`;
+}
+
+/**
+ * Distance in Walk, close: nearest 5 m under 100 m, then as formatDistance
+ * (design: "Distance in Walk, close").
+ */
+export function formatWalkDistance(metres: number): string {
+  if (Number.isFinite(metres) && metres < 100) return `${Math.round(metres / 5) * 5}${NBSP}m`;
+  return formatDistance(metres);
+}
