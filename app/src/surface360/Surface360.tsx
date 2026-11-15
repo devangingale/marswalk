@@ -49,7 +49,7 @@ export function useSurface360(viewer: Viewer | null): Surface360 {
   const [fading, setFading] = useState(false);
   const [stepFade, setStepFade] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [texture, setTexture] = useState<{ stopId: string; widthPx: number } | null>(null);
+  const [texture, setTexture] = useState<{ stopId: string; widthPx: number; final: boolean } | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -84,7 +84,7 @@ export function useSurface360(viewer: Viewer | null): Surface360 {
         setStop(null);
       },
       onError: setNotice,
-      onTexture: (s, widthPx) => setTexture({ stopId: s.id, widthPx }),
+      onTexture: (s, widthPx, final) => setTexture({ stopId: s.id, widthPx, final }),
       onStepFade: setStepFade,
     });
     setView(created);
@@ -176,6 +176,7 @@ export function useSurface360(viewer: Viewer | null): Surface360 {
           manifest={loaded.manifest}
           baseUrl={loaded.baseUrl}
           textureWidthPx={texture?.stopId === stop.id ? texture.widthPx : null}
+          textureFinal={texture?.stopId === stop.id && texture.final}
           zoomStepDeg={ZOOM_STEP_DEG}
           onExit={exit}
           onZoom={zoom}

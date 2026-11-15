@@ -11,7 +11,7 @@ import {
   frameHeadingDeg,
   loadManifest,
   nearestStop,
-  panoramasUrl,
+  panoramaSources,
   parseManifest,
   stopById,
   stopLonLat,
@@ -88,25 +88,33 @@ describe('parseManifest', () => {
   });
 });
 
-describe('panoramasUrl', () => {
-  it('uses the dev server copy in development and the R2 CDN in production', () => {
-    expect(panoramasUrl({ DEV: true }, 'https://cdn.example')).toBe('/panoramas.json');
-    expect(panoramasUrl({ DEV: false }, 'https://cdn.example')).toBe('https://cdn.example/panoramas.json');
-    expect(panoramasUrl({ DEV: false, VITE_PANORAMAS_URL: '/x.json' }, 'https://cdn.example')).toBe('/x.json');
+describe('panoramaSources', () => {
+  it('uses R2 first in production, then the copy bundled with the app', () => {
+    expect(panoramaSources({ DEV: false }, 'https://cdn.example')).toEqual(['https://cdn.example/panoramas.json', '/panoramas.json']);
   });
 
-  it('has no source in a production build without R2, rather than a silent stale copy', async () => {
-    expect(panoramasUrl({ DEV: false }, '')).toBeNull();
-    await expect(loadManifest(null)).rejects.toThrow('VITE_R2_BASE_URL');
+  it('falls back to the bundled copy (2048 px textures) when R2 is not configured, and uses it in development', () => {
+    expect(panoramaSources({ DEV: false }, '')).toEqual(['/panoramas.json']);
+    expect(panoramaSources({ DEV: true }, 'https://cdn.example')).toEqual(['/panoramas.json']);
+    expect(panoramaSources({ DEV: false, VITE_PANORAMAS_URL: '/x.json' }, '')).toEqual(['/x.json', '/panoramas.json']);
   });
 });
 
 describe('loadManifest', () => {
-  it('fails loudly, with no fallback, when the fetch fails or the body is not the contract', async () => {
+  it('fails with every reason when no source loads', async () => {
     const html = (async () => new Response('<!doctype html>', { status: 200 })) as unknown as typeof fetch;
     const missing = (async () => new Response('', { status: 404 })) as unknown as typeof fetch;
     await expect(loadManifest('/panoramas.json', html)).rejects.toThrow('not JSON');
-    await expect(loadManifest('/panoramas.json', missing)).rejects.toThrow('HTTP 404');
+    await expect(loadManifest(['/a.json', '/b.json'], missing)).rejects.toThrow(/a\.json: HTTP 404.*b\.json: HTTP 404/);
+  });
+
+  it('falls back to the next source when R2 is unreachable, resolving images against the one that loaded', async () => {
+    const body = JSON.stringify({ stops: [stop('a', null, null)] });
+    const fetcher = (async (url: string) =>
+      url.startsWith('https://cdn.example') ? new Response('', { status: 503 }) : new Response(body, { status: 200 })) as unknown as typeof fetch;
+    const loaded = await loadManifest(['https://cdn.example/panoramas.json', '/panoramas.json'], fetcher);
+    expect(new URL(loaded.manifest.stops[0].image_url, loaded.baseUrl).pathname).toBe('/a.jpg');
+    expect(new URL(loaded.baseUrl).host).not.toBe('cdn.example');
   });
 
   it('uses a valid manifest and resolves images against its URL', async () => {

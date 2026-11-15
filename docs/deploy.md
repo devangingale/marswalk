@@ -7,7 +7,7 @@ bucket that the app reads directly:
 |---|---|---|---|
 | Site bundles: tiles, `site.json`, route grids (`grid.json`, `elev.bin`, `cost.bin`) | `derive.py`, `coarse.py`, `walkability.py`, `bake.py` | Coordinator machine (needs the 45 GB datasets in `data/raw`) | `gale/…`, `jezero/…` |
 | Relay passes (MRO, Mars Odyssey) | `fetch_spice.py`, `passes.py` | GitHub Actions, daily | `gale/passes.json`, `jezero/passes.json`, `passes/<site>.json` |
-| 360° panoramas: `panoramas.json`, 2:1 textures | `build_panoramas.py` | GitHub Actions, daily | `panoramas.json`, `panos/*.jpg` |
+| 360° panoramas: `panoramas.json`, 2:1 textures (2048 px and 8192 px) | `build_panoramas.py` | GitHub Actions, daily | `panoramas.json`, `panos/*.jpg`, `panos/hi/*.jpg` |
 | The app | `npm run build` | GitHub Actions, every push to `main` | (Cloudflare Pages) |
 
 Two workflows keep it running:
@@ -91,6 +91,30 @@ Only a coordinator run fills in each stop's walkability and slope, because the C
 1. Run **Refresh orbiter passes and panoramas** from the Actions tab (Run workflow). On its first run it downloads about 290 MB of SPICE kernels and about 1 GB of full-resolution Photojournal mosaics (into `.cache/nasa_panos/`). Both are cached, so later runs fetch only what is new.
 2. Check that `https://<R2 URL>/panoramas.json` returns its stops (40 at the time of writing).
 3. Push to `main`, or run **Deploy app** from the Actions tab.
+
+### Panorama textures: what lives where
+
+| Files | Count | Size | In git | Served from |
+|---|---|---|---|---|
+| `app/public/panoramas.json`, `app/public/panos/*.jpg` (2048 × 1024) | 40 | 8.5 MB | yes | the Pages deploy (always) and R2 |
+| `app/public/panos/hi/*.jpg` (8192 × 4096) | 39 | 103 MB | no (`.gitignore`) | R2 only; `npm run build` leaves them out of `dist/` |
+| `.cache/nasa_panos/` (full-resolution Photojournal sources) | | about 1.3 GB | no | never published |
+
+The app loads `panoramas.json` from R2 first and falls back to the copy deployed with the app
+(2048 px textures) when `VITE_R2_BASE_URL` is unset or R2 does not answer. A 2048 px texture
+that fails from R2 is retried from the deployed copy. The 8192 px texture swaps in only after it
+has loaded, so a missing one leaves the 2048 px view in place.
+
+The 8192 px files go to R2 in the same upload step as the site bundles:
+
+```sh
+python pipeline/build_panoramas.py      # writes app/public/panos/*.jpg and app/public/panos/hi/*.jpg
+R2_BUCKET=sol48-mars-tiles python pipeline/upload_r2.py --site all --surface360
+```
+
+`--surface360` uploads `panoramas.json`, `panos/*.jpg`, `panos/hi/*.jpg` and `passes/*.json` to
+the same keys at the bucket root. The daily refresh workflow runs the same command (with
+`--only passes.json` for the site bundles).
 
 ## Running continuously
 

@@ -8,7 +8,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MiniMap } from './MiniMap';
 import { formatMetres, geodesicM } from './geodesic';
-import { FOV_MAX_DEG, FOV_MIN_DEG, compassPoint, resolveUrl, stopById, wrap360, type PanoramaManifest, type PanoramaStop } from './panoramas';
+import { FOV_MAX_DEG, FOV_MIN_DEG, bundledUrl, compassPoint, resolveUrl, stopById, wrap360, type PanoramaManifest, type PanoramaStop } from './panoramas';
 import { ORBITER_NAMES, isPassBundle, relayStatus, type PassBundle } from './relay';
 import type { ReconGround, ReconSite, SurfaceTelemetry } from './SurfaceView';
 import { formatClock, formatLatLon } from './visorFormat';
@@ -20,6 +20,8 @@ interface VisorHudProps {
   baseUrl: string;
   /** Width of the texture now showing, px (2048 first, then the high-resolution one). */
   textureWidthPx: number | null;
+  /** No better texture is coming (the high-resolution one loaded, is not published, or failed). */
+  textureFinal?: boolean;
   zoomStepDeg: number;
   onExit: () => void;
   onZoom: (deltaDeg: number) => void;
@@ -63,10 +65,14 @@ function usePassBundle(stop: PanoramaStop, baseUrl: string): { bundle: PassBundl
     let live = true;
     let request = passCache.get(url);
     if (!request) {
-      request = fetch(url)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((body: unknown) => (isPassBundle(body) ? body : null))
-        .catch(() => null);
+      // From R2 in production; the copy deployed with the app stands in if that fails.
+      const get = (from: string) =>
+        fetch(from)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((body: unknown) => (isPassBundle(body) ? body : null))
+          .catch(() => null);
+      const fallback = bundledUrl(stop.passes_url!);
+      request = get(url).then((bundle) => bundle ?? (fallback !== url ? get(fallback) : null));
       passCache.set(url, request);
     }
     void request.then((bundle) => {
@@ -145,7 +151,7 @@ const CompassTape: React.FC<{ heading: number }> = ({ heading }) => {
   );
 };
 
-export const VisorHud: React.FC<VisorHudProps> = ({ stop, manifest, baseUrl, textureWidthPx, zoomStepDeg, onExit, onZoom, onWalk, onJump }) => {
+export const VisorHud: React.FC<VisorHudProps> = ({ stop, manifest, baseUrl, textureWidthPx, textureFinal = false, zoomStepDeg, onExit, onZoom, onWalk, onJump }) => {
   const telemetryRef = useRef<SurfaceTelemetry | null>(null);
   const telemetry = useTelemetry(telemetryRef);
   const [hidden, setHidden] = useState(false);
@@ -273,7 +279,7 @@ export const VisorHud: React.FC<VisorHudProps> = ({ stop, manifest, baseUrl, tex
               <dt>Texture</dt>
               <dd>
                 {textureWidthPx ? `${textureWidthPx} × ${textureWidthPx / 2} px` : '…'}
-                {stop.image_hi_width && textureWidthPx !== null && textureWidthPx < stop.image_hi_width && ` (loading ${stop.image_hi_width} px)`}
+                {stop.image_hi_width && textureWidthPx !== null && !textureFinal && textureWidthPx < stop.image_hi_width && ` (loading ${stop.image_hi_width} px)`}
               </dd>
               <dt>Sol captured</dt>
               <dd>

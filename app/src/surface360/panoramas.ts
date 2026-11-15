@@ -1,7 +1,7 @@
 // Written with AI assistance, directed and reviewed by the team.
 // The panoramas.json contract for the 360° surface view, as written by
 // pipeline/build_panoramas.py, and the plain geometry the view needs (bearings, image columns).
-// There is no built-in fallback: if the manifest does not load, the view is unavailable.
+// The manifest comes from R2 in production, with the copy bundled in the app as the fallback.
 import { MARS_RADIUS_METERS, R2_BASE } from '../config';
 
 export type Walkability = 'safe' | 'caution' | 'hazard';
@@ -74,18 +74,21 @@ export const FOV_MIN_DEG = 20;
 export const FOV_MAX_DEG = 90;
 export const FOV_DEFAULT_DEG = 75;
 
+/** The bundled manifest, with the committed 2048 px textures: always deployed with the app. */
+export const BUNDLED_PANORAMAS_URL = '/panoramas.json';
+
 /**
- * Where panoramas.json comes from: VITE_PANORAMAS_URL if set; in development the dev server's
- * copy (app/public); in production the R2 CDN that the data-refresh workflow keeps current.
- * A production build without VITE_R2_BASE_URL has no source, and the view says so.
+ * Where panoramas.json is looked for, in order. In production the R2 CDN first (kept current by
+ * the data-refresh workflow, and the only place the 8192 px textures are served from), then the
+ * copy bundled with the app, so the view still works with the 2048 px textures when R2 is not
+ * configured or unreachable. In development, the dev server's copy. VITE_PANORAMAS_URL overrides.
  */
-export function panoramasUrl(env: { DEV: boolean; VITE_PANORAMAS_URL?: string }, r2Base: string): string | null {
-  if (env.VITE_PANORAMAS_URL) return env.VITE_PANORAMAS_URL;
-  if (env.DEV) return '/panoramas.json';
-  return r2Base ? `${r2Base}/panoramas.json` : null;
+export function panoramaSources(env: { DEV: boolean; VITE_PANORAMAS_URL?: string }, r2Base: string): string[] {
+  const first = env.VITE_PANORAMAS_URL || (!env.DEV && r2Base ? `${r2Base}/panoramas.json` : null);
+  return first && first !== BUNDLED_PANORAMAS_URL ? [first, BUNDLED_PANORAMAS_URL] : [BUNDLED_PANORAMAS_URL];
 }
 
-export const PANORAMAS_URL: string | null = panoramasUrl(import.meta.env, R2_BASE);
+export const PANORAMA_SOURCES: string[] = panoramaSources(import.meta.env, R2_BASE);
 
 const WALKABILITY: readonly Walkability[] = ['safe', 'caution', 'hazard'];
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -125,25 +128,47 @@ export function parseManifest(value: unknown): PanoramaManifest | null {
 /** The page URL that relative manifest paths resolve against. */
 const pageUrl = () => globalThis.location?.href ?? 'http://localhost/';
 
-/** Fetches and validates the manifest. Throws with a readable reason on any failure. */
-export async function loadManifest(url: string | null = PANORAMAS_URL, fetcher: typeof fetch = fetch): Promise<LoadedManifest> {
-  if (!url) throw new Error('this production build has no VITE_R2_BASE_URL, so there is no panoramas.json source');
+/** Fetches and validates one manifest. Throws with a readable reason on any failure. */
+async function loadOne(url: string, fetcher: typeof fetch): Promise<LoadedManifest> {
   const baseUrl = new URL(url, pageUrl()).href;
   const response = await fetcher(url);
-  if (!response.ok) throw new Error(`panoramas.json: HTTP ${response.status}`);
+  if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
   let body: unknown;
   try {
     body = await response.json();
   } catch {
-    throw new Error('panoramas.json is not JSON');
+    throw new Error(`${url} is not JSON`);
   }
   const manifest = parseManifest(body);
-  if (!manifest) throw new Error('panoramas.json does not match the contract');
+  if (!manifest) throw new Error(`${url} does not match the contract`);
   return { manifest, baseUrl };
+}
+
+/**
+ * The first manifest that loads from `sources`, in order; image paths resolve against the URL
+ * it came from. Throws, listing every reason, only when none loads.
+ */
+export async function loadManifest(sources: string | string[] = PANORAMA_SOURCES, fetcher: typeof fetch = fetch): Promise<LoadedManifest> {
+  const reasons: string[] = [];
+  for (const url of Array.isArray(sources) ? sources : [sources]) {
+    try {
+      return await loadOne(url, fetcher);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      reasons.push(reason);
+      console.warn(`Panorama manifest unavailable, trying the next source: ${reason}`);
+    }
+  }
+  throw new Error(reasons.join('; '));
 }
 
 export function resolveUrl(relative: string, baseUrl: string): string {
   return new URL(relative, baseUrl).href;
+}
+
+/** A manifest-relative path in the copy deployed with the app (the fallback when R2 fails). */
+export function bundledUrl(relative: string): string {
+  return resolveUrl(relative, new URL(BUNDLED_PANORAMAS_URL, pageUrl()).href);
 }
 
 export function resolveImageUrl(stop: PanoramaStop, baseUrl: string): string {

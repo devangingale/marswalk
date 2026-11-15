@@ -39,6 +39,7 @@ import { formatMetres, geodesicBearingDeg, geodesicM } from './geodesic';
 import { GLIDE_MAX_M, GROUND_DROP_M, MOTION_BLUR_GLSL, aimAt, glideAt, groundHit, turnToward } from './glide';
 import {
   EYE_HEIGHT_M,
+  bundledUrl,
   FOV_DEFAULT_DEG,
   clampFov,
   frameHeadingDeg,
@@ -100,8 +101,11 @@ export interface SurfaceViewOptions {
   onStop?: (stop: PanoramaStop) => void;
   /** Entered orbital recon at a site, standing on the given ground. */
   onRecon?: (site: ReconSite, ground: ReconGround) => void;
-  /** Width in pixels of the texture now showing for the stop (the base, then the high-resolution one). */
-  onTexture?: (stop: PanoramaStop, widthPx: number) => void;
+  /**
+   * Width in pixels of the texture now showing for the stop (the base, then the high-resolution
+   * one); `final` once no better texture is coming (loaded, unsupported or failed).
+   */
+  onTexture?: (stop: PanoramaStop, widthPx: number, final: boolean) => void;
   /** A stop's photo could not be loaded (offline, CORS, not 2:1); the view stays where it was. */
   onError?: (message: string) => void;
   /** True while a photo loads or a step transition has the screen dimmed. */
@@ -170,6 +174,20 @@ const CONTROLLER_KEYS = [
   '_minimumRotateRate',
   '_maximumRotateRate',
 ] as const;
+
+/** One 2:1 panorama image; rejects with a readable reason. */
+function loadPanoramaImage(stop: PanoramaStop, url: string): Promise<HTMLImageElement> {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.onload = () =>
+      image.naturalWidth > 0 && Math.abs(image.naturalWidth / image.naturalHeight - 2) < 0.01
+        ? resolve(image)
+        : reject(new Error(`${stop.pia_id} panorama is ${image.naturalWidth}x${image.naturalHeight}, not 2:1`));
+    image.onerror = () => reject(new Error(`${stop.pia_id} panorama did not load (offline or blocked)`));
+    image.src = url;
+  });
+}
 
 export class SurfaceView {
   private readonly viewer: Viewer;
@@ -431,15 +449,12 @@ export class SurfaceView {
     const url = resolveImageUrl(stop, this.baseUrl);
     let request = this.images.get(url);
     if (!request) {
-      request = new Promise<HTMLImageElement>((resolve, reject) => {
-        const image = new Image();
-        image.crossOrigin = 'anonymous';
-        image.onload = () =>
-          image.naturalWidth > 0 && Math.abs(image.naturalWidth / image.naturalHeight - 2) < 0.01
-            ? resolve(image)
-            : reject(new Error(`${stop.pia_id} panorama is ${image.naturalWidth}x${image.naturalHeight}, not 2:1`));
-        image.onerror = () => reject(new Error(`${stop.pia_id} panorama did not load (offline or blocked)`));
-        image.src = url;
+      // If the CDN copy fails, the same photo bundled with the app (2048 px) stands in.
+      const bundled = bundledUrl(stop.image_url);
+      request = loadPanoramaImage(stop, url).catch((error: unknown) => {
+        if (bundled === url) throw error;
+        console.warn(`${stop.pia_id}: ${url} did not load, using the bundled copy`);
+        return loadPanoramaImage(stop, bundled);
       });
       this.images.set(url, request);
       void request.then(() => this.ready.add(url), () => this.images.delete(url));
@@ -608,8 +623,7 @@ export class SurfaceView {
     this.baseImage = image;
     this.setPanorama(stop, image);
     this.options.onStop?.(stop);
-    this.options.onTexture?.(stop, image.naturalWidth);
-    this.upgrade(stop);
+    this.options.onTexture?.(stop, image.naturalWidth, !this.upgrade(stop));
 
     const camera = this.viewer.camera;
     camera.lookAtTransform(
@@ -640,9 +654,10 @@ export class SurfaceView {
    * Swaps in the stop's high-resolution texture once it has loaded, if the GPU can hold it.
    * The new sphere is drawn before the old one is removed, so the swap never shows a gap.
    */
-  private upgrade(stop: PanoramaStop): void {
+  private upgrade(stop: PanoramaStop): boolean {
     const id = ++this.hiLoad;
-    if (!stop.image_url_hi || !stop.image_hi_width || stop.image_hi_width > this.maxTextureSize()) return;
+    if (!stop.image_url_hi || !stop.image_hi_width || stop.image_hi_width > this.maxTextureSize()) return false;
+    const baseWidth = this.baseImage?.naturalWidth ?? 0;
     const image = new Image();
     image.crossOrigin = 'anonymous';
     image.onload = () => {
@@ -657,9 +672,16 @@ export class SurfaceView {
         remove();
         if (old && this.viewer.scene.primitives.contains(old)) this.viewer.scene.primitives.remove(old);
       });
-      this.options.onTexture?.(stop, image.naturalWidth);
+      this.options.onTexture?.(stop, image.naturalWidth, true);
+    };
+    // A missing or blocked 8192 px file is not an error: the 2048 px sphere simply stays.
+    image.onerror = () => {
+      if (id !== this.hiLoad || this.stop?.id !== stop.id) return;
+      console.info(`${stop.pia_id}: high-resolution texture unavailable, keeping ${baseWidth} px`);
+      this.options.onTexture?.(stop, baseWidth, true);
     };
     image.src = resolveUrl(stop.image_url_hi, this.baseUrl);
+    return true;
   }
 
   /** The panorama sphere's frame for a stop, centred at `centre` (its eye by default). */
@@ -809,7 +831,7 @@ export class SurfaceView {
     const c = this.cursor;
     const stop = this.stop;
     const key = c && stop && !this.glide
-      ? `${stop.id}|${c.east.toFixed(2)}|${c.north.toFixed(2)}|${c.target?.stop.id ?? ''}`
+      ? `${stop.id}|${c.east.toFixed(2)}|${c.north.toFixed(2)}|${c.target?.stop.id ?? ''}|${this.currentFov().toFixed(1)}`
       : '';
     if (key === this.puckKey) return;
     this.puckKey = key;
@@ -817,7 +839,10 @@ export class SurfaceView {
       this.puck.clear();
       return;
     }
-    const k = Math.min(2.2, Math.max(0.6, c.distanceM / 6));
+    // Grows with distance so it stays visible far off, and shrinks as the lens zooms in so it
+    // keeps about the same size on screen instead of filling the view.
+    const zoom = Math.min(1, this.currentFov() / FOV_DEFAULT_DEG);
+    const k = Math.min(2.2, Math.max(0.6, c.distanceM / 6)) * zoom;
     const ring = (radius: number) =>
       Array.from({ length: 40 }, (_, i) => {
         const a = (i / 40) * Math.PI * 2;
@@ -893,6 +918,7 @@ export class SurfaceView {
     if (Math.abs(fov - this.targetFov) < 0.05) return;
     this.setFrustumFov(Math.abs(fov - this.targetFov) < 0.2 ? this.targetFov : fov + (this.targetFov - fov) * FOV_EASE);
     this.updateRotateRate();
+    this.drawPuck();
     this.viewer.scene.requestRender();
   }
 
