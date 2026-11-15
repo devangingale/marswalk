@@ -1,0 +1,104 @@
+{
+  "_comment": "Inputs for build_panoramas.py. Each entry is one rover panorama placed at a stop. Positions come from shared/poses/<site>_poses.csv at the nearest sol. hfov_deg is the horizontal span the image covers; center_heading_deg is the compass bearing of the image's centre column (null: use the rover pose heading, which is approximate for a stitched mosaic). walkability and next_orbiter_pass are demo values for the 360-degree view, not measurements. Images not listed here but dropped in data/raw/panos/ as <site>_sol<N>.jpg are picked up with defaults. POI headings: features with a known location (Mount Sharp summit, Bradbury Landing, Jezero's western delta front) use the true bearing from the stop; near-field rocks and hazards are placed below the horizon at an illustrative bearing. Because the image orientation is approximate, a pin can sit a few degrees off the feature in the photo.",
+  "sources": [
+    {
+      "id": "sol_3",
+      "file": "PIA24264.jpg",
+      "url": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia24/pia24264/PIA24264.jpg",
+      "page": "https://science.nasa.gov/photojournal/mastcam-zs-first-360-degree-panorama/",
+      "credit": "NASA/JPL-Caltech/ASU/MSSS (PIA24264)",
+      "site": "jezero",
+      "sol": 3,
+      "name": "Octavia E. Butler Landing · Mastcam-Z 360°",
+      "hfov_deg": 360,
+      "center_heading_deg": null,
+      "center_pitch_deg": 0,
+      "walkability": "safe",
+      "next_orbiter_pass": "00:18:42 (MRO)",
+      "pois": [
+        {
+          "id": "sol3_delta",
+          "title": "Western Delta Front",
+          "type": "Geology",
+          "heading": 280.2,
+          "pitch": 1.5,
+          "detail": "The eroded front of Jezero's ancient river delta, about 2.8 km west. Layered sediments laid down in standing water: the mission's prime astrobiology target."
+        },
+        {
+          "id": "sol3_scour",
+          "title": "Descent-Stage Scour",
+          "type": "Hazard",
+          "heading": 140.0,
+          "pitch": -14.0,
+          "detail": "Fine dust blown off by the sky crane's engines exposes flat, smooth rock. Low-traction footing when dusted over: shorten your stride."
+        }
+      ]
+    },
+    {
+      "id": "gale_3167",
+      "file": "PIA24643.jpg",
+      "url": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia24/pia24643/PIA24643.jpg",
+      "page": "https://science.nasa.gov/photojournal/curiosity-looks-uphill-past-rafael-navarro-mountain/",
+      "credit": "NASA/JPL-Caltech/MSSS (PIA24643)",
+      "site": "gale",
+      "sol": 3167,
+      "name": "Rafael Navarro Mountain · Mastcam 360°",
+      "hfov_deg": 360,
+      "center_heading_deg": null,
+      "center_pitch_deg": 0,
+      "walkability": "caution",
+      "next_orbiter_pass": "01:41:05 (Odyssey)",
+      "pois": [
+        {
+          "id": "g3167_summit",
+          "title": "Mount Sharp Summit",
+          "type": "Geology",
+          "heading": 127.3,
+          "pitch": 3.0,
+          "detail": "Aeolis Mons rises about 5 km above the crater floor, 33 km to the southeast. Its stacked layers record Gale's change from a wet to a dry climate."
+        },
+        {
+          "id": "g3167_float",
+          "title": "Angular Float Rocks",
+          "type": "Hazard",
+          "heading": 205.0,
+          "pitch": -12.0,
+          "detail": "Sharp, wind-faceted cobbles like those that punctured Curiosity's aluminium wheels. Step between them, not on them; suit boot soles are the weak point."
+        }
+      ]
+    },
+    {
+      "id": "gale_3481",
+      "file": "PIA25366.jpg",
+      "url": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia25/pia25366/PIA25366.jpg",
+      "page": "https://science.nasa.gov/photojournal/curiositys-360-degree-panorama-near-sierra-maigualida/",
+      "credit": "NASA/JPL-Caltech/MSSS (PIA25366)",
+      "site": "gale",
+      "sol": 3481,
+      "name": "Sierra Maigualida · Mastcam 360°",
+      "hfov_deg": 360,
+      "center_heading_deg": null,
+      "center_pitch_deg": 0,
+      "walkability": "caution",
+      "next_orbiter_pass": "00:52:30 (MRO)",
+      "pois": [
+        {
+          "id": "g3481_floor",
+          "title": "Gale Crater Floor",
+          "type": "Terrain",
+          "heading": 15.7,
+          "pitch": -1.5,
+          "detail": "Looking north across Aeolis Palus toward Bradbury Landing, about 10 km away, where Curiosity touched down in 2012. Dust haze softens the far rim."
+        },
+        {
+          "id": "g3481_sand",
+          "title": "Sand-Filled Trough",
+          "type": "Hazard",
+          "heading": 250.0,
+          "pitch": -10.0,
+          "detail": "Soft wind-blown sand pooled between rock ledges. Boots can sink and slip: probe with a pole before committing weight, or route around."
+        }
+      ]
+    }
+  ]
+}

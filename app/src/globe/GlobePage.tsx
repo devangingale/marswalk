@@ -49,6 +49,8 @@ import { formatElevation, formatLatLon, graticuleStep, screenSpan, sectionLabel 
 import { useGlobeTheme } from './theme/useGlobeTheme';
 import { SafetyLayer } from '../safety/SafetyLayer';
 import { offsetLonLat, type CrewMarkerModel } from '../safety/crewMarkers';
+import { EnterSurfacePopover, useSurface360, type EnterCandidate } from '../surface360/Surface360';
+import { isInSurfaceView } from '../surface360/SurfaceView';
 
 const CAVE_CREDIT = 'Mars Global Cave Candidate Catalog (MGC³), USGS Astrogeology Science Center';
 /** Data overlays start at the --map-overlay-opacity token value. */
@@ -104,10 +106,13 @@ function urlState() {
 }
 
 async function flyTo(viewer: Viewer, lon: number, lat: number, rangeM: number, pitchDeg: number, groundM?: number) {
+  // A site load or crew framing that lands while the 360° view is open must not pull the camera out.
+  if (isInSurfaceView(viewer)) return;
   const [sampled] = groundM === undefined
     ? await viewer.scene.sampleHeightMostDetailed([Cartographic.fromDegrees(lon, lat)])
     : [undefined];
   const centre = lonLatToCartesian(lon, lat, groundM ?? sampled?.height ?? 0);
+  if (isInSurfaceView(viewer)) return;
   viewer.camera.flyToBoundingSphere(new BoundingSphere(centre, 1), {
     offset: new HeadingPitchRange(0, CesiumMath.toRadians(pitchDeg), rangeM),
   });
@@ -246,6 +251,31 @@ export const GlobePage: React.FC = () => {
   const [nightContingency, setNightContingency] = useState(false);
   const marsFramedRef = useRef(false);
   const siteSettledRef = useRef(false);
+  // 360° surface view: a clicked waypoint or rover mark offers to enter it.
+  const surface = useSurface360(viewer);
+  const surfaceActiveRef = useRef(false);
+  surfaceActiveRef.current = surface.active;
+  const [enterCandidate, setEnterCandidate] = useState<EnterCandidate | null>(null);
+  // The 360° view takes the whole map: the layer panel folds away and comes back on exit.
+  const panelBeforeSurface = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (surface.active) {
+      setEnterCandidate(null);
+      setPanelOpen((open) => {
+        panelBeforeSurface.current = open;
+        return false;
+      });
+    } else if (panelBeforeSurface.current !== null) {
+      setPanelOpen(panelBeforeSurface.current);
+      panelBeforeSurface.current = null;
+    }
+  }, [surface.active]);
+  useEffect(() => {
+    if (!enterCandidate) return;
+    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && setEnterCandidate(null);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [enterCandidate]);
 
   // Mars mode shows the globe, the safety column and the markers only: the layer panel
   // collapses to its header button. Earth mode reopens it.
@@ -471,7 +501,15 @@ export const GlobePage: React.FC = () => {
 
       let frame = 0;
       handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
+      handler.setInputAction((event: ScreenSpaceEventHandler.PositionedEvent) => {
+        if (surfaceActiveRef.current) return;
+        const target = overlaysRef.current?.surfaceTarget(viewer.scene.pick(event.position));
+        setEnterCandidate(
+          target ? { x: event.position.x, y: event.position.y, title: target.title, at: { lon: target.lon, lat: target.lat } } : null,
+        );
+      }, ScreenSpaceEventType.LEFT_CLICK);
       handler.setInputAction((event: ScreenSpaceEventHandler.MotionEvent) => {
+        if (surfaceActiveRef.current) return;
         cancelAnimationFrame(frame);
         frame = requestAnimationFrame(() => {
           const at = event.endPosition;
@@ -727,6 +765,8 @@ export const GlobePage: React.FC = () => {
             }}
           >
             <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
+            {/* Orbital chrome steps aside in the 360° view; display: contents keeps its layout and state. */}
+            <div style={{ display: surface.active ? 'none' : 'contents' }}>
             {/* The clock, dust history and conditions are Earth-mode planning chrome; Mars mode stays minimal. */}
             {mode === 'earth' && dustScene && <GlobeTimeTools scene={dustScene} onLs={setLs} />}
             {mode === 'earth' && siteData && (
@@ -830,6 +870,11 @@ export const GlobePage: React.FC = () => {
                 ))}
               </div>
             )}
+            </div>
+            {enterCandidate && !surface.active && (
+              <EnterSurfacePopover candidate={enterCandidate} surface={surface} onClose={() => setEnterCandidate(null)} />
+            )}
+            {surface.overlay}
           </div>
         </div>
       </div>

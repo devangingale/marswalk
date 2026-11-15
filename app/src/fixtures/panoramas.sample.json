@@ -1,0 +1,178 @@
+{
+  "stops": [
+    {
+      "id": "sol_4",
+      "name": "Octavia E. Butler Landing",
+      "sol": 4,
+      "lat": 18.4447,
+      "lon_east": 77.4508,
+      "height": -2569.0,
+      "heading": 45.0,
+      "pitch": 0.0,
+      "roll": 0.0,
+      "image_url": "./assets/panos/sol_4.jpg",
+      "walkability": "safe",
+      "next_orbiter_pass": "00:18:42 (MRO)",
+      "next_id": "sol_122",
+      "prev_id": null,
+      "pois": [
+        { "id": "poi_1", "title": "Blast Scour Zone", "type": "Hazard", "heading": 60.0, "pitch": -10.0, "detail": "Sky-crane cleared basaltic bedrock." },
+        { "id": "poi_2", "title": "Delta Scarp", "type": "Geology", "heading": 285.0, "pitch": 2.0, "detail": "Western delta front on the horizon, the long-range science goal." }
+      ]
+    },
+    {
+      "id": "sol_122",
+      "name": "Jezero floor · sol 122",
+      "sol": 122,
+      "lat": 18.4395713,
+      "lon_east": 77.4494114,
+      "height": -2568.959,
+      "heading": 99.8,
+      "pitch": 0.0,
+      "roll": 0.0,
+      "image_url": "./assets/panos/sol_122.jpg",
+      "walkability": "safe",
+      "next_orbiter_pass": "01:02:10 (TGO)",
+      "next_id": "sol_420",
+      "prev_id": "sol_4",
+      "pois": [
+        { "id": "poi_3", "title": "Paver Stones", "type": "Geology", "heading": 140.0, "pitch": -14.0, "detail": "Flat, fractured crater-floor rock. Firm footing." }
+      ]
+    },
+    {
+      "id": "sol_420",
+      "name": "Jezero floor · sol 420",
+      "sol": 420,
+      "lat": 18.449825,
+      "lon_east": 77.4013632,
+      "height": -2523.072,
+      "heading": 279.9,
+      "pitch": 0.0,
+      "roll": 0.0,
+      "image_url": "./assets/panos/sol_420.jpg",
+      "walkability": "caution",
+      "next_orbiter_pass": "00:41:55 (MRO)",
+      "next_id": "sol_700",
+      "prev_id": "sol_122",
+      "pois": [
+        { "id": "poi_4", "title": "Sand Ripples", "type": "Hazard", "heading": 300.0, "pitch": -8.0, "detail": "Loose ripple field. Slow pace, test each step." },
+        { "id": "poi_5", "title": "Relay Line of Sight", "type": "Comms", "heading": 20.0, "pitch": 18.0, "detail": "Clear sky to the north for the next orbiter pass." }
+      ]
+    },
+    {
+      "id": "sol_700",
+      "name": "Delta front · sol 700",
+      "sol": 700,
+      "lat": 18.4581085,
+      "lon_east": 77.4087634,
+      "height": -2528.164,
+      "heading": 17.5,
+      "pitch": 0.0,
+      "roll": 0.0,
+      "image_url": "./assets/panos/sol_700.jpg",
+      "walkability": "hazard",
+      "next_orbiter_pass": "02:15:03 (MAVEN)",
+      "next_id": "sol_933",
+      "prev_id": "sol_420",
+      "pois": [
+        { "id": "poi_6", "title": "Boulder Field", "type": "Hazard", "heading": 35.0, "pitch": -6.0, "detail": "Metre-scale blocks shed from the delta. Pick a line around them." },
+        { "id": "poi_7", "title": "Layered Outcrop", "type": "Geology", "heading": 330.0, "pitch": 4.0, "detail": "Fine layering in the delta front; a sampling target." }
+      ]
+    },
+    {
+      "id": "sol_933",
+      "name": "Upper delta · sol 933",
+      "sol": 933,
+      "lat": 18.4887512,
+      "lon_east": 77.3470147,
+      "height": -2407.763,
+      "heading": 62.1,
+      "pitch": 0.0,
+      "roll": 0.0,
+      "image_url": "./assets/panos/sol_933.jpg",
+      "walkability": "caution",
+      "next_orbiter_pass": "00:09:27 (MRO)",
+      "next_id": null,
+      "prev_id": "sol_700",
+      "pois": [
+        { "id": "poi_8", "title": "Crater Rim View", "type": "Terrain", "heading": 110.0, "pitch": 1.0, "detail": "Looking back across the crater floor to the landing area." }
+      ]
+    },
+    {
+      "id": "gale_3540",
+      "name": "Mount Sharp · sol 3540",
+      "sol": 3540,
+      "lat": -4.7575165,
+      "lon_east": 137.3970262,
+      "height": -3895.35,
+      "heading": 163.4,
+      "pitch": 0.0,
+      "roll": 0.0,
+      "image_url": "./assets/panos/gale_3540.jpg",
+      "walkability": "safe",
+      "next_orbiter_pass": "00:27:14 (MRO)",
+      "next_id": "gale_3974",
+      "prev_id": null,
+      "pois": [
+        { "id": "poi_9", "title": "Sulfate Slope", "type": "Geology", "heading": 170.0, "pitch": 6.0, "detail": "Sulfate-bearing unit rising toward the upper mound." }
+      ]
+    },
+    {
+      "id": "gale_3974",
+      "name": "Mount Sharp · sol 3974",
+      "sol": 3974,
+      "lat": -4.7764748,
+      "lon_east": 137.4045524,
+      "height": -3764.33,
+      "heading": 143.0,
+      "pitch": 0.0,
+      "roll": 0.0,
+      "image_url": "./assets/panos/gale_3974.jpg",
+      "walkability": "caution",
+      "next_orbiter_pass": "01:12:40 (TGO)",
+      "next_id": "gale_4398",
+      "prev_id": "gale_3540",
+      "pois": [
+        { "id": "poi_10", "title": "Channel Floor", "type": "Terrain", "heading": 200.0, "pitch": -9.0, "detail": "Cobbles in a dry channel. Watch for rolling rocks." }
+      ]
+    },
+    {
+      "id": "gale_4398",
+      "name": "Mount Sharp · sol 4398",
+      "sol": 4398,
+      "lat": -4.7832551,
+      "lon_east": 137.397929,
+      "height": -3731.582,
+      "heading": 250.7,
+      "pitch": 0.0,
+      "roll": 0.0,
+      "image_url": "./assets/panos/gale_4398.jpg",
+      "walkability": "caution",
+      "next_orbiter_pass": "00:55:01 (MRO)",
+      "next_id": "gale_4868",
+      "prev_id": "gale_3974",
+      "pois": [
+        { "id": "poi_11", "title": "Boxwork Ridges", "type": "Geology", "heading": 190.0, "pitch": -4.0, "detail": "Raised mineral ridges seen from orbit; the boxwork goal." }
+      ]
+    },
+    {
+      "id": "gale_4868",
+      "name": "Mount Sharp · sol 4868",
+      "sol": 4868,
+      "lat": -4.8142672,
+      "lon_east": 137.3817063,
+      "height": -3570.67,
+      "heading": 174.7,
+      "pitch": 0.0,
+      "roll": 0.0,
+      "image_url": "./assets/panos/gale_4868.jpg",
+      "walkability": "hazard",
+      "next_orbiter_pass": "03:04:19 (MAVEN)",
+      "next_id": null,
+      "prev_id": "gale_4398",
+      "pois": [
+        { "id": "poi_12", "title": "Steep Bench", "type": "Hazard", "heading": 175.0, "pitch": 12.0, "detail": "Bench above the route is past the suited slope limit." }
+      ]
+    }
+  ]
+}

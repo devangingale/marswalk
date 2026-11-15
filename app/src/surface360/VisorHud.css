@@ -1,0 +1,365 @@
+/* Written with AI assistance, directed and reviewed by the team. */
+/* Astronaut visor HUD: thin cyan instrument lines on smoked glass over the panorama.
+   The visor sits on a photo, not on the app's surfaces, so it keeps its own fixed palette
+   in both themes; walkability colours match the ground chevrons in SurfaceView.ts. */
+
+.visor {
+  --visor-ink: #bff4ff;
+  --visor-dim: rgba(191, 244, 255, 0.62);
+  --visor-line: rgba(126, 226, 255, 0.55);
+  --visor-glass: rgba(6, 16, 24, 0.58);
+  --visor-amber: #ffc152;
+  --visor-safe: #39e58c;
+  --visor-hazard: #ff5a6a;
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  color: var(--visor-ink);
+  font-family: var(--font-readout, 'Barlow Condensed', 'Arial Narrow', sans-serif);
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 6px rgba(0, 200, 255, 0.35);
+}
+
+/* Interactive pieces take the pointer back. */
+.visor button,
+.visor .s360-minimap,
+.visor-drawer.is-open {
+  pointer-events: auto;
+}
+
+/* Helmet glass: darkened rim and a faint curved reflection; never blocks the pointer. */
+.visor__glass {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 120% 95% at 50% 50%, transparent 62%, rgba(2, 8, 14, 0.55) 88%, rgba(2, 8, 14, 0.85) 100%),
+    linear-gradient(160deg, rgba(180, 230, 255, 0.07) 0%, transparent 30%);
+}
+
+.visor--hidden .visor-hideable {
+  visibility: hidden;
+}
+
+.visor .num {
+  font-variant-numeric: tabular-nums;
+}
+
+.visor-btn {
+  font: inherit;
+  letter-spacing: 0.06em;
+  color: var(--visor-ink);
+  background: var(--visor-glass);
+  border: 1px solid var(--visor-line);
+  border-radius: 3px;
+  padding: 6px 10px;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  text-shadow: inherit;
+}
+.visor-btn:hover:not(:disabled) {
+  background: rgba(40, 110, 140, 0.55);
+}
+.visor-btn:focus-visible {
+  outline: 2px solid var(--visor-amber);
+  outline-offset: 2px;
+}
+.visor-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.visor-btn--exit {
+  border-color: var(--visor-amber);
+  color: #ffe4ad;
+  font-weight: 600;
+}
+
+.visor-sim {
+  font-style: normal;
+  font-size: 0.65rem;
+  margin-left: 6px;
+  padding: 0 4px;
+  border: 1px solid var(--visor-dim);
+  border-radius: 2px;
+  color: var(--visor-dim);
+  vertical-align: middle;
+}
+
+/* Top: compass tape and telemetry line. */
+.visor-top {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, calc(100% - 420px));
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.visor-tape {
+  position: relative;
+  width: 100%;
+  height: 46px;
+  border-top: 1px solid var(--visor-line);
+  border-bottom: 1px solid var(--visor-line);
+  background: linear-gradient(90deg, transparent, var(--visor-glass) 18%, var(--visor-glass) 82%, transparent);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+.visor-tape__scale {
+  position: absolute;
+  inset: 0 0 16px 0;
+}
+.visor-tape__tick {
+  position: absolute;
+  bottom: 0;
+  width: 1px;
+  height: 6px;
+  background: var(--visor-dim);
+}
+.visor-tape__tick.is-labelled {
+  height: 10px;
+  background: var(--visor-ink);
+}
+.visor-tape__label {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.72rem;
+  color: var(--visor-dim);
+}
+.visor-tape__tick.is-cardinal .visor-tape__label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--visor-ink);
+}
+.visor-tape__caret {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--visor-amber);
+}
+.visor-tape__value {
+  position: absolute;
+  left: 50%;
+  bottom: 1px;
+  transform: translateX(-50%);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--visor-amber);
+}
+
+.visor-telemetry,
+.visor-suit__readings {
+  background: rgba(10, 13, 18, 0.78);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+}
+.visor-telemetry {
+  padding: 4px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 18px;
+  font-size: 0.8rem;
+}
+.visor-telemetry b,
+.visor-suit b {
+  color: var(--visor-dim);
+  font-weight: 500;
+  margin-right: 4px;
+}
+.visor-telemetry .is-live {
+  color: var(--visor-safe);
+}
+
+/* Top right: suit status and the two always-visible controls. */
+.visor-suit {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+.visor-suit__readings {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+.visor-suit__steps {
+  margin-top: 2px;
+  padding-top: 3px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--visor-amber);
+}
+.visor-controls {
+  display: flex;
+  gap: 6px;
+}
+
+/* Left: the stop. */
+.visor-stop {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  width: min(300px, calc(100% - 32px));
+  display: grid;
+  gap: 6px;
+  padding: 8px 12px;
+  border-left: 2px solid var(--visor-line);
+  background: linear-gradient(90deg, var(--visor-glass), transparent);
+}
+.visor-stop__name {
+  font-family: var(--font-ui, sans-serif);
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+}
+.visor-stop__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+}
+.visor-stop__nav {
+  display: grid;
+  gap: 6px;
+}
+.visor-stop__nav .visor-btn {
+  text-align: left;
+}
+.visor-stop__nav .visor-btn:last-child {
+  text-align: right;
+}
+.visor-stop__note {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--visor-dim);
+}
+
+.visor-chip {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 2px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #06121a;
+  text-shadow: none;
+}
+.visor-chip--safe {
+  background: linear-gradient(90deg, var(--visor-safe), #38d9f0);
+}
+.visor-chip--caution {
+  background: var(--visor-amber);
+}
+.visor-chip--hazard {
+  background: var(--visor-hazard);
+  color: #fff;
+}
+.visor-chip--science {
+  background: #8ec1f5;
+}
+
+/* Bottom right: lens zoom. */
+.visor-zoom {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+}
+.visor-zoom .visor-btn {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  font-size: 1.15rem;
+}
+
+/* POI drawer: slides in from the right edge. */
+.visor-drawer {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: min(320px, calc(100% - 32px));
+  padding: 14px 16px;
+  background: var(--visor-glass);
+  border: 1px solid var(--visor-line);
+  border-right: none;
+  border-radius: 4px 0 0 4px;
+  backdrop-filter: blur(6px);
+  transform: translate(105%, -50%);
+  transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.visor-drawer.is-open {
+  transform: translate(0, -50%);
+}
+.visor-drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.visor-drawer__close {
+  padding: 0 8px;
+  font-size: 1.1rem;
+}
+.visor-drawer__title {
+  margin: 8px 0 4px;
+  font-family: var(--font-ui, sans-serif);
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.visor-drawer__detail {
+  margin: 0 0 8px;
+  font-family: var(--font-ui, sans-serif);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+.visor-drawer__meta {
+  font-size: 0.78rem;
+  color: var(--visor-dim);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visor-drawer {
+    transition: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .visor-top {
+    top: auto;
+    bottom: 150px;
+    width: calc(100% - 32px);
+  }
+  .visor-stop {
+    top: 120px;
+  }
+  .visor-drawer {
+    top: auto;
+    bottom: 16px;
+    transform: translate(105%, 0);
+  }
+  .visor-drawer.is-open {
+    transform: translate(0, 0);
+  }
+}
