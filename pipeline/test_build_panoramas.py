@@ -8,64 +8,20 @@ from PIL import Image, ImageStat
 import build_panoramas as bp
 
 
-def _strip(width: int, height: int, colour=(200, 40, 200)) -> Image.Image:
+STRIP = (200, 120, 80)
+
+
+def _strip(width: int, height: int, colour=STRIP) -> Image.Image:
     return Image.new("RGB", (width, height), colour)
 
 
-def _is_fill(frame: Image.Image, box) -> bool:
-    return max(ImageStat.Stat(frame.crop(box)).mean) < 110 and ImageStat.Stat(frame.crop(box)).mean[2] < 60
+def _mean(frame: Image.Image, box) -> tuple[float, ...]:
+    return tuple(ImageStat.Stat(frame.crop(box)).mean)
 
 
-def test_full_circle_strip_fills_width_and_centres_on_horizon():
-    frame = bp.to_equirectangular(_strip(720, 180), 400, 360, 0)
-    assert frame.size == (400, 200)
-    # 720x180 at 400 wide is 100 px tall, rows 50-150; well inside that is the strip, outside is fill.
-    assert frame.getpixel((200, 100)) == (200, 40, 200)
-    assert frame.getpixel((5, 100)) == (200, 40, 200)
-    assert _is_fill(frame, (0, 0, 400, 30))
-    assert _is_fill(frame, (0, 170, 400, 200))
+def _close(a, b, tol=30) -> bool:
+    return all(abs(x - y) <= tol for x, y in zip(a, b))
 
-
-def test_partial_strip_is_centred_with_fill_at_the_sides():
-    # 180 degrees across a 2000 px frame is 1000 px wide (columns 500-1500) and 250 px tall.
-    frame = bp.to_equirectangular(_strip(1800, 450), 2000, 180, 0)
-    assert frame.getpixel((1000, 500)) == (200, 40, 200)
-    assert _is_fill(frame, (0, 450, 400, 550))
-    assert _is_fill(frame, (1600, 450, 2000, 550))
-
-
-def test_pitch_moves_the_strip_and_tall_strips_are_cropped():
-    # Pitched 30 degrees up, the 100 px strip centres on row 67 (rows 17-117) and clears the bottom.
-    up = bp.to_equirectangular(_strip(720, 180), 400, 360, 30)
-    assert up.getpixel((200, 67)) == (200, 40, 200)
-    assert _is_fill(up, (0, 140, 400, 200))
-    tall = bp.to_equirectangular(_strip(400, 400), 400, 360, 0)
-    assert tall.size == (400, 200)
-
-
-def test_white_cutouts_are_replaced_with_sky():
-    strip = _strip(2000, 500)
-    # A white gap along the top edge of the strip, as Mastcam mosaics have.
-    strip.paste((255, 255, 255), (600, 0, 1400, 150))
-    frame = bp.to_equirectangular(strip, 2000, 360, 0)
-    # The strip spans rows 250-750; the gap's centre (row ~290) is now sky, not white.
-    r, g, b = frame.getpixel((1000, 290))
-    assert max(r, g, b) < 200 and (r, g, b) != (200, 40, 200)
-    assert frame.getpixel((1000, 600)) == (200, 40, 200)
-
-
-def test_sky_fades_from_space_to_ochre():
-    sky = bp.sky_gradient(4, 100)
-    assert sky.getpixel((0, 0)) == bp.SKY_TOP
-    assert sky.getpixel((0, 99)) == bp.SKY_HORIZON
-
-
-def test_black_cutouts_are_replaced_with_fill():
-    strip = _strip(2000, 500)
-    strip.paste((0, 0, 0), (600, 400, 1400, 500))
-    frame = bp.to_equirectangular(strip, 2000, 360, 0)
-    # The gap sits in the ground band (rows ~650-750); it now shows the regolith gradient, not black.
-    assert max(frame.getpixel((1000, 720))) > 15
 
 
 def test_pose_lookup_uses_where_the_rover_stood_on_that_sol():
@@ -187,3 +143,69 @@ def test_mars2020_sol_clock_matches_captions_that_state_both():
         lo, hi = bp.mars2020_sols(date(*day), date(*day))
         assert lo <= sol <= hi, (day, sol, lo, hi)
         assert hi - lo <= 3
+
+
+def test_full_circle_strip_keeps_the_photo_and_continues_it_beyond_its_edges():
+    frame = bp.to_equirectangular(_strip(2000, 500), 2000, 360, 0)
+    assert frame.size == (2000, 1000)
+    # The strip spans rows 250-750; inside it the photo is untouched.
+    assert frame.getpixel((1000, 500)) == STRIP
+    # Just above the strip the sky carries on in the photo's colour, not a fixed gradient...
+    assert _close(_mean(frame, (0, 200, 2000, 230)), STRIP, 40)
+    # ...and it darkens toward the zenith and the nadir.
+    assert sum(_mean(frame, (0, 0, 2000, 10))) < sum(_mean(frame, (0, 200, 2000, 230))) * 0.5
+    assert sum(_mean(frame, (0, 990, 2000, 1000))) < sum(_mean(frame, (0, 770, 2000, 800)))
+
+
+def test_partial_strip_is_centred_and_its_sides_are_filled_from_it():
+    # 180 degrees across a 2000 px frame is 1000 px wide (columns 500-1500).
+    frame = bp.to_equirectangular(_strip(1800, 450), 2000, 180, 0)
+    assert frame.getpixel((1000, 500)) == STRIP
+    assert _close(_mean(frame, (100, 450, 300, 550)), STRIP, 40)
+
+
+def test_pitch_moves_the_strip_and_tall_strips_are_cropped():
+    # Pitched 30 degrees up, the 500 px strip in a 2000 px frame centres on row 333.
+    up = bp.to_equirectangular(_strip(2000, 500), 2000, 360, 30)
+    assert up.getpixel((1000, 333)) == STRIP
+    tall = bp.to_equirectangular(_strip(400, 400), 400, 360, 0)
+    assert tall.size == (400, 200)
+
+
+def test_missing_data_takes_the_surrounding_colour():
+    strip = _strip(2000, 500)
+    strip.paste((255, 255, 255), (600, 0, 1400, 150))  # white gap along the top edge (Mastcam-Z)
+    strip.paste((0, 0, 0), (200, 380, 500, 500))        # black block at the bottom (Mastcam)
+    frame = bp.to_equirectangular(strip, 2000, 360, 0)
+    assert _close(frame.getpixel((1000, 300)), STRIP, 40)
+    assert _close(frame.getpixel((350, 700)), STRIP, 40)
+
+
+def test_pull_push_fills_holes_seamlessly_across_the_wrap():
+    import numpy as np
+    rgb = np.zeros((8, 16, 3), np.float32)
+    rgb[:, :] = (100, 50, 25)
+    weight = np.ones((8, 16), np.float32)
+    weight[:, 0] = weight[:, -1] = 0  # a hole straddling the 360-degree seam
+    out = bp.pull_push(rgb * 1.0, weight)
+    assert np.allclose(out[:, 0], (100, 50, 25), atol=1) and np.allclose(out[:, -1], (100, 50, 25), atol=1)
+
+
+def test_horizon_is_found_where_grey_sky_meets_rust_ground():
+    # 3600 x 900 strip, 360 degrees across, 90 degrees tall: grey sky in the top 300 rows, rust ground below.
+    # The skyline is 150 rows (15 degrees) above the centre row, so the horizon offset is +15 degrees.
+    strip = Image.new("RGB", (3600, 900), (170, 165, 160))
+    ground = Image.effect_noise((3600, 600), 40).convert("RGB")
+    ground = Image.merge("RGB", [b.point(lambda v, o=o: min(255, max(0, v // 3 + o))) for b, o in zip(ground.split(), (120, 60, 30))])
+    strip.paste(ground, (0, 300))
+    offset, how = bp.estimate_horizon(strip)
+    assert abs(offset - 15) < 2, offset
+    assert "saturation" in how
+    # Levelled: the skyline lands on the frame's equator (row 1000 of a 4000 x 2000 frame).
+    frame = bp.to_equirectangular(strip, 4000, 360, -offset)
+    sky_px, ground_px = frame.getpixel((2000, 980)), frame.getpixel((2000, 1030))
+    assert max(sky_px) - min(sky_px) < 20 and max(ground_px) - min(ground_px) > 40
+
+
+def test_no_horizon_without_sky():
+    assert bp.estimate_horizon(Image.new("RGB", (2000, 500), (0, 0, 0))) is None

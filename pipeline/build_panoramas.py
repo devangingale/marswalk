@@ -26,13 +26,15 @@ unless its source is tagged equirectangular; it is measured from the first bytes
 before any full download. Variants taken on the same sol (false colour, annotated, anaglyph)
 are reduced to one natural-colour panorama per rover stop.
 
-Output: app/public/panos/<site>_<sol>.jpg at 2048 x 1024 (2:1, JPEG quality 85), missing-data
-gaps filled with a sky or regolith gradient, and app/public/panoramas.json. Downloads are
+Output: app/public/panos/<site>_<sol>.jpg at 2048 x 1024 (2:1, JPEG quality 85) for a fast first
+view, app/public/panos/hi/<site>_<sol>.jpg at 8192 x 4096 (or 4096 x 2048) where the source has
+the detail (git-ignored; published to R2), and app/public/panoramas.json. Missing-data gaps are
+filled from the photo's own surrounding pixels (pull-push inpainting). Downloads are
 cached in .cache/nasa_panos/ (git-ignored), so re-runs only fetch what is new.
 
     python pipeline/build_panoramas.py
 
-Only Pillow is needed beyond the standard library.
+Needs Pillow and numpy beyond the standard library.
 """
 from __future__ import annotations
 
@@ -49,6 +51,7 @@ import urllib.request
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+import numpy as np
 from PIL import Image, ImageChops, ImageDraw, ImageFile, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -67,6 +70,13 @@ PHOTOJOURNAL = "https://photojournal.jpl.nasa.gov/catalog/"
 USER_AGENT = "marswalk-pipeline"
 OUT_WIDTH = 2048
 JPEG_QUALITY = 85
+# High-resolution variant the viewer swaps in once loaded (where the GPU supports the texture):
+# 8192 px wide when the source has the detail, else 4096, else none. Git-ignored; served from R2.
+HI_WIDTHS = (8192, 4096)
+HI_DIR = "hi"
+HI_QUALITY = 82
+# Resolution of the smooth fill for missing data (it is low-frequency by construction).
+FILL_WIDTH = 1024
 MIN_ASPECT = 2.2
 # Socket timeout for every request, in seconds: a server that sends nothing for this long is
 # abandoned. It bounds each read, not a whole transfer, so a 100 MB mosaic still downloads.
@@ -482,24 +492,6 @@ def copy_relay_passes(site: str, out_dir: Path) -> str | None:
     return None
 
 
-def vertical_gradient(width: int, height: int, top: tuple, bottom: tuple) -> Image.Image:
-    column = Image.new("RGB", (1, height))
-    for y in range(height):
-        t = y / max(1, height - 1)
-        column.putpixel((0, y), tuple(round(a + (b - a) * t) for a, b in zip(top, bottom)))
-    return column.resize((width, height))
-
-
-def sky_gradient(width: int, height: int) -> Image.Image:
-    """Dark space overhead easing into dusty ochre at the horizon (smoothstep, so no visible band)."""
-    column = Image.new("RGB", (1, height))
-    for y in range(height):
-        t = y / max(1, height - 1)
-        t = t * t * (3 - 2 * t)
-        column.putpixel((0, y), tuple(round(a + (b - a) * t) for a, b in zip(SKY_TOP, SKY_HORIZON)))
-    return column.resize((width, height))
-
-
 def missing_data(image: Image.Image) -> Image.Image:
     """Mask (255 = gap) of near-white and near-black missing-data pixels, grown and softened so no fringe is left."""
     bands = image.split()
@@ -511,16 +503,119 @@ def missing_data(image: Image.Image) -> Image.Image:
     return gaps.filter(ImageFilter.MaxFilter(5)).filter(ImageFilter.GaussianBlur(2))
 
 
-def background(width: int, height: int) -> Image.Image:
-    frame = Image.new("RGB", (width, height))
-    half = height // 2
-    frame.paste(sky_gradient(width, half), (0, 0))
-    frame.paste(vertical_gradient(width, height - half, GROUND_HORIZON, GROUND_BOTTOM), (0, half))
-    return frame
+def _wrap_blur(a: np.ndarray) -> np.ndarray:
+    """3x3 box blur; columns wrap around (360 degrees), rows clamp at the poles."""
+    a = (np.roll(a, 1, axis=1) + a + np.roll(a, -1, axis=1)) / 3
+    up = np.concatenate([a[:1], a[:-1]], axis=0)
+    down = np.concatenate([a[1:], a[-1:]], axis=0)
+    return (up + a + down) / 3
+
+
+def pull_push(rgb: np.ndarray, weight: np.ndarray) -> np.ndarray:
+    """
+    Fill pixels with weight 0 from the surrounding image: average down a pyramid of weighted
+    means, then fill each level's gaps from the next coarser one. Smooth, colour-matched, and
+    seamless across the 360-degree wrap.
+    """
+    levels = [(rgb * weight[..., None], weight)]
+    while min(levels[-1][1].shape) > 1:
+        c, w = levels[-1]
+        h2, w2 = c.shape[0] // 2, c.shape[1] // 2
+        levels.append((
+            c[: h2 * 2, : w2 * 2].reshape(h2, 2, w2, 2, 3).sum(axis=(1, 3)),
+            w[: h2 * 2, : w2 * 2].reshape(h2, 2, w2, 2).sum(axis=(1, 3)),
+        ))
+    c, w = levels[-1]
+    colour = c / np.maximum(w, 1e-6)[..., None]
+    for c, w in reversed(levels[:-1]):
+        up = np.repeat(np.repeat(colour, 2, axis=0), 2, axis=1)
+        up = np.pad(up, ((0, c.shape[0] - up.shape[0]), (0, c.shape[1] - up.shape[1]), (0, 0)), mode="edge")
+        up = _wrap_blur(up)
+        alpha = np.clip(w, 0, 1)[..., None]
+        colour = alpha * (c / np.maximum(w, 1e-6)[..., None]) + (1 - alpha) * up
+    return colour
+
+
+def _box(a: np.ndarray, size: int) -> np.ndarray:
+    """Mean over a size x size window (edges clamp); numpy only."""
+    pad = size // 2
+    p = np.pad(a, pad, mode="edge")
+    c = p.cumsum(0).cumsum(1)
+    c = np.pad(c, ((1, 0), (1, 0)))
+    h, w = a.shape
+    return (c[size:size + h, size:size + w] - c[:h, size:size + w] - c[size:size + h, :w] + c[:h, :w]) / (size * size)
+
+
+def _skyline_rows(signal: np.ndarray, valid: np.ndarray, threshold: float) -> list[int]:
+    """Per column, the first row below a sky run where `signal` stays above `threshold` (3 rows)."""
+    rows = []
+    for c in range(signal.shape[1]):
+        v = np.flatnonzero(valid[:, c])
+        if len(v) < 5:
+            continue
+        top = v[0]
+        if signal[top:top + 3, c].mean() > threshold:
+            continue  # terrain reaches the top of the mosaic here: no sky to find
+        hit = ((signal[top:, c] > threshold) & valid[top:, c]).astype(int)
+        run = np.flatnonzero(np.convolve(hit, np.ones(3, int), "valid") == 3)
+        if len(run):
+            rows.append(int(top + run[0]))
+    return rows
+
+
+def estimate_horizon(strip: Image.Image) -> tuple[float, str] | None:
+    """
+    How far above the strip's centre row the horizon lies, in degrees, and how it was found.
+    Mosaics hold far more ground than sky, so their horizon is well above their middle row;
+    centring them on the sphere's equator puts the horizon above eye level all round (a bowl).
+
+    The skyline is where sky meets terrain, column by column: first by colour saturation (the
+    white-balanced Martian sky is nearly grey, terrain is rust), else by texture (smooth sky,
+    detailed ground). The horizon is taken at the lower skylines (75th percentile), where the
+    distant terrain is flattest. None when neither signal finds sky in at least 20% of columns.
+    """
+    width = 1024
+    height = max(8, round(width * strip.height / strip.width))
+    rgb = np.asarray(strip.convert("RGB").resize((width, height), Image.Resampling.BOX), np.float32)
+    lum = rgb.mean(axis=2)
+    valid = (lum > BLACK_THRESHOLD) & (lum < WHITE_THRESHOLD)
+    lower = valid.copy()
+    lower[: int(height * 0.6)] = False
+    if lower.sum() < 100:
+        return None
+
+    def from_rows(rows: list[int], method: str) -> tuple[float, str] | None:
+        if len(rows) < 0.2 * width:
+            return None
+        row = float(np.percentile(rows, 75))
+        return (height / 2 - row) * 360 / width, f"detected from the sky's {method} in {len(rows) / width:.0%} of columns"
+
+    sat = _box(rgb.max(axis=2) - rgb.min(axis=2), 5)
+    tops = [sat[v[0]:v[0] + 3, c].mean() for c in range(width) if len(v := np.flatnonzero(valid[:, c])) > 4]
+    if tops:
+        sky, ground = float(np.percentile(tops, 25)), float(np.median(sat[lower]))
+        if ground - sky >= 10:
+            found = from_rows(_skyline_rows(sat, valid, sky + 0.35 * (ground - sky)), "colour saturation")
+            if found:
+                return found
+    tex = np.zeros_like(lum)
+    tex[:-1, :-1] = np.abs(np.diff(lum, axis=0))[:, :-1] + np.abs(np.diff(lum, axis=1))[:-1, :]
+    tex = _box(tex, 7)
+    return from_rows(_skyline_rows(tex, valid, 0.3 * float(np.median(tex[lower]))), "texture")
+
+
+def _smoothstep(t: np.ndarray) -> np.ndarray:
+    t = np.clip(t, 0, 1)
+    return t * t * (3 - 2 * t)
 
 
 def to_equirectangular(strip: Image.Image, width: int, hfov_deg: float, center_pitch_deg: float) -> Image.Image:
-    """Pads a panorama strip into a 2:1 frame. The strip's centre column lands on the frame's centre."""
+    """
+    Pads a panorama strip into a 2:1 frame, its centre column on the frame's centre. Missing data
+    (the mosaic's ragged near-white or near-black gaps, and everything above or below the strip)
+    is filled from the photo's own surrounding pixels, so the real sky and ground carry on; beyond
+    the strip the fill eases toward dark space at the zenith and darker regolith at the nadir.
+    """
     height = width // 2
     strip = strip.convert("RGB")
     hfov = max(1.0, min(360.0, float(hfov_deg)))
@@ -538,17 +633,34 @@ def to_equirectangular(strip: Image.Image, width: int, hfov_deg: float, center_p
         scaled = scaled.crop((0, 0, target_w, height - top))
     left = (width - target_w) // 2
 
-    frame = background(width, height)
-    # Feather the strip's edges into the fill so the seam is soft.
+    # Where the photo has data: inside the strip, minus its gaps, with feathered edges.
     mask = Image.new("L", scaled.size, 0)
     inset = FEATHER_PX // 2
     sides = (inset if hfov < 360 else -FEATHER_PX, inset, scaled.width - 1 - (inset if hfov < 360 else -FEATHER_PX), scaled.height - 1 - inset)
     ImageDraw.Draw(mask).rectangle(sides, fill=255)
-    mask = mask.filter(ImageFilter.GaussianBlur(FEATHER_PX / 3))
-    # Missing-data cutouts show the sky (or regolith) gradient behind them instead.
-    mask = ImageChops.subtract(mask, missing_data(scaled))
-    frame.paste(scaled, (left, top), mask)
-    return frame
+    mask = ImageChops.subtract(mask.filter(ImageFilter.GaussianBlur(FEATHER_PX / 3)), missing_data(scaled))
+    photo = Image.new("RGB", (width, height))
+    photo.paste(scaled, (left, top))
+    valid = Image.new("L", (width, height), 0)
+    valid.paste(mask, (left, top))
+
+    # Smooth fill at low resolution from the valid pixels.
+    fw, fh = min(FILL_WIDTH, width), min(FILL_WIDTH, width) // 2
+    weight = np.asarray(valid.resize((fw, fh), Image.Resampling.BOX), dtype=np.float32) / 255
+    premult = np.asarray(ImageChops.multiply(photo, Image.merge("RGB", (valid,) * 3)).resize((fw, fh), Image.Resampling.BOX), dtype=np.float32)
+    fill = pull_push(premult / np.maximum(weight, 1e-6)[..., None], weight)
+
+    # Beyond the strip, ease toward dark space overhead and darker ground underfoot.
+    rows = (np.arange(fh) + 0.5) * height / fh
+    above = _smoothstep((top - rows) / max(top, 1))[:, None, None]
+    below = _smoothstep((rows - (top + scaled.height)) / max(height - top - scaled.height, 1))[:, None, None]
+    fill = fill * (1 - 0.75 * above) + np.array(SKY_TOP, np.float32) * 0.75 * above
+    fill = fill * (1 - 0.5 * below) + np.array(GROUND_BOTTOM, np.float32) * 0.5 * below
+
+    fill_image = Image.fromarray(np.clip(fill, 0, 255).astype(np.uint8), "RGB").resize((width, height), Image.Resampling.BICUBIC)
+    # Blend over a band that scales with the image, so a gap's edge fades rather than steps.
+    blend = ImageChops.multiply(valid, valid.filter(ImageFilter.GaussianBlur(max(1.0, width / 340))))
+    return Image.composite(photo, fill_image, blend)
 
 
 def load_previous(location: str | None) -> dict[str, dict]:
@@ -735,6 +847,26 @@ def build(
             admitted.append({**entry, "_path": path})
     kept = dedupe(admitted, notes)
 
+    # Level each horizon: detected where the sky can be found, else the median of the same rover's
+    # detected mosaics (an approximation, recorded as such); a curated centre pitch wins.
+    for e in kept:
+        if e.get("center_pitch_deg") is not None and e.get("curated") and "center_pitch_deg" in e:
+            e["_horizon"] = (-float(e["center_pitch_deg"]), "curated")
+            continue
+        with Image.open(e["_path"]) as strip:
+            e["_horizon"] = estimate_horizon(strip)
+    by_rover: dict[str, list[float]] = {}
+    for e in kept:
+        if e["_horizon"] and e["_horizon"][1] != "curated":
+            by_rover.setdefault(e["rover"], []).append(e["_horizon"][0])
+    for e in kept:
+        if e["_horizon"] is None:
+            offsets = by_rover.get(e["rover"]) or [x for xs in by_rover.values() for x in xs]
+            e["_horizon"] = (
+                (float(np.median(offsets)), f"not detectable; median of {len(offsets)} detected mosaics, an approximation")
+                if offsets else (0.0, "not detectable; left at the image centre")
+            )
+
     poses_by_site: dict[str, list[dict] | None] = {}
     grids: dict[str, GridBundle | None] = {}
     passes: dict[str, str | None] = {}
@@ -784,10 +916,19 @@ def build(
         if site not in passes:
             passes[site] = copy_relay_passes(site, passes_dir)
 
+        # The high-resolution variant only where the source has the detail for it.
+        source_w = e["source_size"][0]
+        hi_width = next((w for w in HI_WIDTHS if source_w >= w * 0.75 and w > width), None)
         with Image.open(e["_path"]) as strip:
-            frame = to_equirectangular(strip, width, e.get("hfov_deg", 360), e.get("center_pitch_deg", 0))
+            hfov, pitch = e.get("hfov_deg", 360), -e["_horizon"][0]
+            hi = to_equirectangular(strip, hi_width, hfov, pitch) if hi_width else None
+            frame = hi.resize((width, width // 2), Image.Resampling.LANCZOS) if hi else to_equirectangular(strip, width, hfov, pitch)
         image_path = out_dir / f"{stop_id}.jpg"
         frame.save(image_path, "JPEG", quality=quality, optimize=True, progressive=True)
+        hi_path = out_dir / HI_DIR / f"{stop_id}.jpg"
+        if hi:
+            hi_path.parent.mkdir(parents=True, exist_ok=True)
+            hi.save(hi_path, "JPEG", quality=HI_QUALITY, optimize=True, progressive=True)
         stops.append({
             "id": stop_id,
             "name": e["title"],
@@ -803,9 +944,13 @@ def build(
             "height": round(height, 3) if height is not None else None,
             "heading": round(heading, 2),
             "heading_source": heading_source,
+            "horizon_offset_deg": round(e["_horizon"][0], 1),
+            "horizon_source": e["_horizon"][1],
             "pitch": 0.0,
             "roll": 0.0,
             "image_url": f"./{out_dir.name}/{image_path.name}",
+            "image_url_hi": f"./{out_dir.name}/{HI_DIR}/{hi_path.name}" if hi else None,
+            "image_hi_width": hi_width if hi else None,
             "walkability": sampled["walkability"] if sampled else None,
             "slope_deg": sampled["slope_deg"] if sampled else None,
             "walkability_source": sampled["walkability_source"] if sampled else None,
@@ -836,6 +981,10 @@ def build(
     current = {Path(s["image_url"]).name for s in stops}
     for old in out_dir.glob("*.jpg"):
         if old.name not in current:
+            old.unlink()
+    current_hi = {Path(s["image_url_hi"]).name for s in stops if s["image_url_hi"]}
+    for old in (out_dir / HI_DIR).glob("*.jpg"):
+        if old.name not in current_hi:
             old.unlink()
 
     out_json.parent.mkdir(parents=True, exist_ok=True)

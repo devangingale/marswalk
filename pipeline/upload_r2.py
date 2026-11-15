@@ -5,7 +5,7 @@ Written with AI assistance, directed and reviewed by the team.
 
   --site gale|jezero|all   data/sites/<site>/bundle/* -> <site>/<file>   (tiles, grids, passes.json)
   --only NAME [NAME ...]   restrict --site uploads to these file names (CI pushes only passes.json)
-  --surface360             app/public/panoramas.json, panos/*.jpg, passes/*.json -> same keys at the bucket root
+  --surface360             app/public/panoramas.json, panos/*.jpg, panos/hi/*.jpg, passes/*.json -> same keys at the bucket root
 
 Credentials: on a workstation, `npx wrangler login`; in CI, the CLOUDFLARE_API_TOKEN and
 CLOUDFLARE_ACCOUNT_ID environment variables. Every put passes --remote: Wrangler 4 otherwise
@@ -59,7 +59,7 @@ def surface360_files(parser: argparse.ArgumentParser) -> list[tuple[str, Path]]:
     if not manifest.exists():
         parser.error(f"{manifest} not found; run pipeline/build_panoramas.py first")
     files = [("panoramas.json", manifest)]
-    for folder in ("panos", "passes"):
+    for folder in ("panos", "panos/hi", "passes"):
         for path in sorted((APP_PUBLIC / folder).glob("*")):
             if path.is_file() and path.suffix.lower() in CONTENT_TYPES:
                 files.append((f"{folder}/{path.name}", path))

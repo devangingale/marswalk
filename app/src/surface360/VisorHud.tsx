@@ -18,6 +18,8 @@ interface VisorHudProps {
   stop: PanoramaStop;
   manifest: PanoramaManifest;
   baseUrl: string;
+  /** Width of the texture now showing, px (2048 first, then the high-resolution one). */
+  textureWidthPx: number | null;
   zoomStepDeg: number;
   onExit: () => void;
   onZoom: (deltaDeg: number) => void;
@@ -143,7 +145,7 @@ const CompassTape: React.FC<{ heading: number }> = ({ heading }) => {
   );
 };
 
-export const VisorHud: React.FC<VisorHudProps> = ({ stop, manifest, baseUrl, zoomStepDeg, onExit, onZoom, onWalk, onJump }) => {
+export const VisorHud: React.FC<VisorHudProps> = ({ stop, manifest, baseUrl, textureWidthPx, zoomStepDeg, onExit, onZoom, onWalk, onJump }) => {
   const telemetryRef = useRef<SurfaceTelemetry | null>(null);
   const telemetry = useTelemetry(telemetryRef);
   const [hidden, setHidden] = useState(false);
@@ -268,6 +270,11 @@ export const VisorHud: React.FC<VisorHudProps> = ({ stop, manifest, baseUrl, zoo
               </dd>
               <dt>Instrument</dt>
               <dd>{stop.instrument}</dd>
+              <dt>Texture</dt>
+              <dd>
+                {textureWidthPx ? `${textureWidthPx} × ${textureWidthPx / 2} px` : '…'}
+                {stop.image_hi_width && textureWidthPx !== null && textureWidthPx < stop.image_hi_width && ` (loading ${stop.image_hi_width} px)`}
+              </dd>
               <dt>Sol captured</dt>
               <dd>
                 {stop.sol}
@@ -282,6 +289,7 @@ export const VisorHud: React.FC<VisorHudProps> = ({ stop, manifest, baseUrl, zoo
             <p className="visor-meta__caption">{stop.caption}</p>
             <p className="visor-meta__credit">Image credit: {stop.credit}</p>
             <p className="visor-meta__note">
+              Horizon levelled by {stop.horizon_offset_deg}° ({stop.horizon_source}).{' '}
               {stop.heading_source === 'caption'
                 ? `Orientation from the official caption (image centre faces ${Math.round(stop.heading)}°).`
                 : stop.heading_source.startsWith('rover yaw')

@@ -37,6 +37,7 @@ import {
   enuDirection,
   frameHeadingDeg,
   resolveImageUrl,
+  resolveUrl,
   stopById,
   type PanoramaManifest,
   type PanoramaStop,
@@ -93,6 +94,8 @@ export interface SurfaceViewOptions {
   onStop?: (stop: PanoramaStop) => void;
   /** Entered orbital recon at a site, standing on the given ground. */
   onRecon?: (site: ReconSite, ground: ReconGround) => void;
+  /** Width in pixels of the texture now showing for the stop (the base, then the high-resolution one). */
+  onTexture?: (stop: PanoramaStop, widthPx: number) => void;
   /** A stop's photo could not be loaded (offline, CORS, not 2:1); the view stays where it was. */
   onError?: (message: string) => void;
   /** True while a photo loads or a step transition has the screen dimmed. */
@@ -200,6 +203,7 @@ export class SurfaceView {
   private targetFov = FOV_DEFAULT_DEG;
   private step: { phase: 'out' | 'in'; start: number; fov: number; to: PanoramaStop; image: HTMLImageElement } | null = null;
   private pending = false;
+  private hiLoad = 0;
   private readonly images = new Map<string, Promise<HTMLImageElement>>();
   private loadId = 0;
   private readonly telemetry: SurfaceTelemetry = { heading: 0, pitch: 0, fov: FOV_DEFAULT_DEG, stop: null, site: null };
@@ -392,6 +396,7 @@ export class SurfaceView {
     const saved = this.saved;
     if (!saved) return;
     this.loadId++;
+    this.hiLoad++;
     if (this.step) this.options.onStepFade?.(false);
     this.step = null;
     this.removePanorama();
@@ -521,6 +526,8 @@ export class SurfaceView {
     const eye = this.eye(stop);
     this.setPanorama(stop, image);
     this.options.onStop?.(stop);
+    this.options.onTexture?.(stop, image.naturalWidth);
+    this.upgrade(stop);
 
     const camera = this.viewer.camera;
     camera.lookAtTransform(
@@ -539,8 +546,41 @@ export class SurfaceView {
     return Cartesian3.fromDegrees(stop.lon_east, stop.lat, (stop.height ?? 0) + EYE_HEIGHT_M, Ellipsoid.MARS);
   }
 
-  private setPanorama(stop: PanoramaStop, image: HTMLImageElement): void {
-    this.removePanorama();
+  /** The largest texture this GPU accepts, read from the scene's own WebGL context. */
+  private maxTextureSize(): number {
+    const canvas = this.viewer.scene.canvas;
+    const gl = (canvas.getContext('webgl2') ?? canvas.getContext('webgl')) as WebGLRenderingContext | null;
+    return gl ? (gl.getParameter(gl.MAX_TEXTURE_SIZE) as number) : 4096;
+  }
+
+  /**
+   * Swaps in the stop's high-resolution texture once it has loaded, if the GPU can hold it.
+   * The new sphere is drawn before the old one is removed, so the swap never shows a gap.
+   */
+  private upgrade(stop: PanoramaStop): void {
+    const id = ++this.hiLoad;
+    if (!stop.image_url_hi || !stop.image_hi_width || stop.image_hi_width > this.maxTextureSize()) return;
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.onload = () => {
+      if (id !== this.hiLoad || !this.active || this.stop?.id !== stop.id) return;
+      if (Math.abs(image.naturalWidth / image.naturalHeight - 2) > 0.01) return;
+      const old = this.panorama;
+      this.panorama = null;
+      this.setPanorama(stop, image, true);
+      let frames = 0;
+      const remove = this.viewer.scene.postRender.addEventListener(() => {
+        if (++frames < 2) return;
+        remove();
+        if (old && this.viewer.scene.primitives.contains(old)) this.viewer.scene.primitives.remove(old);
+      });
+      this.options.onTexture?.(stop, image.naturalWidth);
+    };
+    image.src = resolveUrl(stop.image_url_hi, this.baseUrl);
+  }
+
+  private setPanorama(stop: PanoramaStop, image: HTMLImageElement, keepOld = false): void {
+    if (!keepOld) this.removePanorama();
     const transform = Transforms.headingPitchRollToFixedFrame(
       this.eye(stop),
       new HeadingPitchRoll(

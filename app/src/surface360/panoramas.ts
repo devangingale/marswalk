@@ -31,9 +31,15 @@ export interface PanoramaStop {
   heading: number;
   /** Where heading comes from: "caption" (stated by NASA) or "rover yaw, sol N" (an approximation). */
   heading_source: string;
+  /** Degrees the image was shifted down so its horizon sits at eye level, and how that was found. */
+  horizon_offset_deg: number;
+  horizon_source: string;
   pitch: number;
   roll: number;
   image_url: string;
+  /** Higher-resolution texture swapped in once loaded (8192 or 4096 px wide), or null. */
+  image_url_hi: string | null;
+  image_hi_width: number | null;
   /** From a grids.py cost grid covering the stop; null when no grid covers it. */
   walkability: Walkability | null;
   slope_deg: number | null;
@@ -90,7 +96,8 @@ function isStop(v: unknown): v is PanoramaStop {
   const s = v as Record<string, unknown>;
   return (
     !!s &&
-    [s.id, s.name, s.rover, s.mission, s.image_url, s.pia_id, s.instrument, s.caption, s.credit, s.source_url, s.heading_source, s.position_source, s.sol_source].every(isStr) &&
+    [s.id, s.name, s.rover, s.mission, s.image_url, s.pia_id, s.instrument, s.caption, s.credit, s.source_url, s.heading_source, s.position_source, s.sol_source, s.horizon_source].every(isStr) &&
+    isNum(s.horizon_offset_deg) &&
     isNullable(s.sol_end, isNum) &&
     [s.sol, s.lat, s.lon_east, s.heading, s.pitch, s.roll].every(isNum) &&
     isNullable(s.pose_sol, isNum) &&
@@ -99,6 +106,8 @@ function isStop(v: unknown): v is PanoramaStop {
     isNullable(s.slope_deg, isNum) &&
     isNullable(s.walkability_source, isStr) &&
     isNullable(s.passes_url, isStr) &&
+    isNullable(s.image_url_hi, isStr) &&
+    isNullable(s.image_hi_width, isNum) &&
     isNullable(s.next_id, isStr) &&
     isNullable(s.prev_id, isStr) &&
     isNullable(s.drive_m_to_next, isNum)
