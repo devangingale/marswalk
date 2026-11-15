@@ -32,6 +32,7 @@ import type { Plan } from '../lib/plan';
 import { sections as routeSections } from '../lib/routeShape';
 import type { LayerState, SiteData } from '../types';
 import { createMarsViewer, initCesium } from './cesiumSetup';
+import { installGroundPan } from './groundPan';
 import { buildCornerPlan } from './cornerPlan';
 import { cartesianToLonLat, lonLatToCartesian, siteHeightOffsetM } from './frame';
 import { GlobeGlobalLayers, GlobeLayer, globeAssetUrl, loadGlobeManifest } from './globalLayers';
@@ -484,6 +485,7 @@ export const GlobePage: React.FC = () => {
 
       let frame = 0;
       handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
+      removers.push(installGroundPan(viewer, () => false));
       handler.setInputAction((event: ScreenSpaceEventHandler.MotionEvent) => {
         cancelAnimationFrame(frame);
         frame = requestAnimationFrame(() => {

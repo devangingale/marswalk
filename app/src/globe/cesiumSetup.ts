@@ -50,6 +50,14 @@ export async function createMarsViewer(
   };
   setOfflineGlobeColour();
   viewer.scene.screenSpaceCameraController.enableInputs = opts.interactive;
+  // Zoom steps measure distance to the picked ground. Cesium stops picking during wheel inertia
+  // and falls back to height above the datum, which stalls zoom 3.6 km above Gale's floor.
+  const controller = viewer.scene.screenSpaceCameraController;
+  controller.minimumPickingTerrainDistanceWithInertia = Number.POSITIVE_INFINITY;
+  // About 1.5 to 2 times per wheel notch both ways (Cesium's default 5 jumps 5 times inward);
+  // stop 30 m above the ground so the closest view still shows a walkable patch.
+  controller.zoomFactor = 3;
+  controller.minimumZoomDistance = 30;
 
   if (mode === 'offline') return { viewer, tileset: null, mode };
   try {
