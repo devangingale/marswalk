@@ -38,6 +38,7 @@ import { useSurfaceMode, type SurfaceMode } from './surfaceMode';
 import { SurfaceNotice } from './SurfaceNotice';
 import { installGroundPan } from './groundPan';
 import { installPlanetView } from './planetView';
+import { installMarsGroundClamp } from './groundClamp';
 import { buildCornerPlan } from './cornerPlan';
 import { cartesianToLonLat, lonLatToCartesian, siteHeightOffsetM } from './frame';
 import { GlobeGlobalLayers, GlobeLayer, loadGlobeManifest } from './globalLayers';
@@ -239,6 +240,7 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
   const overlaysRef = useRef<GlobeOverlays | null>(null);
   const graticuleRef = useRef<GlobeGraticule | null>(null);
   const gridRef = useRef<RouteGrid | null>(null);
+  const heightOffsetRef = useRef(0);
   const graticuleLinesRef = useRef<GraticuleLine[]>([]);
   const groundRef = useRef(0);
   const viewRef = useRef<HTMLDivElement>(null);
@@ -578,6 +580,13 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
       // where a drag turns the view instead.
       removers.push(installGroundPan(viewer, () => surfaceActiveRef.current));
       removers.push(installPlanetView(viewer));
+      removers.push(
+        installMarsGroundClamp(viewer, {
+          getTileset: () => tilesetRef.current,
+          getGrid: () => gridRef.current,
+          getHeightOffsetM: () => heightOffsetRef.current,
+        }),
+      );
       handler.setInputAction((event: ScreenSpaceEventHandler.PositionedEvent) => {
         if (surfaceActiveRef.current) return;
         const target = overlaysRef.current?.surfaceTarget(viewer.scene.pick(event.position));
@@ -678,6 +687,7 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
     siteTerrainRef.current?.destroy();
     siteTerrainRef.current = null;
     gridRef.current = null;
+    heightOffsetRef.current = 0;
     setGrid(null);
     fetch(initial.sample ? `${siteBaseUrl}/site.json` : getSiteJsonUrl(siteId), { signal: AbortSignal.timeout(15000) })
       .then((r) => (r.ok ? (r.json() as Promise<SiteData>) : Promise.reject(new Error(`HTTP ${r.status}`))))
@@ -716,6 +726,7 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
         gridRef.current = loaded;
         setGrid(loaded);
         const offset = await siteHeightOffsetM(viewer, tileset, site, loaded);
+        heightOffsetRef.current = offset;
         console.info(`Height offset at ${site.id}: ${offset.toFixed(2)} m`);
         const seam = await measureEdgeSeam(viewer, tileset, site, loaded, offset);
         if (seam) {
@@ -742,6 +753,8 @@ const GlobePageView: React.FC<GlobePageProps & { surfaceMode: SurfaceMode }> = (
         }
         reportLoad('imagery', 'failed');
         console.warn('Site did not load', error);
+        gridRef.current = null;
+        heightOffsetRef.current = 0;
         siteImageryRef.current?.clear();
         overlaysRef.current?.clear();
         setSiteData(null);
