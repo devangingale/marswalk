@@ -21,6 +21,7 @@ import { useSurfaceMode } from './surfaceMode';
 import { SurfaceNotice } from './SurfaceNotice';
 import { installGroundPan } from './groundPan';
 import { installPlanetView } from './planetView';
+import { highestGround, installGroundClamp } from './groundClamp';
 import { cartesianToLonLat, lonLatToCartesian, metresPerPixel as measureMetresPerPixel, siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M } from './frame';
 import { GlobeImagery } from './imageryLayers';
 import { MapLoadStatus } from './MapLoadStatus';
@@ -119,6 +120,7 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
     let handler: ScreenSpaceEventHandler | null = null;
     let removePan: (() => void) | null = null;
     let removePlanetView: (() => void) | null = null;
+    let removeGroundClamp: (() => void) | null = null;
     let resizeObserver: ResizeObserver | null = null;
     let removeProgress: (() => void) | null = null;
     let removeTileLoad: (() => void) | null = null;
@@ -298,6 +300,17 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
       handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
       removePan = installGroundPan(viewer, () => dragRef.current !== null);
       removePlanetView = installPlanetView(viewer);
+      // Cesium's collision is off (above), so keep the camera over the real ground ourselves.
+      removeGroundClamp = installGroundClamp(viewer, (point) => {
+        const grid = gridRef.current;
+        const lon = CesiumMath.toDegrees(point.longitude);
+        const lat = CesiumMath.toDegrees(point.latitude);
+        return highestGround([
+          tileset?.getHeight(point, viewer.scene),
+          grid && isInsideSite(grid, lon, lat) ? surfaceHeightM(grid, lon, lat, heightOffsetRef.current) : undefined,
+          groundGlobe(viewer.scene)?.getHeight(point),
+        ]);
+      }, () => viewer.scene.screenSpaceCameraController.minimumZoomDistance);
       handler.setInputAction((event: ScreenSpaceEventHandler.MotionEvent) => {
         const point = pickedGround(viewer, event.endPosition);
         const lonLat = cartesianToLonLat(point);
@@ -424,6 +437,7 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
       handler?.destroy();
       removePan?.();
       removePlanetView?.();
+      removeGroundClamp?.();
       globalRef.current?.destroy(); globalRef.current = null;
       temperatureRef.current?.destroy(); temperatureRef.current = null;
       cavesRef.current = null;

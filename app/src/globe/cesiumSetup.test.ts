@@ -6,6 +6,7 @@ import {
   backdropEllipsoid,
   cesiumFailure,
   cesiumFailureMessage,
+  depthPlaneOffset,
   groundGlobe,
   initCesium,
   isBackdropGlobe,
@@ -112,5 +113,15 @@ describe('online backdrop globe', () => {
     expect(groundGlobe({ globe: datum } as never)).toBe(datum);
     expect(groundGlobe({ globe: { ...datum, show: false } } as never)).toBeUndefined();
     expect(groundGlobe({ globe: undefined } as never)).toBeUndefined();
+  });
+
+  it('sinks the depth plane with it, so terrain below the datum is not hidden up close', () => {
+    // At the datum, Cesium's depth plane hid Jezero's floor (2.6 km below) once zoomed in,
+    // leaving the flat backdrop colour over the site.
+    const backdrop = { ellipsoid: backdropEllipsoid(), show: true } as unknown as Globe;
+    const datum = { ellipsoid: Ellipsoid.MARS, show: true } as unknown as Globe;
+    expect(depthPlaneOffset(backdrop)).toBe(-BACKDROP_DEPTH_M);
+    expect(depthPlaneOffset(datum)).toBe(0);
+    expect(depthPlaneOffset(false)).toBe(0);
   });
 });

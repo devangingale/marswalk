@@ -62,6 +62,16 @@ export function isBackdropGlobe(globe: Globe | undefined): boolean {
   return !!globe && globe.ellipsoid.maximumRadius < Ellipsoid.MARS.maximumRadius - 1;
 }
 
+/**
+ * Where Cesium writes its depth plane, relative to the datum. Beside a globe that does not
+ * depth-test against terrain, Cesium draws an ellipsoid-shaped depth plane at the datum; up close
+ * it hid terrain below the datum (Jezero's floor, 2.6 km below), so the flat backdrop colour
+ * covered the site. Sunk with the backdrop, it still hides the far side of the planet.
+ */
+export function depthPlaneOffset(globe: Globe | false): number {
+  return globe && isBackdropGlobe(globe) ? -BACKDROP_DEPTH_M : 0;
+}
+
 /** The globe our layers drape on: the offline datum globe; undefined online. */
 export function groundGlobe(scene: Scene): Globe | undefined {
   const globe = scene.globe;
@@ -117,6 +127,7 @@ export async function createMarsViewer(
   opts: { interactive: boolean; globe?: Globe | false },
 ): Promise<{ viewer: Viewer; tileset: Cesium3DTileset | null; mode: 'ion' | 'offline'; failure: CesiumFailure | null }> {
   const failure = pendingFailure;
+  const globe = opts.globe ?? (mode === 'offline' ? new Globe(Ellipsoid.MARS) : createBackdropGlobe());
   const viewer = new Viewer(container, {
     timeline: false,
     animation: false,
@@ -134,7 +145,8 @@ export async function createMarsViewer(
     useBrowserRecommendedResolution: false,
     // Offline draws our tiles on a plain ellipsoid; online, Cesium Mars is the surface over a
     // ground-coloured backdrop sunk below all terrain (see BACKDROP_DEPTH_M).
-    globe: opts.globe ?? (mode === 'offline' ? new Globe(Ellipsoid.MARS) : createBackdropGlobe()),
+    globe,
+    depthPlaneEllipsoidOffset: depthPlaneOffset(globe),
     ellipsoid: Ellipsoid.MARS,
     // Draw only when something changes (see renderOnDemand); idle, the map costs nothing.
     requestRenderMode: true,
