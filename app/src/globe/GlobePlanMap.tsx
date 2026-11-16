@@ -299,7 +299,7 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
       handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
       removePan = installGroundPan(viewer, () => dragRef.current !== null);
       removePlanetView = installPlanetView(viewer);
-      // Cesium's collision is off (above), so keep the camera over the real ground ourselves.
+      // Online, Cesium's collision measures the backdrop (the datum); this keeps the camera over the real ground.
       removeGroundClamp = installMarsGroundClamp(viewer, {
         getTileset: () => tileset,
         getGrid: () => gridRef.current,
