@@ -21,7 +21,7 @@ import { useSurfaceMode } from './surfaceMode';
 import { SurfaceNotice } from './SurfaceNotice';
 import { installGroundPan } from './groundPan';
 import { installPlanetView } from './planetView';
-import { highestGround, installGroundClamp } from './groundClamp';
+import { installMarsGroundClamp } from './groundClamp';
 import { cartesianToLonLat, lonLatToCartesian, metresPerPixel as measureMetresPerPixel, siteHeightOffsetM, SPIKE_HEIGHT_OFFSETS_M } from './frame';
 import { GlobeImagery } from './imageryLayers';
 import { MapLoadStatus } from './MapLoadStatus';
@@ -213,7 +213,6 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
       removePostRender = () => viewer.scene.postRender.removeEventListener(postRender);
       const ground = groundGlobe(viewer.scene);
       if (ground) ground.depthTestAgainstTerrain = true;
-      viewer.scene.screenSpaceCameraController.enableCollisionDetection = false;
       viewer.cesiumWidget.creditContainer.setAttribute('aria-label', 'Cesium ion attribution');
       setOffline(mode === 'offline' || !tileset);
       setFailure(loadFailure);
@@ -301,16 +300,11 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
       removePan = installGroundPan(viewer, () => dragRef.current !== null);
       removePlanetView = installPlanetView(viewer);
       // Cesium's collision is off (above), so keep the camera over the real ground ourselves.
-      removeGroundClamp = installGroundClamp(viewer, (point) => {
-        const grid = gridRef.current;
-        const lon = CesiumMath.toDegrees(point.longitude);
-        const lat = CesiumMath.toDegrees(point.latitude);
-        return highestGround([
-          tileset?.getHeight(point, viewer.scene),
-          grid && isInsideSite(grid, lon, lat) ? surfaceHeightM(grid, lon, lat, heightOffsetRef.current) : undefined,
-          groundGlobe(viewer.scene)?.getHeight(point),
-        ]);
-      }, () => viewer.scene.screenSpaceCameraController.minimumZoomDistance);
+      removeGroundClamp = installMarsGroundClamp(viewer, {
+        getTileset: () => tileset,
+        getGrid: () => gridRef.current,
+        getHeightOffsetM: () => heightOffsetRef.current,
+      });
       handler.setInputAction((event: ScreenSpaceEventHandler.MotionEvent) => {
         const point = pickedGround(viewer, event.endPosition);
         const lonLat = cartesianToLonLat(point);
