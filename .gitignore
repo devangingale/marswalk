@@ -16,6 +16,9 @@ dist/
 .env
 .env.*
 !.env.example
+# R2 upload keys for pipeline/upload_r2_bulk.py (.env.* does not match this name)
+.r2-upload.env
+.vercel/
 *.log
 .DS_Store
 Thumbs.db
