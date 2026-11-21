@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { Plan, PlanParams, PlanStop, ShelterType } from '../lib/plan';
 import type { RouteGrid } from '../lib/grid';
-import { SHELTER_TYPES, SHELTER_TYPE_HINTS, SHELTER_TYPE_NAMES, setShelterType, shelterType, validatePlan } from '../lib/plan';
+import { SHELTER_TYPES, SHELTER_TYPE_HINTS, SHELTER_TYPE_NAMES, isStopUnreachable, setShelterType, shelterType, validatePlan } from '../lib/plan';
 import { budgetFractions, removeStop, reorderStop, updateStop, type ShelterMoveState } from './planLogic';
 import { formatLatLon } from '../globe/routeLook';
 import { PlanProfile } from '../globe/plan/PlanProfile';
@@ -92,6 +92,7 @@ export const PlanRail: React.FC<Props> = ({ plan, grid, computing, onChange, onI
             <button type="button" aria-label={`Remove ${stop.name}`} onClick={() => onChange(clone(plan, { stops: removeStop(plan.stops, stop.id) }))}>×</button>
           </div>
           {stopNotices?.[stop.id] && <p className="plan-stop-notice">{stopNotices[stop.id]}</p>}
+          {isStopUnreachable(stop.id, plan, computing) && <p className="plan-stop-warning">Unreachable · skipped by route</p>}
         </li>)}</ol>}
       {!!plan.route.warnings.length && plan.route.warnings.map((w, idx) => <p key={idx} className="plan-rail__warning">{w}</p>)}
     </section>

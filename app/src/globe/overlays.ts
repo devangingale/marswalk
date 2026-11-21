@@ -29,7 +29,7 @@ import {
 } from 'cesium';
 import type { ChemistryPositionGroup } from '../lib/chemistry';
 import { lonlatToLocalMetres, type GridOrigin, type RouteGrid } from '../lib/grid';
-import { defaultShelterLabel, isDefaultShelterLabel, shelterType, type Plan } from '../lib/plan';
+import { defaultShelterLabel, isDefaultShelterLabel, isStopUnreachable, shelterType, type Plan } from '../lib/plan';
 import {
   forkPoints,
   sections as routeSections,
@@ -203,6 +203,16 @@ export class GlobeOverlays {
   private heightOffsetM = 0;
   private useSurfaceHeights = false;
   private roverData: { traverse: GeoJSON.LineString | null; sites: PhotoSite[]; state: RoverOverlayState } | null = null;
+  private computing = false;
+  private requestedPoints: Record<string, { lon: number; lat: number }> = {};
+
+  setComputing(computing: boolean): void {
+    this.computing = computing;
+  }
+
+  setRequestedPoints(points: Record<string, { lon: number; lat: number }>): void {
+    this.requestedPoints = points;
+  }
 
   constructor(host: OverlayHost, options: OverlayOptions = {}) {
     this.entities = host.entities;
@@ -543,10 +553,75 @@ export class GlobeOverlays {
     }
   }
 
+  private drawRequestedTether(
+    req: { lon: number; lat: number },
+    target: { lon: number; lat: number },
+    label: string,
+    title: string,
+  ): number {
+    let movedM = 0;
+    if (this.origin) {
+      const m1 = lonlatToLocalMetres(req.lon, req.lat, this.origin);
+      const m2 = lonlatToLocalMetres(target.lon, target.lat, this.origin);
+      movedM = Math.round(Math.hypot(m2.x_m - m1.x_m, m2.y_m - m1.y_m));
+    }
+    const reqLines = [label];
+    if (movedM > 0) reqLines.push(`Moved ${movedM} m to walkable ground`);
+    reqLines.push(formatLatLon(req.lon, req.lat));
+
+    this.add(
+      'plan',
+      {
+        position: this.surfacePosition(req.lon, req.lat),
+        point: {
+          pixelSize: 8,
+          color: this.colour('--map-route-core').withAlpha(0.6),
+          outlineColor: this.colour('--map-route-casing'),
+          outlineWidth: 1.5,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          heightReference: this.useSurfaceHeights ? HeightReference.NONE : HeightReference.CLAMP_TO_GROUND,
+        },
+      },
+      {
+        kind: 'text',
+        lines: reqLines,
+        target: () => ({ title, lon: req.lon, lat: req.lat }),
+      },
+    );
+    this.add(
+      'plan',
+      {
+        polyline: {
+          positions: [
+            this.surfacePosition(req.lon, req.lat),
+            this.surfacePosition(target.lon, target.lat),
+          ],
+          width: 2,
+          zIndex: 405,
+          clampToGround: true,
+          arcType: ArcType.GEODESIC,
+          classificationType: this.classification,
+          material: new PolylineDashMaterialProperty({
+            color: this.colour('--map-route-core').withAlpha(0.75),
+            gapColor: Color.TRANSPARENT,
+            dashLength: 8,
+          }),
+        },
+      },
+    );
+    return movedM;
+  }
+
   private drawStops(plan: Plan): void {
     const images = this.markers();
     const start = plan.start;
     const name = isDefaultShelterLabel(start.label) ? defaultShelterLabel(shelterType(start)) : start.label;
+
+    const reqStart = this.requestedPoints['start'];
+    if (reqStart && (reqStart.lon !== start.lon || reqStart.lat !== start.lat)) {
+      this.drawRequestedTether(reqStart, start, `${name} requested position`, `${name} requested`);
+    }
+
     this.add(
       'plan',
       {
@@ -558,6 +633,17 @@ export class GlobeOverlays {
     );
     plan.stops.forEach((stop) => {
       const number = waypointLabel(stop.id, plan);
+      const isUnreachable = isStopUnreachable(stop.id, plan, this.computing);
+      const lines = [`Stop ${number} · ${stop.name}`];
+
+      const req = this.requestedPoints[stop.id];
+      if (req && (req.lon !== stop.lon || req.lat !== stop.lat)) {
+        const movedM = this.drawRequestedTether(req, stop, `Stop ${number} requested position`, `Stop ${number} requested`);
+        if (movedM > 0) lines.push(`Moved ${movedM} m to walkable ground`);
+      }
+
+      if (isUnreachable) lines.push('Unreachable · skipped by route');
+      lines.push(formatLatLon(stop.lon, stop.lat));
       this.add(
         'plan',
         {
@@ -566,7 +652,7 @@ export class GlobeOverlays {
         },
         {
           kind: 'text',
-          lines: [`Stop ${number} · ${stop.name}`, formatLatLon(stop.lon, stop.lat)],
+          lines,
           target: () => ({ title: `Stop ${number} · ${stop.name}`, lon: stop.lon, lat: stop.lat }),
         },
       );
