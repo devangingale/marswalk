@@ -422,6 +422,17 @@ export function buildPlan(input: BuildPlanInput): Plan {
   const planLegs: PlanLeg[] = [];
   const reachedStopIds = new Set<string>();
 
+  const legStepCoordinates = (from: Waypoint, to: Waypoint, legResult: LegPathResult): [number, number][] => {
+    const coords: [number, number][] = legResult.steps.length === 1 && (from.lon !== to.lon || from.lat !== to.lat)
+      ? [[from.lon, from.lat], [to.lon, to.lat]]
+      : legResult.steps.map((st) => [st.lon, st.lat]);
+    if (coords.length > 0) {
+      coords[0] = [from.lon, from.lat];
+      coords[coords.length - 1] = [to.lon, to.lat];
+    }
+    return coords;
+  };
+
   let totalDistanceM = 0;
   let totalWalkTimeS = 0;
   let totalClimbM = 0;
@@ -455,12 +466,7 @@ export function buildPlan(input: BuildPlanInput): Plan {
     rawLegResults.push(legResult);
     reachedStopIds.add(stop.id);
 
-    const rawCoords: [number, number][] = legResult.steps.map((st) => [st.lon, st.lat]);
-    if (rawCoords.length > 0) {
-      rawCoords[0] = [currentWp.lon, currentWp.lat];
-      rawCoords[rawCoords.length - 1] = [toWp.lon, toWp.lat];
-    }
-
+    const rawCoords = legStepCoordinates(currentWp, toWp, legResult);
     const densifiedLine = densifyLine(rawCoords, grid.origin, 4.0);
 
     totalDistanceM += legResult.distance_m;
@@ -507,12 +513,7 @@ export function buildPlan(input: BuildPlanInput): Plan {
     } else {
       rawLegResults.push(legResult);
 
-      const rawCoords: [number, number][] = legResult.steps.map((st) => [st.lon, st.lat]);
-      if (rawCoords.length > 0) {
-        rawCoords[0] = [currentWp.lon, currentWp.lat];
-        rawCoords[rawCoords.length - 1] = [returnWp.lon, returnWp.lat];
-      }
-
+      const rawCoords = legStepCoordinates(currentWp, returnWp, legResult);
       const densifiedLine = densifyLine(rawCoords, grid.origin, 4.0);
 
       totalDistanceM += legResult.distance_m;
@@ -586,6 +587,18 @@ export function buildPlan(input: BuildPlanInput): Plan {
       warnings,
     },
   };
+}
+
+/**
+ * Determines whether a stop is unreachable based on computed leg destinations.
+ * Suppresses unreachable status while computing, and checks whether the stop was reached when unreachable-leg warnings exist.
+ */
+export function isStopUnreachable(stopId: string, plan?: Plan | null, computing = false): boolean {
+  if (computing || !plan?.route) return false;
+  const hasUnreachableWarnings = plan.route.warnings.some((w) => w.startsWith("Can't reach "));
+  if (!hasUnreachableWarnings && plan.route.feasible) return false;
+  const reached = new Set(plan.route.legs.map((l) => l.to));
+  return !reached.has(stopId);
 }
 
 /**

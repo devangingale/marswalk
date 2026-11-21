@@ -51,6 +51,8 @@ interface GlobePlanMapProps extends MapProps {
   wholePlanet?: WholePlanetLayers;
   /** "Move shelter" is on: the next click places the shelter (App routes it), markers do not drag. */
   placingShelter?: boolean;
+  requestedPoints?: Record<string, { lon: number; lat: number }>;
+  computing?: boolean;
 }
 
 /** Caves within 4,000 km of the camera; anything farther at site zoom is through the planet. */
@@ -81,6 +83,7 @@ function token(value: string, fallback: string): string {
 export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
   siteData, layerStates, roverOverlayState, plan, onMapPoint, onStartChange, onStopChange, onRoutePointHover,
   grid, activePoint, relief = false, wholePlanet, placingShelter = false, naturalTint = true,
+  requestedPoints, computing,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
@@ -272,6 +275,8 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
       overlaysRef.current = overlays;
       if (tileset) overlays.setHeightOffsetM(heightOffset);
       overlays.setGrid(gridRef.current);
+      if (requestedPoints) overlays.setRequestedPoints(requestedPoints);
+      overlays.setComputing(!!computing);
       overlays.setPlan(planRef.current, siteData.origin);
       void Promise.all([
         fetch(resolveSiteAssetUrl(siteData.id, `/data/${siteData.id}/traverse.geojson`), { signal: AbortSignal.timeout(15000) })
@@ -452,9 +457,11 @@ export const GlobePlanMap: React.FC<GlobePlanMapProps> = ({
   useEffect(() => {
     const overlays = overlaysRef.current;
     if (!overlays) return;
+    if (requestedPoints) overlays.setRequestedPoints(requestedPoints);
+    overlays.setComputing(!!computing);
     overlays.setGradient(true);
     overlays.setPlan(plan, siteData.origin);
-  }, [plan, siteData.origin]);
+  }, [plan, siteData.origin, requestedPoints, computing]);
   useEffect(() => {
     imageryRef.current?.apply(layerStates);
     if (viewerRef.current && !viewerRef.current.isDestroyed()) {

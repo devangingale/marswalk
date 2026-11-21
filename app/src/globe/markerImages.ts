@@ -7,7 +7,9 @@ import type { ShelterType } from '../lib/plan';
 export type TokenReader = (name: string) => string;
 
 export const readToken: TokenReader = (name) =>
-  getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  typeof document !== 'undefined' && typeof getComputedStyle !== 'undefined'
+    ? getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+    : '';
 
 export interface MarkerImage {
   image: HTMLCanvasElement | string;

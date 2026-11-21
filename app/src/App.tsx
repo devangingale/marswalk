@@ -112,6 +112,7 @@ export const App: React.FC = () => {
   const [computing, setComputing] = useState(false);
   const [doseRates, setDoseRates] = useState({ surface: DEFAULT_SURFACE_DOSE_MGY_PER_DAY, solar: DEFAULT_SOLAR_EVENT_MGY_PER_DAY });
   const [stopNotices, setStopNotices] = useState<Record<string, string>>({});
+  const [requestedPoints, setRequestedPoints] = useState<Record<string, { lon: number; lat: number }>>({});
   const [shelterMove, dispatchShelterMove] = useReducer(shelterMoveReducer, SHELTER_MOVE_IDLE);
   const planWorker = useRef<Worker | null>(null);
   const requestId = useRef(0);
@@ -271,18 +272,22 @@ export const App: React.FC = () => {
   const handleSiteChange = (newSiteId: string) => {
     if (newSiteId !== currentSiteId) {
       setCurrentSiteId(newSiteId);
+      setStopNotices({});
+      setRequestedPoints({});
     }
   };
 
   const addStop = useCallback((point: { lon: number; lat: number }) => {
     let target = point;
     let notice: string | null = null;
+    let didMove = false;
     if (routeGrid) {
       const mask = reachableMask(routeGrid, plan.start);
       const snapped = snapToReachable(routeGrid, mask, point);
       if (snapped) {
         target = { lon: snapped.lon, lat: snapped.lat };
         if (snapped.movedM > 0) {
+          didMove = true;
           notice = `Moved ${Math.round(snapped.movedM)} m to walkable ground`;
         }
       }
@@ -290,6 +295,9 @@ export const App: React.FC = () => {
     const newId = `s-${Date.now()}`;
     if (notice) {
       setStopNotices((prev) => ({ ...prev, [newId]: notice! }));
+    }
+    if (didMove) {
+      setRequestedPoints((prev) => ({ ...prev, [newId]: { lon: point.lon, lat: point.lat } }));
     }
     setPlan((current) => {
       const stop: PlanStop = { id: newId, name: nextStopName(current.stops), ...target, dwell_s: current.params.stop_time_s };
@@ -312,6 +320,16 @@ export const App: React.FC = () => {
       reachableMask(routeGrid, resolvedStart);
     }
     dispatchShelterMove({ type: 'placed', movedM });
+    if (movedM > 0) {
+      setRequestedPoints((prev) => ({ ...prev, start: { lon: newStart.lon, lat: newStart.lat } }));
+    } else {
+      setRequestedPoints((prev) => {
+        if (!prev.start) return prev;
+        const next = { ...prev };
+        delete next.start;
+        return next;
+      });
+    }
     setPlan((current) => ({ ...current, start: resolvedStart }));
   }, [routeGrid]);
 
@@ -335,8 +353,15 @@ export const App: React.FC = () => {
         if (snapped.movedM > 0) {
           const notice = `Moved ${Math.round(snapped.movedM)} m to walkable ground`;
           setStopNotices((prev) => ({ ...prev, [changed.id]: notice }));
+          setRequestedPoints((prev) => ({ ...prev, [changed.id]: { lon: changed.lon, lat: changed.lat } }));
         } else {
           setStopNotices((prev) => {
+            if (!prev[changed.id]) return prev;
+            const next = { ...prev };
+            delete next[changed.id];
+            return next;
+          });
+          setRequestedPoints((prev) => {
             if (!prev[changed.id]) return prev;
             const next = { ...prev };
             delete next[changed.id];
@@ -345,6 +370,12 @@ export const App: React.FC = () => {
         }
       } else {
         setStopNotices((prev) => {
+          if (!prev[changed.id]) return prev;
+          const next = { ...prev };
+          delete next[changed.id];
+          return next;
+        });
+        setRequestedPoints((prev) => {
           if (!prev[changed.id]) return prev;
           const next = { ...prev };
           delete next[changed.id];
@@ -361,6 +392,7 @@ export const App: React.FC = () => {
   const handleImportPlan = useCallback((imported: Plan) => {
     let resolvedStart = imported.start;
     const newNotices: Record<string, string> = {};
+    const newRequested: Record<string, { lon: number; lat: number }> = {};
     let resolvedStops = imported.stops;
 
     if (routeGrid) {
@@ -368,6 +400,9 @@ export const App: React.FC = () => {
       if (!routeGrid.isInside(startRc.row, startRc.col) || !routeGrid.isPassable(startRc.row, startRc.col)) {
         const snappedStart = snapToPassable(routeGrid, resolvedStart);
         if (snappedStart) {
+          if (snappedStart.movedM > 0) {
+            newRequested.start = { lon: resolvedStart.lon, lat: resolvedStart.lat };
+          }
           resolvedStart = { ...resolvedStart, lon: snappedStart.lon, lat: snappedStart.lat };
         }
       }
@@ -377,6 +412,7 @@ export const App: React.FC = () => {
         if (snap) {
           if (snap.movedM > 0) {
             newNotices[stop.id] = `Moved ${Math.round(snap.movedM)} m to walkable ground`;
+            newRequested[stop.id] = { lon: stop.lon, lat: stop.lat };
           }
           return { ...stop, lon: snap.lon, lat: snap.lat };
         }
@@ -385,17 +421,30 @@ export const App: React.FC = () => {
     }
 
     setStopNotices(newNotices);
+    setRequestedPoints(newRequested);
     setPlan({ ...imported, start: normalizeShelter(resolvedStart), stops: resolvedStops });
   }, [routeGrid]);
 
   const changePlan = useCallback((next: Plan) => {
+    const currentIds = new Set(next.stops.map((s) => s.id));
     setStopNotices((prev) => {
-      const currentIds = new Set(next.stops.map((s) => s.id));
       let changed = false;
       const filtered: Record<string, string> = {};
       for (const [id, msg] of Object.entries(prev)) {
         if (currentIds.has(id)) {
           filtered[id] = msg;
+        } else {
+          changed = true;
+        }
+      }
+      return changed ? filtered : prev;
+    });
+    setRequestedPoints((prev) => {
+      let changed = false;
+      const filtered: Record<string, { lon: number; lat: number }> = {};
+      for (const [id, pt] of Object.entries(prev)) {
+        if (id === 'start' || currentIds.has(id)) {
+          filtered[id] = pt;
         } else {
           changed = true;
         }
@@ -551,7 +600,7 @@ export const App: React.FC = () => {
               />
             }
             leftLabel="Layers"
-            main={<GlobePlanMap siteData={siteData} layerStates={layerStates} naturalTint={naturalTint} roverOverlayState={roverOverlayState} plan={plan} grid={routeGrid} activePoint={profileHover} relief={relief} wholePlanet={wholePlanet} onMapPoint={handleMapPoint} placingShelter={shelterMove.active} onStartChange={updateStart} onStopChange={updateStop} onRoutePointHover={setProfileHover} />}
+            main={<GlobePlanMap siteData={siteData} layerStates={layerStates} naturalTint={naturalTint} roverOverlayState={roverOverlayState} plan={plan} grid={routeGrid} activePoint={profileHover} relief={relief} wholePlanet={wholePlanet} onMapPoint={handleMapPoint} placingShelter={shelterMove.active} onStartChange={updateStart} onStopChange={updateStop} onRoutePointHover={setProfileHover} requestedPoints={requestedPoints} computing={computing} />}
             controls={
               <button type="button" className="s48-btn s48-btn--secondary" aria-pressed={relief} onClick={() => setRelief((on) => !on)}>
                 3D relief
